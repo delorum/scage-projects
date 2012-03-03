@@ -68,7 +68,7 @@ object OurPlane extends Plane {
   key(KEY_UP,    10, onKeyDown = if(speed < 15) speed += 0.5f)
 
   key(KEY_LCONTROL, onKeyDown = {
-    new Rocket(trace.id, trace.location + step.n.rotate(math.Pi/2 * plane_side)*10, speed, rotation)
+    new Rocket(trace.id, tracer.outsideCoord(trace.location + step.n.rotate(math.Pi/2 * plane_side)*10), speed, rotation)
     plane_side *= -1
   })
 
@@ -128,7 +128,7 @@ object EnemyPlane extends Plane {
       val planes_side = math.signum((plane.location - trace.location) * step)
       if(planes_angle < math.Pi/12) {
         if(shoot_cooldown <= 0) {
-          new Rocket(trace.id, trace.location + step.n.rotate(math.Pi/2 * plane_side)*10, speed, rotation);
+          new Rocket(trace.id, tracer.outsideCoord(trace.location + step.n.rotate(math.Pi/2 * plane_side)*10), speed, rotation);
           shoot_cooldown = 10
           plane_side *= -1
         } else shoot_cooldown -= 1
