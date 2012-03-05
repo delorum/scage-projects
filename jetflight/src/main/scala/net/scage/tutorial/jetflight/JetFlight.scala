@@ -4,6 +4,7 @@ import net.scage.ScageLib._
 import net.scage.support.tracer3.{Trace, CoordTracer}
 import net.scage.{Scage, ScageScreenApp}
 import net.scage.support.{ScageColor, State, Vec}
+import net.scage.tutorial.netflight.{FlyingObject, Plane}
 
 object JetFlight extends ScageScreenApp("Jet Flight") {
   val EXPLOSION_ANIMATION = animation("explosion_animation.png", 36, 35, 72, 69, 3)
