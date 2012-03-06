@@ -6,7 +6,7 @@ import net.scage.{Scage, ScageScreenApp}
 import net.scage.support.{ScageColor, State, Vec}
 import net.scage.tutorial.netflight.{FlyingObject, Plane}
 
-object JetFlight extends ScageScreenApp("Jet Flight") {
+object JetFlight extends ScageScreenApp(unit_name = "Jet Flight") {
   val EXPLOSION_ANIMATION = animation("explosion_animation.png", 36, 35, 72, 69, 3)
   val LAND                = image("land.png", 800, 600, 0, 0, 800, 600)
 
