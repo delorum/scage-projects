@@ -10,21 +10,28 @@ import net.scage.{ScageScreenApp, ScageApp}
 object NetFlight extends ScageApp(unit_name = "Net Flight") {
   val tracer = CoordTracer(solid_edges = false)
   private val planes = HashMap[Int, Plane]()
+  val send_timeout = property("netflight.send_timeout", 50)
 
   NetServer.startServer(
     onClientAccepted = {
       client =>
         planes += (client.id -> new Plane(client.id))
-        val planes_data = State("planes" -> planes.values.map(_.toState).toList)
-        NetServer.sendToAll(planes_data)
+        client.send(State("your_plane_id" -> client.id))
     },
     onClientDataReceived = {
       (client, data) =>
         val client_plane = planes(client.id)
         data.neededKeys {
-          case ("left", true) => client_plane.rotateLeft()
+          case ("keys", keys:List[Float]) =>
+            keys.foreach(key => key match {
+              case 0 => client_plane.rotateLeft()
+              case 1 => client_plane.rotateRight()
+              case 2 => client_plane.reheat()
+              case _ =>
+            })
+          /*case ("left", true) => client_plane.rotateLeft()
           case ("right", true) => client_plane.rotateRight()
-          case ("up", true) => client_plane.reheat()
+          case ("up", true) => client_plane.reheat()*/
           //case ("lctrl", true) => client_plane.fire()
         }
         /*val plane_data = State("plane" -> client_plane.toState)
@@ -37,7 +44,7 @@ object NetFlight extends ScageApp(unit_name = "Net Flight") {
     }
   )
   
-  action(30) {
+  action(send_timeout) {
     val planes_data = State("planes" -> planes.values.map(_.toState).toList)
     NetServer.sendToAll(planes_data)
   }
@@ -67,7 +74,7 @@ class Plane(val client_id: Int) extends FlyingObject {
     }
   })
 
-  private val action_id = action(40) {
+  private val action_id = action(10) {
     if (_health <= 0) {
       _health = 100
       tracer.updateLocation(trace, tracer.randomCoord())
@@ -76,9 +83,6 @@ class Plane(val client_id: Int) extends FlyingObject {
 
     tracer.updateLocation(trace, trace.location + step)
     if (_speed > 5) _speed -= 0.1f
-
-    /*val plane_data = State("plane" -> toState)
-    NetServer.sendToAll(plane_data)*/
   }
 
   def rotateLeft() {
