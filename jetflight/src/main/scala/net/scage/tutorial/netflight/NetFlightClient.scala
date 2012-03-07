@@ -8,7 +8,8 @@ import net.scage.support.{State, Vec}
 import collection.mutable.{ArrayBuffer, HashMap}
 
 object NetFlightClient extends ScageScreenApp(unit_name = "Net Flight Client") {
-  val PLAYER_PLANE = image("plane.png", 60, 60, 0, 0, 122, 121)
+  val ENEMY_PLANE  = image("plane.png", 60, 60, 0, 0, 122, 121)
+  val OUR_PLANE    = image("plane2.png", 60, 60, 0, 0, 122, 121)
   val LAND         = image("land.png", 800, 600, 0, 0, 800, 600)
   val send_timeout = property("netflight.send_timeout", 50)
 
@@ -17,7 +18,6 @@ object NetFlightClient extends ScageScreenApp(unit_name = "Net Flight Client") {
   private var our_plane:Option[ClientPlane] = None
 
   NetClient.startClient(
-    port = 9800,
     onServerDataReceived = {
       data => data.neededKeys {
         case ("planes", planes_data:List[State]) =>
@@ -30,25 +30,21 @@ object NetFlightClient extends ScageScreenApp(unit_name = "Net Flight Client") {
                          ("speed", speed:Float)) =>
                 planes.get(id.toInt) match {
                   case Some(plane) => plane.update(coord, rotation, speed, health.toInt)
-                  case None => planes += (id.toInt -> new ClientPlane(id.toInt, coord, rotation, speed, health.toInt))
+                  case None =>
+                    val new_plane = if(id.toInt == our_plane_id) {
+                      val plane = new ClientPlane(id.toInt, coord, rotation, speed, health.toInt, OUR_PLANE)
+                      our_plane = Some(plane)
+                      plane
+                    } else new ClientPlane(id.toInt, coord, rotation, speed, health.toInt)
+                    planes += (id.toInt -> new_plane)
                 }
               case _ =>
             }
           })
         case ("your_plane_id", id:Float) =>
           our_plane_id = id.toInt
-        case ("plane", State(("coord", coord:Vec),
-                             ("health", health:Float), 
-                             ("id", id:Float), 
-                             ("rotation", rotation:Float), 
-                             ("speed", speed:Float))) =>
-          planes.get(id.toInt) match {
-            case Some(plane) => plane.update(coord, rotation, speed, health.toInt)
-            case None =>
-              val new_plane = new ClientPlane(id.toInt, coord, rotation, speed, health.toInt)
-              if(id.toInt == our_plane_id) our_plane = Some(new_plane)
-              planes += (id.toInt -> new_plane)
-          }
+        case ("leaver", id:Float) =>
+          planes -= id.toInt
       }        
     }
   )
@@ -79,6 +75,10 @@ object NetFlightClient extends ScageScreenApp(unit_name = "Net Flight Client") {
   render(-10) {
     drawDisplayList(LAND, windowCenter)
   }
+
+  dispose {
+    NetClient.stopClient()
+  }
 }
 
 import NetFlightClient._
@@ -87,7 +87,8 @@ class ClientPlane(val client_id: Int,
                   init_coord:Vec, 
                   init_rotation:Float, 
                   init_speed:Float, 
-                  init_health:Int) extends FlyingObject {
+                  init_health:Int,
+                  image_code:Int = ENEMY_PLANE) extends FlyingObject {
   _rotation = init_rotation
   _speed = init_speed
   
@@ -142,6 +143,6 @@ class ClientPlane(val client_id: Int,
   render {
     openglMove(_coord)
     openglRotate(_rotation)
-    drawDisplayList(PLAYER_PLANE, Vec.zero)
+    drawDisplayList(image_code, Vec.zero)
   }
 }

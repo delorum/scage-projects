@@ -41,6 +41,7 @@ object NetFlight extends ScageApp(unit_name = "Net Flight") {
       client =>
         planes(client.id).stop()
         planes -= client.id
+        NetServer.sendToAll(State("leaver" -> client.id))
     }
   )
   

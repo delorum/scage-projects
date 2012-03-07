@@ -8,7 +8,7 @@
 
   <name>Jet Flight</name>
   <description>Fight the sky to the enemy's death!</description>
-  <url>http://example.com</url>
+  <url>http://fzeulf.netris.ru/bor/netflight/netflight-client</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
