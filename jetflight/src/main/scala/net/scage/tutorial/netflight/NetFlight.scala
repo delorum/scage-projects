@@ -5,17 +5,20 @@ import net.scage.support.net.NetServer
 import net.scage.support.{State, Vec}
 import net.scage.support.tracer3.{Trace, CoordTracer}
 import collection.mutable.{HashMap, ArrayBuffer}
-import net.scage.{ScageScreenApp, ScageApp}
+import net.scage.ScageApp
 
 object NetFlight extends ScageApp(unit_name = "Net Flight") {
   val tracer = CoordTracer(solid_edges = false)
-  private val planes = HashMap[Int, Plane]()
+  private val planes = HashMap[Int, ServerPlane]()
+  
+  val rockets = ArrayBuffer[ServerRocket]()
+  
   val send_timeout = property("netflight.send_timeout", 50)
 
   NetServer.startServer(
     onClientAccepted = {
       client =>
-        planes += (client.id -> new Plane(client.id))
+        planes += (client.id -> new ServerPlane(client.id))
         client.send(State("your_plane_id" -> client.id))
     },
     onClientDataReceived = {
@@ -27,6 +30,7 @@ object NetFlight extends ScageApp(unit_name = "Net Flight") {
               case 0 => client_plane.rotateLeft()
               case 1 => client_plane.rotateRight()
               case 2 => client_plane.reheat()
+              case 3 => rockets += client_plane.fire
               case _ =>
             })
           /*case ("left", true) => client_plane.rotateLeft()
@@ -46,14 +50,15 @@ object NetFlight extends ScageApp(unit_name = "Net Flight") {
   )
   
   action(send_timeout) {
-    val planes_data = State("planes" -> planes.values.map(_.toState).toList)
-    NetServer.sendToAll(planes_data)
+    val data = State("planes" -> planes.values.map(_.toState).toList)
+    if(!rockets.isEmpty) data ++= State("rockets" -> rockets.map(_.toState).toList)
+    NetServer.sendToAll(data)
   }
 }
 
 import NetFlight._
 
-class Plane(val client_id: Int) extends FlyingObject {
+class ServerPlane(val client_id: Int) extends FlyingObject {
   def toState = State("coord" -> trace.location,
                       "health" -> _health,
                       "id" -> client_id,
@@ -85,23 +90,13 @@ class Plane(val client_id: Int) extends FlyingObject {
     tracer.updateLocation(trace, trace.location + step)
     if (_speed > 5) _speed -= 0.1f
   }
-
-  def rotateLeft() {
-    _rotation += 0.2f*_speed
-  }
-
-  def rotateRight() {
-    _rotation -= 0.2f*_speed
-  }
-
-  def reheat() {
-    if(_speed < 15) _speed += 0.5f
-  }
   
-  /*def fire() {
-    new Rocket(trace.id, tracer.outsideCoord(trace.location + step.n.rotate(math.Pi/2 * plane_side)*10), speed, rotation)
-    plane_side *= -1
-  }*/
+  def fire = {
+    try {new ServerRocket(trace.id,
+                          tracer.outsideCoord(trace.location + step.n.rotate(math.Pi/2 * plane_side)*10),
+                          speed, rotation)}
+    finally {plane_side *= -1}
+  }
 
   def stop() {
     delActions(action_id)
@@ -109,18 +104,24 @@ class Plane(val client_id: Int) extends FlyingObject {
   }
 }
 
-/*class Rocket(shooter_id:Int, init_coord:Vec, init_speed:Float, init_rotation:Float) extends FlyingObject {
-  private var fuel = 60
-  rotation = init_rotation
-  speed = init_speed + 10
+class ServerRocket(shooter_id:Int, init_coord:Vec, init_speed:Float, init_rotation:Float) extends FlyingObject {
+  def toState = State("coord" -> trace.location, 
+                      "fuel" -> _fuel, 
+                      "id" -> trace.id, 
+                      "rotation" -> _rotation,
+                      "speed" -> _speed)
+  
+  private var _fuel = 60
+  _rotation = init_rotation
+  _speed = init_speed + 10
 
   val trace = tracer.addTrace(init_coord, new Trace {
     def state = State("type" -> "rocket")
     def changeState(changer:Trace, s:State) {}
   })
 
-  action {
-    if(fuel > 0) {
+  action(10) {
+    if(_fuel > 0) {
       tracer.updateLocation(trace, trace.location + step)
 
       val target_planes = tracer.tracesNearCoord(trace.location, -1 to 1,
@@ -139,15 +140,14 @@ class Plane(val client_id: Int) extends FlyingObject {
           case _ => RED
         }
         new FlyingWord(damage, flying_word_color, trace.location, step)*/
-        fuel = 0
+        _fuel = 0
       }
 
-      fuel -= 1
-      next_frame += 1
-      if(next_frame >= ROCKET_ANIMATION.length) next_frame = 0
+      _fuel -= 1
     } else {
+      rockets -= this
       deleteSelf()
       tracer.removeTraces(trace)
     }
   }
-}*/
+}
