@@ -131,7 +131,7 @@ object NetFlightClient extends ScageScreenApp(unit_name = "Net Flight Client") {
     NetClient.send(State("keys" -> keyboard_buffer.toList))
     keyboard_buffer.clear()
   }
-  
+
   backgroundColor = BLACK
   /*render(-10) {
     drawDisplayList(LAND, windowCenter)

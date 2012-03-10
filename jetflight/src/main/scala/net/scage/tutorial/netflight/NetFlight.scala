@@ -109,6 +109,8 @@ import NetFlight._
 
 class ServerPlane(val client_id: Int) extends FlyingObject with Trace {
   tracer.addPlane(tracer.randomCoord(), this)
+
+  _rotation = (math.random * 20 - 10).toFloat
   
   protected var _health = 100
   def health = _health
