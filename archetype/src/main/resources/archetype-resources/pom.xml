@@ -14,7 +14,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <scala.version>2.9.1</scala.version>
     <lwjgl.version>2.7.1</lwjgl.version>
-    <scage.version>0.8-SNAPSHOT</scage.version>
+    <scage.version>0.8</scage.version>
     <src.dir>src</src.dir>
   </properties>
 
