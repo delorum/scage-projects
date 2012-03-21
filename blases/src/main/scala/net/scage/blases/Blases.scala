@@ -20,26 +20,20 @@ object Blases extends ScageScreenApp("Blases") {
   physics.addPhysicals(right_edge, up_edge, left_edge, down_edge)
 
   private var current_level = 0
-  private val _levels = ArrayBuffer[Level](new Level1)
+  private val levels = ArrayBuffer[Level](Level1, Level2)
 
-  private var count = 0
-  private var count_for_level = 0
-  private var blases_created_in_level = 0
-  private var blases_bursted = 0
-  private var level_start_moment = 0L
-  private var level_time = 0L
-
-  def calculateFinalCount() {
-    level_time = System.currentTimeMillis() - level_start_moment
-    println(level_time)
+  private var score = 0
+  private[blases] var score_for_level = 10000
+  action(1000) {
+    if(is_game_started && current_game_status == IN_PLAY) score_for_level -= 50
   }
   
   action {
     physics.step()
     checkGameStatus()
     if(current_game_status != IN_PLAY) {
+      score += score_for_level
       pause()
-      calculateFinalCount()
     }
   }
   
@@ -49,14 +43,19 @@ object Blases extends ScageScreenApp("Blases") {
   private var current_game_status = IN_PLAY
   def checkGameStatus() {
     if(is_game_started && tracer.tracesList.isEmpty) current_game_status = LOSE
-    if(_levels(current_level).isWin) current_game_status = WIN
+    if(levels(current_level).isWin) current_game_status = WIN
   }
   
   interface {
+    print("Score: "+score,  20, window_height-20, WHITE)
+    print(score_for_level,  20, window_height-40, WHITE)
     if(onPause) {
       current_game_status match {
-        case WIN => print("You win! Play Again? (Y/N)", windowCenter, RED)
-        case LOSE => print("You lose. Play Again? (Y/N)", windowCenter, RED)
+        case WIN => 
+          if(current_level < levels.length-1) {
+            print("You win! Score for the level:\n"+score_for_level+"\n\nOverall score:\n"+score+"\n\nWanna go to the next level? (Y/N)", windowCenter + Vec(-60, 60), RED)
+          } else print("You beat the game!!! Final score:\n"+score+"\n\nWanna play again from the beginning? (Y/N)", windowCenter + Vec(-60, 60), RED)
+        case LOSE => print("You lose. Final score:\n"+score+"\n\nWanna play the last level again? (Y/N)", windowCenter + Vec(-60, 60), RED)
         case _ =>
       }
     }
@@ -65,8 +64,14 @@ object Blases extends ScageScreenApp("Blases") {
   keyNoPause(KEY_Y, onKeyDown = if(onPause && current_game_status != IN_PLAY) {
     current_game_status match {
       case WIN =>
-        current_level += 1
-        if(current_level >= _levels.length) current_level = 0
+        if(current_level < levels.length-1) {
+          current_level += 1
+        } else {
+          score = 0
+          current_level = 0
+        }
+      case LOSE =>
+        score -= score_for_level
       case _ =>
     }
     restart()
@@ -77,7 +82,7 @@ object Blases extends ScageScreenApp("Blases") {
   key(KEY_SPACE, onKeyDown = if(selected_blase != no_selection) selected_blase.velocity = Vec.zero)
   
   render {
-    if(!is_game_started) drawLine(start_coord, (mouseCoord - start_coord).n*40 + start_coord, RED)
+    if(!is_game_started) drawLine(levels(current_level).startCoord, (mouseCoord - levels(current_level).startCoord).n*40 + levels(current_level).startCoord, RED)
     else if(selected_blase.id != no_selection.id) drawLine(selected_blase.location, (mouseCoord - selected_blase.location).n*40 + selected_blase.location, RED)
   }
 
@@ -90,9 +95,9 @@ object Blases extends ScageScreenApp("Blases") {
 
   leftMouse(onBtnDown = {mouse_coord =>
     if(!is_game_started) {
-      val new_blase_position = (mouse_coord - start_coord).n*50 + start_coord
+      val new_blase_position = (mouse_coord - levels(current_level).startCoord).n*50 + levels(current_level).startCoord
       val new_blase = new Blase(new_blase_position)
-      new_blase.velocity = (mouse_coord - start_coord).n*90
+      new_blase.velocity = (mouse_coord - levels(current_level).startCoord).n*90
       is_game_started = true
     } else if(selected_blase.id == no_selection.id) {
       val blases = tracer.tracesNearCoord(mouse_coord, -1 to 1, condition = {blase => blase.location.dist(mouse_coord) <= 20})
@@ -107,18 +112,20 @@ object Blases extends ScageScreenApp("Blases") {
     }
   })
 
-  rightMouse(onBtnDown = {mouse_coord => selected_blase = no_selection})
+  rightMouse(onBtnDown = {mouse_coord =>
+    /*selected_blase = no_selection*/
+    if(tracer.tracesList.length > 1) {
+      val blases = tracer.tracesNearCoord(mouse_coord, -1 to 1, condition = {blase => blase.location.dist(mouse_coord) <= 20})
+      if(!blases.isEmpty) blases.head.burst()
+    }
+  })
 
   private var is_game_started = false
-  private val start_coord = Vec(271, 564)
   init {
-    _levels(current_level).load()
+    levels(current_level).load()
     is_game_started = false
     current_game_status = IN_PLAY
-    count_for_level = 0
-    blases_created_in_level = 0
-    blases_bursted = 0
-    level_start_moment = System.currentTimeMillis()
+    score_for_level = 10000
   }
   
   clear {
@@ -162,6 +169,7 @@ class BurstPolygon(vertices:Vec*) extends StaticPolygon(vertices:_*) {
       val user_data = body.getUserData
       if(user_data != null && user_data.isInstanceOf[Blase]) {
         user_data.asInstanceOf[Blase].burst()
+        score_for_level -= 100
       }
     }}
   }
@@ -191,7 +199,7 @@ class SpeedPolygon(vertices:Array[Vec], direction:Vec) {
   private val action_id = action {
     tracer.tracesInPointRange(min_x to max_x, min_y to max_y).filter(blase => containsCoord(blase.location)).foreach(blase => {
       if(!speeded_blases_ids.contains(blase.id)) {
-        blase.velocity = blase.velocity + dir
+        blase.velocity = dir
         speeded_blases_ids += blase.id
       }
     })
@@ -218,7 +226,14 @@ class SpeedPolygon(vertices:Array[Vec], direction:Vec) {
       }
     }
     if(vertices_array.length < 2) false
-    else _areLinesIntersect(coord, Vec(Integer.MAX_VALUE, coord.y), vertices_array(0), vertices_array(1))
+    else {
+      val a = coord
+      val b = Vec(Integer.MAX_VALUE, coord.y)
+      val intersections =
+        (0 to vertices_array.length - 2).foldLeft(0)((result, i) => if (_areLinesIntersect(a, b, vertices_array(i), vertices_array(i + 1))) result + 1 else result) +
+        (if(_areLinesIntersect(a, b, vertices_array(vertices_array.length-1), vertices_array(0))) 1 else 0)
+      intersections % 2 != 0
+    }
   }
 
   def remove() {
@@ -228,10 +243,11 @@ class SpeedPolygon(vertices:Array[Vec], direction:Vec) {
 
 trait Level {
   def load()
+  def startCoord:Vec
   def isWin:Boolean
 }
 
-class Level1 extends Level {
+object Level1 extends Level {
   def load() {
     val first  = new StaticPolygon(Vec(84,  212), Vec(458, 564), Vec(627, 393), Vec(591, 359), Vec(454, 495), Vec(113, 175))
     val second = new StaticPolygon(Vec(76,  85),  Vec(810, 83),  Vec(812,46),   Vec(77,  45))
@@ -264,8 +280,53 @@ class Level1 extends Level {
     }
   }
 
+  val startCoord = Vec(271, 564)
+
   def isWin:Boolean = {
     val winner_blases = tracer.tracesNearCoord(Vec(350, 300), -1 to 1, condition = {blase => blase.location.dist(Vec(350, 300)) < 20})
+    !winner_blases.isEmpty
+  }
+}
+
+object Level2 extends Level {
+  def load() {
+    val first  = new StaticPolygon(Vec(86,  526), Vec(353, 526), Vec(353, 414), Vec(86, 414))
+    val second = new StaticPolygon(Vec(625,  715),  Vec(729, 715),  Vec(730, 414),   Vec(625,  414))
+    val third  = new StaticPolygon(Vec(227, 311), Vec(502, 311), Vec(502, 280),  Vec(227, 280))
+    val fourth = new StaticPolygon(Vec(730, 212), Vec(779, 170), Vec(779, 105),  Vec(682, 105), Vec(682, 170))
+    val fifth  = new StaticPolygon(Vec(568, 143), Vec(594, 124), Vec(511, 17),  Vec(487, 38))
+    
+    physics.addPhysicals(first, second, third, fourth, fifth)
+    
+    val speed_polygon = new SpeedPolygon(Array(Vec(415, 538), Vec(523, 621), Vec(737, 364), Vec(639, 284)), (Vec(737, 364) - Vec(523, 621)))
+
+    val render_id = render {
+      currentColor = WHITE
+      drawPolygon(first.points)
+      drawPolygon(second.points)
+      drawPolygon(third.points)
+      drawPolygon(fourth.points)
+      drawPolygon(fifth.points)
+      
+      drawCircle(Vec(183, 630), 20, RED)
+      print("Start", (Vec(183, 630) - Vec(20, 40)), RED)
+
+      drawCircle(Vec(855, 58), 30, GREEN)
+      print("Finish", (Vec(855, 58) - Vec(20, 40)), GREEN)
+    }
+
+    clear {
+      physics.removePhysicals(first, second, third, fourth, fifth)
+      speed_polygon.remove()
+      delOperation(render_id)
+      deleteSelf()
+    }
+  }
+
+  val startCoord = Vec(183, 630)
+
+  def isWin:Boolean = {
+    val winner_blases = tracer.tracesNearCoord(Vec(855, 58), -1 to 1, condition = {blase => blase.location.dist(Vec(855, 58)) < 20})
     !winner_blases.isEmpty
   }
 }

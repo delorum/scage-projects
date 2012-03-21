@@ -4,6 +4,7 @@ import net.scage.ScageLib._
 import net.scage.ScageScreenApp
 import net.scage.support.Vec
 import collection.mutable.ArrayBuffer
+import net.scage.support.physics.objects.StaticPolygon
 
 object LevelBuilder extends ScageScreenApp("LevelBuilder") {
   private var coord1:Vec = Vec.zero
@@ -28,10 +29,18 @@ object LevelBuilder extends ScageScreenApp("LevelBuilder") {
     print(mouseCoord, 20, 20, GREEN)
   }
 
+  /*val first  = new StaticPolygon(Vec(86,  526), Vec(353, 526), Vec(353, 414), Vec(86, 414))
+  val second = new StaticPolygon(Vec(625,  715),  Vec(729, 715),  Vec(730, 414),   Vec(625,  414))
+  val third  = new StaticPolygon(Vec(227, 311), Vec(502, 311), Vec(502, 280),  Vec(227, 280))
+  val fourth = new StaticPolygon(Vec(730, 212), Vec(779, 170), Vec(779, 105),  Vec(682, 105), Vec(682, 170))
+  val fifth  = new StaticPolygon(Vec(568, 143), Vec(594, 124), Vec(511, 17),  Vec(487, 38))
+
   render {
-    drawPolygon(Vec(84,  212), Vec(458, 564), Vec(627, 393), Vec(591, 359), Vec(454, 495), Vec(113, 175))
-    drawPolygon(Vec(76,  85),  Vec(810, 83),  Vec(812,46),   Vec(77,  45))
-    drawPolygon(Vec(782, 658), Vec(829, 658), Vec(830,151),  Vec(787, 152))
-    drawPolygon(Vec(562, 281), Vec(615, 256), Vec(644,186),  Vec(568, 150), Vec(536, 223))
-  }
+    currentColor = WHITE
+          drawPolygon(first.points)
+          drawPolygon(second.points)
+          drawPolygon(third.points)
+          drawPolygon(fourth.points)
+          drawPolygon(fifth.points)
+  }*/
 }
