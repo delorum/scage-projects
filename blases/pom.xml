@@ -8,7 +8,7 @@
 
   <name>Blases</name>
   <description>Simple Scage Project Stub</description>
-  <url>http://example.com</url>
+  <url>http://fzeulf.netris.ru/bor/${artifactId}</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -104,6 +104,7 @@
 
     <filters>
         <filter>build.properties</filter>
+        <filter>local-build.properties</filter>
     </filters>
 
     <plugins>
@@ -120,6 +121,7 @@
                   <configuration>
                     <files>
                       <file>build.properties</file>
+                      <file>local-build.properties</file>
                     </files>
                     <quiet>true</quiet>
                   </configuration>

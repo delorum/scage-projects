@@ -20,7 +20,7 @@ object Blases extends ScageScreenApp("Blases") {
   physics.addPhysicals(right_edge, up_edge, left_edge, down_edge)
 
   private var current_level = 0
-  private val levels = ArrayBuffer[Level](Level1, Level2)
+  private val levels = ArrayBuffer[Level](Level1, Level2, Level3)
 
   private var score = 0
   private[blases] var score_for_level = 10000
@@ -184,7 +184,7 @@ class BurstPolygon(vertices:Vec*) extends StaticPolygon(vertices:_*) {
   }
 }
 
-class SpeedPolygon(vertices:Array[Vec], direction:Vec) {
+class SpeedPolygon(vertices:List[Vec], direction:Vec) {
   private val dir = direction.n*90
   private val (min_x, max_x, min_y, max_y) = vertices.map(vertice => tracer.outsidePoint(tracer.point(vertice))).foldLeft((0, 0, 0, 0)) {
     case ((current_min_x, current_max_x, current_min_y, current_max_y), vertice) =>
@@ -205,11 +205,14 @@ class SpeedPolygon(vertices:Array[Vec], direction:Vec) {
     })
   }
 
-  private val vertices_array = vertices.toArray
   private val render_id = render {
-    drawPolygon(vertices_array, BLUE)
+    drawPolygon(vertices, BLUE)
   }
 
+  private val vertices_zipped = if(vertices.length >= 2) {
+    val vertices_shift = vertices.last :: vertices.init
+    vertices_shift.zip(vertices)
+  } else List[(Vec, Vec)]()
   def containsCoord(coord:Vec):Boolean = {
     def _areLinesIntersect(a:Vec, b:Vec, c:Vec, d:Vec):Boolean = {
       val common = (b.x - a.x)*(d.y - c.y) - (b.y - a.y)*(d.x - c.x)
@@ -225,13 +228,13 @@ class SpeedPolygon(vertices:Array[Vec], direction:Vec) {
         else false
       }
     }
-    if(vertices_array.length < 2) false
+    if(vertices.length < 2) false
     else {
       val a = coord
       val b = Vec(Integer.MAX_VALUE, coord.y)
-      val intersections =
-        (0 to vertices_array.length - 2).foldLeft(0)((result, i) => if (_areLinesIntersect(a, b, vertices_array(i), vertices_array(i + 1))) result + 1 else result) +
-        (if(_areLinesIntersect(a, b, vertices_array(vertices_array.length-1), vertices_array(0))) 1 else 0)
+      val intersections = vertices_zipped.foldLeft(0) {
+        case (result, (c, d)) => if(_areLinesIntersect(a, b, c, d)) result + 1 else result
+      }
       intersections % 2 != 0
     }
   }
@@ -244,7 +247,20 @@ class SpeedPolygon(vertices:Array[Vec], direction:Vec) {
 trait Level {
   def load()
   def startCoord:Vec
-  def isWin:Boolean
+  def finishCoord:Vec
+
+  def drawStartFinish() {
+    drawCircle(startCoord, 20, RED)
+    print("Start", (startCoord - Vec(20, 40)), RED)
+
+    drawCircle(finishCoord, 30, GREEN)
+    print("Finish", (finishCoord - Vec(20, 40)), GREEN)
+  }
+
+  def isWin:Boolean = {
+    val winner_blases = tracer.tracesNearCoord(finishCoord, -1 to 1, condition = {blase => blase.location.dist(finishCoord) < 20})
+    !winner_blases.isEmpty
+  }
 }
 
 object Level1 extends Level {
@@ -265,11 +281,7 @@ object Level1 extends Level {
       drawPolygon(third.points)
       drawPolygon(fourth.points)
 
-      drawCircle(Vec(271, 564), 20, RED)
-      print("Start", 250, 520, RED)
-
-      drawCircle(Vec(350, 300), 30, GREEN)
-      print("Finish", 325, 250, GREEN)
+      drawStartFinish()
     }
 
     clear {
@@ -281,11 +293,7 @@ object Level1 extends Level {
   }
 
   val startCoord = Vec(271, 564)
-
-  def isWin:Boolean = {
-    val winner_blases = tracer.tracesNearCoord(Vec(350, 300), -1 to 1, condition = {blase => blase.location.dist(Vec(350, 300)) < 20})
-    !winner_blases.isEmpty
-  }
+  val finishCoord = Vec(350, 300)
 }
 
 object Level2 extends Level {
@@ -298,7 +306,7 @@ object Level2 extends Level {
     
     physics.addPhysicals(first, second, third, fourth, fifth)
     
-    val speed_polygon = new SpeedPolygon(Array(Vec(415, 538), Vec(523, 621), Vec(737, 364), Vec(639, 284)), (Vec(737, 364) - Vec(523, 621)))
+    val speed_polygon = new SpeedPolygon(List(Vec(415, 538), Vec(523, 621), Vec(737, 364), Vec(639, 284)), (Vec(737, 364) - Vec(523, 621)))
 
     val render_id = render {
       currentColor = WHITE
@@ -307,12 +315,8 @@ object Level2 extends Level {
       drawPolygon(third.points)
       drawPolygon(fourth.points)
       drawPolygon(fifth.points)
-      
-      drawCircle(Vec(183, 630), 20, RED)
-      print("Start", (Vec(183, 630) - Vec(20, 40)), RED)
 
-      drawCircle(Vec(855, 58), 30, GREEN)
-      print("Finish", (Vec(855, 58) - Vec(20, 40)), GREEN)
+      drawStartFinish()
     }
 
     clear {
@@ -324,9 +328,48 @@ object Level2 extends Level {
   }
 
   val startCoord = Vec(183, 630)
+  val finishCoord = Vec(855, 58)
+}
 
-  def isWin:Boolean = {
-    val winner_blases = tracer.tracesNearCoord(Vec(855, 58), -1 to 1, condition = {blase => blase.location.dist(Vec(855, 58)) < 20})
-    !winner_blases.isEmpty
+object Level3 extends Level {
+  def load() {
+    val first  = new StaticPolygon(Vec(58,  526), Vec(309, 292), Vec(284, 264), Vec(37, 505))
+    val second = new StaticPolygon(Vec(307,  105),  Vec(332, 31),  Vec(249, 36))
+    val third  = new StaticPolygon(Vec(432, 365), Vec(468, 365), Vec(468, 130),  Vec(432, 130))
+    val fourth = new StaticPolygon(Vec(601, 287), Vec(639, 240), Vec(633, 185),  Vec(582, 178), Vec(571, 232))
+    val fifth  = new StaticPolygon(Vec(738, 44), Vec(893, 209), Vec(924, 188),  Vec(763, 25))
+    val sixth  = new StaticPolygon(Vec(892, 233), Vec(892, 429), Vec(927, 429),  Vec(927, 233))
+    val seventh = new StaticPolygon(Vec(254, 561), Vec(684, 428), Vec(670, 401),  Vec(248, 541))
+    val eighth  = new StaticPolygon(Vec(258, 578), Vec(308, 748), Vec(350, 739),  Vec(299, 568))
+
+    physics.addPhysicals(first, second, third, fourth, fifth, sixth, seventh, eighth)
+
+    val speed_polygon = new SpeedPolygon(List(Vec(764, 438), Vec(871, 397), Vec(742, 79), Vec(636, 125)), (Vec(871, 397) - Vec(742, 79)))
+    val burst_polygon = new BurstPolygon(Vec(756, 535), Vec(898, 474), Vec(885, 445), Vec(738, 507))
+
+    val render_id = render {
+      currentColor = WHITE
+      drawPolygon(first.points)
+      drawPolygon(second.points)
+      drawPolygon(third.points)
+      drawPolygon(fourth.points)
+      drawPolygon(fifth.points)
+      drawPolygon(sixth.points)
+      drawPolygon(seventh.points)
+      drawPolygon(eighth.points)
+
+      drawStartFinish()
+    }
+
+    clear {
+      physics.removePhysicals(first, second, third, fourth, fifth, sixth, seventh, eighth)
+      speed_polygon.remove()
+      burst_polygon.remove()
+      delOperation(render_id)
+      deleteSelf()
+    }
   }
+
+  val startCoord = Vec(153, 609)
+  val finishCoord = Vec(410, 608)
 }
