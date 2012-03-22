@@ -6,16 +6,16 @@ import net.scage.{Scage, ScageScreenApp}
 import net.scage.support.physics.{Physical, ScagePhysics}
 import net.scage.support.tracer3.{TraceTrait, Trace, CoordTracer}
 import net.scage.support.physics.objects.{StaticLine, DynaBall, StaticPolygon}
-import collection.mutable.ArrayBuffer
+import collection.mutable.{HashMap, ArrayBuffer}
 
 object Blases extends ScageScreenApp("Blases") {
   val physics = ScagePhysics()
   val tracer = CoordTracer.create[Blase](solid_edges = false)
 
-  val right_edge = new StaticLine(Vec(0,0), Vec(0, window_height))
-  val up_edge    = new StaticLine(Vec(0, window_height), Vec(window_width, window_height))
-  val left_edge  = new StaticLine(Vec(window_width, window_height), Vec(window_width, 0))
-  val down_edge  = new StaticLine(Vec(window_width, 0), Vec(0, 0))
+  val right_edge = new StaticLine(Vec(0,0), Vec(0, windowHeight))
+  val up_edge    = new StaticLine(Vec(0, windowHeight), Vec(windowWidth, windowHeight))
+  val left_edge  = new StaticLine(Vec(windowWidth, windowHeight), Vec(windowWidth, 0))
+  val down_edge  = new StaticLine(Vec(windowWidth, 0), Vec(0, 0))
 
   physics.addPhysicals(right_edge, up_edge, left_edge, down_edge)
 
@@ -47,8 +47,8 @@ object Blases extends ScageScreenApp("Blases") {
   }
   
   interface {
-    print("Score: "+score,  20, window_height-20, WHITE)
-    print(score_for_level,  20, window_height-40, WHITE)
+    print("Score: "+score,  20, windowHeight-20, WHITE)
+    print(score_for_level,  20, windowHeight-40, WHITE)
     if(onPause) {
       current_game_status match {
         case WIN => 
@@ -116,7 +116,10 @@ object Blases extends ScageScreenApp("Blases") {
     /*selected_blase = no_selection*/
     if(tracer.tracesList.length > 1) {
       val blases = tracer.tracesNearCoord(mouse_coord, -1 to 1, condition = {blase => blase.location.dist(mouse_coord) <= 20})
-      if(!blases.isEmpty) blases.head.burst()
+      if(!blases.isEmpty) {
+        blases.head.burst()
+        if(blases.head.id == selected_blase.id ) selected_blase = no_selection
+      }
     }
   })
 
@@ -185,7 +188,7 @@ class BurstPolygon(vertices:Vec*) extends StaticPolygon(vertices:_*) {
 }
 
 class SpeedPolygon(vertices:List[Vec], direction:Vec) {
-  private val dir = direction.n*90
+  private val dir = direction.n*270
   private val (min_x, max_x, min_y, max_y) = vertices.map(vertice => tracer.outsidePoint(tracer.point(vertice))).foldLeft((0, 0, 0, 0)) {
     case ((current_min_x, current_max_x, current_min_y, current_max_y), vertice) =>
       val new_min_x = math.min(current_min_x, vertice.ix)
@@ -195,12 +198,19 @@ class SpeedPolygon(vertices:List[Vec], direction:Vec) {
       (new_min_x, new_max_x, new_min_y, new_max_y)
   }
 
-  private val speeded_blases_ids = ArrayBuffer[Int]()
+  private val speeded_blases = HashMap[Blase, Vec]()
   private val action_id = action {
+    for {
+      (blase, initial_velocity) <- speeded_blases
+      if !containsCoord(blase.location)
+    } {
+      blase.velocity = initial_velocity
+      speeded_blases -= blase
+    }
     tracer.tracesInPointRange(min_x to max_x, min_y to max_y).filter(blase => containsCoord(blase.location)).foreach(blase => {
-      if(!speeded_blases_ids.contains(blase.id)) {
-        blase.velocity = dir
-        speeded_blases_ids += blase.id
+      if(!speeded_blases.contains(blase)) {
+        speeded_blases += (blase -> blase.velocity)
+        blase.velocity += dir
       }
     })
   }
@@ -254,7 +264,7 @@ trait Level {
     print("Start", (startCoord - Vec(20, 40)), RED)
 
     drawCircle(finishCoord, 30, GREEN)
-    print("Finish", (finishCoord - Vec(20, 40)), GREEN)
+    print("Finish", (finishCoord - Vec(25, 50)), GREEN)
   }
 
   def isWin:Boolean = {
