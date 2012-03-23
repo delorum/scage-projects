@@ -35,6 +35,6 @@ object Level1 extends Level {
     }
   }
 
-  val startCoord = rVec(271, 564)
-  val finishCoord = rVec(350, 300)
+  def startCoord = rVec(271, 564)
+  def finishCoord = rVec(350, 300)
 }

@@ -14,13 +14,6 @@ object Blases extends ScageScreen("Blases Game") {
   val physics = ScagePhysics()
   val tracer = CoordTracer.create[Blase](solid_edges = false)
 
-  val right_edge = new StaticLine(Vec(0,0), Vec(0, windowHeight))
-  val up_edge    = new StaticLine(Vec(0, windowHeight), Vec(windowWidth, windowHeight))
-  val left_edge  = new StaticLine(Vec(windowWidth, windowHeight), Vec(windowWidth, 0))
-  val down_edge  = new StaticLine(Vec(windowWidth, 0), Vec(0, 0))
-
-  physics.addPhysicals(right_edge, up_edge, left_edge, down_edge)
-
   private var current_level = 0
   private val levels = ArrayBuffer(Level1, Level2, Level3)
 
@@ -127,6 +120,16 @@ object Blases extends ScageScreen("Blases Game") {
 
   preinit {
     backgroundColor = BLACK
+    val right_edge = new StaticLine(Vec(0,0), Vec(0, windowHeight))
+    val up_edge    = new StaticLine(Vec(0, windowHeight), Vec(windowWidth, windowHeight))
+    val left_edge  = new StaticLine(Vec(windowWidth, windowHeight), Vec(windowWidth, 0))
+    val down_edge  = new StaticLine(Vec(windowWidth, 0), Vec(0, 0))
+    physics.addPhysicals(right_edge, up_edge, left_edge, down_edge)
+
+    dispose {
+      physics.removePhysicals(right_edge, up_edge, left_edge, down_edge)
+    }
+
     score = 0
     current_level = 0
     pauseOff()

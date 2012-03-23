@@ -3,8 +3,6 @@ package net.scage.blases.ui
 import net.scage.ScageLib._
 import net.scage.support.Vec
 import net.scage.ScageScreen
-import net.scage.blases.ui.Button
-import net.scage.blases.Button
 import MainMenu._
 
 object ScreenOptionsMenu extends ScageScreen("Blases Options Screen") {

@@ -1,10 +1,7 @@
 package net.scage.blases.ui
 
 import net.scage.ScageScreen
-import net.scage.blases.ui.Button
-import net.scage.blases.Button
 import net.scage.support.Vec
-import net.scage.ScageLib._
 
 object OptionsMenu extends ScageScreen("Blases Options") {
   val screen_button = new Button("Screen", Vec(512, 384) + Vec(-40, 40), 100, OptionsMenu)

@@ -1,8 +1,7 @@
 package net.scage.blases.ui
 
 import net.scage.support.Vec
-import net.scage.blases.ui.Button
-import net.scage.blases.{Blases, Button}
+import net.scage.blases.Blases
 import net.scage.{Scage, ScageScreenApp}
 import net.scage.ScageLib._
 
