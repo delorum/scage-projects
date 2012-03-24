@@ -11,17 +11,8 @@ trait Level {
   def startCoord: Vec
   def finishCoord: Vec
 
-  val myrect = displayList {
-    drawRectCentered(Vec.zero, 40, 40, RED)
-  }
-
   def drawStartFinish() {
     drawCircle(startCoord, rInt(20), RED)
-    openglLocalTransform {
-      openglMove(startCoord)
-      openglScale(windowWidth/1024f)
-      drawDisplayList(myrect)
-    }
     print("Start", (startCoord - rVec(20, 40)), RED)
 
     drawCircle(finishCoord, rInt(30), GREEN)

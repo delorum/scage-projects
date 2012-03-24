@@ -128,6 +128,7 @@ object Blases extends ScageScreen("Blases Game") {
 
     dispose {
       physics.removePhysicals(right_edge, up_edge, left_edge, down_edge)
+      deleteSelf()
     }
 
     score = 0
