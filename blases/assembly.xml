@@ -23,7 +23,11 @@
     </fileSets>
     <files>
         <file>
-            <source>${project.build.directory}/blases-0.1.jar</source>
+            <source>${scageproperties}</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+        <file>
+            <source>${project.build.directory}/${project.artifactId}-${project.version}.jar</source>
             <outputDirectory>lib</outputDirectory>
         </file>
     </files>

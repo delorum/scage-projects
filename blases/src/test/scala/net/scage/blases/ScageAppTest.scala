@@ -1,7 +1,9 @@
 package net.scage.blases;
 
 import junit.framework._;
-import Assert._;
+import Assert._
+import ui.MainMenu
+;
 
 object ScageAppTest {
     def suite: Test = {
@@ -23,7 +25,7 @@ class ScageAppTest extends TestCase("app") {
      * Rigourous Tests :-)
      */
     def testOK() = {
-      Blases.main(Array[String]())
+      MainMenu.main(Array[String]())
       assertTrue(true)
     };
     //def testKO() = assertTrue(false);

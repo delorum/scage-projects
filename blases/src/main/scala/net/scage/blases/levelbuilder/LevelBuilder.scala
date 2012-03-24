@@ -1,4 +1,4 @@
-package net.scage.blases
+package net.scage.blases.levelbuilder
 
 import net.scage.ScageLib._
 import net.scage.ScageScreenApp
@@ -7,21 +7,21 @@ import collection.mutable.ArrayBuffer
 import net.scage.support.physics.objects.StaticPolygon
 
 object LevelBuilder extends ScageScreenApp("LevelBuilder") {
-  private var coord1:Vec = Vec.zero
-  
+  private var coord1: Vec = Vec.zero
+
   private val lines = ArrayBuffer[Vec]()
-  
+
   leftMouse(onBtnDown = {
-    mouse_coord => 
-      if(coord1 == Vec.zero) coord1 = mouse_coord
+    mouse_coord =>
+      if (coord1 == Vec.zero) coord1 = mouse_coord
       else {
         lines ++= List(coord1.copy, mouse_coord.copy)
         coord1 = Vec.zero
       }
-  })  
-  
+  })
+
   render {
-    if(coord1 != Vec.zero) drawLine(coord1, mouseCoord, GREEN)
+    if (coord1 != Vec.zero) drawLine(coord1, mouseCoord, GREEN)
     drawLines(lines.toArray, GREEN)
   }
 
