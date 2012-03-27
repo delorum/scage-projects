@@ -2,25 +2,17 @@ package net.scage.blases.ui
 
 import net.scage.support.Vec
 import net.scage.blases.Blases
-import net.scage.{Scage, ScageScreenApp}
 import net.scage.ScageLib._
+import net.scage.handlers.controller2.MultiController
+import net.scage.{ScreenApp, Scage, ScageScreenApp}
 
-object MainMenu extends ScageScreenApp("Blases Main Menu", 640, 480, "Blases") {
+object MainMenu extends ScreenApp("Blases Main Menu", 640, 480, "Blases") with MultiController {
   backgroundColor = WHITE
 
-  val new_game_button = new Button("New Game", Vec(512, 384) + Vec(-40, 40), 100, MainMenu)
-  val options_button = new Button("Options", Vec(512, 384) + Vec(-40, 0), 100, MainMenu)
-  val exit_button = new Button("Exit", Vec(512, 384) + Vec(-40, -40), 100, MainMenu)
-
-  leftMouse(onBtnDown = {
-    m =>
-      if (new_game_button.containsCoord(m)) {
-        Blases.run()
-        backgroundColor = WHITE
-      } else if (options_button.containsCoord(m)) {
-        OptionsMenu.run()
-      } else if (exit_button.containsCoord(m)) {
-        Scage.stopApp()
-      }
+  val new_game_button = new Button("New Game", Vec(512, 384) + Vec(-40, 40), 100, MainMenu, {
+    Blases.run()
+    backgroundColor = WHITE
   })
+  val options_button = new Button("Options", Vec(512, 384) + Vec(-40, 0), 100, MainMenu, OptionsMenu.run())
+  val exit_button = new Button("Exit", Vec(512, 384) + Vec(-40, -40), 100, MainMenu, Scage.stopApp())
 }

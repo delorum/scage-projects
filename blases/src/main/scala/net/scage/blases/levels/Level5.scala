@@ -63,9 +63,9 @@ object Level5 extends Level {
       drawStartFinish()
     }
 
-    interface {
+    /*interface {
       print(mouseCoord, 20, 20, GREEN)
-    }
+    }*/
 
     clear {
       physics.removePhysicals(first, second, third, fourth, fifth, sixth, seventh, eighth)

@@ -5,76 +5,44 @@ import net.scage.ScageLib._
 import net.scage.support.{State, Vec}
 import net.scage.support.physics.ScagePhysics
 import net.scage.support.tracer3.{TraceTrait, Trace, CoordTracer}
-import net.scage.support.physics.objects.{StaticLine, DynaBall, StaticPolygon}
-import collection.mutable.{HashMap, ArrayBuffer}
-import net.scage.ScageScreen
+import net.scage.support.physics.objects.{StaticLine, DynaBall}
+import collection.mutable.ArrayBuffer
 import net.scage.blases.Relatives._
-import ui.Button
+import ui.PauseMenu
+import net.scage.Screen
+import net.scage.handlers.controller2.MultiController
 
-object Blases extends ScageScreen("Blases Game") {
+object Blases extends Screen("Blases Game") with MultiController {
   val physics = ScagePhysics()
   val tracer = CoordTracer.create[Blase](solid_edges = false)
 
-  private var current_level = 0
-  private val levels = ArrayBuffer(/*Level1, Level2, Level3, Level4, */Level5)
+  private[blases] var current_level = 0
+  private[blases] val levels = ArrayBuffer(Level1, Level2, Level3, Level4, Level5)
 
-  private var score = 0
+  private[blases] var score = 0
   private[blases] var score_for_level = 10000
   action(1000) {
-    if(is_game_started && current_game_status == IN_PLAY) score_for_level -= 50
+    if(is_game_started) score_for_level -= 50
   }
   
   action {
     physics.step()
-    checkGameStatus()
-    if(current_game_status != IN_PLAY) {
+
+    if(is_game_started && tracer.tracesList.isEmpty) PauseMenu.showLoseLevelMenu()
+    else if(levels(current_level).isWin) {
       score += score_for_level
-      pause()
-    }
-  }
-  
-  val IN_PLAY = 0
-  val WIN     = 1
-  val LOSE    = 2
-  private var current_game_status = IN_PLAY
-  def checkGameStatus() {
-    if(is_game_started && tracer.tracesList.isEmpty) current_game_status = LOSE
-    if(levels(current_level).isWin) current_game_status = WIN
-  }
-  
-  interface {
-    /*print("Score: "+score,  20, windowHeight-20, WHITE)
-    print(score_for_level,  20, windowHeight-40, WHITE)*/
-    if(onPause) {
-      current_game_status match {
-        case WIN => 
-          if(current_level < levels.length-1) {
-            print("You win! Score for the level:\n"+score_for_level+"\n\nOverall score:\n"+score+"\n\nWanna go to the next level? (Y/N)", windowCenter + Vec(-60, 60), RED)
-          } else print("You beat the game!!! Final score:\n"+score+"\n\nWanna play again from the beginning? (Y/N)", windowCenter + Vec(-60, 60), RED)
-        case LOSE => print("You lose. Final score:\n"+score+"\n\nWanna play the last level again? (Y/N)", windowCenter + Vec(-60, 60), RED)
-        case _ =>
-      }
+      if(current_level == levels.length-1) PauseMenu.showBeatGameMenu()
+      else PauseMenu.showWinLevelMenu()
     }
   }
 
-  keyNoPause(KEY_Y, onKeyDown = if(onPause && current_game_status != IN_PLAY) {
-    current_game_status match {
-      case WIN =>
-        if(current_level < levels.length-1) {
-          current_level += 1
-        } else {
-          score = 0
-          current_level = 0
-        }
-      case LOSE =>
-        score -= score_for_level
+  keyNoPause(KEY_ESCAPE, onKeyDown = {
+    PauseMenu.status match {
+      case -1 => PauseMenu.showEscMenu()
+      case PauseMenu.PRESS_ESC => PauseMenu.hide()
       case _ =>
     }
-    restart()
-    pauseOff()
   })
-  keyNoPause(KEY_N, onKeyDown = if(onPause && (current_game_status != IN_PLAY)) stop())
-  
   key(KEY_SPACE, onKeyDown = if(selected_blase != no_selection) selected_blase.velocity = Vec.zero)
   
   render {
@@ -89,13 +57,11 @@ object Blases extends ScageScreen("Blases Game") {
   }
   private[blases] var selected_blase = no_selection
 
-  /*private val replay_level_button = new Button()*/
-
 
   leftMouse(onBtnDown = {mouse_coord =>
     if(!is_game_started) {
       val new_blase_position = (mouse_coord - levels(current_level).startCoord).n*50 + levels(current_level).startCoord
-      val new_blase = new Blase(new_blase_position, mouse_coord - levels(current_level).startCoord)
+      new Blase(new_blase_position, mouse_coord - levels(current_level).startCoord)
       is_game_started = true
     } else if(selected_blase.id == no_selection.id) {
       val blases = tracer.tracesNearCoord(mouse_coord, -1 to 1, condition = {blase => blase.location.dist(mouse_coord) <= 20})
@@ -104,13 +70,12 @@ object Blases extends ScageScreen("Blases Game") {
       }
     } else {
       val new_blase_position = (mouse_coord - selected_blase.location).n*50 + selected_blase.location
-      val new_blase = new Blase(new_blase_position, mouse_coord - selected_blase.location)
+      new Blase(new_blase_position, mouse_coord - selected_blase.location)
       selected_blase = no_selection
     }
   })
 
   rightMouse(onBtnDown = {mouse_coord =>
-    /*selected_blase = no_selection*/
     if(tracer.tracesList.length > 1) {
       val blases = tracer.tracesNearCoord(mouse_coord, -1 to 1, condition = {blase => blase.location.dist(mouse_coord) <= 20})
       if(!blases.isEmpty) {
@@ -135,14 +100,14 @@ object Blases extends ScageScreen("Blases Game") {
 
     score = 0
     current_level = 0
-    pauseOff()
+
+    PauseMenu.hide()
   }
 
   private var is_game_started = false
   init {
     levels(current_level).load()
     is_game_started = false
-    current_game_status = IN_PLAY
     score_for_level = 10000
   }
   

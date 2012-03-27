@@ -1,17 +1,24 @@
 package net.scage.blases.ui
 
-import net.scage.support.Vec
-import net.scage.Scage
 import net.scage.handlers.Renderer
 import net.scage.ScageLib._
 import net.scage.blases.Relatives._
+import net.scage.{Screen, Scage}
+import net.scage.support.{ScageColor, Vec}
+import net.scage.handlers.controller2.MultiController
 
-class Button(message: String, message_coord: Vec, width: Int, screen: Scage with Renderer) {
-  def containsCoord(coord: Vec): Boolean = {
-    val vertices = List(rVec(message_coord) + Vec(-5, 20),
-      rVec(message_coord) + Vec(-5 + width, 20),
-      rVec(message_coord) + Vec(-5 + width, -10),
-      rVec(message_coord) + Vec(-5, -10))
+class Button(message: String,
+             var coord: Vec,
+             width: Int,
+             screen: Screen with MultiController,
+             onBtnPressed: => Any,
+             var color:ScageColor = BLACK,
+             var visible:Boolean = true) {
+  def containsCoord(other_coord: Vec): Boolean = {
+    val vertices = List(rVec(coord) + Vec(-5, 20),
+      rVec(coord) + Vec(-5 + width, 20),
+      rVec(coord) + Vec(-5 + width, -10),
+      rVec(coord) + Vec(-5, -10))
     val vertices_zipped = if (vertices.length >= 2) {
       val vertices_shift = vertices.last :: vertices.init
       vertices_shift.zip(vertices)
@@ -32,8 +39,8 @@ class Button(message: String, message_coord: Vec, width: Int, screen: Scage with
     }
     if (vertices.length < 2) false
     else {
-      val a = coord
-      val b = Vec(Integer.MAX_VALUE, coord.y)
+      val a = other_coord
+      val b = Vec(Integer.MAX_VALUE, other_coord.y)
       val intersections = vertices_zipped.foldLeft(0) {
         case (result, (c, d)) => if (_areLinesIntersect(a, b, c, d)) result + 1 else result
       }
@@ -41,12 +48,11 @@ class Button(message: String, message_coord: Vec, width: Int, screen: Scage with
     }
   }
 
-  private val render_id = screen.render {
-    //drawPolygon(vertices, BLACK)
-    print(message, rVec(message_coord), BLACK)
+  screen.interface {
+    if(visible) {
+      print(message, rVec(coord), color)
+    }
   }
 
-  def remove() {
-    screen.delRenders(render_id)
-  }
+  screen.leftMouseNoPause(onBtnDown = {m => if(visible && containsCoord(m)) onBtnPressed})
 }
