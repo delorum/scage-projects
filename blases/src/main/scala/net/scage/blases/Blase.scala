@@ -7,7 +7,9 @@ import net.scage.blases.Blases._
 import net.scage.ScageLib._
 import net.scage.blases.Relatives._
 
-class Blase(init_coord: Vec) extends DynaBall(init_coord, radius = rInt(20)) with Trace {
+class Blase(init_coord: Vec, direction:Vec) extends DynaBall(init_coord, radius = rInt(20)) with Trace {
+  velocity = direction.n*rInt(90)
+  
   physics.addPhysical(this)
   tracer.addTrace(coord, this)
   body.setUserData(this)

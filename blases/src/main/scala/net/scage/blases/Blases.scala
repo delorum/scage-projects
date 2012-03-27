@@ -1,6 +1,6 @@
 package net.scage.blases
 
-import levels.{Level3, Level2, Level1}
+import levels._
 import net.scage.ScageLib._
 import net.scage.support.{State, Vec}
 import net.scage.support.physics.ScagePhysics
@@ -9,13 +9,14 @@ import net.scage.support.physics.objects.{StaticLine, DynaBall, StaticPolygon}
 import collection.mutable.{HashMap, ArrayBuffer}
 import net.scage.ScageScreen
 import net.scage.blases.Relatives._
+import ui.Button
 
 object Blases extends ScageScreen("Blases Game") {
   val physics = ScagePhysics()
   val tracer = CoordTracer.create[Blase](solid_edges = false)
 
   private var current_level = 0
-  private val levels = ArrayBuffer(Level1, Level2, Level3)
+  private val levels = ArrayBuffer(/*Level1, Level2, Level3, Level4, */Level5)
 
   private var score = 0
   private[blases] var score_for_level = 10000
@@ -42,8 +43,8 @@ object Blases extends ScageScreen("Blases Game") {
   }
   
   interface {
-    print("Score: "+score,  20, windowHeight-20, WHITE)
-    print(score_for_level,  20, windowHeight-40, WHITE)
+    /*print("Score: "+score,  20, windowHeight-20, WHITE)
+    print(score_for_level,  20, windowHeight-40, WHITE)*/
     if(onPause) {
       current_game_status match {
         case WIN => 
@@ -88,11 +89,13 @@ object Blases extends ScageScreen("Blases Game") {
   }
   private[blases] var selected_blase = no_selection
 
+  /*private val replay_level_button = new Button()*/
+
+
   leftMouse(onBtnDown = {mouse_coord =>
     if(!is_game_started) {
       val new_blase_position = (mouse_coord - levels(current_level).startCoord).n*50 + levels(current_level).startCoord
-      val new_blase = new Blase(new_blase_position)
-      new_blase.velocity = (mouse_coord - levels(current_level).startCoord).n*rInt(90)
+      val new_blase = new Blase(new_blase_position, mouse_coord - levels(current_level).startCoord)
       is_game_started = true
     } else if(selected_blase.id == no_selection.id) {
       val blases = tracer.tracesNearCoord(mouse_coord, -1 to 1, condition = {blase => blase.location.dist(mouse_coord) <= 20})
@@ -101,8 +104,7 @@ object Blases extends ScageScreen("Blases Game") {
       }
     } else {
       val new_blase_position = (mouse_coord - selected_blase.location).n*50 + selected_blase.location
-      val new_blase = new Blase(new_blase_position)
-      new_blase.velocity = (mouse_coord - selected_blase.location).n*rInt(90)
+      val new_blase = new Blase(new_blase_position, mouse_coord - selected_blase.location)
       selected_blase = no_selection
     }
   })

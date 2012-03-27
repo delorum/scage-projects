@@ -6,11 +6,37 @@ import collection.mutable.ArrayBuffer
 import net.scage.ScageLib._
 import net.scage.support.tracer3.{Trace, CoordTracer}
 import net.scage.support.physics.objects.StaticPolygon
+import java.io.FileOutputStream
+
+case class LevelElement(element_type:String, coords:List[Vec]) {
+  private def mkrVecString(vec: Vec) = {
+    "rVec(" + vec.ix + ", " + vec.iy + ")"
+  }
+
+  override def toString:String = {
+    var first = true
+    val b = new StringBuilder
+    b append element_type+": "
+    for (coord <- coords) {
+      if (first) {
+        b append mkrVecString(coord)
+        first = false
+      } else {
+        b append ", "
+        b append mkrVecString(coord)
+      }
+    }
+
+    b.toString()
+  }
+}
 
 object LevelBuilder2 extends ScageScreenApp("Level Builder 2") {
-  private val polygons = ArrayBuffer[List[Vec]]()
+  private val polygons = ArrayBuffer[LevelElement]()
   val tracer = CoordTracer()
 
+  def avg(points:List[Vec]):Vec = Vec(points.map(_.x).sum/points.length, points.map(_.y).sum/points.length)
+  
   private var last_vertice = Vec.zero
   leftMouse(onBtnDown = {
     m =>
@@ -18,7 +44,7 @@ object LevelBuilder2 extends ScageScreenApp("Level Builder 2") {
         trace => trace.location.dist(m) < 10
       })
       if (!traces.isEmpty) {
-        polygons += tracer.tracesList.map(_.location).toList
+        polygons += LevelElement("Obstacle", tracer.tracesList.map(_.location).toList)
         tracer.removeAllTraces()
         last_vertice = Vec.zero
       } else {
@@ -52,24 +78,29 @@ object LevelBuilder2 extends ScageScreenApp("Level Builder 2") {
       }
   })
 
-  private def mkVecString(vec: Vec) = {
-    "Vec(" + vec.ix + ", " + vec.iy + ")"
-  }
-
-  key(KEY_P, onKeyDown = {
+  key(KEY_F1, onKeyDown = {
     if (last_vertice == Vec.zero && selected_polygon >= 0 && selected_polygon < polygons.length) {
-      var first = true
-      val b = new StringBuilder
-      for (coord <- polygons(selected_polygon)) {
-        if (first) {
-          b append mkVecString(coord)
-          first = false
-        } else {
-          b append ", "
-          b append mkVecString(coord)
-        }
-      }
-      println(b.toString())
+      polygons(selected_polygon) = LevelElement("Spikes", polygons(selected_polygon).coords)
+    }
+  })
+  key(KEY_F2, onKeyDown = {
+    if (last_vertice == Vec.zero && selected_polygon >= 0 && selected_polygon < polygons.length) {
+      polygons(selected_polygon) = LevelElement("Speed", polygons(selected_polygon).coords)
+    }
+  })
+  key(KEY_F3, onKeyDown = {
+    if (last_vertice == Vec.zero && selected_polygon >= 0 && selected_polygon < polygons.length) {
+      polygons(selected_polygon) = LevelElement("Start", polygons(selected_polygon).coords)
+    }
+  })
+  key(KEY_F4, onKeyDown = {
+    if (last_vertice == Vec.zero && selected_polygon >= 0 && selected_polygon < polygons.length) {
+      polygons(selected_polygon) = LevelElement("Finish", polygons(selected_polygon).coords)
+    }
+  })
+  key(KEY_F5, onKeyDown = {
+    if (last_vertice == Vec.zero && selected_polygon >= 0 && selected_polygon < polygons.length) {
+      polygons(selected_polygon) = LevelElement("Obstacle", polygons(selected_polygon).coords)
     }
   })
 
@@ -77,14 +108,16 @@ object LevelBuilder2 extends ScageScreenApp("Level Builder 2") {
     drawTraceGrid(tracer, DARK_GRAY)
     if (last_vertice == Vec.zero) {
       for {
-        (polygon, index) <- polygons.zipWithIndex
+        (LevelElement(polygon_type, polygon_points), index) <- polygons.zipWithIndex
         polygon_color = if (index == selected_polygon) RED else GREEN
       } {
-        drawPolygon(polygon, polygon_color)
+        drawPolygon(polygon_points, polygon_color)
+        print(polygon_type, avg(polygon_points), polygon_color)
       }
     } else {
-      for (polygon <- polygons) {
-        drawPolygon(polygon, GREEN)
+      for (LevelElement(polygon_type, polygon_points) <- polygons) {
+        drawPolygon(polygon_points, GREEN)
+        print(polygon_type, avg(polygon_points) + Vec(-50, 0), GREEN)
       }
     }
 
@@ -101,5 +134,14 @@ object LevelBuilder2 extends ScageScreenApp("Level Builder 2") {
 
   interface {
     print(mouseCoord, 20, 20, GREEN)
+  }
+  
+  dispose {
+    val fos = new FileOutputStream("level.txt")
+    for(level_element <- polygons) {
+      fos.write((level_element+"\n").getBytes)
+    }
+    fos.flush()
+    fos.close()
   }
 }

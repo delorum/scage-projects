@@ -8,19 +8,19 @@ import net.scage.blases.Relatives._
 
 object Level3 extends Level {
   def load() {
-    val first = new StaticPolygon(rVec(58, 526), rVec(309, 292), rVec(284, 264), rVec(37, 505))
-    val second = new StaticPolygon(rVec(307, 105), rVec(332, 31), rVec(249, 36))
-    val third = new StaticPolygon(rVec(432, 365), rVec(468, 365), rVec(468, 130), rVec(432, 130))
-    val fourth = new StaticPolygon(rVec(601, 287), rVec(639, 240), rVec(633, 185), rVec(582, 178), rVec(571, 232))
-    val fifth = new StaticPolygon(rVec(738, 44), rVec(893, 209), rVec(924, 188), rVec(763, 25))
-    val sixth = new StaticPolygon(rVec(892, 233), rVec(892, 429), rVec(927, 429), rVec(927, 233))
-    val seventh = new StaticPolygon(rVec(254, 561), rVec(684, 428), rVec(670, 401), rVec(248, 541))
-    val eighth = new StaticPolygon(rVec(258, 578), rVec(308, 748), rVec(350, 739), rVec(299, 568))
+    val first = new StaticPolygon(rVec(304, 750), rVec(256, 614), rVec(286, 608), rVec(332, 745))
+    val second = new StaticPolygon(rVec(623, 210), rVec(586, 244), rVec(555, 207), rVec(555, 163), rVec(621, 162))
+    val third = new StaticPolygon(rVec(499, 491), rVec(549, 491), rVec(550, 287), rVec(497, 287))
+    val fourth = new StaticPolygon(rVec(255, 611), rVec(661, 534), rVec(656, 521), rVec(252, 600))
+    val fifth = new StaticPolygon(rVec(884, 327), rVec(916, 306), rVec(773, 101), rVec(744, 129))
+    val sixth = new StaticPolygon(rVec(468, 186), rVec(405, 115), rVec(534, 119))
+    val seventh = new StaticPolygon(rVec(117, 572), rVec(403, 370), rVec(380, 343), rVec(97, 550))
+    val eighth = new StaticPolygon(rVec(864, 525), rVec(915, 354), rVec(943, 365), rVec(884, 533))
 
     physics.addPhysicals(first, second, third, fourth, fifth, sixth, seventh, eighth)
 
-    val speed_polygon = new SpeedPolygon(List(rVec(764, 438), rVec(871, 397), rVec(742, 79), rVec(636, 125)), (rVec(871, 397) - rVec(742, 79)))
-    val burst_polygon = new BurstPolygon(rVec(756, 535), rVec(898, 474), rVec(885, 445), rVec(738, 507))
+    val speed_polygon = new SpeedPolygon(List(rVec(740, 520), rVec(645, 204), rVec(773, 169), rVec(860, 493)), (rVec(871, 397) - rVec(742, 79)))
+    val burst_polygon = new BurstPolygon(rVec(777, 569), rVec(767, 549), rVec(844, 527), rVec(856, 553))
 
     val render_id = render {
       currentColor = WHITE
@@ -46,5 +46,5 @@ object Level3 extends Level {
   }
 
   def startCoord = rVec(153, 609)
-  def finishCoord = rVec(410, 608)
+  def finishCoord = rVec(380, 653)
 }
