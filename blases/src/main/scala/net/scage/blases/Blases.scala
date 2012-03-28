@@ -50,7 +50,12 @@ object Blases extends Screen("Blases Game") with MultiController {
     else if(selected_blase.id != no_selection.id) drawLine(selected_blase.location, (mouseCoord - selected_blase.location).n*rInt(40) + selected_blase.location, RED)
   }
 
-  private val no_selection = new DynaBall(Vec.zero, radius = 20) with TraceTrait {
+  interface {
+    print("Score: "+score,  20, windowHeight-20, WHITE)
+ 	  print(score_for_level,  20, windowHeight-40, WHITE)
+  }
+
+  private[blases] val no_selection = new DynaBall(Vec.zero, radius = 20) with TraceTrait {
     def state = State()
     type ChangerType = Trace
     def changeState(changer:Trace, s:State) {}
@@ -108,6 +113,7 @@ object Blases extends Screen("Blases Game") with MultiController {
   init {
     levels(current_level).load()
     is_game_started = false
+    selected_blase = no_selection
     score_for_level = 10000
   }
   

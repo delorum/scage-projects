@@ -28,6 +28,7 @@ class Blase(init_coord: Vec, direction:Vec) extends DynaBall(init_coord, radius 
     delOperations(action_id, render_id)
     tracer.removeTraces(this)
     physics.removePhysicals(this)
+    if(selected_blase == this) selected_blase = no_selection
   }
 
   private val render_id = render {
