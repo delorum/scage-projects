@@ -29,7 +29,7 @@ object PauseMenu {
   private val exit_button = new Button("Exit", Vec(512, 384) + Vec(-60, -80), 100, Blases, {
     Scage.stopApp()
   }, RED, false)
-  private val play_game_again_button = new Button("Play Levels Again", Vec(512, 384) + Vec(-60, 40), 100, Blases, {
+  private val play_game_again_button = new Button("Play All Levels Again", Vec(512, 384) + Vec(-60, 40), 100, Blases, {
     score = 0
     current_level = 0
     restart()
@@ -47,13 +47,13 @@ object PauseMenu {
   interface {
     _status match {
       case WIN_LEVEL =>
-        print("You win! Score for the level: "+score_for_level+". Overall score: "+score, rVec(512-60, 384+80), RED)
+        print("You win! Score for the level: "+score_for_level+"\nOverall score: "+score, rVec(512-60, 384+140), RED)
       case LOSE_LEVEL =>
         print("You lose. Final score: "+score, rVec(512-60, 384+80), RED)
       case BEAT_GAME =>
-        print("You beat the game!!! Final score: "+score, rVec(512-60, 384+80), RED)
+        print("You beat the game!!! Final score: "+score, rVec(512-60, 384+100), RED)
       case PRESS_ESC =>
-        print("Pause", rVec(512-60, 384+80), RED)
+        print("Pause", rVec(512-60, 384+100), RED)
       case _ =>
     }
   }

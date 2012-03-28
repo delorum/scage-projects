@@ -64,7 +64,7 @@ object MultiControllerTest extends ScreenApp("MultiController Test", window_widt
 
 object MultiControllerTestScreen2 extends Screen("MultiController Test Screen2") with MultiController {
   preinit {
-    MultiControllerTest.changeTitle("MultiController Test Screen2")
+    windowTitle = "MultiController Test Screen2"
   }
 
   val exit_button = new Button("Exit", Vec(320, 240) + Vec(-40, 40), 100, MultiControllerTestScreen2, {

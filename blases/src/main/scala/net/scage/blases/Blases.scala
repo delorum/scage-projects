@@ -28,7 +28,10 @@ object Blases extends Screen("Blases Game") with MultiController {
   action {
     physics.step()
 
-    if(is_game_started && tracer.tracesList.isEmpty) PauseMenu.showLoseLevelMenu()
+    if(is_game_started && tracer.tracesList.isEmpty) {
+      score += score_for_level
+      PauseMenu.showLoseLevelMenu()
+    }
     else if(levels(current_level).isWin) {
       score += score_for_level
       if(current_level == levels.length-1) PauseMenu.showBeatGameMenu()
