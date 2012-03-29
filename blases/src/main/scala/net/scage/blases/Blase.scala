@@ -21,7 +21,11 @@ class Blase(init_coord: Vec, direction:Vec) extends DynaBall(init_coord, radius 
   private val action_id = action {
     tracer.updateLocation(this, coord)
     coord = this.location
-    if (!touchingPoints.isEmpty) velocity = Vec.zero
+  }
+
+  private val render_id = render {
+    val color = if (id == selected_blase.id) RED else WHITE
+    drawCircle(coord, radius, color)
   }
 
   def burst() {
@@ -29,10 +33,5 @@ class Blase(init_coord: Vec, direction:Vec) extends DynaBall(init_coord, radius 
     tracer.removeTraces(this)
     physics.removePhysicals(this)
     if(selected_blase == this) selected_blase = no_selection
-  }
-
-  private val render_id = render {
-    val color = if (id == selected_blase.id) RED else WHITE
-    drawCircle(coord, radius, color)
   }
 }

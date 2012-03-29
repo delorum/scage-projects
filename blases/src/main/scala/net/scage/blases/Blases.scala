@@ -1,5 +1,6 @@
 package net.scage.blases
 
+import levelparts.FlyingWord
 import levels._
 import net.scage.ScageLib._
 import net.scage.support.{State, Vec}
@@ -21,6 +22,7 @@ object Blases extends Screen("Blases Game") with MultiController {
 
   private[blases] var score = 0
   private[blases] var score_for_level = 10000
+  private[blases] var blases_shot = 0
   action(1000) {
     if(is_game_started) score_for_level -= 50
   }
@@ -47,6 +49,10 @@ object Blases extends Screen("Blases Game") with MultiController {
     }
   })
   key(KEY_SPACE, onKeyDown = if(selected_blase != no_selection) selected_blase.velocity = Vec.zero)
+
+  private var is_shift_pressed = false
+  key(KEY_LSHIFT, onKeyDown = is_shift_pressed = true, onKeyUp = is_shift_pressed = false)
+  key(KEY_RSHIFT, onKeyDown = is_shift_pressed = true, onKeyUp = is_shift_pressed = false)
   
   render {
     if(!is_game_started) drawLine(levels(current_level).startCoord, (mouseCoord - levels(current_level).startCoord).n*rInt(40) + levels(current_level).startCoord, RED)
@@ -69,17 +75,20 @@ object Blases extends Screen("Blases Game") with MultiController {
   leftMouse(onBtnDown = {mouse_coord =>
     if(!is_game_started) {
       val new_blase_position = (mouse_coord - levels(current_level).startCoord).n*50 + levels(current_level).startCoord
-      new Blase(new_blase_position, mouse_coord - levels(current_level).startCoord)
+      val new_blase = new Blase(new_blase_position, mouse_coord - levels(current_level).startCoord)
+      selected_blase = new_blase
       is_game_started = true
-    } else if(selected_blase.id == no_selection.id) {
+      blases_shot += 1
+    } else {
       val blases = tracer.tracesNearCoord(mouse_coord, -1 to 1, condition = {blase => blase.location.dist(mouse_coord) <= 20})
       if(!blases.isEmpty) {
         selected_blase = blases.head
+      } else {
+        val new_blase_position = (mouse_coord - selected_blase.location).n*50 + selected_blase.location
+        val new_blase = new Blase(new_blase_position, mouse_coord - selected_blase.location)
+        if(!is_shift_pressed) selected_blase = new_blase
+        blases_shot += 1
       }
-    } else {
-      val new_blase_position = (mouse_coord - selected_blase.location).n*50 + selected_blase.location
-      new Blase(new_blase_position, mouse_coord - selected_blase.location)
-      selected_blase = no_selection
     }
   })
 
@@ -88,7 +97,6 @@ object Blases extends Screen("Blases Game") with MultiController {
       val blases = tracer.tracesNearCoord(mouse_coord, -1 to 1, condition = {blase => blase.location.dist(mouse_coord) <= 20})
       if(!blases.isEmpty) {
         blases.head.burst()
-        if(blases.head.id == selected_blase.id ) selected_blase = no_selection
       }
     }
   })

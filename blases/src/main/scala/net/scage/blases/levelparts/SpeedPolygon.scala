@@ -1,10 +1,11 @@
-package net.scage.blases
+package net.scage.blases.levelparts
 
 import net.scage.support.Vec
 import collection.mutable.HashMap
 import net.scage.ScageLib._
 import net.scage.blases.Blases._
 import net.scage.blases.Relatives._
+import net.scage.blases.Blase
 
 class SpeedPolygon(vertices: List[Vec], direction: Vec) {
   private val dir = direction.n * rInt(200)
@@ -18,31 +19,31 @@ class SpeedPolygon(vertices: List[Vec], direction: Vec) {
   }
 
   private val speeded_blases = HashMap[Blase, Vec]()
-  private val after_speed_blases = HashMap[Blase, (Vec, Vec, Long)]()   // blase -> (initial_speed, polygon_speed, start_time)
+  private val after_speed_blases = HashMap[Blase, (Vec, Vec, Long)]() // blase -> (initial_speed, polygon_speed, start_time)
   private val action_id = action {
     for {
       (blase, initial_velocity) <- speeded_blases
       if !containsCoord(blase.location)
     } {
       speeded_blases -= blase
-      after_speed_blases += (blase -> (initial_velocity, blase.velocity,  System.currentTimeMillis()))
+      after_speed_blases += (blase ->(initial_velocity, blase.velocity, System.currentTimeMillis()))
     }
     for {
       (blase, (initial_velocity, polygon_velocity, start_time)) <- after_speed_blases
     } {
       val cur_time = System.currentTimeMillis() - start_time
-      if(cur_time > 1000 || blase.velocity == Vec.zero) after_speed_blases -= blase
+      if (cur_time > 1000 || blase.velocity == Vec.zero) after_speed_blases -= blase
       else {
-        val percentage = cur_time/1000f
-        blase.velocity = initial_velocity*percentage + polygon_velocity*(1f - percentage)
+        val percentage = cur_time / 1000f
+        blase.velocity = initial_velocity * percentage + polygon_velocity * (1f - percentage)
       }
     }
     tracer.tracesInPointRange(min_x to max_x, min_y to max_y).filter(blase => containsCoord(blase.location)).foreach(blase => {
       if (!speeded_blases.contains(blase)) {
-        if(blase.velocity*dir < 0) {
-          val one = dir.n*(blase.velocity*dir.n)
+        if (blase.velocity * dir < 0) {
+          val one = dir.n * (blase.velocity * dir.n)
           val two = blase.velocity - one
-          blase.velocity = one*(-1) + two
+          blase.velocity = one * (-1) + two
         } else {
           speeded_blases += (blase -> blase.velocity)
           blase.velocity += dir
@@ -86,7 +87,7 @@ class SpeedPolygon(vertices: List[Vec], direction: Vec) {
     }
   }
 
-  def remove() {
+  clear {
     delOperations(action_id, render_id)
   }
 }
