@@ -18,7 +18,7 @@ object Blases extends Screen("Blases Game") with MultiController {
   val tracer = CoordTracer.create[Blase](solid_edges = false)
 
   private[blases] var current_level = 0
-  private[blases] val levels = ArrayBuffer(Level1, Level2, Level3, Level4, Level5)
+  private[blases] val levels = ArrayBuffer(Level1, Level2, Level3, Level4, Level5, Level6, BonusLevel1)
 
   private[blases] var score = 0
   private[blases] var score_for_level = 10000
@@ -62,6 +62,8 @@ object Blases extends Screen("Blases Game") with MultiController {
   interface {
     print("Score: "+score,  20, windowHeight-20, WHITE)
  	  print(score_for_level,  20, windowHeight-40, WHITE)
+
+    //drawTraceGrid(tracer, DARK_GRAY)
   }
 
   private[blases] val no_selection = new DynaBall(Vec.zero, radius = 20) with TraceTrait {
@@ -74,17 +76,17 @@ object Blases extends Screen("Blases Game") with MultiController {
 
   leftMouse(onBtnDown = {mouse_coord =>
     if(!is_game_started) {
-      val new_blase_position = (mouse_coord - levels(current_level).startCoord).n*50 + levels(current_level).startCoord
+      val new_blase_position = (mouse_coord - levels(current_level).startCoord).n*rInt(40) + levels(current_level).startCoord
       val new_blase = new Blase(new_blase_position, mouse_coord - levels(current_level).startCoord)
       selected_blase = new_blase
       is_game_started = true
       blases_shot += 1
-    } else {
+    } else if(selected_blase != no_selection) {
       val blases = tracer.tracesNearCoord(mouse_coord, -1 to 1, condition = {blase => blase.location.dist(mouse_coord) <= 20})
       if(!blases.isEmpty) {
         selected_blase = blases.head
       } else {
-        val new_blase_position = (mouse_coord - selected_blase.location).n*50 + selected_blase.location
+        val new_blase_position = (mouse_coord - selected_blase.location).n*rInt(40) + selected_blase.location
         val new_blase = new Blase(new_blase_position, mouse_coord - selected_blase.location)
         if(!is_shift_pressed) selected_blase = new_blase
         blases_shot += 1
@@ -109,8 +111,20 @@ object Blases extends Screen("Blases Game") with MultiController {
     val down_edge  = new StaticLine(Vec(windowWidth, 0), Vec(0, 0))
     physics.addPhysicals(right_edge, up_edge, left_edge, down_edge)
 
+    val action_id = action {
+      (right_edge.touchingBodies ++ up_edge.touchingBodies ++ left_edge.touchingBodies ++ down_edge.touchingBodies).foreach {
+        body => {
+          val user_data = body.getUserData
+          if (user_data != null && user_data.isInstanceOf[Blase]) {
+            user_data.asInstanceOf[Blase].velocity = Vec.zero
+          }
+        }
+      }
+    }
+
     dispose {
       physics.removePhysicals(right_edge, up_edge, left_edge, down_edge)
+      delActions(action_id)
       deleteSelf()
     }
 

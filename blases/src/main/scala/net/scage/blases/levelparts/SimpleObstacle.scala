@@ -22,6 +22,7 @@ class SimpleObstacle(vertices: Vec*) extends StaticPolygon(vertices: _*) {
 
   private val render_id = render {
     drawPolygon(points, WHITE)
+    //print(points.head.ix+":"+points.head.iy, points.head, GREEN)
   }
 
   clear {
