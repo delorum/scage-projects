@@ -19,7 +19,8 @@ object PauseMenu {
     }
   }, RED, false)
   private val replay_level_button = new Button("Replay Level", Vec(512, 384) + Vec(-60, 0), 100, Blases, {
-    score -= score_for_level
+    if(score_updated) score -= score_for_level
+    blases_shot -= blases_shot_on_level
     restart()
     hide()
   }, RED, false)

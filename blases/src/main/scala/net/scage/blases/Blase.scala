@@ -31,7 +31,7 @@ class Blase(init_coord: Vec, direction:Vec) extends DynaBall(init_coord, radius 
 
   private val render_id = render {
     val color = if (id == selected_blase.id) RED else WHITE
-    drawCircle(coord, radius, color)
+    drawCircle(coord, radius, rColor(color))
   }
 
   def burst() {

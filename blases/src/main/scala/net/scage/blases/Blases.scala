@@ -1,6 +1,5 @@
 package net.scage.blases
 
-import levelparts.FlyingWord
 import levels._
 import net.scage.ScageLib._
 import net.scage.support.{State, Vec}
@@ -21,8 +20,13 @@ object Blases extends Screen("Blases Game") with MultiController {
   private[blases] val levels = ArrayBuffer(Level1, Level2, Level3, Level4, Level5, Level6, BonusLevel1)
 
   private[blases] var score = 0
+  private[blases] var score_updated = false
   private[blases] var score_for_level = 10000
+
   private[blases] var blases_shot = 0
+  private[blases] var blases_shot_on_level = 0
+  private[blases] var blases_shot_updated = false
+
   action(1000) {
     if(is_game_started) score_for_level -= 50
   }
@@ -32,10 +36,12 @@ object Blases extends Screen("Blases Game") with MultiController {
 
     if(is_game_started && tracer.tracesList.isEmpty) {
       score += score_for_level
+      score_updated = true
       PauseMenu.showLoseLevelMenu()
     }
     else if(levels(current_level).isWin) {
       score += score_for_level
+      score_updated = true
       if(current_level == levels.length-1) PauseMenu.showBeatGameMenu()
       else PauseMenu.showWinLevelMenu()
     }
@@ -55,13 +61,14 @@ object Blases extends Screen("Blases Game") with MultiController {
   key(KEY_RSHIFT, onKeyDown = is_shift_pressed = true, onKeyUp = is_shift_pressed = false)
   
   render {
-    if(!is_game_started) drawLine(levels(current_level).startCoord, (mouseCoord - levels(current_level).startCoord).n*rInt(40) + levels(current_level).startCoord, RED)
-    else if(selected_blase.id != no_selection.id) drawLine(selected_blase.location, (mouseCoord - selected_blase.location).n*rInt(40) + selected_blase.location, RED)
+    if(!is_game_started) drawLine(levels(current_level).startCoord, (mouseCoord - levels(current_level).startCoord).n*rInt(40) + levels(current_level).startCoord, rColor(RED))
+    else if(selected_blase.id != no_selection.id) drawLine(selected_blase.location, (mouseCoord - selected_blase.location).n*rInt(40) + selected_blase.location, rColor(RED))
   }
 
   interface {
-    print("Score: "+score,  20, windowHeight-20, WHITE)
- 	  print(score_for_level,  20, windowHeight-40, WHITE)
+    print("Score: "+score,  20, windowHeight-20, rColor(WHITE))
+ 	  print(score_for_level,  20, windowHeight-40, rColor(WHITE))
+    print(blases_shot,  windowWidth-20, windowHeight-40, rColor(WHITE))
 
     //drawTraceGrid(tracer, DARK_GRAY)
   }
@@ -81,6 +88,7 @@ object Blases extends Screen("Blases Game") with MultiController {
       selected_blase = new_blase
       is_game_started = true
       blases_shot += 1
+      blases_shot_on_level += 1
     } else if(selected_blase != no_selection) {
       val blases = tracer.tracesNearCoord(mouse_coord, -1 to 1, condition = {blase => blase.location.dist(mouse_coord) <= 20})
       if(!blases.isEmpty) {
@@ -90,6 +98,7 @@ object Blases extends Screen("Blases Game") with MultiController {
         val new_blase = new Blase(new_blase_position, mouse_coord - selected_blase.location)
         if(!is_shift_pressed) selected_blase = new_blase
         blases_shot += 1
+        blases_shot_on_level += 1
       }
     }
   })
@@ -129,6 +138,7 @@ object Blases extends Screen("Blases Game") with MultiController {
     }
 
     score = 0
+    blases_shot = 0
     current_level = 0
 
     PauseMenu.hide()
@@ -140,6 +150,8 @@ object Blases extends Screen("Blases Game") with MultiController {
     is_game_started = false
     selected_blase = no_selection
     score_for_level = 10000
+    blases_shot_on_level = 0
+    score_updated = false
   }
   
   clear {

@@ -53,7 +53,7 @@ class SpeedPolygon(vertices: List[Vec], direction: Vec) {
   }
 
   private val render_id = render {
-    drawPolygon(vertices, BLUE)
+    drawPolygon(vertices, rColor(BLUE))
   }
 
   private val vertices_zipped = if (vertices.length >= 2) {

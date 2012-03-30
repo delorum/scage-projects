@@ -103,6 +103,26 @@ object LevelBuilder2 extends ScageScreenApp("Level Builder 2") {
       polygons(selected_polygon) = LevelElement("Obstacle", polygons(selected_polygon).coords)
     }
   })
+  key(KEY_F6, onKeyDown = {
+    if (last_vertice == Vec.zero && selected_polygon >= 0 && selected_polygon < polygons.length) {
+      polygons(selected_polygon) = LevelElement("Star", polygons(selected_polygon).coords)
+    }
+  })
+  key(KEY_F7, onKeyDown = {
+    if (last_vertice == Vec.zero && selected_polygon >= 0 && selected_polygon < polygons.length) {
+      polygons(selected_polygon) = LevelElement("Moving Spikes", polygons(selected_polygon).coords)
+    }
+  })
+  key(KEY_F8, onKeyDown = {
+    if (last_vertice == Vec.zero && selected_polygon >= 0 && selected_polygon < polygons.length) {
+      polygons(selected_polygon) = LevelElement("Moving Obstacle", polygons(selected_polygon).coords)
+    }
+  })
+  key(KEY_F9, onKeyDown = {
+    if (last_vertice == Vec.zero && selected_polygon >= 0 && selected_polygon < polygons.length) {
+      polygons(selected_polygon) = LevelElement("Sparkles", polygons(selected_polygon).coords)
+    }
+  })
 
   render {
     drawTraceGrid(tracer, DARK_GRAY)

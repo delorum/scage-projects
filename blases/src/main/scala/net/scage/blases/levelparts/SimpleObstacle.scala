@@ -5,6 +5,7 @@ import net.scage.support.Vec
 import net.scage.blases.Blases._
 import net.scage.ScageLib._
 import net.scage.blases.Blase
+import net.scage.blases.Relatives._
 
 class SimpleObstacle(vertices: Vec*) extends StaticPolygon(vertices: _*) {
   physics.addPhysicals(this)
@@ -21,7 +22,7 @@ class SimpleObstacle(vertices: Vec*) extends StaticPolygon(vertices: _*) {
   }
 
   private val render_id = render {
-    drawPolygon(points, WHITE)
+    drawPolygon(points, rColor(WHITE))
     //print(points.head.ix+":"+points.head.iy, points.head, GREEN)
   }
 

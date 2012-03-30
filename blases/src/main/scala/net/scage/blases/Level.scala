@@ -19,11 +19,11 @@ trait Level {
 
   private def drawStartFinish() {
     val render_id = render {
-      drawCircle(startCoord, rInt(20), RED)
-      print("Start", (startCoord - rVec(20, 40)), RED)
+      drawCircle(startCoord, rInt(20), rColor(RED))
+      print("Start", (startCoord - rVec(20, 40)), rColor(RED))
 
-      drawCircle(finishCoord, rInt(30), GREEN)
-      print("Finish", (finishCoord - rVec(25, 50)), GREEN)
+      drawCircle(finishCoord, rInt(30), rColor(GREEN))
+      print("Finish", (finishCoord - rVec(25, 50)), rColor(GREEN))
     }
 
     clear {

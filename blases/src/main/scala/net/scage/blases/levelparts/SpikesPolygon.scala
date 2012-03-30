@@ -5,6 +5,7 @@ import net.scage.support.physics.objects.StaticPolygon
 import net.scage.blases.Blases._
 import net.scage.ScageLib._
 import net.scage.blases.Blase
+import net.scage.blases.Relatives._
 
 class SpikesPolygon(vertices: Vec*) extends StaticPolygon(vertices: _*) {
   physics.addPhysical(this)
@@ -24,7 +25,7 @@ class SpikesPolygon(vertices: Vec*) extends StaticPolygon(vertices: _*) {
   }
 
   private val render_id = render {
-    drawPolygon(points, RED)
+    drawPolygon(points, rColor(RED))
   }
 
   clear {

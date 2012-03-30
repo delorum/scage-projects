@@ -3,6 +3,7 @@ package net.scage.blases.levelparts
 import net.scage.support.Vec
 import net.scage.blases.Blases._
 import net.scage.ScageLib._
+import net.scage.blases.Relatives._
 
 class Star(coord: Vec, num_beams: Int = 5, radius1: Int = 60, radius2: Int = 30) {
   private val vertices = {
@@ -54,7 +55,7 @@ class Star(coord: Vec, num_beams: Int = 5, radius1: Int = 60, radius2: Int = 30)
   }
 
   private val render_id = render {
-    drawPolygon(vertices, YELLOW)
+    drawPolygon(vertices, rColor(YELLOW))
   }
 
   private val clear_id:Int = clear {
