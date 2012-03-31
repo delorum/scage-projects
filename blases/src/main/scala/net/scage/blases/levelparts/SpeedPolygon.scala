@@ -51,9 +51,16 @@ class SpeedPolygon(vertices: List[Vec], direction: Vec) {
       }
     })
   }
+  
+  private val avg = Vec(vertices.map(_.x).sum/vertices.length, vertices.map(_.y).sum/vertices.length)
+  private val arrow = List(avg + dir.n*rInt(60),
+                           avg - dir.n*rInt(60),
+                           avg + dir.n*rInt(60) - dir.n.rotateDeg(30)*rInt(30),
+                           avg + dir.n*rInt(60) - dir.n.rotateDeg(-30)*rInt(30))
 
   private val render_id = render {
     drawPolygon(vertices, rColor(BLUE))
+    drawLines(arrow(0), arrow(1), arrow(0), arrow(2), arrow(0), arrow(3))
   }
 
   private val vertices_zipped = if (vertices.length >= 2) {
