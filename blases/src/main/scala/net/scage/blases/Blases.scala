@@ -83,18 +83,18 @@ object Blases extends Screen("Blases Game") with MultiController {
 
   leftMouse(onBtnDown = {mouse_coord =>
     if(!is_game_started) {
-      val new_blase_position = (mouse_coord - levels(current_level).startCoord).n*rInt(40) + levels(current_level).startCoord
+      val new_blase_position = (mouse_coord - levels(current_level).startCoord).n*rInt(45) + levels(current_level).startCoord
       val new_blase = new Blase(new_blase_position, mouse_coord - levels(current_level).startCoord)
       selected_blase = new_blase
       is_game_started = true
       blases_shot += 1
       blases_shot_on_level += 1
-    } else if(selected_blase != no_selection) {
+    } else {
       val blases = tracer.tracesNearCoord(mouse_coord, -1 to 1, condition = {blase => blase.location.dist(mouse_coord) <= 20})
       if(!blases.isEmpty) {
         selected_blase = blases.head
-      } else {
-        val new_blase_position = (mouse_coord - selected_blase.location).n*rInt(40) + selected_blase.location
+      } else if(selected_blase != no_selection) {
+        val new_blase_position = (mouse_coord - selected_blase.location).n*rInt(45) + selected_blase.location
         val new_blase = new Blase(new_blase_position, mouse_coord - selected_blase.location)
         if(!is_shift_pressed) selected_blase = new_blase
         blases_shot += 1

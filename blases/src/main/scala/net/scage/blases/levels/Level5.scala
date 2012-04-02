@@ -19,6 +19,6 @@ object Level5 extends Level {
     new SpeedPolygon(List(rVec(504, 12), rVec(556, 63), rVec(318, 307), rVec(259, 248)), (rVec(556, 63) - rVec(318, 307)))
   }
 
-  def startCoord = rVec(65, 732)
+  def startCoord = rVec(200, 732)
   def finishCoord = rVec(630, 527)
 }
