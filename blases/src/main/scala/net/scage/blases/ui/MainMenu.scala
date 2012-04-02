@@ -14,5 +14,10 @@ object MainMenu extends ScreenApp("Blases Main Menu", 640, 480, "Blases") with M
     backgroundColor = WHITE
   })
   val options_button = new Button("Options", Vec(512, 384) + Vec(-40, 0), 100, MainMenu, OptionsMenu.run())
-  val exit_button = new Button("Exit", Vec(512, 384) + Vec(-40, -40), 100, MainMenu, Scage.stopApp())
+  val help_button = new Button("Help", Vec(512, 384) + Vec(-40, -40), 100, MainMenu, HelpMenu.run())
+  val exit_button = new Button("Exit", Vec(512, 384) + Vec(-40, -80), 100, MainMenu, Scage.stopApp())
+
+  interface {
+    print("v"+app_version, 20, 20, BLACK)
+  }
 }

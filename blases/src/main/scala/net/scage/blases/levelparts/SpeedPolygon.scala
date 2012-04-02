@@ -18,6 +18,18 @@ class SpeedPolygon(vertices: List[Vec], direction: Vec) {
       (new_min_x, new_max_x, new_min_y, new_max_y)
   }
 
+  private lazy val points = ((for {
+    i <- min_x to max_x
+    j <- min_y to max_y
+  } yield (i, j)).foldLeft(List[Vec]()) {
+    case (result, (i, j)) =>
+      if(containsCoord(tracer.pointCenter(Vec(i, j)))) List(Vec(i, j), Vec(i-1, j), Vec(i, j-1), Vec(i+1, j), Vec(i, j+1)) ::: result
+      else result
+  }).toSet
+  render {
+    points.foreach(point => drawRectCentered(tracer.pointCenter(point), tracer.h_x, tracer.h_y, DARK_GRAY))
+  }
+
   private val speeded_blases = HashMap[Blase, Vec]()
   private val after_speed_blases = HashMap[Blase, (Vec, Vec, Long)]() // blase -> (initial_speed, polygon_speed, start_time)
   private val action_id = action {
@@ -38,7 +50,8 @@ class SpeedPolygon(vertices: List[Vec], direction: Vec) {
         blase.velocity = initial_velocity * percentage + polygon_velocity * (1f - percentage)
       }
     }
-    tracer.tracesInPointRange(min_x to max_x, min_y to max_y).filter(blase => containsCoord(blase.location)).foreach(blase => {
+
+    points.map(point => tracer.tracesInPoint(point)).flatten.filter(blase => containsCoord(blase.location)).foreach(blase => {
       if (!speeded_blases.contains(blase)) {
         if (blase.velocity * dir < 0) {
           val one = dir.n * (blase.velocity * dir.n)

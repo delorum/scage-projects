@@ -17,11 +17,11 @@ object Blases extends Screen("Blases Game") with MultiController {
   val tracer = CoordTracer.create[Blase](solid_edges = false)
 
   private[blases] var current_level = 0
-  private[blases] val levels = ArrayBuffer(Level1, Level2, Level3, Level4, Level5, Level6, BonusLevel1)
+  private[blases] val levels = ArrayBuffer(/*Level1, */Level2/*, Level3, Level4, Level5, Level6, BonusLevel1*/)
 
   private[blases] var score = 0
-  private[blases] var score_updated = false
   private[blases] var score_for_level = 10000
+  private[blases] var score_updated = false
 
   private[blases] var blases_shot = 0
   private[blases] var blases_shot_on_level = 0
