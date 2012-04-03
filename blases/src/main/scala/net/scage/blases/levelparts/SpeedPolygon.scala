@@ -9,7 +9,7 @@ import net.scage.blases.Blase
 
 class SpeedPolygon(vertices: List[Vec], direction: Vec) {
   private val dir = direction.n * rInt(200)
-  private val (min_x, max_x, min_y, max_y) = vertices.map(vertice => tracer.outsidePoint(tracer.point(vertice))).foldLeft((0, 0, 0, 0)) {
+  private val (min_x, max_x, min_y, max_y) = vertices.map(vertice => tracer.point(vertice)).foldLeft((0, 0, 0, 0)) {
     case ((current_min_x, current_max_x, current_min_y, current_max_y), vertice) =>
       val new_min_x = math.min(current_min_x, vertice.ix)
       val new_max_x = math.max(current_max_x, vertice.ix)
@@ -26,7 +26,7 @@ class SpeedPolygon(vertices: List[Vec], direction: Vec) {
       if(containsCoord(tracer.pointCenter(Vec(i, j)))) List(Vec(i, j), Vec(i-1, j), Vec(i, j-1), Vec(i+1, j), Vec(i, j+1)) ::: result
       else result
   }).toSet
-  render {
+  private val pew = render {
     points.foreach(point => drawRectCentered(tracer.pointCenter(point), tracer.h_x, tracer.h_y, DARK_GRAY))
   }
 
@@ -108,6 +108,7 @@ class SpeedPolygon(vertices: List[Vec], direction: Vec) {
   }
 
   clear {
-    delOperations(action_id, render_id)
+    delOperations(action_id, render_id, pew)
+    deleteSelf()
   }
 }
