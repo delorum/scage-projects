@@ -12,20 +12,17 @@ class SpeedPolygon(val vertices: List[Vec], direction: Vec) extends Intersectabl
 
   /*{
     val pew = render {
-      points.foreach(point => {
+      polygon_points.foreach(point => {
       drawRectCentered(tracer.pointCenter(point), tracer.h_x, tracer.h_y, DARK_GRAY)
         drawFilledCircle(tracer.pointCenter(point), 3, YELLOW)
         print(point.ix+":"+point.iy, tracer.pointCenter(point))
-
-        val coord = tracer.pointCenter(Vec(7, 2))
-        drawLine(coord, Vec(Integer.MAX_VALUE, coord.y))
       })
     }
 
     clear {
       delOperations(pew, currentOperation)
     }
-  }  */
+  }*/
 
   private val speeded_blases = HashMap[Blase, Vec]()
   private val after_speed_blases = HashMap[Blase, (Vec, Vec, Long)]() // blase -> (initial_speed, polygon_speed, start_time)

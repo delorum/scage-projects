@@ -18,6 +18,6 @@ object MainMenu extends ScreenApp("Blases Main Menu", 640, 480, "Blases") with M
   val exit_button = new Button("Exit", Vec(512, 384) + Vec(-40, -80), 100, MainMenu, Scage.stopApp())
 
   interface {
-    print("v"+app_version, 20, 20, BLACK)
+    print("v"+app_version, 10, 10, BLACK)
   }
 }
