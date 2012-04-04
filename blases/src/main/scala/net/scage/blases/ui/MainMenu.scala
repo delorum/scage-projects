@@ -9,13 +9,13 @@ import net.scage.{ScreenApp, Scage, ScageScreenApp}
 object MainMenu extends ScreenApp("Blases Main Menu", 640, 480, "Blases") with MultiController {
   backgroundColor = WHITE
 
-  val new_game_button = new Button("New Game", Vec(512, 384) + Vec(-40, 40), 100, MainMenu, {
+  val new_game_button = new Button(xml("button.newgame"), Vec(512, 384) + Vec(-40, 40), 100, MainMenu, {
     Blases.run()
     backgroundColor = WHITE
   })
-  val options_button = new Button("Options", Vec(512, 384) + Vec(-40, 0), 100, MainMenu, OptionsMenu.run())
-  val help_button = new Button("Help", Vec(512, 384) + Vec(-40, -40), 100, MainMenu, HelpMenu.run())
-  val exit_button = new Button("Exit", Vec(512, 384) + Vec(-40, -80), 100, MainMenu, Scage.stopApp())
+  val options_button = new Button(xml("button.options"), Vec(512, 384) + Vec(-40, 0), 100, MainMenu, OptionsMenu.run())
+  val help_button = new Button(xml("button.help"), Vec(512, 384) + Vec(-40, -40), 100, MainMenu, HelpMenu.run())
+  val exit_button = new Button(xml("button.exit"), Vec(512, 384) + Vec(-40, -80), 100, MainMenu, Scage.stopApp())
 
   interface {
     print("v"+app_version, 10, 10, BLACK)

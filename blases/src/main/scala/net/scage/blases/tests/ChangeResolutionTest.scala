@@ -22,9 +22,9 @@ object ChangeResolutionTest extends ScageScreenApp("Resolution Change Test", 800
 
   key(KEY_C, onKeyDown = {
     if (windowWidth == 800 && windowHeight == 600) {
-      changeResolution(640, 480)
+      windowSize = (640, 480)
     } else {
-      changeResolution(800, 600)
+      windowSize = (800, 600)
     }
   })
 }

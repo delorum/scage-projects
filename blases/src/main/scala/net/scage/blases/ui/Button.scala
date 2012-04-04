@@ -7,7 +7,7 @@ import net.scage.{Screen, Scage}
 import net.scage.support.{ScageColor, Vec}
 import net.scage.handlers.controller2.MultiController
 
-class Button(message: String,
+class Button(message: => String,
              var coord: Vec,
              width: Int,
              screen: Screen with MultiController,
