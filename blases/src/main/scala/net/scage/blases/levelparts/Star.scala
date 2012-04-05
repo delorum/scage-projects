@@ -30,7 +30,6 @@ class Star(coord: Vec, num_beams: Int = 5, radius1: Int = 60, radius2: Int = 30)
   }
 
   private val clear_id:Int = clear {
-    delOperations(action_id, render_id)
-    deleteSelf()
+    delOperations(action_id, render_id, currentOperation)
   }
 }

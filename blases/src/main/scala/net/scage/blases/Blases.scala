@@ -14,7 +14,19 @@ import net.scage.handlers.controller2.MultiController
 
 object Blases extends Screen("Blases Game") with MultiController {
   val physics = ScagePhysics()
-  val tracer = CoordTracer.create[Blase](solid_edges = false)
+  private var _tracer = CoordTracer.create[Blase](field_from_x = 0,
+                                                  field_to_x = windowWidth,
+                                                  field_from_y = 0,
+                                                  field_to_y = windowHeight,
+                                                  solid_edges = false)
+  def tracer = _tracer
+  preinit {
+    _tracer = CoordTracer.create[Blase](field_from_x = 0,
+                                        field_to_x = windowWidth,
+                                        field_from_y = 0,
+                                        field_to_y = windowHeight,
+                                        solid_edges = false)
+  }
 
   private[blases] var current_level = 0
   private[blases] val levels = ArrayBuffer(Level1, Level2, Level3, Level4, Level5, Level6, BonusLevel1)
@@ -68,9 +80,9 @@ object Blases extends Screen("Blases Game") with MultiController {
   interface {
     print(xml("blases.score", score),  20, windowHeight-20, rColor(WHITE))
  	  //print(score_for_level,  20, windowHeight-40, rColor(WHITE))
-    //print(xml("blases.bubbles", blases_shot),  20, windowHeight-40, rColor(WHITE))
+    print(xml("blases.bubbles", blases_shot),  20, windowHeight-40, rColor(WHITE))
 
-    print(fps, 20, windowHeight-40, WHITE)
+    //print(fps, 20, windowHeight-40, WHITE)
 
     //drawTraceGrid(tracer, DARK_GRAY)
   }

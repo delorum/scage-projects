@@ -30,7 +30,6 @@ class SimpleObstacle(vertices: Vec*) extends StaticPolygon(vertices:_*) with Int
 
   clear {
     physics.removePhysicals(this)
-    delOperations(action_id, render_id, control_id)
-    deleteSelf()
+    delOperations(action_id, render_id, control_id, currentOperation)
   }
 }
