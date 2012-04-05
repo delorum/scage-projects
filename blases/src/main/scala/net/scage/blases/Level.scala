@@ -27,8 +27,7 @@ trait Level {
     }
 
     clear {
-      delRenders(render_id)
-      deleteSelf()
+      delRenders(render_id, currentOperation)
     }
   }
 

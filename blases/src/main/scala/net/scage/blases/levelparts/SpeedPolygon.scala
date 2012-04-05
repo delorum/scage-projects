@@ -71,7 +71,6 @@ class SpeedPolygon(val vertices: List[Vec], direction: Vec) extends Intersectabl
   }
 
   clear {
-    delOperations(action_id, render_id)
-    deleteSelf()
+    delOperations(action_id, render_id, currentOperation)
   }
 }
