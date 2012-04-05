@@ -68,11 +68,11 @@ object Blases extends Screen("Blases Game") with MultiController {
   interface {
     print(xml("blases.score", score),  20, windowHeight-20, rColor(WHITE))
  	  //print(score_for_level,  20, windowHeight-40, rColor(WHITE))
-    //print(xml("blases.bubbles", blases_shot),  20, windowHeight-40, rColor(WHITE))
+    print(xml("blases.bubbles", blases_shot),  20, windowHeight-40, rColor(WHITE))
 
-    print(fps, 20, windowHeight-40, WHITE)
+    //print(fps, 20, windowHeight-40, WHITE)
 
-    //drawTraceGrid(tracer, DARK_GRAY)
+    drawTraceGrid(tracer, DARK_GRAY)
   }
 
   private[blases] val no_selection = new DynaBall(Vec.zero, radius = 20) with TraceTrait {

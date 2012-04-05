@@ -30,6 +30,6 @@ class SpikesPolygon(vertices: Vec*) extends StaticPolygon(vertices: _*) {
 
   clear {
     physics.removePhysicals(this)
-    delOperations(action_id, render_id)
+    delOperations(action_id, render_id, currentOperation)
   }
 }
