@@ -27,7 +27,7 @@ trait Level {
     }
 
     clear {
-      delRenders(render_id, currentOperation)
+      delOperations(render_id, currentOperation)
     }
   }
 

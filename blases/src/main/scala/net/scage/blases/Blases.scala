@@ -84,7 +84,7 @@ object Blases extends Screen("Blases Game") with MultiController {
 
     //print(fps, 20, windowHeight-40, WHITE)
 
-    drawTraceGrid(tracer, DARK_GRAY)
+    //drawTraceGrid(tracer, DARK_GRAY)
   }
 
   private[blases] val no_selection = new DynaBall(Vec.zero, radius = 20) with TraceTrait {
