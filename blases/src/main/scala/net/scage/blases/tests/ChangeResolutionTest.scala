@@ -4,7 +4,7 @@ import net.scage.ScageScreenApp
 import net.scage.ScageLib._
 import net.scage.support.Vec
 
-object ChangeResolutionTest extends ScageScreenApp("Resolution Change Test", 800, 600, "Resolution Change Test") {
+object ChangeResolutionTest extends ScageScreenApp("Resolution Change Test", 800, 600) {
   render {
     print("Press C to change resolution", windowCenter + Vec(0, 40), WHITE)
   }

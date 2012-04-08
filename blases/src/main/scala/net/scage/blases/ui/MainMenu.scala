@@ -6,7 +6,7 @@ import net.scage.ScageLib._
 import net.scage.handlers.controller2.MultiController
 import net.scage.{ScreenApp, Scage, ScageScreenApp}
 
-object MainMenu extends ScreenApp("Blases Main Menu", 640, 480, "Blases") with MultiController {
+object MainMenu extends ScreenApp("Blases", 640, 480) with MultiController {
   backgroundColor = WHITE
 
   val new_game_button = new Button(xml("button.newgame"), Vec(512, 384) + Vec(-40, 40), 100, MainMenu, {

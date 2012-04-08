@@ -15,7 +15,7 @@ class Star(coord:Vec, num_beams:Int = 5, radius1:Int = 60, radius2:Int = 30) ext
 
 }
 
-object StarTest extends ScageScreenApp("Star Test", 640, 480, "Star Test"){
+object StarTest extends ScageScreenApp("Star Test", 640, 480){
   val star = new Star(Vec.zero, num_beams = 5)
 
   private var ang = 0f

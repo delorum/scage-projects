@@ -53,7 +53,7 @@ class Button(message: String, message_coord: Vec, width: Int, screen: Screen, on
   screen.leftMouse(onBtnDown = {m => if(visible && containsCoord(m)) onBtnPressed})
 }
 
-object MultiControllerTest extends ScreenApp("MultiController Test", window_width=640, window_height = 480, "MultiController Test") with MultiController {
+object MultiControllerTest extends ScreenApp("MultiController Test", window_width=640, window_height = 480) with MultiController {
   val pressme_button = new Button("Press Me", Vec(320, 240) + Vec(-40, 40), 100, MultiControllerTest, {
     println("MultiControllerTest: Pressed")
     MultiControllerTestScreen2.run()
