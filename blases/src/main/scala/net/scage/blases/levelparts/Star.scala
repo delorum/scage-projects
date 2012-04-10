@@ -7,7 +7,7 @@ import net.scage.blases.Relatives._
 import net.scage.blases.IntersectablePolygon
 
 class Star(coord: Vec, num_beams: Int = 5, radius1: Int = 60, radius2: Int = 30) extends IntersectablePolygon {
-  val vertices = {
+  val intersectableVertices = {
     val radius = Array(radius1, radius2)
     (for {
       i <- 0 until num_beams * 2
@@ -16,7 +16,7 @@ class Star(coord: Vec, num_beams: Int = 5, radius1: Int = 60, radius2: Int = 30)
   }
 
   private val action_id = action {
-    val blases_touch = tracer.tracesNearCoord(coord, -1 to 1).filter(blase => containsCoord(blase.location))
+    val blases_touch = blasesInside
     if(!blases_touch.isEmpty) {
       score_for_level += 300
       new FlyingWord(300, YELLOW, coord, blases_touch.head.velocity)
@@ -26,7 +26,7 @@ class Star(coord: Vec, num_beams: Int = 5, radius1: Int = 60, radius2: Int = 30)
   }
 
   private val render_id = render {
-    drawPolygon(vertices, rColor(YELLOW))
+    drawPolygon(intersectableVertices, rColor(YELLOW))
   }
 
   private val clear_id:Int = clear {

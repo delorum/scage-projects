@@ -7,7 +7,7 @@ import net.scage.blases.Blases._
 import net.scage.blases.Relatives._
 import net.scage.blases.{IntersectablePolygon, Blase}
 
-class SpeedPolygon(val vertices: List[Vec], direction: Vec) extends IntersectablePolygon {
+class SpeedPolygon(val intersectableVertices: List[Vec], direction: Vec) extends IntersectablePolygon {
   private val dir = direction.n * rInt(200)
 
   /*{
@@ -59,14 +59,14 @@ class SpeedPolygon(val vertices: List[Vec], direction: Vec) extends Intersectabl
     }
   }
   
-  private val avg = Vec(vertices.map(_.x).sum/vertices.length, vertices.map(_.y).sum/vertices.length)
+  private val avg = Vec(intersectableVertices.map(_.x).sum/intersectableVertices.length, intersectableVertices.map(_.y).sum/intersectableVertices.length)
   private val arrow = List(avg + dir.n*rInt(60),
                            avg - dir.n*rInt(60),
                            avg + dir.n*rInt(60) - dir.n.rotateDeg(30)*rInt(30),
                            avg + dir.n*rInt(60) - dir.n.rotateDeg(-30)*rInt(30))
 
   private val render_id = render {
-    drawPolygon(vertices, rColor(BLUE))
+    drawPolygon(intersectableVertices, rColor(BLUE))
     drawLines(arrow(0), arrow(1), arrow(0), arrow(2), arrow(0), arrow(3))
   }
 

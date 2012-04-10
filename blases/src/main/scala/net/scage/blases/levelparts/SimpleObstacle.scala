@@ -7,7 +7,8 @@ import net.scage.ScageLib._
 import net.scage.blases.Relatives._
 import net.scage.blases.{IntersectablePolygon, Blase}
 
-class SimpleObstacle(vertices: Vec*) extends StaticPolygon(vertices:_*) with IntersectablePolygon {
+class SimpleObstacle(obstacle_vertices: Vec*) extends StaticPolygon(obstacle_vertices:_*) with IntersectablePolygon {
+  val intersectableVertices = obstacle_vertices.toList
   physics.addPhysicals(this)
 
   private val action_id = action {
@@ -21,7 +22,7 @@ class SimpleObstacle(vertices: Vec*) extends StaticPolygon(vertices:_*) with Int
     }
   }
 
-  val control_id = leftMouse(onBtnDown = {m => forEachBlaseInside {blase => blase.burst(); blases_shot -= 1}})
+  private val control_id = leftMouse(onBtnDown = {m => forEachBlaseInside {blase => blase.burst(); blases_shot -= 1}})
 
   private val render_id = render {
     drawPolygon(points, rColor(WHITE))
