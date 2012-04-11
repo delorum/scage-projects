@@ -26,11 +26,11 @@ object BonusLevel1 extends Level {
     new SpikesPolygon(rVec(588, 451), rVec(627, 451), rVec(628, 550), rVec(589, 550))
     new SpikesPolygon(rVec(941, 628), rVec(1000, 692), rVec(1020, 679), rVec(966, 616))
 
-    new Star(rVec(161, 718), 7, rInt(30), rInt(15))
-    new Star(rVec(373, 607), 7, rInt(30), rInt(15))
-    new Star(rVec(528, 618), 7, rInt(30), rInt(15))
-    new Star(rVec(170, 281), 7, rInt(30), rInt(15))
-    new Star(rVec(137, 134), 7, rInt(30), rInt(15))
+    new Star(rVec(161, 718))
+    new Star(rVec(373, 607))
+    new Star(rVec(528, 618))
+    new Star(rVec(170, 281))
+    new Star(rVec(137, 134))
   }
 
   def startCoord = rVec(85, 426)

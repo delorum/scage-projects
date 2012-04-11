@@ -5,23 +5,14 @@ import net.scage.blases.IntersectablePolygon
 import net.scage.blases.Blases._
 import net.scage.ScageLib._
 import collection.mutable.ArrayBuffer
+import net.scage.blases.Relatives._
 
-class Sparkles(from:Vec, to:Vec,  height:Int, active_period:Int, inactive_period:Int) extends IntersectablePolygon {
-  val intersectableVertices = List(from+Vec(0, height/2), to+Vec(0, height/2), to+Vec(0, -height/2), from+Vec(0, -height/2))
-
-  private val sparkle_box = displayList {
-    val ang = 360 - ((to - from).deg(Vec(0,1)) - 90).toFloat
-    openglLocalTransform {
-      openglMove(from)
-      openglRotate(ang)
-      drawRectCentered(Vec.zero, 10, height, WHITE)
-    }
-    openglLocalTransform {
-      openglMove(to)
-      openglRotate(ang)
-      drawRectCentered(Vec.zero, 10, height, WHITE)
-    }
-  }
+class Sparkles(from:Vec, to:Vec, height:Int, active_period:Int, inactive_period:Int) extends IntersectablePolygon {
+  private val ang = 360 - ((to - from).deg(Vec(0,1)) - 90).toFloat
+  val intersectableVertices = List(from+Vec(0, height/2).rotateDeg(ang),
+                                   to+Vec(0, height/2).rotateDeg(ang),
+                                   to+Vec(0, -height/2).rotateDeg(ang),
+                                   from+Vec(0, -height/2).rotateDeg(ang))
 
   def sparkleLine(from:Vec, to:Vec) = {
     val line = to - from
@@ -40,8 +31,30 @@ class Sparkles(from:Vec, to:Vec,  height:Int, active_period:Int, inactive_period
   private var sparkle_line = sparkleLine(from, to)
 
   private val render_id = render {
-    drawDisplayList(sparkle_box, Vec.zero)
-    if(is_active) drawLines(sparkle_line, RED)
+    openglLocalTransform {
+      openglMove(from)
+      openglRotate(ang)
+      drawRectCentered(Vec.zero, 10, height, rColor(WHITE))
+    }
+    openglLocalTransform {
+      openglMove(to)
+      openglRotate(ang)
+      drawRectCentered(Vec.zero, 10, height, rColor(WHITE))
+    }
+    if(is_active) drawLines(sparkle_line, rColor(RED))
+  }
+
+  val pew = render {
+    vertices_points.foreach(v => {
+      drawRectCentered(tracer.pointCenter(v), tracer.h_x, tracer.h_y, DARK_GRAY)
+      drawFilledCircle(tracer.pointCenter(v), 3, YELLOW)
+      //print(point.ix+":"+point.iy, tracer.pointCenter(point))
+    })
+    drawPolygon(intersectableVertices, GREEN)
+  }
+
+  clear {
+    delOperations(pew, currentOperation)
   }
 
   private var is_active = false

@@ -7,11 +7,11 @@ import net.scage.blases.Blase
 import net.scage.support.physics.objects.StaticBall
 import net.scage.blases.Relatives._
 
-class MovingSpikes(start_coord: Vec, end_coord:Vec, val speed:Int) extends StaticBall(start_coord, 30, true) {
+class MovingSpikes(start_coord: Vec, end_coord:Vec) extends StaticBall(start_coord, rInt(30), true) {
   physics.addPhysical(this)
 
   val vertices = {
-    val radius = Array(30, 15)
+    val radius = Array(rInt(30), rInt(15))
     (for {
       i <- 0 until 7 * 2
       angle = ((180f / 7) * i * math.Pi / 180f)
@@ -20,14 +20,15 @@ class MovingSpikes(start_coord: Vec, end_coord:Vec, val speed:Int) extends Stati
 
   private val step = (end_coord - start_coord).n
   private var dir = 1
+  val speed = rFloat(2f)
 
   private val action_id = action {
     coord += step*speed*dir
     dir match {
       case 1 =>
-        if((coord dist end_coord) < 60) dir = -1
+        if((coord dist end_coord) < 5) dir = -1
       case -1 =>
-        if((coord dist start_coord) < 60) dir = 1
+        if((coord dist start_coord) < 5) dir = 1
       case _ =>
     }
 

@@ -21,12 +21,12 @@ class Blase(init_coord: Vec, direction:Vec) extends DynaBall(init_coord, radius 
   private val action_id = action {
     tracer.updateLocation(this, coord)
     coord = this.location
-    if(velocity != Vec.zero && !touchingBodies.isEmpty) {
+    /*if(velocity != Vec.zero && !touchingBodies.isEmpty) {
       touchingBodies.map(_.getUserData).find(data => data.isInstanceOf[Blase]) match {
         case Some(_) => velocity = Vec.zero
         case None =>
       }
-    }
+    }*/
   }
 
   private val render_id = render {

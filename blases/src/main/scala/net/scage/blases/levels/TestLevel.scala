@@ -8,7 +8,7 @@ import net.scage.blases.levelparts.{Sparkles, MovingSpikes}
 
 object TestLevel extends Level {
   def constructLevel() {
-    new MovingSpikes(rVec(100, 576), rVec(250, 192), 1)
+    new MovingSpikes(rVec(100, 576), rVec(250, 192))
     new Sparkles(rVec(300, 576), rVec(500, 192), 40, 1000, 3000)
   }
 

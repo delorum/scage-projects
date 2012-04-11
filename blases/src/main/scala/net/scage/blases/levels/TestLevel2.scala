@@ -6,7 +6,7 @@ import net.scage.blases.Relatives._
 
 object TestLevel2 extends Level {
   def constructLevel() {
-    new Star(rVec(512, 384), 7, rInt(30), rInt(15))
+    new Star(rVec(512, 384))
   }
 
   def startCoord = rVec(85, 426)
