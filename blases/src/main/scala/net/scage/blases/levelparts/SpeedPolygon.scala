@@ -7,21 +7,21 @@ import net.scage.blases.Blases._
 import net.scage.blases.Relatives._
 import net.scage.blases.{IntersectablePolygon, Blase}
 
-class SpeedPolygon(val intersectableVertices: List[Vec], direction: Vec) extends IntersectablePolygon {
+class SpeedPolygon(val intersectableVertices: List[Vec], direction: Vec = Vec.zero) extends IntersectablePolygon {
   private val dir = direction.n * rInt(200)
 
   /*{
-    val pew = render {
-      polygon_points.foreach(point => {
-      drawRectCentered(tracer.pointCenter(point), tracer.h_x, tracer.h_y, DARK_GRAY)
-        drawFilledCircle(tracer.pointCenter(point), 3, YELLOW)
-        print(point.ix+":"+point.iy, tracer.pointCenter(point))
-      })
-    }
+        val pew = render {
+          intersectableVertices.foreach(point => {
+            drawRectCentered(tracer.pointCenter(point), tracer.h_x, tracer.h_y, DARK_GRAY)
+            drawFilledCircle(tracer.pointCenter(point), 3, YELLOW)
+            print(point.ix+":"+point.iy, tracer.pointCenter(point))
+          })
+        }
 
-    clear {
-      delOperations(pew, currentOperation)
-    }
+        clear {
+          delOperations(pew, currentOperation)
+        }
   }*/
 
   private val speeded_blases = HashMap[Blase, Vec]()

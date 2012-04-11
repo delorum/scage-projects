@@ -19,5 +19,5 @@ object Level6 extends Level {
   }
   
   def startCoord = rVec(134, 52)
-  def finishCoord = rVec(746, 725)
+  def finishCoords = List(rVec(746, 725))
 }

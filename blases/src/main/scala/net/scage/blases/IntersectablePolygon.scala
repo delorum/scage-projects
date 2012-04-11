@@ -37,7 +37,7 @@ trait IntersectablePolygon {
     }
   }
 
-  private def verticesPoints(vertices: List[Vec]) = {
+  private def verticesPoints(vertices: List[Vec]) = { // TODO: maybe rewrite it when I find better algorithm
     val (min_x, max_x, min_y, max_y) = vertices.map(vertice => tracer.point(vertice)).foldLeft((tracer.N_x, 0, tracer.N_y, 0)) {
       case ((current_min_x, current_max_x, current_min_y, current_max_y), vertice) =>
         val new_min_x = math.min(current_min_x, vertice.ix)
@@ -47,11 +47,13 @@ trait IntersectablePolygon {
         (new_min_x, new_max_x, new_min_y, new_max_y)
     }
 
+    intersectableVertices.map(tracer.point(_)).toSet ++
     (for {
       i <- min_x to max_x
       j <- min_y to max_y
       coord = tracer.pointCenter(Vec(i, j))
-      if containsCoord(coord, vertices)
+      corner_coords = List(coord + Vec(tracer.h_x, tracer.h_y), coord + Vec(tracer.h_x, -tracer.h_y), coord + Vec(-tracer.h_x, -tracer.h_y), coord + Vec(-tracer.h_x, tracer.h_y))
+      if containsCoord(coord, vertices) || corner_coords.exists(containsCoord(_, vertices))
     } yield List(Vec(i, j), Vec(i-1, j), Vec(i, j-1), Vec(i+1, j), Vec(i, j+1))).flatten.toSet
   }
 
@@ -61,12 +63,14 @@ trait IntersectablePolygon {
     _blasesInside(intersectableVertices)
   }
   def forEachBlaseInside(func:Blase => Any) {
-    def _forEachBlaseInside(vertices:List[Vec]) = for {
-      point <- verticesPoints(vertices)
-      blases = tracer.tracesInPoint(point)
-      blase <- blases
-      if containsCoord(blase.location, vertices)
-    } func(blase)
+    def _forEachBlaseInside(vertices:List[Vec]) {
+      for {
+        point <- verticesPoints(vertices)
+        blases = tracer.tracesInPoint(point)
+        blase <- blases
+        if containsCoord(blase.location, vertices)
+      } func(blase)
+    }
     _forEachBlaseInside(intersectableVertices)
   }
 }

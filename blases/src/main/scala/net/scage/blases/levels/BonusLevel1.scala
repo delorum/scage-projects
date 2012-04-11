@@ -34,5 +34,5 @@ object BonusLevel1 extends Level {
   }
 
   def startCoord = rVec(85, 426)
-  def finishCoord = rVec(987, 444)
+  def finishCoords = List(rVec(987, 444))
 }

@@ -29,7 +29,7 @@ object Blases extends Screen("Blases Game") with MultiController {
   }
 
   private[blases] var current_level = 0
-  private[blases] val levels = ArrayBuffer(/*Level1, Level2, Level3, Level4, Level5, Level6, BonusLevel1, */TestLevel)
+  private[blases] val levels = ArrayBuffer(Level1, Level2, Level3, Level4, Level5, Level6, BonusLevel1, TestLevel, Level7, Level8/*, TestLevel2*/)
 
   private[blases] var score = 0
   private[blases] var score_for_level = 10000
@@ -85,6 +85,7 @@ object Blases extends Screen("Blases Game") with MultiController {
     //print(fps, 20, windowHeight-40, WHITE)
 
     //drawTraceGrid(tracer, DARK_GRAY)
+    //print(mouseCoord, 20, 20, GREEN)
   }
 
   private[blases] val no_selection = new DynaBall(Vec.zero, radius = 20) with TraceTrait {
