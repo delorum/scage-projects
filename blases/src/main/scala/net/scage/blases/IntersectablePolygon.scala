@@ -73,13 +73,6 @@ trait IntersectablePolygon {
         }
       }
     })
-    /*val pew3 = pew1.filter(point => {
-      !pew2.contains(point) &&
-      containsCoord(tracer.pointCenter(point), intersectableVertices)
-    })
-    pew2 ++ pew3
-    println((pew2 ++ pew3).toSet.size == (pew2 ++ pew3).size)
-    pew2 ++ pew3*/
     //println(pew2.toSet.size == pew2.size)
     pew2
   }

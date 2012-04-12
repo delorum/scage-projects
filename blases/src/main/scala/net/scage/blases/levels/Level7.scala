@@ -17,6 +17,8 @@ object Level7 extends Level {
     new SpikesPolygon(rVec(389, 100), rVec(688, 99), rVec(689, 44), rVec(389, 45))
     new SpikesPolygon(rVec(18, 411), rVec(202, 411), rVec(300, 366), rVec(265, 348), rVec(194, 380), rVec(20, 380))
     new SpikesPolygon(rVec(861, 431), rVec(996, 528), rVec(1010, 505), rVec(866, 405))
+
+    new Star(rVec(128, 348))
   }
 
   def startCoord = rVec(965, 738)
