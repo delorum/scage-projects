@@ -44,7 +44,7 @@ class Sparkles(from:Vec, to:Vec, height:Int, active_period:Int, inactive_period:
     if(is_active) drawLines(sparkle_line, rColor(RED))
   }
 
-  val pew = render {
+  /*val pew = render {
     vertices_points.foreach(v => {
       drawRectCentered(tracer.pointCenter(v), tracer.h_x, tracer.h_y, DARK_GRAY)
       drawFilledCircle(tracer.pointCenter(v), 3, YELLOW)
@@ -55,7 +55,7 @@ class Sparkles(from:Vec, to:Vec, height:Int, active_period:Int, inactive_period:
 
   clear {
     delOperations(pew, currentOperation)
-  }
+  }*/
 
   private var is_active = false
   private var start = System.currentTimeMillis

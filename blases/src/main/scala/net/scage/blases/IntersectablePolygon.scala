@@ -50,33 +50,37 @@ trait IntersectablePolygon {
     } yield Vec(i, j)
     val pew2 = pew1.filter(point => {
       val coord = tracer.pointCenter(point)
-      val point_borders = List(
-        (coord + Vec( tracer.h_x,  tracer.h_y),
-         coord + Vec( tracer.h_x, -tracer.h_y)),
+      containsCoord(coord, intersectableVertices) || {
+        val point_borders = List(
+          (coord + Vec( tracer.h_x,  tracer.h_y),
+           coord + Vec( tracer.h_x, -tracer.h_y)),
 
-        (coord + Vec( tracer.h_x, -tracer.h_y),
-         coord + Vec(-tracer.h_x, -tracer.h_y)),
+          (coord + Vec( tracer.h_x, -tracer.h_y),
+           coord + Vec(-tracer.h_x, -tracer.h_y)),
 
-        (coord + Vec(-tracer.h_x, -tracer.h_y),
-         coord + Vec(-tracer.h_x,  tracer.h_y)),
+          (coord + Vec(-tracer.h_x, -tracer.h_y),
+           coord + Vec(-tracer.h_x,  tracer.h_y)),
 
-        (coord + Vec(-tracer.h_x, tracer.h_y),
-         coord + Vec( tracer.h_x, tracer.h_y))
-      )
-      val polygon_borders = (intersectableVertices ::: List(Vec.zero)).zip(Vec.zero :: intersectableVertices).tail.init
-      point_borders.exists {
-        case ((a1, a2)) => polygon_borders.exists {
-          case ((b1, b2)) =>
-            areLinesIntersect(a1, a2, b1, b2)
+          (coord + Vec(-tracer.h_x, tracer.h_y),
+           coord + Vec( tracer.h_x, tracer.h_y))
+        )
+        val polygon_borders = (intersectableVertices ::: List(Vec.zero)).zip(Vec.zero :: intersectableVertices).tail.init
+        point_borders.exists {
+          case ((a1, a2)) => polygon_borders.exists {
+            case ((b1, b2)) =>
+              areLinesIntersect(a1, a2, b1, b2)
+          }
         }
       }
     })
-    val pew3 = pew1.filter(point => {
+    /*val pew3 = pew1.filter(point => {
       !pew2.contains(point) &&
       containsCoord(tracer.pointCenter(point), intersectableVertices)
     })
     println((pew2 ++ pew3).toSet.size == (pew2 ++ pew3).size)
-    pew2 ++ pew3
+    pew2 ++ pew3*/
+    //println(pew2.toSet.size == pew2.size)
+    pew2
   }
 
   def containsCoord(coord: Vec):Boolean = containsCoord(coord, intersectableVertices)

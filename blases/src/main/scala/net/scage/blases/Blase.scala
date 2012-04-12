@@ -6,6 +6,7 @@ import net.scage.support.{State, Vec}
 import net.scage.blases.Blases._
 import net.scage.ScageLib._
 import net.scage.blases.Relatives._
+import net.scage.blases.BlaseSelector._
 
 class Blase(init_coord: Vec, direction:Vec) extends DynaBall(init_coord, radius = rInt(20)) with Trace {
   velocity = direction.n*rInt(90)
@@ -30,14 +31,17 @@ class Blase(init_coord: Vec, direction:Vec) extends DynaBall(init_coord, radius 
   }
 
   private val render_id = render {
-    val color = if (id == selected_blase.id) RED else WHITE
+    val color = if (this == selectedBlase) RED else WHITE
     drawCircle(coord, radius, rColor(color))
   }
 
+  private var _bursted = false
+  def bursted = _bursted
   def burst() {
     delOperations(action_id, render_id)
     tracer.removeTraces(this)
     physics.removePhysicals(this)
-    if(selected_blase == this) selected_blase = no_selection
+    _bursted = true
+    if(this == selectedBlase) previousSelection()
   }
 }
