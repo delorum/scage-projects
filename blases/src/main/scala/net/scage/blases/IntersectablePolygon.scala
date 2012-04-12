@@ -75,7 +75,6 @@ trait IntersectablePolygon {
       !pew2.contains(point) &&
       containsCoord(tracer.pointCenter(point), intersectableVertices)
     })
-    println((pew2 ++ pew3).toSet.size == (pew2 ++ pew3).size)
     pew2 ++ pew3
   }
 
