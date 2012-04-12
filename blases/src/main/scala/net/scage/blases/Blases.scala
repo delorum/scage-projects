@@ -6,11 +6,43 @@ import net.scage.support.{State, Vec}
 import net.scage.support.physics.ScagePhysics
 import net.scage.support.tracer3.{TraceTrait, Trace, CoordTracer}
 import net.scage.support.physics.objects.{StaticLine, DynaBall}
-import collection.mutable.ArrayBuffer
 import net.scage.blases.Relatives._
 import ui.PauseMenu
 import net.scage.Screen
 import net.scage.handlers.controller2.MultiController
+import collection.mutable.{Stack, ArrayBuffer}
+
+object BlaseSelector {
+  private val no_selection = new DynaBall(Vec.zero, radius = rInt(20)) with Trace {
+    def state = State()
+    def changeState(changer:Trace, s:State) {}
+    def bursted = false
+  }
+
+  private var selected_blase = no_selection
+  private val previous_selections = Stack[DynaBall with Trace {def bursted:Boolean}]()
+
+  def selectedBlase_=(new_selected_blase:Blase) {
+    previous_selections.push(selected_blase)
+    selected_blase = new_selected_blase
+  }
+
+  def selectedBlase = selected_blase
+
+  def previousSelection() {
+    selected_blase = previous_selections.pop()
+    if(selected_blase.bursted) previousSelection()
+  }
+
+  def noBlaseSelected = selected_blase == no_selection
+
+  def clearSelectionHistory() {
+    previous_selections.clear()
+    selected_blase = no_selection
+  }
+}
+
+import BlaseSelector._
 
 object Blases extends Screen("Blases Game") with MultiController {
   val physics = ScagePhysics()
@@ -36,9 +68,9 @@ object Blases extends Screen("Blases Game") with MultiController {
                                            Level3,
                                            Level4,
                                            Level5,
-                                           Level6,*/
-                                           BonusLevel1/*,
-                                           TestLevel,
+                                           Level6,
+                                           BonusLevel1,*/
+                                           TestLevel/*,
                                            Level7,
                                            Level8*/)
 
@@ -77,7 +109,7 @@ object Blases extends Screen("Blases Game") with MultiController {
       case _ =>
     }
   })
-  key(KEY_SPACE, onKeyDown = if(selected_blase != no_selection) selected_blase.velocity = Vec.zero)
+  key(KEY_SPACE, onKeyDown = if(!noBlaseSelected) selectedBlase.velocity = Vec.zero)
 
   private var is_shift_pressed = false
   key(KEY_LSHIFT, onKeyDown = is_shift_pressed = true, onKeyUp = is_shift_pressed = false)
@@ -85,7 +117,7 @@ object Blases extends Screen("Blases Game") with MultiController {
   
   render {
     if(!is_game_started) drawLine(levels(current_level).startCoord, (mouseCoord - levels(current_level).startCoord).n*rInt(40) + levels(current_level).startCoord, rColor(RED))
-    else if(selected_blase.id != no_selection.id) drawLine(selected_blase.location, (mouseCoord - selected_blase.location).n*rInt(40) + selected_blase.location, rColor(RED))
+    else if(!noBlaseSelected) drawLine(selectedBlase.location, (mouseCoord - selectedBlase.location).n*rInt(40) + selectedBlase.location, rColor(RED))
   }
 
   interface {
@@ -99,30 +131,23 @@ object Blases extends Screen("Blases Game") with MultiController {
     //print(mouseCoord, 20, 20, GREEN)
   }
 
-  private[blases] val no_selection = new DynaBall(Vec.zero, radius = 20) with TraceTrait {
-    def state = State()
-    type ChangerType = Trace
-    def changeState(changer:Trace, s:State) {}
-  }
-  private[blases] var selected_blase = no_selection
-
 
   leftMouse(onBtnDown = {mouse_coord =>
     if(!is_game_started) {
       val new_blase_position = (mouse_coord - levels(current_level).startCoord).n*rInt(45) + levels(current_level).startCoord
       val new_blase = new Blase(new_blase_position, mouse_coord - levels(current_level).startCoord)
-      selected_blase = new_blase
+      selectedBlase = new_blase
       is_game_started = true
       blases_shot += 1
       blases_shot_on_level += 1
     } else {
       val blases = tracer.tracesNearCoord(mouse_coord, -1 to 1, condition = {blase => blase.location.dist(mouse_coord) <= 20})
       if(!blases.isEmpty) {
-        selected_blase = blases.head
-      } else if(selected_blase != no_selection) {
-        val new_blase_position = (mouse_coord - selected_blase.location).n*rInt(45) + selected_blase.location
-        val new_blase = new Blase(new_blase_position, mouse_coord - selected_blase.location)
-        if(!is_shift_pressed) selected_blase = new_blase
+        selectedBlase = blases.head
+      } else if(!noBlaseSelected) {
+        val new_blase_position = (mouse_coord - selectedBlase.location).n*rInt(45) + selectedBlase.location
+        val new_blase = new Blase(new_blase_position, mouse_coord - selectedBlase.location)
+        if(!is_shift_pressed) selectedBlase = new_blase
         blases_shot += 1
         blases_shot_on_level += 1
       }
@@ -174,7 +199,7 @@ object Blases extends Screen("Blases Game") with MultiController {
   init {
     levels(current_level).load()
     is_game_started = false
-    selected_blase = no_selection
+    clearSelectionHistory()
     score_for_level = 10000
     blases_shot_on_level = 0
     score_updated = false
