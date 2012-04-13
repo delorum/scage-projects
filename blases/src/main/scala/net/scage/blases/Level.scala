@@ -32,13 +32,4 @@ trait Level {
       delOperations(render_id, currentOperation)
     }
   }
-
-  def isWin: Boolean = {
-    val winner_blases = finishCoords.map(finish_coord => tracer.tracesNearCoord(finish_coord, -1 to 1, condition = {
-      blase => blase.location.dist(finish_coord) < 20
-    })).flatten
-    val is_win = !winner_blases.isEmpty
-    if(is_win) new FlyingWord(score_for_level, YELLOW, winner_blases.head.location, winner_blases.head.velocity)
-    is_win
-  }
 }

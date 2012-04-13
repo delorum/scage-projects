@@ -1,5 +1,6 @@
 package net.scage.blases
 
+import levelparts.FlyingWord
 import levels._
 import net.scage.ScageLib._
 import net.scage.support.{State, Vec}
@@ -11,6 +12,49 @@ import ui.PauseMenu
 import net.scage.Screen
 import net.scage.handlers.controller2.MultiController
 import collection.mutable.{Stack, ArrayBuffer}
+
+case class LevelInfo(level:Level, var is_passed:Boolean = false, var score_for_level:Int = 0, var blases_shot_on_level:Int = 0, is_bonus:Boolean = false, bonus_condition: () => Boolean = () => true)
+
+object LevelSelector {
+  private var current_level = 0
+  private val levels = ArrayBuffer(LevelInfo(Level1),
+                                   LevelInfo(Level2),
+                                   LevelInfo(Level3),
+                                   LevelInfo(Level4),
+                                   LevelInfo(Level5),
+                                   LevelInfo(Level6),
+                                   LevelInfo(BonusLevel1, is_bonus = true, bonus_condition = () => Blases.blases_shot <= 30),
+                                   LevelInfo(TestLevel),
+                                   LevelInfo(Level7),
+                                   LevelInfo(Level8)
+  )
+  
+  def currentLevel = levels(current_level).level
+
+  def currentLevelNum = current_level
+  def currentLevelNum_=(level_num:Int) {
+    if(level_num >= levels.length || level_num < 0) current_level = 0
+    else {
+      if(levels(current_level).is_bonus) {
+        if(!levels(current_level).bonus_condition()) currentLevelNum = level_num + 1
+        else current_level = level_num
+      } else current_level = level_num
+    }
+  }
+
+  def currentLevelStats = (levels(current_level).score_for_level, levels(current_level).blases_shot_on_level)
+  def currentLevelStats_=(stats:(Int, Int)) {
+    levels(current_level).score_for_level = stats._1
+    levels(current_level).blases_shot_on_level = stats._2
+  }
+
+  def levelStats(level_num:Int) = {
+    if(level_num >= levels.length || level_num < 0) (0, 0)
+    else (levels(current_level).score_for_level, levels(current_level).blases_shot_on_level)
+  }
+
+  def isLastLevel = current_level == levels.length-1
+}
 
 object BlaseSelector {
   private val no_selection = new DynaBall(Vec.zero, radius = rInt(20)) with Trace {
@@ -42,6 +86,7 @@ object BlaseSelector {
   }
 }
 
+import LevelSelector._
 import BlaseSelector._
 
 object Blases extends Screen("Blases Game") with MultiController {
@@ -62,17 +107,18 @@ object Blases extends Screen("Blases Game") with MultiController {
                                         solid_edges = false)
   }
 
-  private[blases] var current_level = 0
-  private[blases] val levels = ArrayBuffer(Level1,
-                                           Level2,
-                                           Level3,
-                                           Level4,
-                                           Level5,
-                                           Level6,
-                                           BonusLevel1,
-                                           TestLevel,
-                                           Level7,
-                                           Level8)
+  /*private[blases] var current_level = 0
+  private[blases] val levels = ArrayBuffer(LevelInfo(Level1),
+                                           LevelInfo(Level2),
+                                           LevelInfo(Level3),
+                                           LevelInfo(Level4),
+                                           LevelInfo(Level5),
+                                           LevelInfo(Level6),
+                                           LevelInfo(BonusLevel1, is_bonus = true, bonus_condition = blases_shot <= 30),
+                                           LevelInfo(TestLevel),
+                                           LevelInfo(Level7),
+                                           LevelInfo(Level8)
+  )*/
 
   private[blases] var score = 0
   private[blases] var score_for_level = 10000
@@ -80,7 +126,6 @@ object Blases extends Screen("Blases Game") with MultiController {
 
   private[blases] var blases_shot = 0
   private[blases] var blases_shot_on_level = 0
-  private[blases] var blases_shot_updated = false
 
   action(1000) {
     if(is_game_started) score_for_level -= 50
@@ -89,16 +134,24 @@ object Blases extends Screen("Blases Game") with MultiController {
   action {
     physics.step()
 
-    if(is_game_started && tracer.tracesList.isEmpty) {
-      score += score_for_level
-      score_updated = true
-      PauseMenu.showLoseLevelMenu()
-    }
-    else if(levels(current_level).isWin) {
-      score += score_for_level
-      score_updated = true
-      if(current_level == levels.length-1) PauseMenu.showBeatGameMenu()
-      else PauseMenu.showWinLevelMenu()
+    if(is_game_started) {
+      if(tracer.tracesList.isEmpty) {
+        score += score_for_level
+        score_updated = true
+        PauseMenu.showLoseLevelMenu()
+      } else {
+        val winner_blases = currentLevel.finishCoords.map(finish_coord => tracer.tracesNearCoord(finish_coord, -1 to 1, condition = {
+          blase => blase.location.dist(finish_coord) < 30
+        })).flatten
+        if(!winner_blases.isEmpty) {
+          new FlyingWord(score_for_level, YELLOW, winner_blases.head.location, winner_blases.head.velocity)
+          currentLevelStats = (score_for_level, blases_shot_on_level)
+          score += score_for_level
+          score_updated = true
+          if(isLastLevel) PauseMenu.showBeatGameMenu()
+          else PauseMenu.showWinLevelMenu()
+        }
+      }
     }
   }
 
@@ -116,7 +169,7 @@ object Blases extends Screen("Blases Game") with MultiController {
   key(KEY_RSHIFT, onKeyDown = is_shift_pressed = true, onKeyUp = is_shift_pressed = false)
   
   render {
-    if(!is_game_started) drawLine(levels(current_level).startCoord, (mouseCoord - levels(current_level).startCoord).n*rInt(40) + levels(current_level).startCoord, rColor(RED))
+    if(!is_game_started) drawLine(currentLevel.startCoord, (mouseCoord - currentLevel.startCoord).n*rInt(40) + currentLevel.startCoord, rColor(RED))
     else if(!noBlaseSelected) drawLine(selectedBlase.location, (mouseCoord - selectedBlase.location).n*rInt(40) + selectedBlase.location, rColor(RED))
   }
 
@@ -134,8 +187,8 @@ object Blases extends Screen("Blases Game") with MultiController {
 
   leftMouse(onBtnDown = {mouse_coord =>
     if(!is_game_started) {
-      val new_blase_position = (mouse_coord - levels(current_level).startCoord).n*rInt(45) + levels(current_level).startCoord
-      val new_blase = new Blase(new_blase_position, mouse_coord - levels(current_level).startCoord)
+      val new_blase_position = (mouse_coord - currentLevel.startCoord).n*rInt(45) + currentLevel.startCoord
+      val new_blase = new Blase(new_blase_position, mouse_coord - currentLevel.startCoord)
       selectedBlase = new_blase
       is_game_started = true
       blases_shot += 1
@@ -190,14 +243,14 @@ object Blases extends Screen("Blases Game") with MultiController {
 
     score = 0
     blases_shot = 0
-    current_level = 0
+    currentLevelNum = 0
 
     PauseMenu.hide()
   }
 
   private var is_game_started = false
   init {
-    levels(current_level).load()
+    currentLevel.load()
     is_game_started = false
     clearSelectionHistory()
     score_for_level = 10000

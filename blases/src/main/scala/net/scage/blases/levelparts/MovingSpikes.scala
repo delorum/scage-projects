@@ -33,8 +33,8 @@ class MovingSpikes(start_coord: Vec, end_coord:Vec) extends StaticBall(start_coo
     }
 
     touchingBodies.foreach {
-      body => {
-        val user_data = body.getUserData
+      touching_body => {
+        val user_data = touching_body.getUserData
         user_data match {
           case blase:Blase =>
             blase.burst()

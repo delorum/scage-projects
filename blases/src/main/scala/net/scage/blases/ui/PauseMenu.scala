@@ -2,6 +2,7 @@ package net.scage.blases.ui
 
 import net.scage.support.Vec
 import net.scage.blases.Blases._
+import net.scage.blases.LevelSelector._
 import net.scage.Scage
 import net.scage.ScageLib._
 import net.scage.blases.Blases
@@ -12,11 +13,9 @@ object PauseMenu {
     hide()
   }, RED, false)
   private val next_level_button = new Button(xml("button.nextlevel"), Vec(512, 384) + Vec(-60, 40), 100, Blases, {
-    if(current_level < levels.length-1) {
-      current_level += 1
-      restart()
-      hide()
-    }
+    currentLevelNum += 1
+    restart()
+    hide()
   }, RED, false)
   private val replay_level_button = new Button(xml("button.replaylevel"), Vec(512, 384) + Vec(-60, 0), 100, Blases, {
     if(score_updated) score -= score_for_level
@@ -32,7 +31,7 @@ object PauseMenu {
   }, RED, false)
   private val play_game_again_button = new Button(xml("button.playallagain"), Vec(512, 384) + Vec(-60, 40), 100, Blases, {
     score = 0
-    current_level = 0
+    currentLevelNum = 0
     restart()
     hide()
   }, RED, false)

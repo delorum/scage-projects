@@ -13,10 +13,10 @@ class SimpleObstacle(obstacle_vertices: Vec*) extends StaticPolygon(obstacle_ver
 
   private val action_id = action {
     touchingBodies.foreach {
-      body => {
-        val user_data = body.getUserData
-        if (user_data != null && user_data.isInstanceOf[Blase]) {
-          user_data.asInstanceOf[Blase].velocity = Vec.zero
+      touching_body => {
+        touching_body.getUserData match {
+          case blase:Blase => blase.velocity = Vec.zero
+          case _ =>
         }
       }
     }
