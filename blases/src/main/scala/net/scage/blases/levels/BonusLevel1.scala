@@ -1,10 +1,13 @@
 package net.scage.blases.levels
 
-import net.scage.blases.Level
 import net.scage.blases.Relatives._
 import net.scage.blases.levelparts.{Star, SpeedPolygon, SpikesPolygon, SimpleObstacle}
+import net.scage.blases.{BonusLevel, Level}
+import net.scage.blases.Blases._
 
-object BonusLevel1 extends Level {
+object BonusLevel1 extends BonusLevel {
+  def bonusCondition = blases_shot <= 30
+
   def constructLevel() {
     new SimpleObstacle(rVec(393, 537), rVec(249, 700), rVec(85, 682), rVec(196, 572))
     new SimpleObstacle(rVec(460, 540), rVec(361, 686), rVec(510, 684))

@@ -7,6 +7,10 @@ import net.scage.ScageLib._
 import net.scage.blases.Relatives._
 
 trait Level {
+  var is_passed = false         // TODO: maybe make them private and create pass() method which changes is_passed value and updates scores
+  var score_for_level = 0
+  var blases_shot_on_level = Integer.MAX_VALUE
+
   def load() {
     constructLevel()
     drawStartFinish()
@@ -32,4 +36,8 @@ trait Level {
       delOperations(render_id, currentOperation)
     }
   }
+}
+
+trait BonusLevel extends Level {
+  def bonusCondition:Boolean
 }

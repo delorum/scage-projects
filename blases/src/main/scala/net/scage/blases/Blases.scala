@@ -13,47 +13,51 @@ import net.scage.Screen
 import net.scage.handlers.controller2.MultiController
 import collection.mutable.{Stack, ArrayBuffer}
 
-case class LevelInfo(level:Level, var is_passed:Boolean = false, var score_for_level:Int = 0, var blases_shot_on_level:Int = 0, is_bonus:Boolean = false, bonus_condition: () => Boolean = () => true)
-
 object LevelSelector {
-  private var current_level = 0
-  private val levels = ArrayBuffer(LevelInfo(Level1),
-                                   LevelInfo(Level2),
-                                   LevelInfo(Level3),
-                                   LevelInfo(Level4),
-                                   LevelInfo(Level5),
-                                   LevelInfo(Level6),
-                                   LevelInfo(BonusLevel1, is_bonus = true, bonus_condition = () => Blases.blases_shot <= 30),
-                                   LevelInfo(TestLevel),
-                                   LevelInfo(Level7),
-                                   LevelInfo(Level8)
-  )
+  private var current_level_num = 0
+  private val levels = ArrayBuffer(Level1,
+                                   Level2,
+                                   Level3,
+                                   Level4,
+                                   Level5,
+                                   Level6,
+                                   BonusLevel1,
+                                   TestLevel,
+                                   Level7,
+                                   Level8)
   
-  def currentLevel = levels(current_level).level
+  def currentLevel = levels(current_level_num)
 
-  def currentLevelNum = current_level
-  def currentLevelNum_=(level_num:Int) {
-    if(level_num >= levels.length || level_num < 0) current_level = 0
-    else {
-      if(levels(current_level).is_bonus) {
-        if(!levels(current_level).bonus_condition()) currentLevelNum = level_num + 1
-        else current_level = level_num
-      } else current_level = level_num
-    }
+  def currentLevelNum = current_level_num
+  def currentLevelNum_=(new_level_num:Int) {
+    val level_num = new_level_num-1
+    if(level_num >= levels.length || level_num < 0) currentLevelNum = 0
+    else if(!levels(level_num).is_passed) {
+      levels(level_num) match {
+        case bonus_level:BonusLevel =>
+          if(bonus_level.bonusCondition) current_level_num = level_num
+          else currentLevelNum = level_num + 1
+        case _ => current_level_num = level_num
+      }
+    } else current_level_num = level_num
   }
 
-  def currentLevelStats = (levels(current_level).score_for_level, levels(current_level).blases_shot_on_level)
-  def currentLevelStats_=(stats:(Int, Int)) {
-    levels(current_level).score_for_level = stats._1
-    levels(current_level).blases_shot_on_level = stats._2
+  def currentLevelScore = levels(current_level_num).score_for_level
+  def currentLevelScore_=(new_score_for_level:Int) {
+    if(new_score_for_level < levels(current_level_num).score_for_level) levels(current_level_num).score_for_level = new_score_for_level
+  }
+
+  def currentLevelBlases = levels(current_level_num).blases_shot_on_level
+  def currentLevelBlases_=(new_blases_shot_on_level:Int) {
+    if(new_blases_shot_on_level < levels(current_level_num).blases_shot_on_level) levels(current_level_num).blases_shot_on_level = new_blases_shot_on_level
   }
 
   def levelStats(level_num:Int) = {
     if(level_num >= levels.length || level_num < 0) (0, 0)
-    else (levels(current_level).score_for_level, levels(current_level).blases_shot_on_level)
+    else (levels(current_level_num).score_for_level, levels(current_level_num).blases_shot_on_level)
   }
 
-  def isLastLevel = current_level == levels.length-1
+  def isLastLevel = current_level_num == levels.length-1
 }
 
 object BlaseSelector {
@@ -145,7 +149,9 @@ object Blases extends Screen("Blases Game") with MultiController {
         })).flatten
         if(!winner_blases.isEmpty) {
           new FlyingWord(score_for_level, YELLOW, winner_blases.head.location, winner_blases.head.velocity)
-          currentLevelStats = (score_for_level, blases_shot_on_level)
+          if(score_for_level > currentLevelScore) currentLevelScore = score_for_level
+          if(blases_shot_on_level < currentLevelBlases) currentLevelBlases = blases_shot_on_level
+          currentLevel.is_passed = true
           score += score_for_level
           score_updated = true
           if(isLastLevel) PauseMenu.showBeatGameMenu()
@@ -183,7 +189,6 @@ object Blases extends Screen("Blases Game") with MultiController {
     //drawTraceGrid(tracer, DARK_GRAY)
     //print(mouseCoord, 20, 20, GREEN)
   }
-
 
   leftMouse(onBtnDown = {mouse_coord =>
     if(!is_game_started) {
@@ -241,9 +246,9 @@ object Blases extends Screen("Blases Game") with MultiController {
       deleteSelf()
     }
 
-    score = 0
-    blases_shot = 0
-    currentLevelNum = 0
+    score = currentLevelScore
+    blases_shot = currentLevelBlases
+    //currentLevelNum = 0
 
     PauseMenu.hide()
   }
