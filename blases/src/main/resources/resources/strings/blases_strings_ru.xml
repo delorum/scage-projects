@@ -60,6 +60,18 @@
         Начать сначала
     </message>
 
+    <message id="button.levels">
+        Уровни
+    </message>
+
+    <message id="level.stats">
+        Лучший счет: $0 Выпущено пузырей: $1
+    </message>
+
+    <message id="bonus1.condition">
+        Пройди уровни 1-6, потратив не больше 30 пузырей
+    </message>
+
     <message id="pause.winlevel">
 Уровень пройден! Очки за уровень: $0
 Общий счет: $1

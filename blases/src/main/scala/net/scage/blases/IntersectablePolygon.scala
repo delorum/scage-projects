@@ -33,9 +33,8 @@ trait IntersectablePolygon {
     }
   }
 
-  // as for now we don't have movable polygons that need intersection checks, so for performance we assume this implementation completely static
-  lazy val vertices_points = {
-    val (min_x, max_x, min_y, max_y) = intersectableVertices.map(vertice => tracer.point(vertice)).foldLeft((tracer.N_x, 0, tracer.N_y, 0)) {
+  private def verticesPoints(vertices:List[Vec]) = {
+    val (min_x, max_x, min_y, max_y) = vertices.map(vertice => tracer.point(vertice)).foldLeft((tracer.N_x, 0, tracer.N_y, 0)) {
       case ((current_min_x, current_max_x, current_min_y, current_max_y), vertice) =>
         val new_min_x = math.min(current_min_x, vertice.ix)
         val new_max_x = math.max(current_max_x, vertice.ix)
@@ -50,7 +49,7 @@ trait IntersectablePolygon {
     } yield Vec(i, j)
     val pew2 = pew1.filter(point => {
       val coord = tracer.pointCenter(point)
-      containsCoord(coord, intersectableVertices) || {
+      containsCoord(coord, vertices) || {
         val point_borders = List(
           (coord + Vec( tracer.h_x,  tracer.h_y),
            coord + Vec( tracer.h_x, -tracer.h_y)),
@@ -64,7 +63,7 @@ trait IntersectablePolygon {
           (coord + Vec(-tracer.h_x, tracer.h_y),
            coord + Vec( tracer.h_x, tracer.h_y))
         )
-        val polygon_borders = (intersectableVertices ::: List(Vec.zero)).zip(Vec.zero :: intersectableVertices).tail.init
+        val polygon_borders = (vertices ::: List(Vec.zero)).zip(Vec.zero :: vertices).tail.init
         point_borders.exists {
           case ((a1, a2)) => polygon_borders.exists {
             case ((b1, b2)) =>
@@ -79,12 +78,12 @@ trait IntersectablePolygon {
 
   def containsCoord(coord: Vec):Boolean = containsCoord(coord, intersectableVertices)
   def blasesInside = {
-    vertices_points.map(point => tracer.tracesInPoint(point)).flatten.
+    verticesPoints(intersectableVertices).map(point => tracer.tracesInPoint(point)).flatten.
       filter(trace => containsCoord(trace.location, intersectableVertices))
   }
   def forEachBlaseInside(func:Blase => Any) {
     for {
-      point <- vertices_points
+      point <- verticesPoints(intersectableVertices)
       blases = tracer.tracesInPoint(point)
       blase <- blases
       if containsCoord(blase.location, intersectableVertices)

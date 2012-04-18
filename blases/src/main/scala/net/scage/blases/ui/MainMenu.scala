@@ -5,6 +5,7 @@ import net.scage.blases.Blases
 import net.scage.ScageLib._
 import net.scage.handlers.controller2.MultiController
 import net.scage.{Screen, ScreenApp, Scage, ScageScreenApp}
+import collection.mutable.ArrayBuffer
 
 object MainMenu extends ScreenApp("Blases", 640, 480) with MultiController {
   backgroundColor = WHITE
@@ -22,17 +23,15 @@ object MainMenu extends ScreenApp("Blases", 640, 480) with MultiController {
     print("v"+app_version, 10, 10, BLACK)
   }
   
-  private var _screen:Option[Screen] = None
-  def runScreen(screen:Screen) {
-    _screen = Some(screen)
-    action {
-      _screen match {
-        case Some(new_screen) =>
-          new_screen.run()
-          backgroundColor = WHITE
-        case None =>
-      }
-      deleteSelf()
-    }        
+  private val screens = ArrayBuffer[Screen]()
+  def runNextScreen(screen:Screen) {
+    screens += screen
+  }
+  action {
+    if(!screens.isEmpty) {
+      val next_screen = screens.remove(0)
+      next_screen.run()
+      backgroundColor = WHITE
+    }
   }
 }

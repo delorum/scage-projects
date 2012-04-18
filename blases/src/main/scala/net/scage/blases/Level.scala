@@ -40,4 +40,5 @@ trait Level {
 
 trait BonusLevel extends Level {
   def bonusCondition:Boolean
+  def bonusConditionDescription:String
 }

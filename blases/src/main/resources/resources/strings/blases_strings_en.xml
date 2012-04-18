@@ -60,6 +60,18 @@
         Play All Levels Again
     </message>
 
+    <message id="button.levels">
+        Levels
+    </message>
+
+    <message id="level.stats">
+        Best Score: $0 Blases: $1
+    </message>
+
+    <message id="bonus1.condition">
+        Pass levels 1-6 with less than 30 blases
+    </message>
+
     <message id="pause.winlevel">
 You win! Score for the level: $0
 Overall score: $1

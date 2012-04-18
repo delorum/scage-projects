@@ -9,16 +9,16 @@ import net.scage.handlers.controller2.MultiController
 import net.scage.blases.IntersectablePolygon
 
 class Button(message: => String,
-             var coord: Vec,
+             coord: Vec,
              width: Int,
              screen: Screen with MultiController,
              onBtnPressed: => Any,
-             var color:ScageColor = BLACK,
+             color:ScageColor = BLACK,
              var visible:Boolean = true) extends IntersectablePolygon {
-  val intersectableVertices = List(rVec(coord) + Vec(-5, 20),
-      rVec(coord) + Vec(-5 + width, 20),
-      rVec(coord) + Vec(-5 + width, -10),
-      rVec(coord) + Vec(-5, -10))
+  def intersectableVertices = List(rVec(coord) + Vec(-5, 20),
+                                   rVec(coord) + Vec(-5 + width, 20),
+                                   rVec(coord) + Vec(-5 + width, -10),
+                                   rVec(coord) + Vec(-5, -10))
 
   screen.interface {
     if(visible) {

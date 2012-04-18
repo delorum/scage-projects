@@ -28,7 +28,7 @@ object LevelSelector {
   
   def currentLevel = levels(current_level_num)
 
-  def currentLevelNum = current_level_num
+  def currentLevelNum = current_level_num+1
   def currentLevelNum_=(new_level_num:Int) {
     val level_num = new_level_num-1
     if(level_num >= levels.length || level_num < 0) currentLevelNum = 0
@@ -44,12 +44,12 @@ object LevelSelector {
 
   def currentLevelScore = levels(current_level_num).score_for_level
   def currentLevelScore_=(new_score_for_level:Int) {
-    if(new_score_for_level < levels(current_level_num).score_for_level) levels(current_level_num).score_for_level = new_score_for_level
+    levels(current_level_num).score_for_level = new_score_for_level
   }
 
   def currentLevelBlases = levels(current_level_num).blases_shot_on_level
   def currentLevelBlases_=(new_blases_shot_on_level:Int) {
-    if(new_blases_shot_on_level < levels(current_level_num).blases_shot_on_level) levels(current_level_num).blases_shot_on_level = new_blases_shot_on_level
+    levels(current_level_num).blases_shot_on_level = new_blases_shot_on_level
   }
 
   def levelStats(level_num:Int) = {
@@ -111,19 +111,6 @@ object Blases extends Screen("Blases Game") with MultiController {
                                         solid_edges = false)
   }
 
-  /*private[blases] var current_level = 0
-  private[blases] val levels = ArrayBuffer(LevelInfo(Level1),
-                                           LevelInfo(Level2),
-                                           LevelInfo(Level3),
-                                           LevelInfo(Level4),
-                                           LevelInfo(Level5),
-                                           LevelInfo(Level6),
-                                           LevelInfo(BonusLevel1, is_bonus = true, bonus_condition = blases_shot <= 30),
-                                           LevelInfo(TestLevel),
-                                           LevelInfo(Level7),
-                                           LevelInfo(Level8)
-  )*/
-
   private[blases] var score = 0
   private[blases] var score_for_level = 10000
   private[blases] var score_updated = false
@@ -145,7 +132,7 @@ object Blases extends Screen("Blases Game") with MultiController {
         PauseMenu.showLoseLevelMenu()
       } else {
         val winner_blases = currentLevel.finishCoords.map(finish_coord => tracer.tracesNearCoord(finish_coord, -1 to 1, condition = {
-          blase => blase.location.dist(finish_coord) < 30
+          blase => blase.location.dist(finish_coord) < rInt(30)
         })).flatten
         if(!winner_blases.isEmpty) {
           new FlyingWord(score_for_level, YELLOW, winner_blases.head.location, winner_blases.head.velocity)
@@ -246,9 +233,8 @@ object Blases extends Screen("Blases Game") with MultiController {
       deleteSelf()
     }
 
-    score = currentLevelScore
-    blases_shot = currentLevelBlases
-    //currentLevelNum = 0
+    score = 0
+    blases_shot = 0
 
     PauseMenu.hide()
   }
