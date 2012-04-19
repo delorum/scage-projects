@@ -32,11 +32,11 @@ object LevelSelector {
   def currentLevelNum_=(new_level_num:Int) {
     val level_num = new_level_num-1
     if(level_num >= levels.length || level_num < 0) currentLevelNum = 0
-    else if(!levels(level_num).is_passed) {
+    else if(!levels(level_num).is_entered) {
       levels(level_num) match {
         case bonus_level:BonusLevel =>
           if(bonus_level.bonusCondition) current_level_num = level_num
-          else currentLevelNum = level_num + 1
+          else currentLevelNum = new_level_num + 1
         case _ => current_level_num = level_num
       }
     } else current_level_num = level_num
@@ -138,7 +138,6 @@ object Blases extends Screen("Blases Game") with MultiController {
           new FlyingWord(score_for_level, YELLOW, winner_blases.head.location, winner_blases.head.velocity)
           if(score_for_level > currentLevelScore) currentLevelScore = score_for_level
           if(blases_shot_on_level < currentLevelBlases) currentLevelBlases = blases_shot_on_level
-          currentLevel.is_passed = true
           score += score_for_level
           score_updated = true
           if(isLastLevel) PauseMenu.showBeatGameMenu()
@@ -242,6 +241,7 @@ object Blases extends Screen("Blases Game") with MultiController {
   private var is_game_started = false
   init {
     currentLevel.load()
+    currentLevel.is_entered = true
     is_game_started = false
     clearSelectionHistory()
     score_for_level = 10000

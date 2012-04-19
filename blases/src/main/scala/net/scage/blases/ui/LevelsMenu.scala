@@ -28,15 +28,16 @@ case class LevelButton(level:Level,
 }
 
 object LevelsMenu extends Screen("Blases Levels") with MultiController {
-  val level1_button      = new LevelButton(Level1,      1, Vec(512, 384) + Vec(-(30+40)*3, 120))
-  val level2_button      = new LevelButton(Level2,      2, Vec(512, 384) + Vec(-(30+40)*2, 120))
-  val level3_button      = new LevelButton(Level3,      3, Vec(512, 384) + Vec(-(30+40)*1, 120))
-  val level4_button      = new LevelButton(Level4,      4, Vec(512, 384) + Vec(-(30+40)*0, 120))
-  val level5_button      = new LevelButton(Level5,      5, Vec(512, 384) + Vec( (30+40)*1, 120))
-  val level6_button      = new LevelButton(Level6,      6, Vec(512, 384) + Vec( (30+40)*2, 120))
-  val bonuslevel1_button = new LevelButton(BonusLevel1, 7, Vec(512, 384) + Vec( (40+40)*3, 120))
-  val level7_button      = new LevelButton(Level7,      8, Vec(512, 384) + Vec(-(30+40)*3, 40))
-  val level8_button      = new LevelButton(Level8,      9, Vec(512, 384) + Vec(-(30+40)*2, 40))
+  val level1_button      = LevelButton(Level1,      1,  Vec(512, 384) + Vec(-(40+40)*3, 120))
+  val level2_button      = LevelButton(Level2,      2,  Vec(512, 384) + Vec(-(40+40)*2, 120))
+  val level3_button      = LevelButton(Level3,      3,  Vec(512, 384) + Vec(-(40+40)*1, 120))
+  val level4_button      = LevelButton(Level4,      4,  Vec(512, 384) + Vec(-(40+40)*0, 120))
+  val level5_button      = LevelButton(Level5,      5,  Vec(512, 384) + Vec( (40+40)*1, 120))
+  val level6_button      = LevelButton(Level6,      6,  Vec(512, 384) + Vec( (40+40)*2, 120))
+  val bonuslevel1_button = LevelButton(BonusLevel1, 7,  Vec(512, 384) + Vec( (50+40)*3, 120))
+  val testlevel_button   = LevelButton(TestLevel,   8,  Vec(512, 384) + Vec(-(40+40)*3, 40))
+  val level7_button      = LevelButton(Level7,      9,  Vec(512, 384) + Vec(-(40+40)*2, 40))
+  val level8_button      = LevelButton(Level8,      10, Vec(512, 384) + Vec(-(40+40)*1, 40))
 
   val back_button = new Button(xml("button.back"), Vec(512, 384) + Vec(-40, -40), 100, LevelsMenu, stop())
 
@@ -46,27 +47,29 @@ object LevelsMenu extends Screen("Blases Levels") with MultiController {
                                  level4_button,
                                  level5_button,
                                  level6_button,
-                                 bonuslevel1_button, 
+                                 bonuslevel1_button,
+                                 testlevel_button,
                                  level7_button, 
                                  level8_button)
   
   interface {
     all_buttons.foreach {
       case LevelButton(level, level_num, coord) =>
-        if(level.is_passed) currentColor = BLACK
+        if(level.is_entered) currentColor = BLACK
         else currentColor = GRAY
         drawRectCentered(rVec(coord), 40, 40)
-        print(level_num, rVec(coord) - Vec(5, 5))
+        if(level_num < 10) print(level_num, rVec(coord) - Vec(5, 7)) // 5,7
+        else print(level_num, rVec(coord) - Vec(10, 7))
     }
 
     all_buttons.find(_.containsCoord(mouseCoord)) match {
       case Some(LevelButton(bonus_level:BonusLevel, _, _)) =>
-        if(bonus_level.is_passed) {
+        if(bonus_level.is_entered) {
           print(xml("level.stats", bonus_level.score_for_level, bonus_level.blases_shot_on_level), 10, 10, BLACK)
         } else {
           print(bonus_level.bonusConditionDescription, 10, 10, BLACK)
         }
-      case Some(LevelButton(level:Level, _, _)) if(level.is_passed) =>
+      case Some(LevelButton(level:Level, _, _)) if(level.is_entered) =>
         print(xml("level.stats", level.score_for_level, level.blases_shot_on_level), 10, 10, BLACK)
       case _ =>
     }
@@ -74,7 +77,7 @@ object LevelsMenu extends Screen("Blases Levels") with MultiController {
 
   leftMouseNoPause(onBtnDown = m =>
     all_buttons.find {
-      case button @ LevelButton(level, level_num, _) => level.is_passed && button.containsCoord(m)
+      case button @ LevelButton(level, level_num, _) => level.is_entered && button.containsCoord(m)
     } match {
       case Some(LevelButton(level, level_num, _)) =>
         currentLevelNum = level_num

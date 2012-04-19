@@ -7,7 +7,12 @@ import net.scage.blases.Blases._
 import net.scage.ScageLib._
 
 object BonusLevel1 extends BonusLevel {
-  def bonusCondition = blases_shot <= 30
+  def bonusCondition = (Level1.blases_shot_on_level +
+                        Level2.blases_shot_on_level +
+                        Level3.blases_shot_on_level +
+                        Level4.blases_shot_on_level +
+                        Level5.blases_shot_on_level +
+                        Level6.blases_shot_on_level) <= 30
   def bonusConditionDescription = xml("bonus1.condition")
 
   def constructLevel() {
