@@ -6,6 +6,7 @@ import net.scage.support.Vec
 
 object CenteredTextTest extends ScageScreenApp("Centered Text", 640, 480) {
   private var ang = 0.0f
+  val message = "Hello\nWorld\n!"
   action(100) {
     ang += 5f
   }
@@ -13,7 +14,7 @@ object CenteredTextTest extends ScageScreenApp("Centered Text", 640, 480) {
   render {
     openglMove(windowCenter)
     openglRotate(ang)
-    printCentered("Hello World!", 0, 0, WHITE)
+    printCentered(message, 0, 0, WHITE)
     drawFilledCircle(Vec.zero, 5, RED)
   }
 }
