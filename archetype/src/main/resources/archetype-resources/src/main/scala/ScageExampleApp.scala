@@ -25,9 +25,9 @@ object ScageExampleApp extends ScreenApp("Scage Example App") with MultiControll
         val rect_color = property("rect.color", RED)
         val tracer = CoordTracer()
 
-        val trace = tracer.addTrace(Vec(window_width/2, window_height/2))
+        val trace = tracer.addTrace(Vec(windowWidth/2, windowHeight/2))
 
-        val another_trace = tracer.addTrace(Vec(window_width/4, window_height/2))
+        val another_trace = tracer.addTrace(Vec(windowWidth/4, windowHeight/2))
 
         def moveIfFreeLocation(trace:Trace, delta:Vec) {
           val new_location = trace.location + delta
@@ -71,7 +71,7 @@ object ScageExampleApp extends ScreenApp("Scage Example App") with MultiControll
 
         val stars = displayList {   // I like "starry sky" since high school =)
           for(i <- 1 to 100) {
-            drawPoint(Vec(math.random.toFloat*window_width, math.random.toFloat*window_height), randomColor)
+            drawPoint(Vec(math.random.toFloat*windowWidth, math.random.toFloat*windowHeight), randomColor)
           }
         }
 
@@ -107,7 +107,7 @@ object ScageExampleApp extends ScreenApp("Scage Example App") with MultiControll
         backgroundColor = fromStringOrDefault("BLACK", BLACK)    // test method to obtain color by name
         val another_font = new ScageMessage(max_font_size = 15, font_file = "comic.ttf") // test using two different fonts in one app
         interface {
-          another_font.print(xml("hello.world"), window_width/2, window_height/2+20, WHITE)
+          another_font.print(xml("hello.world"), windowWidth/2, windowHeight/2+20, WHITE)
         }
 
         interfaceFromXml("scagetest.help", Array(trace.location, tracer.point(trace.location), fps, input_text))
@@ -138,45 +138,45 @@ object ScageExampleApp extends ScreenApp("Scage Example App") with MultiControll
           }
           pew(Vec.zero)
           if(globalScale > 1) {
-            pew(Vec(0, window_height - 40))
-            pew(Vec(0, -window_height + 40))
-            pew(Vec(window_width - 80, 0))
-            pew(Vec(-window_width + 80, 0))
+            pew(Vec(0, windowHeight - 40))
+            pew(Vec(0, -windowHeight + 40))
+            pew(Vec(windowWidth - 80, 0))
+            pew(Vec(-windowWidth + 80, 0))
 
-            pew(Vec(window_width - 80, window_height - 40))
-            pew(Vec(window_width - 80, -window_height + 40))
-            pew(Vec(-window_width + 80, window_height - 40))
-            pew(Vec(-window_width + 80, -window_height + 40))
+            pew(Vec(windowWidth - 80, windowHeight - 40))
+            pew(Vec(windowWidth - 80, -windowHeight + 40))
+            pew(Vec(-windowWidth + 80, windowHeight - 40))
+            pew(Vec(-windowWidth + 80, -windowHeight + 40))
           }
         }
         render(10) {
           def pew(v:Vec) {drawFilledRect(Vec(100, 30)+v, 60, 20, YELLOW)}
           pew(Vec.zero)
           if(globalScale > 1) {
-            pew(Vec(0, window_height - 40))
-            pew(Vec(0, -window_height + 40))
-            pew(Vec(window_width - 80, 0))
-            pew(Vec(-window_width + 80, 0))
+            pew(Vec(0, windowHeight - 40))
+            pew(Vec(0, -windowHeight + 40))
+            pew(Vec(windowWidth - 80, 0))
+            pew(Vec(-windowWidth + 80, 0))
 
-            pew(Vec(window_width - 80, window_height - 40))
-            pew(Vec(window_width - 80, -window_height + 40))
-            pew(Vec(-window_width + 80, window_height - 40))
-            pew(Vec(-window_width + 80, -window_height + 40))
+            pew(Vec(windowWidth - 80, windowHeight - 40))
+            pew(Vec(windowWidth - 80, -windowHeight + 40))
+            pew(Vec(-windowWidth + 80, windowHeight - 40))
+            pew(Vec(-windowWidth + 80, -windowHeight + 40))
           }
         }
         render(-10) {
-          def pew(v:Vec) {drawLines(tracer.traceGrid.map(_ + v), DARK_GRAY)}
+          def pew(v:Vec) {drawLines(tracer.trace_grid.map(_ + v), DARK_GRAY)}
           pew(Vec.zero)
           if(globalScale > 1) {
-            pew(Vec(0, window_height - 40))
-            pew(Vec(0, -window_height + 40))
-            pew(Vec(window_width - 80, 0))
-            pew(Vec(-window_width + 80, 0))
+            pew(Vec(0, windowHeight - 40))
+            pew(Vec(0, -windowHeight + 40))
+            pew(Vec(windowWidth - 80, 0))
+            pew(Vec(-windowWidth + 80, 0))
 
-            pew(Vec(window_width - 80, window_height - 40))
-            pew(Vec(window_width - 80, -window_height + 40))
-            pew(Vec(-window_width + 80, window_height - 40))
-            pew(Vec(-window_width + 80, -window_height + 40))
+            pew(Vec(windowWidth - 80, windowHeight - 40))
+            pew(Vec(windowWidth - 80, -windowHeight + 40))
+            pew(Vec(-windowWidth + 80, windowHeight - 40))
+            pew(Vec(-windowWidth + 80, -windowHeight + 40))
           }
         }
 
@@ -229,7 +229,7 @@ object ScageExampleApp extends ScreenApp("Scage Example App") with MultiControll
         }
 
         private var ang = 0f
-          actionStaticPeriod(100) {
+          action(100) {
           ang += 5
         }
 

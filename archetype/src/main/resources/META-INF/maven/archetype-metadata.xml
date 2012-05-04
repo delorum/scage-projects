@@ -38,8 +38,10 @@
       <includes>
         <include>assembly.xml</include>
           <include>build.properties</include>
+          <include>local-build.properties</include>
           <include>pom.xml</include>
           <include>readme_rus</include>
+          <include>readme</include>
       </includes>
     </fileSet>
   </fileSets>
