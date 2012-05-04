@@ -28,15 +28,14 @@ object LevelSelector {
   
   def currentLevel = levels(current_level_num)
 
-  def currentLevelNum = current_level_num+1
-  def currentLevelNum_=(new_level_num:Int) {
-    val level_num = new_level_num-1
-    if(level_num >= levels.length || level_num < 0) currentLevelNum = 0
+  def currentLevelNum = current_level_num
+  def currentLevelNum_=(level_num:Int) {
+    if(level_num >= levels.length || level_num < 0) current_level_num = 0
     else if(!levels(level_num).is_entered) {
       levels(level_num) match {
         case bonus_level:BonusLevel =>
           if(bonus_level.bonusCondition) current_level_num = level_num
-          else currentLevelNum = new_level_num + 1
+          else currentLevelNum = level_num + 1
         case _ => current_level_num = level_num
       }
     } else current_level_num = level_num

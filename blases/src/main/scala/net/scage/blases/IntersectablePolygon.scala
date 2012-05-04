@@ -8,16 +8,14 @@ trait IntersectablePolygon {
 
   private def areLinesIntersect(a1: Vec, a2: Vec, b1: Vec, b2: Vec): Boolean = {
     val common = (a2.x - a1.x) * (b2.y - b1.y) - (a2.y - a1.y) * (b2.x - b1.x)
-    if (common == 0) false
-    else {
+    common != 0 && {
       val rH = (a1.y - b1.y) * (b2.x - b1.x) - (a1.x - b1.x) * (b2.y - b1.y)
       val sH = (a1.y - b1.y) * (a2.x - a1.x) - (a1.x - b1.x) * (a2.y - a1.y)
 
       val r = rH / common
       val s = sH / common
 
-      if (r >= 0 && r <= 1 && s >= 0 && s <= 1) true
-      else false
+      r >= 0 && r <= 1 && s >= 0 && s <= 1
     }
   }
 

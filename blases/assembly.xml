@@ -22,10 +22,10 @@
         </fileSet>
     </fileSets>
     <files>
-        <file>
+        <!--<file>
             <source>${scageproperties}</source>
             <outputDirectory>/</outputDirectory>
-        </file>
+        </file>-->
         <file>
             <source>${project.build.directory}/${project.artifactId}-${project.version}.jar</source>
             <outputDirectory>lib</outputDirectory>

@@ -28,16 +28,16 @@ case class LevelButton(level:Level,
 }
 
 object LevelsMenu extends Screen("Blases Levels") with MultiController {
-  val level1_button      = LevelButton(Level1,      1,  Vec(512, 384) + Vec(-(40+40)*3, 120))
-  val level2_button      = LevelButton(Level2,      2,  Vec(512, 384) + Vec(-(40+40)*2, 120))
-  val level3_button      = LevelButton(Level3,      3,  Vec(512, 384) + Vec(-(40+40)*1, 120))
-  val level4_button      = LevelButton(Level4,      4,  Vec(512, 384) + Vec(-(40+40)*0, 120))
-  val level5_button      = LevelButton(Level5,      5,  Vec(512, 384) + Vec( (40+40)*1, 120))
-  val level6_button      = LevelButton(Level6,      6,  Vec(512, 384) + Vec( (40+40)*2, 120))
-  val bonuslevel1_button = LevelButton(BonusLevel1, 7,  Vec(512, 384) + Vec( (50+40)*3, 120))
-  val testlevel_button   = LevelButton(TestLevel,   8,  Vec(512, 384) + Vec(-(40+40)*3, 40))
-  val level7_button      = LevelButton(Level7,      9,  Vec(512, 384) + Vec(-(40+40)*2, 40))
-  val level8_button      = LevelButton(Level8,      10, Vec(512, 384) + Vec(-(40+40)*1, 40))
+  val level1_button      = LevelButton(Level1,      0, Vec(512, 384) + Vec(-(40+40)*3, 120))
+  val level2_button      = LevelButton(Level2,      1, Vec(512, 384) + Vec(-(40+40)*2, 120))
+  val level3_button      = LevelButton(Level3,      2, Vec(512, 384) + Vec(-(40+40)*1, 120))
+  val level4_button      = LevelButton(Level4,      3, Vec(512, 384) + Vec(-(40+40)*0, 120))
+  val level5_button      = LevelButton(Level5,      4, Vec(512, 384) + Vec( (40+40)*1, 120))
+  val level6_button      = LevelButton(Level6,      5, Vec(512, 384) + Vec( (40+40)*2, 120))
+  val bonuslevel1_button = LevelButton(BonusLevel1, 6, Vec(512, 384) + Vec( (50+40)*3, 120))
+  val testlevel_button   = LevelButton(TestLevel,   7, Vec(512, 384) + Vec(-(40+40)*3, 40))
+  val level7_button      = LevelButton(Level7,      8, Vec(512, 384) + Vec(-(40+40)*2, 40))
+  val level8_button      = LevelButton(Level8,      9, Vec(512, 384) + Vec(-(40+40)*1, 40))
 
   val back_button = new Button(xml("button.back"), Vec(512, 384) + Vec(-40, -40), 100, LevelsMenu, stop())
 
