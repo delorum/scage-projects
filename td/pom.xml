@@ -6,9 +6,9 @@
   <version>0.1</version>
   <inceptionYear>2011</inceptionYear>
 
-  <name>Scage Project</name>
-  <description>Simple Scage Project Stub</description>
-  <url>http://example.com</url>
+  <name>Trafalgar Defence</name>
+  <description>Simple TD Game</description>
+  <url>http://fzeulf.netris.ru/bor/${artifactId}</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -23,7 +23,7 @@ class ScageAppTest extends TestCase("app") {
      * Rigourous Tests :-)
      */
     def testOK() = {
-      ScageExampleApp.main(Array[String]())
+      TrafalgarDefence.main(Array[String]())
       assertTrue(true)
     };
     //def testKO() = assertTrue(false);
