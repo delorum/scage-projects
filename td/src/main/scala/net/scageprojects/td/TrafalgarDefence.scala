@@ -124,9 +124,8 @@ class Enemy(init_point:Vec, end_point:Vec) extends Trace with Mover {
   private var path = findPath(init_point, end_point)
   private var next_coord = tracer.pointCenter(init_point)
   onEvent("New Tower Placed") {
-    case _ =>
-      path = findPath(tracer.point(location), end_point)
-      if(!path.isEmpty) next_coord = path.pop()
+    path = findPath(tracer.point(location), end_point)
+    if(!path.isEmpty) next_coord = path.pop()
   }
 
   action(10) {
