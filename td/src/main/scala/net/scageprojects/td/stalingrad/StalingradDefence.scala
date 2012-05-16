@@ -1,11 +1,11 @@
-package net.scageprojects.td
+package net.scageprojects.td.stalingrad
 
 import net.scage.ScageScreenApp
 import net.scage.ScageLib._
 import org.newdawn.slick.util.pathfinding.{Mover, PathFindingContext, TileBasedMap, AStarPathFinder}
 import net.scage.support.tracer3.{CoordTracer, ScageTracer, Trace}
 import collection.mutable.{ArrayBuffer, Stack}
-import net.scage.support.{ScageColor, State, Vec}
+import net.scage.support.{PathFinder, ScageColor, State, Vec}
 
 object StalingradDefence extends ScageScreenApp("Stalingrad Defence", 800, 600) {
   val tracer = CoordTracer(
@@ -16,29 +16,12 @@ object StalingradDefence extends ScageScreenApp("Stalingrad Defence", 800, 600) 
     init_h_x = 20,
     init_h_y = 20
   )
-  val path_finder = new AStarPathFinder(new TileBasedMap {
-    def getWidthInTiles = tracer.N_x
-    def getHeightInTiles = tracer.N_y
-    def pathFinderVisited(x:Int, y:Int) {}
-    def blocked(context:PathFindingContext, tx:Int, ty:Int) = {
-      tracer.tracesInPoint(tx, ty).exists(trace => trace.state.contains("impassable"))
-    }
-    def getCost(context:PathFindingContext, tx:Int, ty:Int) = 1f
-  }, 100500, true)
-
-  def findPath(p1:Vec, p2:Vec) = {
-    val slick_path = path_finder.findPath(null, p1.ix, p1.iy, p2.ix, p2.iy)
-    if(slick_path != null) Stack((for(i <- 0 until slick_path.getLength) yield tracer.pointCenter(Vec(slick_path.getX(i), slick_path.getY(i)))):_*)
-    else Stack[Vec]()
-  }
+  val path_finder = PathFinder(tracer, is_blocked = (x, y) => tracer.tracesInPoint(x, y).exists(trace => trace.state.contains("impassable")))
 
   render {
     drawTraceGrid(tracer, DARK_GRAY)
     drawTraceLocations(tracer, GREEN, 4)
   }
-
-  private var first_point = Vec(-1, -1)
-  private var test_path = ArrayBuffer[Vec]()
 
   leftMouse(onBtnDown = {m =>
     val p = tracer.point(m)
@@ -49,11 +32,6 @@ object StalingradDefence extends ScageScreenApp("Stalingrad Defence", 800, 600) 
       if(towers_nearby.isEmpty) new Tower(p)
     }
   })
-
-  render {
-    test_path.foreach(p => drawFilledCircle(p, 3, YELLOW))
-    if(first_point != Vec(-1, -1)) drawFilledCircle(tracer.pointCenter(first_point), 3, RED)
-  }
 
   private var all_nazis_dead = true
   def wave(amount:Int) {
@@ -160,10 +138,10 @@ class Enemy(init_point:Vec, end_point:Vec) extends Trace with Mover {
 
   tracer.addTrace(tracer.pointCenter(init_point), this)
 
-  private var path = findPath(init_point, end_point)
+  private var path = path_finder.findPath(init_point, end_point).map(tracer.pointCenter(_))
   private var next_coord = tracer.pointCenter(init_point)
   private val event_id = onEvent("New Tower Placed") {
-    path = findPath(tracer.point(location), end_point)
+    path = path_finder.findPath(tracer.point(location), end_point).map(tracer.pointCenter(_))
     if(!path.isEmpty) next_coord = path.pop()
   }
 
@@ -180,7 +158,7 @@ class Enemy(init_point:Vec, end_point:Vec) extends Trace with Mover {
   }
 
   private val render_id = render {
-    drawCircle(location, 10, if(_hp > 0) WHITE else BLUE)
+    drawCircle(location, 10, WHITE)
     drawFilledCircle(next_coord, 3, RED)
   }
 
