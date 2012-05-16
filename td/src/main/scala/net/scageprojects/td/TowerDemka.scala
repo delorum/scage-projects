@@ -2,11 +2,11 @@ package net.scageprojects.td
 
 import net.scage.ScageScreenApp
 import net.scage.ScageLib._
-import net.scage.support.tracer3.{Trace, CoordTracer}
-import net.scage.support.{ScageColor, State, Vec, PathFinder}
+import net.scage.support.{ScageColor, State, Vec}
+import net.scage.support.tracer3.{DefaultTrace, Trace, CoordTracer}
 
 object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
-  val tracer = CoordTracer(
+  val tracer = CoordTracer.create[Trace with HaveType with Damageable](
     field_from_x = 10,
     field_to_x = 790,
     field_from_y = 110,
@@ -17,7 +17,6 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
 
   render {
     drawTraceGrid(tracer, DARK_GRAY)
-    //drawTraceLocations(tracer, GREEN, 4)
   }
 
   private val PLACE_TOWER = 0
@@ -30,20 +29,24 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
   leftMouse(onBtnDown = {m =>
     val p = tracer.point(m)
     if(p.x > 0 && p.x < tracer.N_x-1) {
-      val buildings_in_point = tracer.tracesInPoint(p, condition = trace => trace.state.contains("building"))
-      if(buildings_in_point.isEmpty) {
+      val traces_in_point = tracer.tracesInPoint(p)
+      if(traces_in_point.isEmpty) {
         which_building match {
           case PLACE_TOWER => new Tower(p)
           case PLACE_WALL => new Wall(p)
           case _ =>
         }
+      } else {
+        val trace_in_point = traces_in_point.head
+
       }
     }
   })
 
-  private var count = 30+1
+  private val respawn_time = property("respawn.time", 30)
+  private var count = respawn_time
   init {
-    count = 30+1
+    count = respawn_time
   }
 
   action(1000) {
@@ -52,11 +55,9 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
       val start = Vec(0, (math.random*tracer.N_y).toInt)
       val end = Vec(tracer.N_x-1, start.y)
       new Enemy(start, end)
-      count = 30+1
+      count = respawn_time
     }
   }
-
-  Base
 
   interface {
     print("Next enemy spawn in "+count, 10, 10+80, WHITE)
@@ -67,24 +68,66 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
       case _ =>
     })+" (Press 1 or 2 to change)", 10, 10+40, WHITE)
 
-    print("Health: "+Base.hp, 10, 10, WHITE)
+    print("Hitpoints: "+Base.hp, 10, 10, WHITE)
   }
+}
+
+trait HaveHitPoints {
+  def hp:Int
+  protected def hp_=(new_hp:Int)
+}
+
+trait SelfHitPoints extends HaveHitPoints {
+  private var _hp = 0
+  def hp = _hp
+  protected def hp_=(new_hp:Int) {_hp = new_hp}
+}
+
+trait SelfRemovable {
+  protected def remove()
+}
+
+trait Damageable extends HaveHitPoints with SelfRemovable {
+  def damage(damage_amount:Int) {
+    hp -= damage_amount
+    if(hp <= 0) {
+      remove()
+    }
+  }
+}
+
+trait HaveType {
+  def trace_type:Int    // 0 or 1, enemy or building
+}
+
+trait EnemyType extends HaveType {
+  val trace_type = 0
+}
+
+trait BuildingType extends HaveType {
+  val trace_type = 1
 }
 
 import TowerDemka._
 
-class Tower(point:Vec) extends Trace {
-  var hp = 30
-  var attack = 6
-  var attack_speed = 10f  // один выстрел в 2 секунды
+trait SelfInsertable extends Trace with HaveType with Damageable {
+  def init_point:Vec
+  tracer.addTrace(tracer.pointCenter(init_point), this)
+}
 
-  tracer.addTrace(tracer.pointCenter(point), this)
+class Tower(val init_point:Vec) extends DefaultTrace with SelfHitPoints with BuildingType with SelfInsertable {
+  hp = property("tower.hp", 30)
+
+  private var _attack = property("tower.attack", 6)
+  def attack = _attack
+
+  val attack_speed = property("tower.attack_speed", 10f)  // один выстрел в 2 секунды
 
   private val action_id = action {
     val enemies = tracer.tracesInPointRange(
-      point.ix - 1 to point.ix + 1,
-      point.iy - 1 to point.iy + 1,
-      condition = {trace => trace.state.contains("enemy") && trace.state.value[Int]("hp") > 0})
+      init_point.ix - 1 to init_point.ix + 1,
+      init_point.iy - 1 to init_point.iy + 1,
+      condition = {trace => trace.trace_type == 0 && trace.hp > 0})
     if(!enemies.isEmpty) {
       val nearest_enemy = enemies.foldLeft(enemies.head) {
         case (current_nearest, next_enemy) => if(next_enemy.location.dist(location) < current_nearest.location.dist(location)) next_enemy else current_nearest
@@ -93,28 +136,52 @@ class Tower(point:Vec) extends Trace {
     }
   }
 
+  /*private var can_upgrade = false
+  private var upgrade_countdown = 1.5f*60
+  def upgrade() {
+    if(can_upgrade) {
+      _attack += _attack*0.1f
+      startUpgradeCountDown()
+    }
+  }
+  def startUpgradeCountDown() {
+    can_upgrade = false
+    upgrade_countdown = 1.5f*60
+
+    new {
+      def remove() {
+        delOperations(upgrade_clear_id, upgrade_clear_id)
+      }
+
+      val upgrade_countdown_action_id:Int = action(1000) {
+        upgrade_countdown -= 1
+        if(upgrade_countdown <= 0) {
+          can_upgrade = true
+          remove()
+        }
+      }
+
+      val upgrade_clear_id:Int = clear {
+        remove()
+      }
+    }
+  }
+  startUpgradeCountDown()*/
+
   private val render_id = render {
     drawRectCentered(location, tracer.h_x, tracer.h_y, YELLOW)
-    printCentered(hp, location)
+    /*val tower_info = "HP: "+hp+"\n"+"Attack: "+_attack+"\n"+(
+      if(can_upgrade) "Click To Upgrade" else upgrade_countdown
+    )*/
+    printCentered(/*tower_info*/hp, location)
   }
 
   private var last_shoot_time = 0L
-  private var shoot_timeout = 2000*(attack_speed/10f)
-  private def shoot(target:Trace) {
+  private val shoot_timeout = 2000*(attack_speed/10f)
+  private def shoot(target:Trace with HaveHitPoints with Damageable) {
     if(msecsFrom(last_shoot_time) > shoot_timeout) {
-      new Bullet(location, target, attack, YELLOW)
+      new Bullet(location, target, _attack, YELLOW)
       last_shoot_time = msecs
-    }
-  }
-
-  def state = State("building" -> true, "tower" -> true, "hp" -> hp)
-  def changeState(changer:Trace, s:State) {
-    s.neededKeys {
-      case ("damage", damage:Int) =>
-        hp -= damage
-        if(hp <= 0) {
-          remove()
-        }
     }
   }
 
@@ -128,25 +195,12 @@ class Tower(point:Vec) extends Trace {
   }
 }
 
-class Wall(point:Vec) extends Trace {
-  var hp = 35
-
-  tracer.addTrace(tracer.pointCenter(point), this)
+class Wall(val init_point:Vec) extends DefaultTrace with SelfHitPoints with BuildingType with SelfInsertable {
+  hp = property("wall.hp", 35)
 
   private val render_id = render {
     drawRectCentered(location, tracer.h_x, tracer.h_y, BLUE)
     printCentered(hp, location)
-  }
-
-  def state = State("building" -> true, "wall" -> true, "hp" -> hp)
-  def changeState(changer:Trace, s:State) {
-    s.neededKeys {
-      case ("damage", damage:Int) =>
-        hp -= damage
-        if(hp <= 0) {
-          remove()
-        }
-    }
   }
 
   def remove() {
@@ -159,23 +213,21 @@ class Wall(point:Vec) extends Trace {
   }
 }
 
-object Base {
-  var hp = 45
+object Base extends SelfHitPoints {
+  hp = property("base.hp", 45)
+
   init {
-    hp = 45
+    hp = property("base.hp", 45)
   }
 
-  for(y <- 0 until tracer.N_y) tracer.addTrace(tracer.pointCenter(Vec(tracer.N_x-1, y)), new Trace {
-    def state = State("building" -> true, "base" -> true, "hp" -> hp)
-    def changeState(changer:Trace, s:State) {
-      s.neededKeys {
-        case ("damage", damage:Int) =>
-          hp -= damage
-          if(hp <= 0) {
-            restart()
-          }
-      }
-    }
+  private def base_hp = hp
+  private def base_hp_=(new_base_hp:Int) {hp = new_base_hp}
+
+  for(y <- 0 until tracer.N_y) tracer.addTrace(tracer.pointCenter(Vec(tracer.N_x-1, y)), new DefaultTrace with BuildingType with HaveHitPoints with Damageable {
+    def hp = base_hp
+    def hp_=(new_hp:Int) {base_hp = new_hp}
+
+    def remove() {restart()}
   })
 
   render {
@@ -183,7 +235,7 @@ object Base {
   }
 }
 
-class Bullet(start_coord:Vec, target:Trace, damage:Int, bullet_color:ScageColor) {
+class Bullet(start_coord:Vec, target:Trace with HaveHitPoints with Damageable, damage_amount:Int, bullet_color:ScageColor) extends SelfRemovable {
   val bullet_speed = 6f
 
   private var lifetime = 100
@@ -191,13 +243,13 @@ class Bullet(start_coord:Vec, target:Trace, damage:Int, bullet_color:ScageColor)
 
 
   private val action_id = action(10) {
-    if(target.state.value[Int]("hp") <= 0) remove()
+    if(target.hp <= 0) remove()
     else {
       coord += (target.location - coord).n*3*(bullet_speed/6f)
       if(coord.dist(target.location) < 3) {
-        target.changeState(null, State("damage" -> damage))
+        target.damage(damage_amount)
         remove()
-        new FlyingWord(damage, bullet_color, coord, (target.location - coord))
+        new FlyingWord(damage_amount, bullet_color, coord, (target.location - coord))
       } else {
         lifetime -= 1
         if(lifetime <= 0) {
@@ -222,28 +274,24 @@ class Bullet(start_coord:Vec, target:Trace, damage:Int, bullet_color:ScageColor)
   }
 }
 
-class Enemy(init_point:Vec, end_point:Vec) extends Trace {
-  var hp = 30
-  val attack = 5
-  val attack_speed = 10f  // один хит в 2 секунды
-  val speed = 10f         // одна клетка в 2 секунды
-
-  tracer.addTrace(tracer.pointCenter(init_point), this)
+class Enemy(val init_point:Vec, val end_point:Vec) extends DefaultTrace with SelfHitPoints with EnemyType with SelfInsertable {
+  hp = property("enemy.hp", 30)
+  val attack = property("enemy.attack", 5)
+  val attack_speed = property("enemy.attack_speed", 10f)  // один хит в 2 секунды
+  val speed = property("enemy.speed", 10f)         // одна клетка в 2 секунды
 
   private val action_id = action(10) {
     val next_coord = location + Vec(1, 0)*(tracer.h_x/200f)*(speed/10f)
-    val traces_on_next_coord = tracer.tracesInPoint(tracer.point(next_coord + Vec(20, 0)))
-    traces_on_next_coord.find(trace => trace.state.contains("building")) match {
-      case Some(building) => hit(building)
-      case None => tracer.updateLocation(this, next_coord)
-    }
+    val buildings_on_next_coord = tracer.tracesInPoint(tracer.point(next_coord + Vec(20, 0)), condition = _.trace_type == 1)
+    if(!buildings_on_next_coord.isEmpty) hit(buildings_on_next_coord.head)
+    else tracer.updateLocation(this, next_coord)
   }
 
   private var last_hit_time = 0L
   private val hit_timeout = 2000*(attack_speed/10f)
-  private def hit(target:Trace) {
+  private def hit(target:Damageable) {
     if(msecsFrom(last_hit_time) > hit_timeout) {
-      target.changeState(this, State("damage" -> attack))
+      target.damage(attack)
       new FlyingWord(attack, RED, location, Vec(1, 0))
       last_hit_time = msecs
     }
@@ -252,17 +300,6 @@ class Enemy(init_point:Vec, end_point:Vec) extends Trace {
   private val render_id = render {
     drawCircle(location, 20, RED)
     printCentered(hp, location)
-  }
-
-  def state = State("enemy" -> true, "hp" -> hp)
-  def changeState(changer:Trace, s:State) {
-    s.neededKeys {
-      case ("damage", damage:Int) =>
-        hp -= damage
-        if(hp <= 0) {
-          remove()
-        }
-    }
   }
 
   def remove() {
@@ -289,7 +326,7 @@ class FlyingWord(message:Any, color:ScageColor, init_coord:Vec, direction:Vec) {
 
   render {
     if(lifetime > 0) {
-      print(message, coord, color)
+      printCentered(message, coord, color)
     } else deleteSelf()
   }
 }
