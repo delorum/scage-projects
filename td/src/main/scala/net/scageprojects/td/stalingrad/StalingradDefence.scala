@@ -16,7 +16,7 @@ object StalingradDefence extends ScageScreenApp("Stalingrad Defence", 800, 600) 
     init_h_x = 20,
     init_h_y = 20
   )
-  val path_finder = PathFinder(tracer, is_blocked = (x, y) => tracer.tracesInPoint(x, y).exists(trace => trace.state.contains("impassable")))
+  val path_finder = PathFinder(tracer.N_x, tracer.N_y, is_blocked = (x, y) => tracer.tracesInPoint(x, y).exists(trace => trace.state.contains("impassable")))
 
   render {
     drawTraceGrid(tracer, DARK_GRAY)
