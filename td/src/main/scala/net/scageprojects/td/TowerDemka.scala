@@ -4,8 +4,10 @@ import net.scage.ScageScreenApp
 import net.scage.ScageLib._
 import net.scage.support.{ScageColor, State, Vec}
 import net.scage.support.tracer3.{DefaultTrace, Trace, CoordTracer}
+import collection.mutable.ArrayBuffer
 
 object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
+  windowTitle += " - "+app_version
   val tracer = CoordTracer.create[Trace with HaveType with HaveHitPoints with Damageable](
     field_from_x = 10,
     field_to_x = 790,
@@ -25,6 +27,8 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
 
   key(KEY_1, onKeyDown = which_building = PLACE_TOWER)
   key(KEY_2, onKeyDown = which_building = PLACE_WALL)
+
+  keyNoPause(KEY_SPACE, onKeyDown = switchPause())
 
   leftMouse(onBtnDown = {m =>
     val p = tracer.point(m)
@@ -46,33 +50,46 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
   private val respawn_period = property("respawn.period", 30)   // seconds
   private var count = respawn_period
   private var enemy_amount = property("respawn.amount", 10)
+  private var enemy_increase_period = property("respawn.increase_period", 60) // seconds
+  private var enemy_increase_amount = property("respawn.increase_amount", 2)
 
   init {
     count = respawn_period
-    enemy_amount = 10
+    enemy_amount = property("respawn.amount", 10)
+    enemy_increase_amount = property("respawn.increase_amount", 2)
   }
 
-  private var enemy_increase_period = property("respawn.increase_period", 60) // seconds
-  private var enemy_increase_amount = property("respawn.increase_amount", 2)
-  action(enemy_increase_period*1000) {
-    action(enemy_increase_period*1000) {
-      enemy_amount += enemy_increase_amount
+  private var start_count = msecs
+  action(1000) {
+    if(msecs - start_count > enemy_increase_period*1000) {
+      action(enemy_increase_period*1000) {
+        enemy_amount += enemy_increase_amount
+      }
+      deleteSelf()
     }
   }
 
   private var all_enemies_dead = true
   def spawnEnemies() {
-    val enemies = for {
-      i <- 0 until enemy_amount
-      start = tracer.pointCenter(Vec(0, (math.random*tracer.N_y).toInt))
-      end = Vec((tracer.N_x-1)*tracer.h_x + tracer.h_x/2, start.y)
-    } yield new Enemy(start, end)
-
-    action(1000) {
-      all_enemies_dead = enemies.forall(_.hp <= 0)
-      if(all_enemies_dead) {
-        nextWaveCountdown()
+    all_enemies_dead = false
+    val enemies = ArrayBuffer[Enemy]()
+    action(500) {
+      if(enemies.length < enemy_amount) {
+        val start_point = Vec(0, (math.random*tracer.N_y).toInt)
+        if(tracer.tracesInPoint(start_point).isEmpty) {
+          val start = tracer.pointCenter(start_point)
+          val end = Vec((tracer.N_x-1)*tracer.h_x + tracer.h_x/2, start.y)
+          enemies += new Enemy(start, end)
+        }
+      } else {
         deleteSelf()
+        action(1000) {
+          all_enemies_dead = enemies.forall(_.hp <= 0)
+          if(all_enemies_dead) {
+            nextWaveCountdown()
+            deleteSelf()
+          }
+        }
       }
     }
   }
@@ -81,7 +98,7 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
     action(1000) {
       count -= 1
       if(count <= 0) {
-        spawnEnemies
+        spawnEnemies()
         count = respawn_period
         deleteSelf()
       }
@@ -99,7 +116,9 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
       case _ =>
     })+" (Press 1 or 2 to change)", 10, 10+40, WHITE)
 
-    print("Hitpoints: "+Base.hp, 10, 10, WHITE)
+    print("Hitpoints: "+Base.hp.formatted("%.0f"), 10, 10, WHITE)
+
+    if(onPause) printCentered("PAUSE (Press Space)", windowWidth/2, 20, WHITE)
   }
 }
 
@@ -185,14 +204,16 @@ class Tower(init_point:Vec) extends DefaultTrace with SelfHitPoints with TowerTy
   private var _attack = property("tower.attack", 6f)
   def attack = _attack
 
-  val attack_speed = property("tower.attack_speed", 10f)  // один выстрел в 2 секунды
+  val attack_speed = property("tower.attack.speed", 10f)  // один выстрел в 2 секунды
+
+  val attack_radius = property("tower.attack.radius", 1)
 
   def init_coord = tracer.pointCenter(init_point)
 
   private val action_id = action {
     val enemies = tracer.tracesInPointRange(
-      init_point.ix - 1 to init_point.ix + 1,
-      init_point.iy - 1 to init_point.iy + 1,
+      init_point.ix - attack_radius to init_point.ix + attack_radius,
+      init_point.iy - attack_radius to init_point.iy + attack_radius,
       condition = {trace => trace.isEnemy && trace.hp > 0})
     if(enemies.nonEmpty) {
       val nearest_enemy = enemies.foldLeft(enemies.head) {
@@ -204,12 +225,13 @@ class Tower(init_point:Vec) extends DefaultTrace with SelfHitPoints with TowerTy
 
   private var can_upgrade = false
   private var upgrade_countdown = (1.5f*60).toInt
+  val upgrade_percentage = property("tower.upgrade.percentage", 10f)
   override def changeState(changer:Trace, s:State) {
     super.changeState(changer, s)
     s.neededKeys {
       case ("upgrade", true) =>
         if(can_upgrade) {
-          _attack += _attack*0.1f
+          _attack += _attack*upgrade_percentage*0.01f
           startUpgradeCountDown()
         }
     }
@@ -240,8 +262,8 @@ class Tower(init_point:Vec) extends DefaultTrace with SelfHitPoints with TowerTy
 
   private val render_id = render {
     drawRectCentered(location, tracer.h_x, tracer.h_y, YELLOW)
-    val tower_info = "HP: "+hp+"\n"+"A: "+_attack+"\n"+(
-      if(can_upgrade) "Upgrade" else upgrade_countdown
+    val tower_info = "HP: "+hp.formatted("%.0f")+"\n"+"A: "+_attack.formatted("%.1f")+"\n"+(
+      if(can_upgrade) "[rUpgrade]" else upgrade_countdown
     )
     printCentered(tower_info/*hp*/, location)
   }
@@ -273,7 +295,7 @@ class Wall(init_point:Vec) extends DefaultTrace with SelfHitPoints with WallType
 
   private val render_id = render {
     drawRectCentered(location, tracer.h_x, tracer.h_y, BLUE)
-    printCentered(hp, location)
+    printCentered(hp.formatted("%.0f"), location)
   }
 
   def remove() {
@@ -323,7 +345,7 @@ class Bullet(start_coord:Vec, target:Trace with HaveHitPoints with Damageable, d
       if(coord.dist(target.location) < 3) {
         target.changeState(null, State("damage" -> damage_amount))
         remove()
-        new FlyingWord(damage_amount, bullet_color, coord, (target.location - coord))
+        new FlyingWord(damage_amount.formatted("%.1f"), bullet_color, coord, (target.location - coord))
       } else {
         lifetime -= 1
         if(lifetime <= 0) {
@@ -336,7 +358,7 @@ class Bullet(start_coord:Vec, target:Trace with HaveHitPoints with Damageable, d
   private val render_id = render {
     openglMove(coord)
     openglRotateDeg((target.location - coord).deg(Vec(0,1)))  // TODO: fix rotation!
-    drawRectCentered(Vec.zero, 5, 7, bullet_color)
+    drawRectCentered(Vec.zero, 5, /*7*/5, bullet_color)
   }
 
   def remove() {
@@ -351,7 +373,7 @@ class Bullet(start_coord:Vec, target:Trace with HaveHitPoints with Damageable, d
 class Enemy(val init_coord:Vec, val end_coord:Vec) extends DefaultTrace with SelfHitPoints with EnemyType with SelfRemovable with Damageable with SelfInsertable {
   hp = property("enemy.hp", 30f)
   val attack = property("enemy.attack", 5f)
-  val attack_speed = property("enemy.attack_speed", 10f)  // один хит в 2 секунды
+  val attack_speed = property("enemy.attack.speed", 10f)  // один хит в 2 секунды
   val speed = property("enemy.speed", 10f)         // одна клетка в 2 секунды
 
   val dir = (end_coord - init_coord).n
@@ -375,7 +397,7 @@ class Enemy(val init_coord:Vec, val end_coord:Vec) extends DefaultTrace with Sel
 
   private val render_id = render {
     drawCircle(location, 20, RED)
-    printCentered(hp, location)
+    printCentered(hp.formatted("%.0f"), location)
   }
 
   def remove() {

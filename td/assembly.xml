@@ -23,7 +23,7 @@
     </fileSets>
     <files>
         <file>
-            <source>${project.build.directory}/td-0.1.jar</source>
+            <source>${project.build.directory}/${artifactId}-${version}.jar</source>
             <outputDirectory>lib</outputDirectory>
         </file>
     </files>
