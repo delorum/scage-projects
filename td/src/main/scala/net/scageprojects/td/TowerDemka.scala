@@ -31,18 +31,20 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
   keyNoPause(KEY_SPACE, onKeyDown = switchPause())
 
   leftMouse(onBtnDown = {m =>
-    val p = tracer.point(m)
-    if(p.x > 0 && p.x < tracer.N_x-1 && p.y >= 0 && p.y < tracer.N_y) {
-      val traces_in_point = tracer.tracesInPoint(p)
-      if(traces_in_point.isEmpty) {
-        which_building match {
-          case PLACE_TOWER => new Tower(p)
-          case PLACE_WALL => new Wall(p)
-          case _ =>
+    if(all_enemies_dead) {      // allow to build and upgrade only if no enemies alive
+      val p = tracer.point(m)
+      if(p.x > 0 && p.x < tracer.N_x-1 && p.y >= 0 && p.y < tracer.N_y) {
+        val traces_in_point = tracer.tracesInPoint(p)
+        if(traces_in_point.isEmpty) {
+          which_building match {
+            case PLACE_TOWER => new Tower(p)
+            case PLACE_WALL => new Wall(p)
+            case _ =>
+          }
+        } else {
+          val trace = traces_in_point.head
+           if(trace.isTower) trace.changeState(null, State("upgrade"))
         }
-      } else {
-        val trace = traces_in_point.head
-         if(trace.isTower) trace.changeState(null, State("upgrade"))
       }
     }
   })
