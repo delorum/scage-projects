@@ -13,7 +13,7 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
     field_to_x = 790,
     field_from_y = 110,
     field_to_y = 590,
-    init_N_x = 7,
+    init_N_x = 15,
     init_N_y = 5
   )
 
@@ -31,20 +31,18 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
   keyNoPause(KEY_SPACE, onKeyDown = switchPause())
 
   leftMouse(onBtnDown = {m =>
-    if(all_enemies_dead) {      // allow to build and upgrade only if no enemies alive
-      val p = tracer.point(m)
-      if(p.x > 0 && p.x < tracer.N_x-1 && p.y >= 0 && p.y < tracer.N_y) {
-        val traces_in_point = tracer.tracesInPoint(p)
-        if(traces_in_point.isEmpty) {
-          which_building match {
-            case PLACE_TOWER => new Tower(p)
-            case PLACE_WALL => new Wall(p)
-            case _ =>
-          }
-        } else {
-          val trace = traces_in_point.head
-           if(trace.isTower) trace.changeState(null, State("upgrade"))
+    val p = tracer.point(m)
+    if(p.x > 0 && p.x < tracer.N_x-1 && p.y >= 0 && p.y < tracer.N_y) {
+      val traces_in_point = tracer.tracesInPoint(p)
+      if(traces_in_point.isEmpty) {
+        which_building match {
+          case PLACE_TOWER => new Tower(p)
+          case PLACE_WALL => new Wall(p)
+          case _ =>
         }
+      } else {
+        val trace = traces_in_point.head
+        if(trace.isTower && all_enemies_dead) trace.changeState(null, State("upgrade")) // allow to upgrade only if no enemies alive
       }
     }
   })
@@ -52,8 +50,6 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
   private val respawn_period = property("respawn.period", 30)   // seconds
   private var count = respawn_period
   private var enemy_amount = property("respawn.amount", 10)
-  private var enemy_increase_period = property("respawn.increase_period", 60) // seconds
-  private var enemy_increase_amount = property("respawn.increase_amount", 2)
 
   init {
     count = respawn_period
@@ -61,9 +57,12 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
     enemy_increase_amount = property("respawn.increase_amount", 2)
   }
 
+  private var enemy_first_increase_period = property("respawn.first_increase_period", 15) // seconds
+  private var enemy_increase_period = property("respawn.increase_period", 20) // seconds
+  private var enemy_increase_amount = property("respawn.increase_amount", 2)
   private var start_count = msecs
   action(1000) {
-    if(msecs - start_count > enemy_increase_period*1000) {
+    if(msecs - start_count > enemy_first_increase_period*1000) {
       action(enemy_increase_period*1000) {
         enemy_amount += enemy_increase_amount
       }
@@ -213,10 +212,15 @@ class Tower(init_point:Vec) extends DefaultTrace with SelfHitPoints with TowerTy
   def init_coord = tracer.pointCenter(init_point)
 
   private val action_id = action {
-    val enemies = tracer.tracesInPointRange(
-      init_point.ix - attack_radius to init_point.ix + attack_radius,
-      init_point.iy - attack_radius to init_point.iy + attack_radius,
-      condition = {trace => trace.isEnemy && trace.hp > 0})
+    val enemies =
+      tracer.tracesInPointRange(
+        init_point.ix - attack_radius to init_point.ix + attack_radius,
+        init_point.iy to init_point.iy,
+        condition = {trace => trace.isEnemy && trace.hp > 0}) ++
+      tracer.tracesInPointRange(
+        init_point.ix to init_point.ix,
+        init_point.iy - attack_radius to init_point.iy + attack_radius,
+        condition = {trace => trace.isEnemy && trace.hp > 0})
     if(enemies.nonEmpty) {
       val nearest_enemy = enemies.foldLeft(enemies.head) {
         case (current_nearest, next_enemy) => if(next_enemy.location.dist(location) < current_nearest.location.dist(location)) next_enemy else current_nearest
