@@ -7,12 +7,13 @@ import net.scageprojects.td.TowerDemka._
 
 object Wall {
   val wall_price = property("wall.price", 7)
+  val wall_max_hp = property("wall.hp", 70)
 }
 
 import Wall._
 
 class Wall(init_point:Vec) extends DefaultTrace with SelfHitPoints with WallType with SelfRemovable with Damageable with SelfInsertable {
-  hp = property("wall.hp", 70)
+  hp = wall_max_hp
 
   def init_coord = tracer.pointCenter(init_point)
 

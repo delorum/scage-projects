@@ -9,11 +9,11 @@ import net.scage.support.messages.ScageMessage
 import Tower._
 import Wall._
 
-object TowerDemka extends ScageScreenApp("Tower Demka", 1010, 560) {
+object TowerDemka extends ScageScreenApp("Tower Demka", 1220, 560) {
   windowTitle += " - "+app_version
   val tracer = CoordTracer.create[Trace with HaveType with HaveHitPoints with SelfRemovable](
     field_from_x = 10,
-    field_to_x = 1000,
+    field_to_x = 1210,
     field_from_y = 150,
     field_to_y = 550,
     init_N_x = 15,
@@ -60,32 +60,30 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 1010, 560) {
     }
   })
 
-  private val respawn_period = property("respawn.period", 30)   // seconds
-  private var count = respawn_period
+  rightMouse(onBtnDown = {m =>
+    val p = tracer.point(m)
+    val traces_in_point = tracer.tracesInPoint(p)
+    traces_in_point.withFilter(trace => trace.isTower || trace.isWall).foreach(_.remove())
+  })
+
   private var enemy_amount = property("respawn.amount", 10)
+  private val enemy_increase_amount = property("respawn.increase_amount", 2)
+  private val respawn_period = property("respawn.period", 30)   // seconds
+  private var enemy_first_period = property("respawn.first_period", 15) // seconds
+  private var count = enemy_first_period
 
   init {
-    count = respawn_period
     enemy_amount = property("respawn.amount", 10)
-    enemy_increase_amount = property("respawn.increase_amount", 2)
-  }
-
-  private var enemy_first_increase_period = property("respawn.first_increase_period", 15) // seconds
-  private var enemy_increase_period = property("respawn.increase_period", 20) // seconds
-  private var enemy_increase_amount = property("respawn.increase_amount", 2)
-  private var start_count = msecs
-  action(1000) {
-    if(msecs - start_count > enemy_first_increase_period*1000) {
-      action(enemy_increase_period*1000) {
-        enemy_amount += enemy_increase_amount
-      }
-      deleteSelf()
-    }
+    count = enemy_first_period
+    wave_number = 0
   }
 
   private var all_enemies_dead = true
-  def areAllEnemiesDead = all_enemies_dead
+  def allEnemiesDead = all_enemies_dead
+
+  private var wave_number = 0
   def spawnEnemies() {
+    wave_number += 1
     all_enemies_dead = false
     val enemies = ArrayBuffer[Enemy]()
     action(500) {
@@ -101,7 +99,8 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 1010, 560) {
         action(1000) {
           all_enemies_dead = enemies.forall(_.hp <= 0)
           if(all_enemies_dead) {
-            nextWaveCountdown()
+            enemy_amount += enemy_increase_amount
+            nextWaveCountdown(respawn_period)
             deleteSelf()
           }
         }
@@ -109,17 +108,27 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 1010, 560) {
     }
   }
 
-  def nextWaveCountdown() {
-    action(1000) {
-      count -= 1
-      if(count <= 0) {
-        spawnEnemies()
-        count = respawn_period
-        deleteSelf()
+  def nextWaveCountdown(period:Int) {
+    count = period
+      new {
+      val action_id:Int = action(1000) {
+        count -= 1
+        if(count <= 0) {
+          spawnEnemies()
+          count = period
+          delOperations(clear_id, currentOperation)
+        }
+      }
+
+      val clear_id:Int = clear {
+        delOperations(action_id, currentOperation)
       }
     }
   }
-  nextWaveCountdown()
+
+  init {
+    nextWaveCountdown(enemy_first_period)
+  }
 
   private var _resource = property("resource.initial_amount", 80)
   def resource = _resource
@@ -131,14 +140,20 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 1010, 560) {
   onEvent("Enemy Killed") {
     _resource += resource_from_enemy
   }
+  onEventWithArguments("Tower Upgraded") {
+    case upgrade_price:Int => _resource -= upgrade_price
+  }
+  onEventWithArguments("Tower Repaired") {
+    case repair_price:Int => _resource -= repair_price
+  }
 
   interface {
     if(all_enemies_dead) print("Next "+enemy_amount+" enemies will spawn in "+count, 10, 10+120, WHITE)
-    else print("Attack On!!!", 10, 10+120, WHITE)
+    else print("Wave "+wave_number+" Attack On!!!", 10, 10+120, WHITE)
 
     print("Build Mode: "+(which_building match {
-      case PLACE_TOWER => "TOWER"
-      case PLACE_WALL => "WALL"
+      case PLACE_TOWER => "TOWER ("+tower_price+")"
+      case PLACE_WALL => "WALL ("+wall_price+")"
       case _ =>
     })+" (Press 1 or 2 to change)", 10, 10+80, WHITE)
 
@@ -148,6 +163,10 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 1010, 560) {
 
     if(onPause) printCentered("PAUSE (Press Space)", windowWidth/2, 20, WHITE)
   }
+
+  /*clear {
+    delAllActions()
+  }*/
 }
 
 trait HaveHitPoints {
@@ -162,7 +181,7 @@ trait SelfHitPoints extends HaveHitPoints {
 }
 
 trait SelfRemovable {
-  protected def remove()
+  def remove()
 }
 
 trait Damageable extends Trace {

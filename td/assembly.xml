@@ -26,5 +26,9 @@
             <source>${project.build.directory}/${artifactId}-${version}.jar</source>
             <outputDirectory>lib</outputDirectory>
         </file>
+        <file>
+            <source>${scageproperties}</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
     </files>
 </assembly>
