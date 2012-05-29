@@ -55,13 +55,18 @@ class Tower(init_point:Vec) extends DefaultTrace with SelfHitPoints with TowerTy
     super.changeState(changer, s)
     s.neededKeys {
       case ("mouse_clicked", mouse_coord:Vec) =>   // allow to upgrade only if no enemies alive
-        println(math.abs(location.y - mouse_coord.y))
-      case ("upgrade", true) =>
-        if(can_upgrade) {
-          _attack += _attack*tower_upgrade_percentage*0.01f
+        val y_offset = location.y - mouse_coord.y
+        if(y_offset > 9 && y_offset < 24) { // Upgrade
+          if(can_upgrade) {
+            _attack += _attack*tower_upgrade_percentage*0.01f
+            hp = tower_max_hp
+            upgrade_number += 1
+            callEvent("Tower Upgraded")
+            startUpgradeCountDown()
+          }
+        } else if(y_offset >= 24 && y_offset < 37) {  // repair
           hp = tower_max_hp
-          upgrade_number += 1
-          startUpgradeCountDown()
+          callEvent("Tower Repaired")
         }
     }
   }
@@ -93,9 +98,9 @@ class Tower(init_point:Vec) extends DefaultTrace with SelfHitPoints with TowerTy
   private val render_id = render {
     drawRectCentered(location, tracer.h_x, tracer.h_y, YELLOW)
     val tower_info = "HP: "+hp.formatted("%.0f")+"\n"+"A: "+_attack.formatted("%.1f")+"\n"+
-      (if(can_upgrade) "[rUpgrade]" else upgrade_countdown)+"\n"+
-      (if(hp < tower_max_hp && resource >= (tower_repair_price + (tower_max_hp-hp)/2)) "[rRepair]" else "")
-    printer.printCentered(tower_info/*hp*/, location)
+      (if(can_upgrade) "[rUpgrade]" else upgrade_countdown)/*"[rUpgrade]"*/+"\n"+
+      (if(hp < tower_max_hp && resource >= (tower_repair_price + (tower_max_hp-hp)/2)) "[rRepair]" else "")/*"[rRepair]"*/
+    printer.print(tower_info, location + Vec(-24, 19))
   }
 
   private var last_shoot_time = 0L

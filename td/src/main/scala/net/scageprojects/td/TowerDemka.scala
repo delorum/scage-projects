@@ -9,13 +9,13 @@ import net.scage.support.messages.ScageMessage
 import Tower._
 import Wall._
 
-object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
+object TowerDemka extends ScageScreenApp("Tower Demka", 1010, 560) {
   windowTitle += " - "+app_version
   val tracer = CoordTracer.create[Trace with HaveType with HaveHitPoints with SelfRemovable](
     field_from_x = 10,
-    field_to_x = 790,
+    field_to_x = 1000,
     field_from_y = 150,
-    field_to_y = 590,
+    field_to_y = 550,
     init_N_x = 15,
     init_N_y = 5
   )
