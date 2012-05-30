@@ -79,6 +79,9 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 1220, 560) {
   }
 
   private var all_enemies_dead = true
+  init {
+    all_enemies_dead = true
+  }
   def allEnemiesDead = all_enemies_dead
 
   private var wave_number = 0
@@ -96,13 +99,17 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 1220, 560) {
         }
       } else {
         deleteSelf()
-        action(1000) {
+        val action_id = action(1000) {
           all_enemies_dead = enemies.forall(_.hp <= 0)
           if(all_enemies_dead) {
             enemy_amount += enemy_increase_amount
             nextWaveCountdown(respawn_period)
             deleteSelf()
           }
+        }
+
+        clear {
+          delOperations(action_id, currentOperation)
         }
       }
     }
@@ -163,10 +170,6 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 1220, 560) {
 
     if(onPause) printCentered("PAUSE (Press Space)", windowWidth/2, 20, WHITE)
   }
-
-  /*clear {
-    delAllActions()
-  }*/
 }
 
 trait HaveHitPoints {
