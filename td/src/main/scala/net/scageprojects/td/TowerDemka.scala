@@ -20,6 +20,8 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 1220, 560) {
     init_N_y = 5
   )
 
+  val small_font = new ScageMessage(max_font_size = 13)
+
   render {
     drawTraceGrid(tracer, DARK_GRAY)
   }
@@ -53,7 +55,7 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 1220, 560) {
         }
       } else {
         val trace = traces_in_point.head
-        if(trace.isBuilding) {
+        if(trace.isTower || trace.isWall) {
           trace.changeState(null, State("mouse_clicked" -> m))
         }
       }
@@ -85,9 +87,15 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 1220, 560) {
   def allEnemiesDead = all_enemies_dead
 
   private var wave_number = 0
+
+  private var first_wave_started = false
+  def firstWaveStarted = first_wave_started
+
+
   def spawnEnemies() {
     wave_number += 1
     all_enemies_dead = false
+    first_wave_started = true
     val enemies = ArrayBuffer[Enemy]()
     action(500) {
       if(enemies.length < enemy_amount) {
@@ -150,7 +158,7 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 1220, 560) {
   onEventWithArguments("Tower Upgraded") {
     case upgrade_price:Int => _resource -= upgrade_price
   }
-  onEventWithArguments("Tower Repaired") {
+  onEventWithArguments("Building Repaired") {
     case repair_price:Int => _resource -= repair_price
   }
 

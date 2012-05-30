@@ -8,7 +8,7 @@ import net.scage.ScageLib._
 class Bullet(start_coord:Vec, target:Trace with HaveHitPoints, damage_amount:Float, bullet_color:ScageColor) extends SelfRemovable {
   val bullet_speed = 6f   // maybe we need an option for this
 
-  private var lifetime = 200
+  private var lifetime = 500
   private var coord = start_coord
 
 

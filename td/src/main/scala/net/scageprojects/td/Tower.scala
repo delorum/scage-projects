@@ -12,13 +12,11 @@ object Tower {
   val tower_upgrade_price_increase = property("tower.upgrade.price.increase", 4)
   val tower_repair_price = property("tower.repair.price", 10)
   val tower_max_hp = property("tower.hp", 25)
-  val tower_upgrade_timeout = property("tower.upgrade_timeout", 40)  // seconds
   val tower_upgrade_percentage = property("tower.upgrade.percentage", 20f)  // percents
   val tower_attack_initial = property("tower.attack", 5f)
   val tower_attack_speed = property("tower.attack.speed", 10f)  // один выстрел в 1 секунду
   val tower_shoot_timeout = 1000*(tower_attack_speed/10f)       // один выстрел в 1 секунду
   val tower_attack_radius = property("tower.attack.radius", 1)
-  private val printer = new ScageMessage(max_font_size = 13)
 }
 
 import Tower._
@@ -49,8 +47,6 @@ class Tower(init_point:Vec) extends DefaultTrace with SelfHitPoints with TowerTy
     }
   }
 
-  private var can_upgrade = false
-  private var upgrade_countdown = tower_upgrade_timeout
   private var upgrade_number = 0
   override def changeState(changer:Trace, s:State) {
     super.changeState(changer, s)
@@ -58,64 +54,39 @@ class Tower(init_point:Vec) extends DefaultTrace with SelfHitPoints with TowerTy
       case ("mouse_clicked", mouse_coord:Vec) =>
         val y_offset = location.y - mouse_coord.y
         if(y_offset > 9 && y_offset < 24) { // Upgrade
-          if(can_upgrade && allEnemiesDead) {   // allow to upgrade only if no enemies alive
+          if(firstWaveStarted && allEnemiesDead) {   // allow to upgrade only if no enemies alive
             val upgrade_price = tower_upgrade_price + tower_upgrade_price_increase*upgrade_number
             if(resource >= upgrade_price) {
               _attack += _attack*tower_upgrade_percentage*0.01f
               hp = tower_max_hp
               upgrade_number += 1
               callEvent("Tower Upgraded", upgrade_price)
-              startUpgradeCountDown()
             }
           }
         } else if(y_offset >= 24 && y_offset < 37) {  // repair
           val repair_price = tower_repair_price + (tower_max_hp - hp.toInt)/2
           if(resource >= repair_price) {
             hp = tower_max_hp
-            callEvent("Tower Repaired", repair_price)
+            callEvent("Building Repaired", repair_price)
           }
         }
     }
   }
 
-  private def startUpgradeCountDown() {
-    can_upgrade = false
-    upgrade_countdown = tower_upgrade_timeout
-
-    new {
-      def remove() {
-        delOperations(upgrade_countdown_action_id, upgrade_clear_id)
-      }
-
-      val upgrade_countdown_action_id:Int = action(1000) {
-        upgrade_countdown -= 1
-        if(upgrade_countdown <= 0) {
-          can_upgrade = true
-          remove()
-        }
-      }
-
-      val upgrade_clear_id:Int = clear {
-        remove()
-      }
-    }
-  }
-  startUpgradeCountDown()
-
   private val render_id = render {
     drawRectCentered(location, tracer.h_x, tracer.h_y, YELLOW)
     val tower_info = "HP: "+hp.formatted("%.0f")+"\n"+"A: "+_attack.formatted("%.1f")+"\n"+ {
-      if(can_upgrade) {
-        val upgrade_price = tower_upgrade_price + tower_upgrade_price_increase*upgrade_number
-        if(allEnemiesDead && resource >= upgrade_price) "[rUpgrade ("+upgrade_price+")]" else "Upgrade"
-      } else upgrade_countdown
+      val upgrade_price = tower_upgrade_price + tower_upgrade_price_increase*upgrade_number
+      if(firstWaveStarted) {
+        if(allEnemiesDead && resource >= upgrade_price) "[rUpgrade ("+upgrade_price+")]" else "Upgrade ("+upgrade_price+")"
+      } else ""
     }/*"[rUpgrade]"*/+"\n"+ {
       if(hp < tower_max_hp) {
         val repair_price = tower_repair_price + (tower_max_hp-hp.toInt)/2
-        if(resource >= repair_price) "[rRepair ("+repair_price+")]" else "Repair"
+        if(resource >= repair_price) "[rRepair ("+repair_price+")]" else "Repair ("+repair_price+")"
       } else ""
     }/*"[rRepair]"*/
-    printer.print(tower_info, location + Vec(-30, 19))
+    small_font.print(tower_info, location + Vec(-35, 19))
   }
 
   private var last_shoot_time = 0L
