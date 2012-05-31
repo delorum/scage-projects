@@ -35,7 +35,7 @@ class Wall(init_point:Vec) extends DefaultTrace with SelfHitPoints with WallType
 
   private val render_id = render {
     drawRectCentered(location, tracer.h_x, tracer.h_y, BLUE)
-    val wall_info = "HP: "+hp.formatted("%.0f")+"\n"+ {
+    val wall_info = "HP: "+hp.formatted("%.0f")+"\n\n\n"+ {
       if(hp < wall_max_hp) {
         val repair_price = wall_repair_price + (wall_max_hp-hp.toInt)/2
         if(resource >= repair_price) "[rRepair ("+repair_price+")]" else "Repair ("+repair_price+")"

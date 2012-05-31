@@ -53,7 +53,7 @@ class Tower(init_point:Vec) extends DefaultTrace with SelfHitPoints with TowerTy
     s.neededKeys {
       case ("mouse_clicked", mouse_coord:Vec) =>
         val y_offset = location.y - mouse_coord.y
-        if(y_offset > 9 && y_offset < 24) { // Upgrade
+        if(y_offset >= 9 && y_offset < 24) { // Upgrade
           if(firstWaveStarted && allEnemiesDead) {   // allow to upgrade only if no enemies alive
             val upgrade_price = tower_upgrade_price + tower_upgrade_price_increase*upgrade_number
             if(resource >= upgrade_price) {
@@ -78,7 +78,9 @@ class Tower(init_point:Vec) extends DefaultTrace with SelfHitPoints with TowerTy
     val tower_info = "HP: "+hp.formatted("%.0f")+"\n"+"A: "+_attack.formatted("%.1f")+"\n"+ {
       val upgrade_price = tower_upgrade_price + tower_upgrade_price_increase*upgrade_number
       if(firstWaveStarted) {
-        if(allEnemiesDead && resource >= upgrade_price) "[rUpgrade ("+upgrade_price+")]" else "Upgrade ("+upgrade_price+")"
+        if(allEnemiesDead) {
+          if(resource >= upgrade_price) "[rUpgrade ("+upgrade_price+")]" else "Upgrade ("+upgrade_price+")"
+        } else ""
       } else ""
     }/*"[rUpgrade]"*/+"\n"+ {
       if(hp < tower_max_hp) {

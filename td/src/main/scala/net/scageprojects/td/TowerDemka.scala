@@ -97,46 +97,54 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 1220, 560) {
     all_enemies_dead = false
     first_wave_started = true
     val enemies = ArrayBuffer[Enemy]()
-    action(500) {
-      if(enemies.length < enemy_amount) {
-        val start_point = Vec(0, (math.random*tracer.N_y).toInt)
-        if(tracer.tracesInPoint(start_point).isEmpty) {
-          val start = tracer.pointCenter(start_point)
-          val end = Vec((tracer.N_x-1)*tracer.h_x + tracer.h_x/2, start.y)
-          enemies += new Enemy(start, end)
-        }
-      } else {
-        deleteSelf()
-        val action_id = action(1000) {
-          all_enemies_dead = enemies.forall(_.hp <= 0)
-          if(all_enemies_dead) {
-            enemy_amount += enemy_increase_amount
-            nextWaveCountdown(respawn_period)
-            deleteSelf()
+    new {
+      val respawn_action_id:Int = action(500) {
+        if(enemies.length < enemy_amount) {
+          val start_point = Vec(0, (math.random*tracer.N_y).toInt)
+          if(tracer.tracesInPoint(start_point).isEmpty) {
+            val start = tracer.pointCenter(start_point)
+            val end = Vec((tracer.N_x-1)*tracer.h_x + tracer.h_x/2, start.y)
+            enemies += new Enemy(start, end)
+          }
+        } else {
+          delOperations(respawn_action_id, respawn_clear_id)
+          new {
+            val alive_check_action_id:Int = action(1000) {
+              all_enemies_dead = enemies.forall(_.hp <= 0)
+              if(all_enemies_dead) {
+                enemy_amount += enemy_increase_amount
+                nextWaveCountdown(respawn_period)
+                delOperations(alive_check_action_id, alive_check_clear_id)
+              }
+            }
+
+            val alive_check_clear_id:Int = clear {
+              delOperations(alive_check_action_id, alive_check_clear_id)
+            }
           }
         }
+      }
 
-        clear {
-          delOperations(action_id, currentOperation)
-        }
+      val respawn_clear_id:Int = clear {
+        delOperations(respawn_action_id, respawn_clear_id)
       }
     }
   }
 
   def nextWaveCountdown(period:Int) {
     count = period
-      new {
-      val action_id:Int = action(1000) {
+    new {
+      val countdown_action_id:Int = action(1000) {
         count -= 1
         if(count <= 0) {
           spawnEnemies()
           count = period
-          delOperations(clear_id, currentOperation)
+          delOperations(countdown_action_id, countdown_clear_id)
         }
       }
 
-      val clear_id:Int = clear {
-        delOperations(action_id, currentOperation)
+      val countdown_clear_id:Int = clear {
+        delOperations(countdown_action_id, countdown_clear_id)
       }
     }
   }
