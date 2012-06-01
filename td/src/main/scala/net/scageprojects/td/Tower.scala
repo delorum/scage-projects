@@ -15,7 +15,7 @@ object Tower {
   val tower_upgrade_percentage = property("tower.upgrade.percentage", 20f)  // percents
   val tower_attack_initial = property("tower.attack", 5f)
   val tower_attack_speed = property("tower.attack.speed", 10f)  // один выстрел в 1 секунду
-  val tower_shoot_timeout = 1000*(tower_attack_speed/10f)       // один выстрел в 1 секунду
+  val tower_shoot_timeout = 1000*(10f/tower_attack_speed)       // один выстрел в 1 секунду
   val tower_attack_radius = property("tower.attack.radius", 1)
 }
 

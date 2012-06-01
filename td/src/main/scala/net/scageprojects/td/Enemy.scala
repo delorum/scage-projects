@@ -29,7 +29,7 @@ class Enemy(val init_coord:Vec, val end_coord:Vec) extends DefaultTrace with Sel
   }
 
   private var last_hit_time = 0L
-  private val hit_timeout = 1000*(attack_speed/10f)
+  private val hit_timeout = 1000*(10f/attack_speed)
   private def hit(target:Trace) {
     if(msecsFrom(last_hit_time) > hit_timeout) {
       target.changeState(null, State("damage" -> attack))
