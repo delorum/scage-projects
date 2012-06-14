@@ -11,7 +11,7 @@ object PlayerWin extends GameState
 object EnemyWin extends GameState
 object NobodyWin extends GameState
 
-object SpaceWar extends ScageScreenApp("Space War", 640, 480){
+object SpaceWar extends ScageScreenApp("Space War", 800, 600) {
   private val planets = ArrayBuffer[Planet]()
   def addPlanet(size:Int = 10 + (math.random*3).toInt*10, ships:Int = (math.random*10).toInt, commander:Commander = Commander(), tries:Int = 5) {
     val new_coord = Vec(30 + math.random*((windowWidth - 30) - 30), 30 + math.random*((windowHeight - 30) - 30))
