@@ -61,6 +61,7 @@ object SpaceWar extends ScageScreenApp("Space War", 800, 600) {
   val player = Commander("player", CYAN)
   val enemy  = Commander("enemy",  RED)
 
+  // creating universe
   init {
     addPlanet(size = 30, commander = player)
     addPlanet(size = 30, commander = enemy)     // may fail to add planet due to restrictions, need to do smth in that case
@@ -72,7 +73,7 @@ object SpaceWar extends ScageScreenApp("Space War", 800, 600) {
         case (p1, p2) => p1.coord.dist(planet.coord) < p2.coord.dist(planet.coord)
       }.take(1 + (math.random*3).toInt)
     } {
-      nearest_planets.foreach(other_planet => addRoute(planet, other_planet))
+      nearest_planets.foreach(other_planet => addRoute(planet, other_planet))   // PROBLEM: may create separated clusters without routes between!!!
     }
   }
 
@@ -148,18 +149,14 @@ object SpaceWar extends ScageScreenApp("Space War", 800, 600) {
 
   interface {
     if(onPause) game_state match {
-      case PlayerWin => printCentered("You Win! Press space to restart",  windowCenter, CYAN)
-      case EnemyWin  => printCentered("You lose. Press space to restart", windowCenter, RED)
-      case _ => printCentered("PAUSE. Press space to continue", windowCenter, CYAN)
+      case PlayerWin => printCentered("You Win! Press F2 to restart",   windowCenter, CYAN)
+      case EnemyWin  => printCentered("You lose. Press F2 to restart",  windowCenter, RED)
+      case _ =>         printCentered("PAUSE. Press space to continue", windowCenter, CYAN)
     }
   }
 
-  keyNoPause(KEY_SPACE, onKeyDown = {
-    if(onPause) {
-      if(game_state != NobodyWin) restart()
-      pauseOff()
-    } else pause()
-  })
+  keyNoPause(KEY_SPACE, onKeyDown = switchPause())
+  keyNoPause(KEY_F2, onKeyDown = {restart(); pauseOff()})
 
   private var selected_planet:Option[Planet] = None
   init {
@@ -310,8 +307,7 @@ class SpaceFlight(val fleet:Fleet, val from_planet:Planet, val to_planet:Planet)
   }
 
   def remove() {
-    if(operationExists(action_id)) delOperation(action_id)
-    if(operationExists(render_id)) delOperation(render_id)
+    delOperationsNoWarn(action_id, render_id)
     removeFlight(this)
   }
 }
