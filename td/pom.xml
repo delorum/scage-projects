@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>net.scageprojects</groupId>
   <artifactId>td</artifactId>
-  <version>0.3.3</version>
+  <version>0.4</version>
   <inceptionYear>2011</inceptionYear>
 
   <name>Trafalgar Defence</name>
@@ -13,7 +13,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <scala.version>2.9.1</scala.version>
-    <lwjgl.version>2.7.1</lwjgl.version>
+    <lwjgl.version>2.8.2</lwjgl.version>
     <scage.version>0.9.1-SNAPSHOT</scage.version>
     <src.dir>src</src.dir>
   </properties>

@@ -40,8 +40,8 @@ class LifeApplet extends ScageApplet {
       if(onPause) ScageMessage.print("PAUSE", 20, windowHeight-20, YELLOW)
     }
 
-    leftMouse(onBtnDown = mouse_coord => if(tracesInPoint(point(mouse_coord)).length == 0) addTrace(point(mouse_coord)))
-    rightMouse(onBtnDown = mouse_coord => removeTraces(tracesInPoint(point(mouse_coord)):_*))
+    leftMouseNoPause(onBtnDown = mouse_coord => if(tracesInPoint(point(mouse_coord)).length == 0) addTrace(point(mouse_coord)))
+    rightMouseNoPause(onBtnDown = mouse_coord => removeTraces(tracesInPoint(point(mouse_coord)):_*))
 
     keyNoPause(KEY_SPACE, onKeyDown = switchPause())
     keyNoPause(KEY_C, onKeyDown = removeAllTraces())

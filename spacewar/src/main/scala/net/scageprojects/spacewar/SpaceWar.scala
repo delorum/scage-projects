@@ -3,7 +3,8 @@ package net.scageprojects.spacewar
 import net.scage.ScageScreenApp
 import net.scage.ScageLib._
 import net.scage.support.{Vec, ScageColor}
-import collection.mutable.{HashMap, ArrayBuffer}
+import collection.mutable.ArrayBuffer
+import collection.mutable
 
 sealed class GameState
 
@@ -22,7 +23,7 @@ object SpaceWar extends ScageScreenApp("Space War", 800, 600) {
     else println("failed to add new planet: size="+size+" commander="+commander)
   }
 
-  private val routes = HashMap[Planet, ArrayBuffer[Planet]]()
+  private val routes = mutable.HashMap[Planet, ArrayBuffer[Planet]]()
   def addRoute(from_planet:Planet, to_planet:Planet) {
     if(!routeExists(from_planet, to_planet)) {
       routesFrom(from_planet) += to_planet
@@ -33,7 +34,7 @@ object SpaceWar extends ScageScreenApp("Space War", 800, 600) {
   def routesFrom(planet:Planet) = routes.getOrElseUpdate(planet, ArrayBuffer[Planet]())
   def routeExists(from_planet:Planet, to_planet:Planet) = routesFrom(from_planet).contains(to_planet)
 
-  private val space_flights_from_planet = HashMap[Planet, ArrayBuffer[SpaceFlight]]()
+  private val space_flights_from_planet = mutable.HashMap[Planet, ArrayBuffer[SpaceFlight]]()
   def addFlight(space_flight:SpaceFlight) {
     flightsFrom(space_flight.from_planet) += space_flight
     flightsTo(space_flight.to_planet)     += space_flight
@@ -46,7 +47,7 @@ object SpaceWar extends ScageScreenApp("Space War", 800, 600) {
   def flightsFromTo(from_planet:Planet, to_planet:Planet) = flightsFrom(from_planet).filter(_.to_planet == to_planet)
   def flightExists(from_planet:Planet, to_planet:Planet) = flightsFrom(from_planet).exists(_.to_planet == to_planet)
 
-  private val space_flights_to_planet = HashMap[Planet, ArrayBuffer[SpaceFlight]]()
+  private val space_flights_to_planet = mutable.HashMap[Planet, ArrayBuffer[SpaceFlight]]()
   def flightsTo(planet:Planet) = space_flights_to_planet.getOrElseUpdate(planet, ArrayBuffer[SpaceFlight]())
   def flightsToFrom(to_planet:Planet, from_planet:Planet) = flightsTo(to_planet).filter(_.from_planet == from_planet)
 

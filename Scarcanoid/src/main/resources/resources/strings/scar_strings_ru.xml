@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<messages>
+    <message id="renderer.loading">
+        Начинаем загрузку, пожалуйста, подождите...
+    </message>
+
+    <message id="renderer.exiting">
+        Приложение заканчивает работу...
+    </message>
+
+    <message id="game.lose">
+        Вы проиграли!
+    </message>
+
+    <message id="game.win">
+        Вы выиграли!
+    </message>
+
+    <message id="game.playagain">
+        Еще раз? (y/n)
+    </message>
+
+    <message id="helpscreen.helpmessage">
+Простой клон классического Арканоида, написанный
+на Scala.
+
+Управление: стрелки \[ВЛЕВО\] и \[ВПРАВО\]
+
+Чтобы победить, нужно набрать 39 очков.
+
+Если шарик коснется поверхности ниже вашей платформы,
+вы проиграете.
+
+Нажмите \[ПРОБЕЛ\], чтобы начать.
+    </message>
+</messages>
