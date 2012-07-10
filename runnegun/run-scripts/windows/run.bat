@@ -1,0 +1,1 @@
+java -Djava.library.path=native -jar lib/${artifactId}-${version}.jar

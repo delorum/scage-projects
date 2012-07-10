@@ -53,11 +53,17 @@ object SpaceWarServer extends ScageApp("Space War Server") {
 
   NetServer.startServer(
     max_clients = 4,
+    onNewConnection = {client =>
+      if(gameround_started) (false, "game already started")
+      else (true, "")
+    },
     onClientAccepted = {client =>
       players += Commander(client.id.toString, player_colors.next())
       if(!countdown_started && players.length > 1) {
         startCountDown()
       }
+
+      if(!countdown_started && players.length >= 2) startCountDown()
     }
   )
 
@@ -82,7 +88,9 @@ object SpaceWarServer extends ScageApp("Space War Server") {
     }
   }
 
+  private var gameround_started = false
   def startGameRound() {
+    gameround_started = true
     players.foreach(pl => addPlanet(size = 30, commander = pl))
     for(i <- 1 to 10) addPlanet()
     for {
@@ -99,11 +107,16 @@ object SpaceWarServer extends ScageApp("Space War Server") {
       case (from, to_list) => to_list.map(to => State("from" -> from.state, "to" -> to.state))
     }.flatten.toList))
 
-    action(10) {
+    action(100) {
       NetServer.sendToAll(State("planets" -> planets.map(_.state).toList))
-      NetServer.sendToAll(State("flights" -> space_flights_from_planet.values.flatten.map(_.state).toList))
+      if(space_flights_from_planet.size > 0) {
+        NetServer.sendToAll(State("flights" -> space_flights_from_planet.values.flatten.map(_.state).toList))
+      }
     }
-    //NetServer.stopServer()
+  }
+
+  dispose {
+    NetServer.stopServer()
   }
 }
 

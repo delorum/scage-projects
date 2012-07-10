@@ -5,6 +5,7 @@ import net.scage.ScageLib._
 import net.scage.support.net.NetClient
 import collection.mutable.{ArrayBuffer, HashMap}
 import net.scage.support.{ScageColor, State, Vec}
+import collection.mutable
 
 object NetFlightClient extends ScageScreenApp(unit_name = "Net Flight Client") {
   val OUR_PLANE    = displayList {drawPolygon(Array(Vec(-15,-28), Vec(0,25), Vec(15,-28), Vec(0,-15)), RED)}
@@ -14,20 +15,20 @@ object NetFlightClient extends ScageScreenApp(unit_name = "Net Flight Client") {
 
   val send_timeout = property("netflight.send_timeout", 50)
 
-  private val planes = HashMap[Int, ClientPlane]()
-  val rockets = HashMap[Int, ClientRocket]()
-  val words = HashMap[Int, ClientFlyingWord]()
-  val health_bars = HashMap[Int, ClientHealthBar]()
+  private val planes = mutable.HashMap[Int, ClientPlane]()
+  val rockets        = mutable.HashMap[Int, ClientRocket]()
+  val words          = mutable.HashMap[Int, ClientFlyingWord]()
+  val health_bars    = mutable.HashMap[Int, ClientHealthBar]()
 
   private var our_plane_id = -1
   private var our_plane:Option[ClientPlane] = None
   
-  private val count = HashMap[Int, (Int,  Int)]() // client -> (wins, deaths)
+  private val count = mutable.HashMap[Int, (Int,  Int)]() // client -> (wins, deaths)
   interface {
     for {
       ((client_id, (wins, loses)), index) <- count.zipWithIndex
       is_our_count = client_id == our_plane_id
-    } print(client_id+": "+wins+" / "+loses, 20, window_height-20-20*index, if(is_our_count) RED else GREEN)
+    } print(client_id+": "+wins+" / "+loses, 20, windowHeight-20-20*index, if(is_our_count) RED else GREEN)
 
     print("Health: "+(if(our_plane.isDefined) our_plane.get.health else 0), 20, 20, RED)
   }
@@ -271,7 +272,7 @@ class ClientRocket(val rocket_id: Int,
 }
 
 class ClientFlyingWord(rocket_id:Int, message:Any, init_coord:Vec, direction:Vec, color:ScageColor) extends FlyingObject {
-  private var _lifetime = 60;
+  private var _lifetime = 60
   private var _coord = init_coord
   private val _dir = direction.n
 
@@ -293,7 +294,7 @@ class ClientFlyingWord(rocket_id:Int, message:Any, init_coord:Vec, direction:Vec
 }
 
 class ClientHealthBar(health_id:Int, coord:Vec) {
-  private var _lifetime = 30;
+  private var _lifetime = 30
 
   def addLifeTime() {
     _lifetime = 30

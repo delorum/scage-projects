@@ -13,11 +13,11 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 1220, 560) {
   windowTitle += " - "+app_version
   val tracer = CoordTracer.create[Trace with HaveType with HaveHitPoints with SelfRemovable](
     field_from_x = 10,
-    field_to_x = 1210,
+    field_to_x   = 1210,
     field_from_y = 150,
-    field_to_y = 550,
-    init_N_x = 15,
-    init_N_y = 5
+    field_to_y   = 550,
+    init_N_x     = 15,
+    init_N_y     = 5
   )
 
   val small_font = new ScageMessage(max_font_size = 13)
@@ -177,7 +177,7 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 1220, 560) {
       case _ =>
     })+" (Press 1 or 2 to change)", 10, 10+80, WHITE)
 
-    print("Hitpoints: "+Base.hp.formatted("%.0f"), 10, 10+40, WHITE)
+    print("Base Hitpoints: "+Base.hp.formatted("%.0f"), 10, 10+40, WHITE)
 
     print("Resource: "+_resource, 10, 10, WHITE)
 

@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>su.msk.dunno.scage</groupId>
+  <artifactId>uke</artifactId>
+  <version>0.1</version>
+  <inceptionYear>2011</inceptionYear>
+
+  <name>Uke-chan</name>
+  <description>The Game About Uke</description>
+  <url>http://fzeulf.netris.ru/bor/${project.artifactId}</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <scala.version>2.9.1</scala.version>
+    <lwjgl.version>2.7.1</lwjgl.version>
+    <scage.version>0.8</scage.version>
+    <src.dir>src</src.dir>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>scala-tools.org</id>
+      <name>Scala-Tools Maven2 Repository</name>
+      <url>http://scala-tools.org/repo-releases</url>
+    </repository>
+
+    <repository>
+      <id>slick.cokeandcode.com</id>
+      <name>Slick Maven Repository</name>
+      <url>http://slick.cokeandcode.com/mavenrepo</url>
+    </repository>
+
+    <repository>
+      <id>lwjgl</id>
+      <name>lwjgl</name>
+      <url>http://adterrasperaspera.com/lwjgl</url>
+    </repository>
+
+    <repository>
+      <id>scage</id>
+      <name>Scage Maven Repo</name>
+      <url>http://scage.googlecode.com/svn/maven-repository</url>
+    </repository>
+  </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>scala-tools.org</id>
+      <name>Scala-Tools Maven2 Repository</name>
+      <url>http://scala-tools.org/repo-releases</url>
+    </pluginRepository>
+
+    <pluginRepository>
+      <name>oss.sonatype.org - github-releases</name>
+      <id>oss.sonatype.org-github-releases</id>
+      <url>http://oss.sonatype.org/content/repositories/github-releases</url>
+    </pluginRepository>
+  </pluginRepositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>${scala.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+        <groupId>su.msk.dunno</groupId>
+        <artifactId>scage</artifactId>
+        <version>${scage.version}</version>
+        <scope>compile</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <sourceDirectory>${src.dir}/main/scala</sourceDirectory>
+    <testSourceDirectory>${src.dir}/test/scala</testSourceDirectory>
+
+    <resources>
+        <resource>
+            <directory>${src.dir}/main/resources</directory>
+            <includes>
+                <include>log4j.properties</include>
+                 <include>logback.xml</include>
+               </includes>
+               <filtering>true</filtering>
+           </resource>
+           <resource>
+               <directory>${src.dir}/main/resources</directory>
+               <excludes>
+               	<exclude>log4j.properties</exclude>
+                 <exclude>logback.xml</exclude>
+            </excludes>
+            <filtering>false</filtering>
+        </resource>
+    </resources>
+
+    <filters>
+        <filter>build.properties</filter>
+    </filters>
+
+    <plugins>
+      <plugin>
+              <groupId>org.codehaus.mojo</groupId>
+              <artifactId>properties-maven-plugin</artifactId>
+              <version>1.0-alpha-1</version>
+              <executions>
+                <execution>
+                  <phase>initialize</phase>
+                  <goals>
+                    <goal>read-project-properties</goal>
+                  </goals>
+                  <configuration>
+                    <files>
+                      <file>build.properties</file>
+                    </files>
+                    <quiet>true</quiet>
+                  </configuration>
+                </execution>
+              </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.scala-tools</groupId>
+        <artifactId>maven-scala-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+              <goal>testCompile</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <scalaVersion>${scala.version}</scalaVersion>
+          <args>
+            <arg>-optimise</arg>
+          </args>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-eclipse-plugin</artifactId>
+        <configuration>
+          <downloadSources>true</downloadSources>
+          <buildcommands>
+            <buildcommand>ch.epfl.lamp.sdt.core.scalabuilder</buildcommand>
+          </buildcommands>
+          <additionalProjectnatures>
+            <projectnature>ch.epfl.lamp.sdt.core.scalanature</projectnature>
+          </additionalProjectnatures>
+          <classpathContainers>
+            <classpathContainer>org.eclipse.jdt.launching.JRE_CONTAINER</classpathContainer>
+            <classpathContainer>ch.epfl.lamp.sdt.launching.SCALA_CONTAINER</classpathContainer>
+          </classpathContainers>
+        </configuration>
+      </plugin>
+
+      <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                  <execution>
+                    <id>unpack</id>
+                    <phase>generate-resources</phase>
+                    <goals>
+                      <goal>unpack</goal>
+                    </goals>
+                    <configuration>
+                      <artifactItems>
+                        <artifactItem>
+                          <groupId>org.lwjgl</groupId>
+                          <artifactId>lwjgl-native</artifactId>
+                          <version>${lwjgl.version}</version>
+                          <type>jar</type>
+                          <outputDirectory>${project.build.directory}/native</outputDirectory>
+                          <overWrite>true</overWrite>
+                        </artifactItem>
+                      </artifactItems>
+                    </configuration>
+                  </execution>
+                  <execution>
+                    <id>copy-dependencies</id>
+                    <phase>package</phase>
+                    <goals>
+                      <goal>copy-dependencies</goal>
+                    </goals>
+                    <configuration>
+                      <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                    </configuration>
+                  </execution>
+                </executions>
+      </plugin>
+
+      <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>2.7.2</version>
+            <configuration>
+                <argLine>-Dscage.properties=uke.properties -Djava.library.path=${project.build.directory}/native/${os.type} -DLWJGL_DISABLE_XRANDR=true</argLine>
+            </configuration>
+      </plugin>
+
+      <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>2.3.1</version>
+                    <configuration>
+                       <archive>
+                          <manifest>
+                             <addClasspath>true</addClasspath>
+                             <mainClass>${jar.mainclass}</mainClass>
+                          </manifest>
+                       </archive>
+                    </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+      <profile>
+          <id>build</id>
+          <activation>
+              <activeByDefault>true</activeByDefault>
+          </activation>
+          <build>
+              <plugins>
+                <plugin>
+                            <!-- NOTE: We don't need a groupId specification because the group is
+                                 org.apache.maven.plugins ...which is assumed by default.
+                             -->
+                            <artifactId>maven-assembly-plugin</artifactId>
+                            <version>2.2-beta-2</version>
+                            <configuration>
+                              <finalName>${artifactId}-${version}-${os.type}</finalName>
+                              <outputDirectory>${project.build.directory}</outputDirectory>
+                                <descriptors>
+                                    <descriptor>assembly.xml</descriptor>
+                                </descriptors>
+                            </configuration>
+                            <executions>
+                                  <execution>
+                                    <id>make-assembly</id> <!-- this is used for inheritance merges -->
+                                    <phase>package</phase> <!-- append to the packaging phase. -->
+                                    <goals>
+                                      <goal>single</goal> <!-- goals == mojos -->
+                                    </goals>
+                                  </execution>
+                            </executions>
+                  </plugin>
+              </plugins>
+          </build>
+      </profile>
+      <profile>
+          <id>webstart</id>
+          <build>
+              <resources>
+                  <resource>
+                      <directory>.</directory>
+                      <includes>
+                          <include>${scageproperties}</include>
+                      </includes>
+                  </resource>
+              </resources>
+              <plugins>
+                  <plugin>
+                    <groupId>org.codehaus.mojo.webstart</groupId>
+                    <artifactId>webstart-maven-plugin</artifactId>
+                    <executions>
+                      <execution>
+                        <phase>package</phase>
+                        <goals>
+                          <goal>jnlp-single</goal> <!-- use jnlp, jnlp-inline or jnlp-single as appropriate -->
+                        </goals>
+                      </execution>
+                    </executions>
+                    <configuration>
+                        <!-- JNLP generation -->
+                      <jnlp>
+                        <!-- default values -->
+                        <!--inputTemplateResourcePath>${project.basedir}</inputTemplateResourcePath-->
+                        <!--inputTemplate>src/main/jnlp/template.vm</inputTemplate--> <!-- relative to inputTemplateResourcePath -->
+                        <outputFile>run.jnlp</outputFile> <!-- defaults to launch.jnlp -->
+
+                        <!-- used to automatically identify the jar containing the main class. -->
+                        <!-- this is perhaps going to change -->
+                        <mainClass>${jar.mainclass}</mainClass>
+                      </jnlp>
+                      <verbose>true</verbose>
+                      <!--
+                      <sign>
+                        <keystore>scage_keystore</keystore>
+                        <keypass>scagescage</keypass>
+                        <storepass>scagescage</storepass>
+                        <alias>scage_keystore</alias>
+                        <dnameCn>dunno</dnameCn>
+                        <dnameOu>dunno</dnameOu>
+                        <dnameO>dunno</dnameO>
+                        <dnameL>dunno</dnameL>
+                        <dnameSt>Russia</dnameSt>
+                        <dnameC>Moscow</dnameC>
+
+                        <verify>true</verify>
+                        <keystoreConfig>
+                          <delete>true</delete>
+                          <gen>true</gen>
+                        </keystoreConfig>
+                      </sign>
+                      -->
+                    </configuration>
+                  </plugin>
+
+                  <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jarsigner-plugin</artifactId>
+                    <version>1.2</version>
+                    <executions>
+                      <execution>
+                        <id>sign</id>
+                        <phase>package</phase>
+                        <goals>
+                          <goal>sign</goal>
+                        </goals>
+                      </execution>
+                    </executions>
+                    <configuration>
+                      <archiveDirectory>${project.build.directory}/jnlp</archiveDirectory>
+                      <keystore>${keystore}</keystore>
+                      <alias>${keystore.alias}</alias>
+                      <storepass>${keystore.pass}</storepass>
+                      <keypass>${key.pass}</keypass>
+                      <verbose>true</verbose>
+                    </configuration>
+                  </plugin>
+              </plugins>
+          </build>
+      </profile>
+  </profiles>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.scala-tools</groupId>
+        <artifactId>maven-scala-plugin</artifactId>
+        <configuration>
+          <scalaVersion>${scala.version}</scalaVersion>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
+</project>

@@ -87,7 +87,7 @@ object OurPlane extends Plane {
   }
 
   interface {
-    drawFilledRect(Vec(20, window_height-20), window_width/2*health/100, 10, RED)
+    drawFilledRect(Vec(20, windowHeight-20), windowWidth/2*health/100, 10, RED)
   }
 }
 
@@ -144,7 +144,7 @@ object EnemyPlane extends Plane {
   }
 
   interface {
-    drawFilledRect(Vec(window_width-20, window_height-20), -window_width/2*health/100, 10, YELLOW)
+    drawFilledRect(Vec(windowWidth-20, windowHeight-20), -windowWidth/2*health/100, 10, YELLOW)
   }
 }
 
