@@ -16,14 +16,16 @@ object SpaceWarClient extends ScageScreenApp("Space War Client", 800, 600) {
             case State(("commander", commander @ State(("color", commander_color:ScageColor),
                                                        ("name", commander_name:String))),
                        ("coord", planet_coord:Vec),
-                       ("ships", planet_ships:Int),
-                       ("size", planet_size:Int)) =>
-              client_planets.getOrElseUpdate(planet_coord, new ClientPlanet(planet_coord, planet_size, planet_ships, commander_color)).update(planet_ships, commander_color)
+                       ("ships", planet_ships:Float),
+                       ("size", planet_size:Float)) =>
+              client_planets.getOrElseUpdate(planet_coord, new ClientPlanet(planet_coord, planet_size.toInt, planet_ships.toInt, commander_color)).update(planet_ships.toInt, commander_color)
           })
       }
     }
   )
 }
+
+import SpaceWarClient._
 
 class ClientPlanet(val planet_coord:Vec, val planet_size:Int, private var planet_ships:Int, private var commander_color:ScageColor) {
   def update(new_planet_ships:Int, new_commander_color:ScageColor) {
@@ -37,6 +39,6 @@ class ClientPlanet(val planet_coord:Vec, val planet_size:Int, private var planet
   }
 
   clear {
-    delOperations(action_id, render_id, currentOperation)
+    delOperations(render_id, currentOperation)
   }
 }

@@ -6,14 +6,14 @@
   <version>0.1</version>
   <inceptionYear>2011</inceptionYear>
 
-  <name>Scage Project</name>
+  <name>Space War</name>
   <description>Simple Scage Project Stub</description>
   <url>http://fzeulf.netris.ru/bor/${project.artifactId}</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <scala.version>2.9.1</scala.version>
-    <lwjgl.version>2.7.1</lwjgl.version>
+    <lwjgl.version>2.8.2</lwjgl.version>
     <scage.version>0.9.1-SNAPSHOT</scage.version>
     <src.dir>src</src.dir>
   </properties>
