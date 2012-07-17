@@ -22,7 +22,10 @@ object Base extends SelfHitPoints with BaseType {
     def remove() {restart()}
   })
 
+  private val base_coord = tracer.pointCenter(Vec(tracer.N_x-1, tracer.N_y/2))
+  private val base_height = tracer.h_y*tracer.N_y
   render {
-    drawRectCentered(tracer.pointCenter(Vec(tracer.N_x-1, tracer.N_y/2)), tracer.h_x, tracer.h_y*tracer.N_y, GREEN)
+    drawRectCentered(base_coord, tracer.h_x, base_height, GREEN)
+    printCentered(hp, base_coord)
   }
 }

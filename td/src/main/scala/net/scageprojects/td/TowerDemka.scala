@@ -9,13 +9,13 @@ import net.scage.support.messages.ScageMessage
 import Tower._
 import Wall._
 
-object TowerDemka extends ScageScreenApp("Tower Demka", 1220, 560) {
+object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
   windowTitle += " - "+app_version
   val tracer = CoordTracer.create[Trace with HaveType with HaveHitPoints with SelfRemovable](
     field_from_x = 10,
-    field_to_x   = 1210,
-    field_from_y = 150,
-    field_to_y   = 550,
+    field_to_x   = 790,
+    field_from_y = 310,
+    field_to_y   = 570,
     init_N_x     = 15,
     init_N_y     = 5
   )
@@ -168,22 +168,22 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 1220, 560) {
   }
 
   interface {
-    if(all_enemies_dead) print("Next "+enemy_amount+" enemies will spawn in "+count, 10, 10+120, WHITE)
-    else print("Wave "+wave_number+" Attack On!!!", 10, 10+120, WHITE)
+    print(_resource, 10, windowHeight-20, WHITE)
+    print(
+      (if(all_enemies_dead) "Next Wave: "+count
+      else "Wave "+wave_number),
+      windowWidth/2, windowHeight-20, WHITE, align = "xcenter"
+    )
+    print(
+      which_building match {
+        case PLACE_TOWER => "TOWER"
+        case PLACE_WALL => "WALL"
+        case _ => ""
+      },
+      windowWidth-10, windowHeight-20, WHITE, align = "right"
+    )
 
-    print("Build Mode: "+(which_building match {
-      case PLACE_TOWER => "TOWER ("+tower_price+")"
-      case PLACE_WALL => "WALL ("+wall_price+")"
-      case _ =>
-    })+" (Press 1 or 2 to change)", 10, 10+80, WHITE)
-
-    print("Base Hitpoints: "+Base.hp.formatted("%.0f"), 10, 10+40, WHITE)
-
-    print("Resource: "+_resource, 10, 10, WHITE)
-
-    if(onPause) printCentered("PAUSE (Press Space)", windowWidth/2, 20, WHITE)
-
-    printCentered(fps, windowWidth/2, 20+40, WHITE)
+    if(onPause) print("PAUSE (Press Space)", windowCenter, WHITE, align = "center")
   }
 }
 

@@ -75,7 +75,7 @@ class Tower(init_point:Vec) extends DefaultTrace with SelfHitPoints with TowerTy
 
   private val render_id = render {
     drawRectCentered(location, tracer.h_x, tracer.h_y, YELLOW)
-    val tower_info = "HP: "+hp.formatted("%.0f")+"\n"+"A: "+_attack.formatted("%.1f")+"\n"+ {
+    /*val tower_info = "HP: "+hp.formatted("%.0f")+"\n"+"A: "+_attack.formatted("%.1f")+"\n"+ {
       val upgrade_price = tower_upgrade_price + tower_upgrade_price_increase*upgrade_number
       if(firstWaveStarted) {
         if(allEnemiesDead) {
@@ -87,8 +87,9 @@ class Tower(init_point:Vec) extends DefaultTrace with SelfHitPoints with TowerTy
         val repair_price = tower_repair_price + (tower_max_hp-hp.toInt)/2
         if(resource >= repair_price) "[rRepair ("+repair_price+")]" else "Repair ("+repair_price+")"
       } else ""
-    }/*"[rRepair]"*/
-    small_font.print(tower_info, location + Vec(-35, 19))
+    }/*"[rRepair]"*/*/
+    //small_font.print(tower_info, location + Vec(-35, 19))
+    printCentered(hp.formatted("%.0f"), location)
   }
 
   private var last_shoot_time = 0L
