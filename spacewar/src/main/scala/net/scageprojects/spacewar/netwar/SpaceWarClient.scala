@@ -19,6 +19,11 @@ object SpaceWarClient extends ScageScreenApp("Space War Client", 800, 600) {
         case ("planets", server_planets:List[State]) =>
           server_planets.foreach(server_planet => server_planet match {
             case State(("commander", commander @ State(("color", commander_color:ScageColor),
+                                                       ("name", commander_name:String))),
+                       ("coord", planet_coord:Vec),
+                       ("ships", planet_ships:Float),
+                       ("size", planet_size:Float)) =>
+              client_planets.getOrElseUpdate(planet_coord, new ClientPlanet(planet_coord, planet_size.toInt, planet_ships.toInt, commander_color)).update(planet_ships.toInt, commander_color)
                                                        ("name",  commander_name:String))),
                        ("coord",     planet_coord:Vec),
                        ("ships",     planet_ships:Float),
@@ -73,6 +78,7 @@ object SpaceWarClient extends ScageScreenApp("Space War Client", 800, 600) {
 
 import SpaceWarClient._
 
+class ClientPlanet(val planet_coord:Vec, val planet_size:Int, private var planet_ships:Int, private var commander_color:ScageColor) {
 class ClientPlanet(val coord:Vec, val size:Int, private var planet_ships:Int, private var commander_color:ScageColor) {
   def commanderColor = commander_color
 

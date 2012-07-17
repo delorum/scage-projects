@@ -59,17 +59,28 @@ object SpaceWarServer extends ScageApp("Space War Server") {
     },
     onClientAccepted = {client =>
       players += Commander(client.id.toString, player_colors.next())
+      if(!countdown_started && players.length > 1) {
+        startCountDown()
+      }
+
       if(!countdown_started && players.length >= 2) startCountDown()
     }
   )
 
+  import concurrent.ops._
+  spawn {
+    while(msecsFromInit < 10000) {}
+    startCountDown()
+  }
+
   private var countdown_started = false
-  def startCountDown() {
+  def startCountDown() = {
     countdown_started = true
     val start_moment = msecs
     action(1000) {
+      println("pew")
       val current_moment = msecsFrom(start_moment)/1000
-      NetServer.sendToAll(State("countdown" -> current_moment, ""))
+      NetServer.sendToAll(State("countdown" -> current_moment))
       if(current_moment >= 10) {
         deleteSelf()
         startGameRound()
