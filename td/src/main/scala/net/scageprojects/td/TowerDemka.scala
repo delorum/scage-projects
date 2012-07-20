@@ -146,6 +146,8 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
     }
   }
 
+  Base
+
   init {
     nextWaveCountdown(enemy_first_period)
   }
