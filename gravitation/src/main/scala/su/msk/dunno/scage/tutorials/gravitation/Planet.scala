@@ -5,7 +5,7 @@ import Orbita._
 import net.scage.support.{ScageColor, Vec}
 
 class Planet(init_velocity:Vec, mass:Float, radius:Int, val planet_color:ScageColor)
-extends MaterialPoint(init_velocity, Vec(0,0), mass, radius) {
+extends MaterialPoint(init_velocity = init_velocity, mass = mass, radius = radius) {
   //private val PLANET = image("planet1.png", 10, 10, 0, 0, 350, 350)
   render {
     //drawDisplayList(PLANET, coord)

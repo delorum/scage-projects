@@ -1,13 +1,16 @@
 package su.msk.dunno.scage.tutorials.gravitation
 
-import net.scage.{ScageScreenApp, ScageScreen}
+import net.scage.ScreenApp
 import org.lwjgl.opengl.GL11
 import net.scage.ScageLib._
 import net.scage.support.Vec
+import net.scage.handlers.controller2.MultiController
 
-object Orbita extends ScageScreenApp("Orbita") {
+object Orbita extends ScreenApp("Orbita") with MultiController {
   val G = property("G", 5)
   val dt = property("dt", 1f)
+
+
 
   val num_stars = property("stars.amount", 100)
   val stars = displayList {
@@ -43,74 +46,31 @@ object Orbita extends ScageScreenApp("Orbita") {
   OrbitalTracer.addTrace(Vec(-400, 0), mars)*/
 
   center = sun.location
-  keyNoPause(KEY_S, onKeyDown = {
+  key(KEY_S, onKeyDown = {
+    println("no pause. S pressed")
     if(center == ship.location) center = sun.location
     else center = ship.location
   })
 
-  keyNoPause(KEY_ADD, 100, onKeyDown = globalScale += 1)
-  keyNoPause(KEY_SUBTRACT, 100, onKeyDown = if(globalScale > 1) globalScale -= 1)
-  keyPause(KEY_LEFT, 50, onKeyDown = {
-    ship.rotate(5)
-    if(onPause && ship.acceleration.norma2 > 0) TrajectoryTracer.calculateTrajectories()
-  })
-  keyPause(KEY_RIGHT, 50, onKeyDown = {
-    ship.rotate(-5)
-    if(onPause && ship.acceleration.norma2 > 0) TrajectoryTracer.calculateTrajectories()
-  })
+  keyIgnorePause(KEY_ADD, 100, onKeyDown = globalScale += 1)
+  keyIgnorePause(KEY_SUBTRACT, 100, onKeyDown = if(globalScale > 1) globalScale -= 1)
 
-  keyPause(KEY_UP, 100, onKeyDown = {
-    ship.applyForce(ship.direction.n*0.1f)
-    if(onPause) TrajectoryTracer.calculateTrajectories()
-  })
-  keyPause(KEY_DOWN, 100, onKeyDown = {
-    ship.applyForce(ship.direction.n*(-0.1f))
-    if(onPause) TrajectoryTracer.calculateTrajectories()
-  })
-
-  keyPause(KEY_NUMPAD7, 100, onKeyDown = {
-    ship.increaseAccelerationPeriod(1)
-    if(onPause) TrajectoryTracer.calculateTrajectories()
-  })
-  keyPause(KEY_NUMPAD1, 100, onKeyDown = {
-    ship.decreaseAccelerationPeriod(1)
-    if(onPause) TrajectoryTracer.calculateTrajectories()
-  })
-  keyPause(KEY_NUMPAD8, 100, onKeyDown = {
-    ship.increaseAccelerationPeriod(10)
-    if(onPause) TrajectoryTracer.calculateTrajectories()
-  })
-  keyPause(KEY_NUMPAD2, 100, onKeyDown = {
-    ship.decreaseAccelerationPeriod(10)
-    if(onPause) TrajectoryTracer.calculateTrajectories()
-  })
-  keyPause(KEY_NUMPAD9, 100, onKeyDown = {
-    ship.increaseAccelerationPeriod(100)
-    if(onPause) TrajectoryTracer.calculateTrajectories()
-  })
-  keyPause(KEY_NUMPAD3, 100, onKeyDown = {
-    ship.decreaseAccelerationPeriod(100)
-    if(onPause) TrajectoryTracer.calculateTrajectories()
-  })
-
-  keyPause(KEY_SPACE, onKeyDown = {
-    ship.removeAcceleration()
-    if(onPause) TrajectoryTracer.calculateTrajectories()
-  })
-
-  keyNoPause(KEY_P, onKeyDown = {
+  keyIgnorePause(KEY_P, onKeyDown = {
     if(onPause) {
       pauseOff()
       TrajectoryTracer.stopCalculating()
-      ship.setAccelerationMoment(ship.accelerationPeriod)
     } else {
       pause()
-      ship.setAccelerationMoment(0)
       TrajectoryTracer.calculateTrajectories()
     }
   })
 
   interface {
+    if(!onPause) {
+      print("velocity: "     + ship.velocity.norma,            10, windowHeight-20, YELLOW)
+      print("acceleration: " + ship.acceleration,              10, windowHeight-40, YELLOW)
+      print("time: "         + OrbitalTracer.time,             10, windowHeight-60, YELLOW)
+    }
     print(fps, windowWidth-20, windowHeight-20, YELLOW)
   }
 
