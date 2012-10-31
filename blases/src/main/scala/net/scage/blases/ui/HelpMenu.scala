@@ -3,10 +3,10 @@ package net.scage.blases.ui
 import net.scage.handlers.controller2.MultiController
 import net.scage.support.Vec
 import net.scage.ScageLib._
-import net.scage.Screen
+import net.scage.{ScageScreen, Screen}
 import net.scage.blases.Relatives._
 
-object HelpMenu extends Screen("Help Menu") with MultiController {
+object HelpMenu extends /*Scage*/Screen("Help Menu") with MultiController {
   preinit {
     backgroundColor = WHITE
   }

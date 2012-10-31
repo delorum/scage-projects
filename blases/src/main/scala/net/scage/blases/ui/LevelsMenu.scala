@@ -1,7 +1,7 @@
 package net.scage.blases.ui
 
 import net.scage.handlers.controller2.MultiController
-import net.scage.Screen
+import net.scage.{ScageScreen, Screen}
 import net.scage.support.Vec
 import net.scage.blases.levels._
 import net.scage.ScageLib._
@@ -27,7 +27,7 @@ case class LevelButton(level:Level,
     rVec(coord) + Vec(-20, -20))
 }
 
-object LevelsMenu extends Screen("Blases Levels") with MultiController {
+object LevelsMenu extends /*Scage*/Screen("Blases Levels") with MultiController {
   val level1_button      = LevelButton(Level1,      0, Vec(512, 384) + Vec(-(40+40)*3, 120))
   val level2_button      = LevelButton(Level2,      1, Vec(512, 384) + Vec(-(40+40)*2, 120))
   val level3_button      = LevelButton(Level3,      2, Vec(512, 384) + Vec(-(40+40)*1, 120))
@@ -75,7 +75,7 @@ object LevelsMenu extends Screen("Blases Levels") with MultiController {
     }
   }
 
-  leftMouseNoPause(onBtnDown = m =>
+  leftMouseIgnorePause(onBtnDown = m =>
     all_buttons.find {
       case button @ LevelButton(level, level_num, _) => level.is_entered && button.containsCoord(m)
     } match {

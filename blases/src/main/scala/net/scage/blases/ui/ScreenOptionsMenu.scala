@@ -3,9 +3,9 @@ package net.scage.blases.ui
 import net.scage.ScageLib._
 import net.scage.support.Vec
 import net.scage.handlers.controller2.MultiController
-import net.scage.Screen
+import net.scage.{ScageScreen, Screen}
 
-object ScreenOptionsMenu extends Screen("Blases Options Screen") with MultiController {
+object ScreenOptionsMenu extends /*Scage*/Screen("Blases Options Screen") with MultiController {
   val resolution1_button = new Button("640 x 480", Vec(512, 384) + Vec(-40, 40), 100, ScreenOptionsMenu, windowSize = (640, 480))
   val resolution2_button = new Button("800 x 600", Vec(512, 384) + Vec(-40, 0), 100, ScreenOptionsMenu, windowSize = (800, 600))
   val resolution3_button = new Button("1024 x 768", Vec(512, 384) + Vec(-40, -40), 100, ScreenOptionsMenu, windowSize = (1024, 768))

@@ -9,7 +9,7 @@ class FlyingWord(message:Any, color:ScageColor, init_coord:Vec, direction:Vec) {
   private val dir = direction.n
   private var coord = init_coord
 
-  actionNoPause {
+  actionIgnorePause {
     if(lifetime > 0) {
       coord += dir
       lifetime -= 1

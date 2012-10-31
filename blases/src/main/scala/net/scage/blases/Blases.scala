@@ -9,7 +9,7 @@ import net.scage.support.tracer3.{TraceTrait, Trace, CoordTracer}
 import net.scage.support.physics.objects.{StaticLine, DynaBall}
 import net.scage.blases.Relatives._
 import ui.PauseMenu
-import net.scage.Screen
+import net.scage.{ScageScreen, Screen}
 import net.scage.handlers.controller2.MultiController
 import collection.mutable.{Stack, ArrayBuffer}
 
@@ -92,7 +92,7 @@ object BlaseSelector {
 import LevelSelector._
 import BlaseSelector._
 
-object Blases extends Screen("Blases Game") with MultiController {
+object Blases extends /*Scage*/Screen("Blases Game") with MultiController {
   val physics = ScagePhysics()
   private var _tracer = CoordTracer.create[Blase](field_from_x = 0,
                                                   field_to_x = windowWidth,
@@ -146,7 +146,7 @@ object Blases extends Screen("Blases Game") with MultiController {
     }
   }
 
-  keyNoPause(KEY_ESCAPE, onKeyDown = {
+  keyIgnorePause(KEY_ESCAPE, onKeyDown = {
     PauseMenu.status match {
       case -1 => PauseMenu.showEscMenu()
       case PauseMenu.PRESS_ESC => PauseMenu.hide()

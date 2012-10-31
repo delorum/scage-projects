@@ -27,7 +27,7 @@ object EventsTest extends ScageApp("Events Test") {
 import EventsTest._
 
 class Foo {
-  onEvent("I Bar") {
+  onEventWithArguments("I Bar") {
     case i:Int =>
       if(i > 0) {
         println("I heard it already for "+i+" times!")
@@ -43,8 +43,8 @@ class Bar {
     callEvent("I Bar", i)
     i += 1
   }
-  
-  onEvent("I am Foo") {
+
+  onEventWithArguments("I am Foo") {
     case (i:Int, j:Int) =>
       println("You Foo! "+i+" "+j)
     case s:String => println(s)

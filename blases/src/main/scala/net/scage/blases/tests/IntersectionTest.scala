@@ -12,7 +12,7 @@ object IntersectionTest extends ScageScreenApp("Intersection Test") {
     drawPolygon(polygon_points)
   }
 
-  def areLinesIntersect(a: Vec, b: Vec, c: Vec, d: Vec): Boolean = {
+  /*def areLinesIntersect(a: Vec, b: Vec, c: Vec, d: Vec): Boolean = {
     val common = (b.x - a.x) * (d.y - c.y) - (b.y - a.y) * (d.x - c.x)
     if (common == 0) false
     else {
@@ -42,5 +42,5 @@ object IntersectionTest extends ScageScreenApp("Intersection Test") {
   leftMouse(onBtnDown = {
     m =>
       println(containsCoord(m))
-  })
+  })*/
 }
