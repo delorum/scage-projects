@@ -43,7 +43,7 @@ object LightCyclesServer extends ScageApp("Light Cycles Server") {
             case 3 => West
             case _ => North
           }
-          tracer.addTrace(pos, new LightCycle(client_id, RED, dir))
+          tracer.addTrace(pos, new LightCycle(client_id, randomColor, dir))
         case ("new client data", client_id:Int, data:State) => {
           val cycle = tracer.tracesList.find(cycle => cycle.client_id == client_id).get
           data.neededKeys {

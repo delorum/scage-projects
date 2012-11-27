@@ -1,0 +1,248 @@
+package net.scageprojects.lightcycles
+
+import net.scage.ScageScreenApp
+import net.scage.ScageLib._
+import net.scage.support.{ScageColor, Vec}
+import collection.mutable.ArrayBuffer
+import net.scage.support.tracer3.{DefaultTrace, CoordTracer}
+
+object LightCyclesOffline extends ScageScreenApp("Light Cycles", 640, 480) {
+  val tracer = CoordTracer.create[LightCycleTrace](
+    field_from_x = 10,
+    field_to_x   = 610,
+    field_from_y = 10,
+    field_to_y   = 460,
+    solid_edges = true
+  )
+
+  def randomDir = {
+    (math.random*4).toInt match {
+      case 0 => Vec( 0, 1)
+      case 1 => Vec( 0,-1)
+      case 2 => Vec( 1, 0)
+      case 3 => Vec(-1, 0)
+    }
+  }
+
+  val borders = List(Vec(tracer.field_from_x, tracer.field_from_y),
+                     Vec(tracer.field_from_x, tracer.field_to_y-1),
+                     Vec(tracer.field_to_x-1, tracer.field_to_y-1),
+                     Vec(tracer.field_to_x-1, tracer.field_from_y),
+                     Vec(tracer.field_from_x, tracer.field_from_y)).sliding(2).map {
+    case List(a, b) => (a, b)
+  }.toList
+  def otherLines(cycle_id:Int):List[(Vec, Vec)] = {
+    val other_cycles = tracer.tracesList.filter(oc => oc.id != cycle_id)
+    val our_cycle = tracer.tracesList.filter(oc => oc.id == cycle_id && oc.prevLocations.length > 2)
+    borders ++
+    other_cycles.flatMap {
+      c => (c.prevLocations.toList ++ List(c.location)).sliding(2).map {
+        case List(a, b) => (a, b)
+      }
+    } ++
+    our_cycle.flatMap {
+      c => (c.prevLocations.init.toList).sliding(2).map {
+        case List(a, b) => (a, b)
+      }
+    }
+  }
+
+  def interpoint(v1:Vec, v2:Vec, v3:Vec, v4:Vec):Vec = {
+    val Vec(a1x, a1y) = v1
+    val Vec(a2x, a2y) = v2
+    val Vec(b1x, b1y) = v3
+    val Vec(b2x, b2y) = v4
+
+    val a1 = a1x - a2x
+    val b1 = b2x - b1x
+    val c1 = a1x - b1x
+
+    val a2 = a1y - a2y
+    val b2 = b2y - b1y
+    val c2 = a1y - b1y
+
+    val d  = a1*b2 - a2*b1
+    val dx = c1*b2 - c2*b1
+    val dy = a1*c2 - a2*c1
+
+    val ta = dx/d
+    //val tb = dy/d
+
+    val x = a1x + ta*(a2x - a1x)
+    val y = a1y + ta*(a2y - a1y)
+
+    Vec(x, y)
+  }
+
+  def checkCrash(cycle:LightCycleTrace):Boolean = {
+    otherLines(cycle.id).find {
+      case (a1, a2) => areLinesIntersect(a1, a2, cycle.location, cycle.prevLocations.last)
+    } match {
+      case Some((a1, a2)) =>
+        val i = interpoint(a1, a2, cycle.location, cycle.prevLocations.last)
+        i.dist2(cycle.location) < 1
+      case None => false
+    }
+  }
+
+  def checkIntersection(v1:Vec, v2:Vec, v3:Vec, v4:Vec) = areLinesIntersect(v1, v2, v3, v4)
+
+  PlayerCycleOffline
+  EnemyCycleOffline
+
+  private var player_count = 0
+  private var enemy_count  = 0
+
+  private var result       = -1   // 0 - player won, 1 - enemy won
+  init {
+    result = -1
+  }
+  action(10) {
+    if(checkCrash(PlayerCycleOffline)) {
+      enemy_count += 1
+      result = 1
+      pause()
+    } else if(checkCrash(EnemyCycleOffline)) {
+      player_count += 1
+      result = 0
+      pause()
+    }
+  }
+
+  keyIgnorePause(KEY_F2, onKeyDown = restart())
+  keyIgnorePause(KEY_SPACE, onKeyDown = {
+    result match {
+      case 0 | 1 =>
+        pauseOff()
+        restart()
+      case _ =>
+        switchPause()
+    }
+  })
+
+  render(-10) {
+    print(player_count+"\n\n"+enemy_count, windowWidth-15, windowHeight-40, DARK_GRAY, align = "center")
+    drawTraceGrid(tracer, DARK_GRAY)
+    if(onPause) {
+      result match {
+        case 0 => print("PLAYER WON. PRESS SPACE", windowCenter, RED,       align = "center")
+        case 1 => print("ENEMY WON. PRESS SPACE",  windowCenter, YELLOW,    align = "center")
+        case _ => print("PAUSE. PRESS SPACE",      windowCenter, DARK_GRAY, align = "center")
+      }
+    }
+  }
+}
+
+import LightCyclesOffline._
+
+class LightCycleTrace(val color:ScageColor) extends DefaultTrace {
+  protected val prev_locations = ArrayBuffer[Vec]()
+  def prevLocations:Seq[Vec] = prev_locations
+
+  private var _dir:Vec = randomDir
+  def dir = _dir
+  protected def dir_=(new_dir:Vec) {
+    prev_locations += location
+    _dir = new_dir
+  }
+}
+
+object PlayerCycleOffline extends LightCycleTrace(RED) {
+  tracer.addTrace(tracer.randomCoord(), this)
+
+  init {
+    prev_locations.clear()
+    tracer.updateLocation(id, tracer.randomCoord())
+    dir = randomDir
+  }
+
+  action(10) {
+    tracer.updateLocation(id, location + dir)
+  }
+
+  key(KEY_W, onKeyDown = if(dir != Vec( 0, -1)) dir = Vec( 0, 1))
+  key(KEY_A, onKeyDown = if(dir != Vec( 1,  0)) dir = Vec(-1, 0))
+  key(KEY_S, onKeyDown = if(dir != Vec( 0,  1)) dir = Vec( 0,-1))
+  key(KEY_D, onKeyDown = if(dir != Vec(-1,  0)) dir = Vec( 1, 0))
+
+  render {
+    drawSlidingLines(prev_locations, color)
+    drawLine(prev_locations.last, location, color)
+  }
+}
+
+object EnemyCycleOffline extends LightCycleTrace(YELLOW) {
+  tracer.addTrace(tracer.randomCoord(), this)
+
+  init {
+    prev_locations.clear()
+    tracer.updateLocation(id, tracer.randomCoord())
+    dir = randomDir
+  }
+
+  private def minObstacleDist(d:Vec):Float = {
+    otherLines(id).filter {
+      case (a1, a2) => checkIntersection(a1, a2, location, location + d*640)
+    }.map {
+      case (a1, a2) => interpoint(a1, a2, location, location + d*640)
+    }.foldLeft(0f) {
+      case (min_dist, i) =>
+        val dist = i.dist(location)
+      if(dist < min_dist) dist else min_dist
+    }
+  }
+
+  private def selectTurn = {
+    dir match {
+      case Vec(0,1) | Vec( 0,-1) =>
+        (otherLines(id).exists {
+          case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(1,0)*100)
+        },
+        otherLines(id).exists {
+          case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(-1,0)*100)
+        }) match {
+          case (true,  false) => Vec(-1,0)
+          case (false, true)  => Vec( 1,0)
+          case (true,  true)  =>
+            val (min_right, min_left) = (minObstacleDist(Vec(1,0)), minObstacleDist(Vec(-1,0)))
+            if(min_right > min_left) Vec(1,0) else Vec(-1,0)
+          case (false, false) => if(math.random > 0.5) Vec(1,0) else Vec(-1,  0)
+        }
+      case Vec(1,0) | Vec(-1, 0) =>
+        (otherLines(id).exists {
+          case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(0,1)*100)
+        },
+        otherLines(id).exists {
+          case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(0,-1)*100)
+        }) match {
+          case (true,  false) => Vec( 0,-1)
+          case (false, true)  => Vec( 0, 1)
+          case (true,  true)  =>
+            val (min_up, min_down) = (minObstacleDist(Vec(0,1)), minObstacleDist(Vec(0,-1)))
+            if(min_up > min_down) Vec(0,1) else Vec(0,-1)
+          case (false, false) => if(math.random > 0.5) Vec(0,1) else Vec(0,-1)
+        }
+      case _ => dir
+    }
+  }
+
+  // simple ai:
+  // 1. trace a little further and check for obstacles
+  // 2. make turns at random monets
+  action(10) {
+    if(otherLines(id).exists {
+      case (a1, a2) => checkIntersection(a1, a2, location, location + dir*(1 + (math.random*10).toInt))
+    } || math.random < 0.005) {
+      dir = selectTurn
+    }
+  }
+
+  action(10) {
+    tracer.updateLocation(id, location + dir)
+  }
+
+  render {
+    drawSlidingLines(prev_locations, color)
+    drawLine(prev_locations.last, location, color)
+  }
+}
