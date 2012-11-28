@@ -63,7 +63,7 @@ object LightCyclesOffline extends ScageScreenApp("Light Cycles", 640, 480) {
 
     val d  = a1*b2 - a2*b1
     val dx = c1*b2 - c2*b1
-    val dy = a1*c2 - a2*c1
+    //val dy = a1*c2 - a2*c1
 
     val ta = dx/d
     //val tb = dy/d
@@ -89,30 +89,53 @@ object LightCyclesOffline extends ScageScreenApp("Light Cycles", 640, 480) {
 
   PlayerCycleOffline
   EnemyCycleOffline
+  Enemy2CycleOffline
+  Enemy3CycleOffline
 
-  private var player_count = 0
-  private var enemy_count  = 0
+  private var player_count  = 0
+  private var enemy_count   = 0
+  private var enemy2_count  = 0
+  private var enemy3_count  = 0
 
-  private var result       = -1   // 0 - player won, 1 - enemy won
+  private var result       = -1   // 0 - player won, 1 - enemy won, 2 - enemy2 won, 3 - enemy3 won, 4 - nobody won
   init {
     result = -1
   }
   action(10) {
-    if(checkCrash(PlayerCycleOffline)) {
-      enemy_count += 1
-      result = 1
-      pause()
-    } else if(checkCrash(EnemyCycleOffline)) {
-      player_count += 1
-      result = 0
-      pause()
+    tracer.tracesList.length match {
+      case 0 =>
+        result = 4
+        pause()
+      case 1 =>
+        tracer.tracesList.head match {
+          case PlayerCycleOffline =>
+            result = 0
+            pause()
+          case EnemyCycleOffline =>
+            player_count += 1
+            enemy_count += 1
+            result = 1
+            pause()
+          case Enemy2CycleOffline =>
+            enemy2_count += 1
+            result = 2
+            pause()
+          case Enemy3CycleOffline =>
+            enemy3_count += 1
+            result = 3
+            pause()
+        }
+      case _ =>
+        tracer.tracesList.foreach(cycle => {
+          if(checkCrash(cycle)) cycle.crash()
+        })
     }
   }
 
   keyIgnorePause(KEY_F2, onKeyDown = restart())
   keyIgnorePause(KEY_SPACE, onKeyDown = {
     result match {
-      case 0 | 1 =>
+      case 0 | 1 | 2 | 3 | 4 =>
         pauseOff()
         restart()
       case _ =>
@@ -121,12 +144,15 @@ object LightCyclesOffline extends ScageScreenApp("Light Cycles", 640, 480) {
   })
 
   render(-10) {
-    print(player_count+"\n\n"+enemy_count, windowWidth-15, windowHeight-40, DARK_GRAY, align = "center")
+    print(player_count+"\n\n"+enemy_count+"\n\n"+enemy2_count+"\n\n"+enemy3_count, windowWidth-15, windowHeight-160, DARK_GRAY, align = "xcenter")
     drawTraceGrid(tracer, DARK_GRAY)
     if(onPause) {
       result match {
         case 0 => print("PLAYER WON. PRESS SPACE", windowCenter, RED,       align = "center")
-        case 1 => print("ENEMY WON. PRESS SPACE",  windowCenter, YELLOW,    align = "center")
+        case 1 => print("ENEMY1 WON. PRESS SPACE", windowCenter, YELLOW,    align = "center")
+        case 2 => print("ENEMY2 WON. PRESS SPACE", windowCenter, BLUE,      align = "center")
+        case 3 => print("ENEMY3 WON. PRESS SPACE", windowCenter, WHITE,     align = "center")
+        case 4 => print("NOBODY WON. PRESS SPACE", windowCenter, DARK_GRAY, align = "center")
         case _ => print("PAUSE. PRESS SPACE",      windowCenter, DARK_GRAY, align = "center")
       }
     }
@@ -135,7 +161,7 @@ object LightCyclesOffline extends ScageScreenApp("Light Cycles", 640, 480) {
 
 import LightCyclesOffline._
 
-class LightCycleTrace(val color:ScageColor) extends DefaultTrace {
+abstract class LightCycleTrace(val color:ScageColor) extends DefaultTrace {
   protected val prev_locations = ArrayBuffer[Vec]()
   def prevLocations:Seq[Vec] = prev_locations
 
@@ -145,19 +171,21 @@ class LightCycleTrace(val color:ScageColor) extends DefaultTrace {
     prev_locations += location
     _dir = new_dir
   }
+
+  protected var is_crashed = false
+  def isCrashed = is_crashed
+  def crash()
 }
 
 object PlayerCycleOffline extends LightCycleTrace(RED) {
-  tracer.addTrace(tracer.randomCoord(), this)
-
   init {
-    prev_locations.clear()
-    tracer.updateLocation(id, tracer.randomCoord())
+    is_crashed = false
+    tracer.addTrace(tracer.randomCoord(), this)
     dir = randomDir
   }
 
   action(10) {
-    tracer.updateLocation(id, location + dir)
+    if(!is_crashed) tracer.updateLocation(id, location + dir)
   }
 
   key(KEY_W, onKeyDown = if(dir != Vec( 0, -1)) dir = Vec( 0, 1))
@@ -166,41 +194,49 @@ object PlayerCycleOffline extends LightCycleTrace(RED) {
   key(KEY_D, onKeyDown = if(dir != Vec(-1,  0)) dir = Vec( 1, 0))
 
   render {
-    drawSlidingLines(prev_locations, color)
-    drawLine(prev_locations.last, location, color)
+    if(!is_crashed) {
+      drawSlidingLines(prev_locations, color)
+      drawLine(prev_locations.last, location, color)
+    }
+  }
+
+  clear {
+    crash()
+  }
+
+  def crash() {
+    if(!is_crashed) {
+      tracer.removeTraceById(id)
+      prev_locations.clear()
+      is_crashed = true
+    }
   }
 }
 
-object EnemyCycleOffline extends LightCycleTrace(YELLOW) {
-  tracer.addTrace(tracer.randomCoord(), this)
+trait EnemyCycle {
+  this:LightCycleTrace =>
 
-  init {
-    prev_locations.clear()
-    tracer.updateLocation(id, tracer.randomCoord())
-    dir = randomDir
-  }
-
-  private def minObstacleDist(d:Vec):Float = {
+  protected def minObstacleDist(d:Vec):Float = {
     otherLines(id).filter {
       case (a1, a2) => checkIntersection(a1, a2, location, location + d*640)
     }.map {
       case (a1, a2) => interpoint(a1, a2, location, location + d*640)
-    }.foldLeft(0f) {
+    }.foldLeft(1000f) {
       case (min_dist, i) =>
         val dist = i.dist(location)
-      if(dist < min_dist) dist else min_dist
+        if(dist < min_dist) dist else min_dist
     }
   }
 
-  private def selectTurn = {
+  protected def selectTurn(check_distance:Int) = {
     dir match {
       case Vec(0,1) | Vec( 0,-1) =>
         (otherLines(id).exists {
-          case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(1,0)*100)
+          case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(1,0)*check_distance)
         },
-        otherLines(id).exists {
-          case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(-1,0)*100)
-        }) match {
+          otherLines(id).exists {
+            case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(-1,0)*check_distance)
+          }) match {
           case (true,  false) => Vec(-1,0)
           case (false, true)  => Vec( 1,0)
           case (true,  true)  =>
@@ -210,10 +246,10 @@ object EnemyCycleOffline extends LightCycleTrace(YELLOW) {
         }
       case Vec(1,0) | Vec(-1, 0) =>
         (otherLines(id).exists {
-          case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(0,1)*100)
+          case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(0,1)*check_distance)
         },
         otherLines(id).exists {
-          case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(0,-1)*100)
+          case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(0,-1)*check_distance)
         }) match {
           case (true,  false) => Vec( 0,-1)
           case (false, true)  => Vec( 0, 1)
@@ -225,24 +261,130 @@ object EnemyCycleOffline extends LightCycleTrace(YELLOW) {
       case _ => dir
     }
   }
+}
+
+object EnemyCycleOffline extends LightCycleTrace(YELLOW) with EnemyCycle {
+  init {
+    is_crashed = false
+    tracer.addTrace(tracer.randomCoord(), this)
+    dir = randomDir
+  }
 
   // simple ai:
   // 1. trace a little further and check for obstacles
   // 2. make turns at random monets
   action(10) {
-    if(otherLines(id).exists {
-      case (a1, a2) => checkIntersection(a1, a2, location, location + dir*(1 + (math.random*10).toInt))
-    } || math.random < 0.005) {
-      dir = selectTurn
+    if(!is_crashed && (otherLines(id).exists {
+      case (a1, a2) => checkIntersection(a1, a2, location, location + dir*(1 + (math.random*20).toInt))
+    } || math.random < 0.005)) {
+      dir = selectTurn(30)
     }
   }
 
   action(10) {
-    tracer.updateLocation(id, location + dir)
+    if(!is_crashed) tracer.updateLocation(id, location + dir)
   }
 
   render {
-    drawSlidingLines(prev_locations, color)
-    drawLine(prev_locations.last, location, color)
+    if(!is_crashed) {
+      drawSlidingLines(prev_locations, color)
+      drawLine(prev_locations.last, location, color)
+    }
+  }
+
+  clear {
+    crash()
+  }
+
+  def crash() {
+    if(!is_crashed) {
+      tracer.removeTraceById(id)
+      prev_locations.clear()
+      is_crashed = true
+    }
+  }
+}
+
+object Enemy2CycleOffline extends LightCycleTrace(BLUE) with EnemyCycle {
+  init {
+    is_crashed = false
+    tracer.addTrace(tracer.randomCoord(), this)
+    dir = randomDir
+  }
+
+  // simple ai:
+  // 1. trace a little further and check for obstacles
+  // 2. make turns at random monets
+  action(10) {
+    if(!is_crashed && (otherLines(id).exists {
+      case (a1, a2) => checkIntersection(a1, a2, location, location + dir*(1 + (math.random*30).toInt))
+    } || math.random < 0.005)) {
+      dir = selectTurn(40)
+    }
+  }
+
+  action(10) {
+    if(!is_crashed) tracer.updateLocation(id, location + dir)
+  }
+
+  render {
+    if(!is_crashed) {
+      drawSlidingLines(prev_locations, color)
+      drawLine(prev_locations.last, location, color)
+    }
+  }
+
+  clear {
+    crash()
+  }
+
+  def crash() {
+    if(!is_crashed) {
+      tracer.removeTraceById(id)
+      prev_locations.clear()
+      is_crashed = true
+    }
+  }
+}
+
+object Enemy3CycleOffline extends LightCycleTrace(WHITE) with EnemyCycle {
+  init {
+    is_crashed = false
+    tracer.addTrace(tracer.randomCoord(), this)
+    dir = randomDir
+  }
+
+  // simple ai:
+  // 1. trace a little further and check for obstacles
+  // 2. make turns at random monets
+  action(10) {
+    if(!is_crashed && (otherLines(id).exists {
+      case (a1, a2) => checkIntersection(a1, a2, location, location + dir*(1 + (math.random*40).toInt))
+    } || math.random < 0.005)) {
+      dir = selectTurn(50)
+    }
+  }
+
+  action(10) {
+    if(!is_crashed) tracer.updateLocation(id, location + dir)
+  }
+
+  render {
+    if(!is_crashed) {
+      drawSlidingLines(prev_locations, color)
+      drawLine(prev_locations.last, location, color)
+    }
+  }
+
+  clear {
+    crash()
+  }
+
+  def crash() {
+    if(!is_crashed) {
+      tracer.removeTraceById(id)
+      prev_locations.clear()
+      is_crashed = true
+    }
   }
 }
