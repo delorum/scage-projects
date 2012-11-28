@@ -228,21 +228,34 @@ trait EnemyCycle {
     }
   }
 
-  protected def selectTurn(check_distance:Int) = {
+  protected def ai(max_warning_distance:Int, turn_probability:Double, check_distance:Int, aggression_factor:Double) {
+    if((otherLines(id).exists {
+      case (a1, a2) => checkIntersection(a1, a2, location, location + dir*(1 + (math.random*max_warning_distance).toInt))
+    } || math.random < turn_probability)) {
+      dir = selectTurn(check_distance, aggression_factor)
+    }
+  }
+
+  protected def selectTurn(check_distance:Int, aggression_factor:Double) = {
     dir match {
       case Vec(0,1) | Vec( 0,-1) =>
         (otherLines(id).exists {
           case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(1,0)*check_distance)
         },
-          otherLines(id).exists {
-            case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(-1,0)*check_distance)
-          }) match {
+        otherLines(id).exists {
+          case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(-1,0)*check_distance)
+        }) match {
           case (true,  false) => Vec(-1,0)
           case (false, true)  => Vec( 1,0)
           case (true,  true)  =>
             val (min_right, min_left) = (minObstacleDist(Vec(1,0)), minObstacleDist(Vec(-1,0)))
             if(min_right > min_left) Vec(1,0) else Vec(-1,0)
-          case (false, false) => if(math.random > 0.5) Vec(1,0) else Vec(-1,  0)
+          case (false, false) =>
+            if(math.random < aggression_factor) {   // turn to the player
+              val player_side = math.signum((PlayerCycleOffline.location - location).x)
+              if(player_side != 0) Vec(player_side, 0)
+              else if(math.random > 0.5) Vec(1,0) else Vec(-1,  0)
+            } else if(math.random > 0.5) Vec(1,0) else Vec(-1,  0)
         }
       case Vec(1,0) | Vec(-1, 0) =>
         (otherLines(id).exists {
@@ -256,7 +269,12 @@ trait EnemyCycle {
           case (true,  true)  =>
             val (min_up, min_down) = (minObstacleDist(Vec(0,1)), minObstacleDist(Vec(0,-1)))
             if(min_up > min_down) Vec(0,1) else Vec(0,-1)
-          case (false, false) => if(math.random > 0.5) Vec(0,1) else Vec(0,-1)
+          case (false, false) =>
+            if(math.random < aggression_factor) {   // turn to the player
+              val player_side = math.signum((PlayerCycleOffline.location - location).y)
+              if(player_side != 0) Vec(0, player_side)
+              else if(math.random > 0.5) Vec(0,1) else Vec(0,-1)
+            } else if(math.random > 0.5) Vec(0,1) else Vec(0,-1)
         }
       case _ => dir
     }
@@ -274,11 +292,10 @@ object EnemyCycleOffline extends LightCycleTrace(YELLOW) with EnemyCycle {
   // 1. trace a little further and check for obstacles
   // 2. make turns at random monets
   action(10) {
-    if(!is_crashed && (otherLines(id).exists {
-      case (a1, a2) => checkIntersection(a1, a2, location, location + dir*(1 + (math.random*20).toInt))
-    } || math.random < 0.005)) {
-      dir = selectTurn(30)
-    }
+    if(!is_crashed) ai(max_warning_distance = 20,
+                       turn_probability     = 0.005,
+                       check_distance       = 30,
+                       aggression_factor    = 2)
   }
 
   action(10) {
@@ -316,11 +333,10 @@ object Enemy2CycleOffline extends LightCycleTrace(BLUE) with EnemyCycle {
   // 1. trace a little further and check for obstacles
   // 2. make turns at random monets
   action(10) {
-    if(!is_crashed && (otherLines(id).exists {
-      case (a1, a2) => checkIntersection(a1, a2, location, location + dir*(1 + (math.random*30).toInt))
-    } || math.random < 0.005)) {
-      dir = selectTurn(40)
-    }
+    if(!is_crashed) ai(max_warning_distance = 30,
+                       turn_probability     = 0.005,
+                       check_distance       = 40,
+                       aggression_factor    = 2)
   }
 
   action(10) {
@@ -358,11 +374,10 @@ object Enemy3CycleOffline extends LightCycleTrace(WHITE) with EnemyCycle {
   // 1. trace a little further and check for obstacles
   // 2. make turns at random monets
   action(10) {
-    if(!is_crashed && (otherLines(id).exists {
-      case (a1, a2) => checkIntersection(a1, a2, location, location + dir*(1 + (math.random*40).toInt))
-    } || math.random < 0.005)) {
-      dir = selectTurn(50)
-    }
+    if(!is_crashed) ai(max_warning_distance = 40,
+                       turn_probability     = 0.005,
+                       check_distance       = 50,
+                       aggression_factor    = 2)
   }
 
   action(10) {
