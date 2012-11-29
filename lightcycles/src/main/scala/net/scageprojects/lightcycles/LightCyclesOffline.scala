@@ -88,16 +88,16 @@ object LightCyclesOffline extends ScageScreenApp("Light Cycles", 640, 480) {
   def checkIntersection(v1:Vec, v2:Vec, v3:Vec, v4:Vec) = areLinesIntersect(v1, v2, v3, v4)
 
   PlayerCycleOffline
-  EnemyCycleOffline
+  Enemy1CycleOffline
   Enemy2CycleOffline
   Enemy3CycleOffline
 
   private var player_count  = 0
-  private var enemy_count   = 0
+  private var enemy1_count  = 0
   private var enemy2_count  = 0
   private var enemy3_count  = 0
 
-  private var result       = -1   // 0 - player won, 1 - enemy won, 2 - enemy2 won, 3 - enemy3 won, 4 - nobody won
+  private var result       = -1   // 0 - player won, 1 - enemy1 won, 2 - enemy2 won, 3 - enemy3 won, 4 - nobody won
   init {
     result = -1
   }
@@ -109,11 +109,11 @@ object LightCyclesOffline extends ScageScreenApp("Light Cycles", 640, 480) {
       case 1 =>
         tracer.tracesList.head match {
           case PlayerCycleOffline =>
+            player_count += 1
             result = 0
             pause()
-          case EnemyCycleOffline =>
-            player_count += 1
-            enemy_count += 1
+          case Enemy1CycleOffline =>
+            enemy1_count += 1
             result = 1
             pause()
           case Enemy2CycleOffline =>
@@ -144,7 +144,7 @@ object LightCyclesOffline extends ScageScreenApp("Light Cycles", 640, 480) {
   })
 
   render(-10) {
-    print(player_count+"\n\n"+enemy_count+"\n\n"+enemy2_count+"\n\n"+enemy3_count, windowWidth-15, windowHeight-160, DARK_GRAY, align = "xcenter")
+    print(player_count+"\n\n"+enemy1_count+"\n\n"+enemy2_count+"\n\n"+enemy3_count, windowWidth-15, windowHeight-160, DARK_GRAY, align = "xcenter")
     drawTraceGrid(tracer, DARK_GRAY)
     if(onPause) {
       result match {
@@ -213,7 +213,11 @@ object PlayerCycleOffline extends LightCycleTrace(RED) {
   }
 }
 
-trait EnemyCycle {
+abstract class EnemyCycle(val max_warning_distance:Int,
+                          val turn_probability:Double,
+                          val check_distance:Int,
+                          val aggression_factor:Double,
+                          color:ScageColor) extends LightCycleTrace(color) {
   this:LightCycleTrace =>
 
   protected def minObstacleDist(d:Vec):Float = {
@@ -228,11 +232,14 @@ trait EnemyCycle {
     }
   }
 
-  protected def ai(max_warning_distance:Int, turn_probability:Double, check_distance:Int, aggression_factor:Double) {
+  private var warning_distance = max_warning_distance
+  protected def ai() {
     if((otherLines(id).exists {
-      case (a1, a2) => checkIntersection(a1, a2, location, location + dir*(1 + (math.random*max_warning_distance).toInt))
+      case (a1, a2) => checkIntersection(a1, a2, location, location + dir*warning_distance)
     } || math.random < turn_probability)) {
       dir = selectTurn(check_distance, aggression_factor)
+      warning_distance -= (1 + math.random*4).toInt     // maybe make 4 a parameter
+      if(warning_distance < 1) warning_distance = max_warning_distance
     }
   }
 
@@ -251,7 +258,7 @@ trait EnemyCycle {
             val (min_right, min_left) = (minObstacleDist(Vec(1,0)), minObstacleDist(Vec(-1,0)))
             if(min_right > min_left) Vec(1,0) else Vec(-1,0)
           case (false, false) =>
-            if(math.random < aggression_factor) {   // turn to the player
+            if(!PlayerCycleOffline.isCrashed && math.random < aggression_factor) {   // turn to the player
               val player_side = math.signum((PlayerCycleOffline.location - location).x)
               if(player_side != 0) Vec(player_side, 0)
               else if(math.random > 0.5) Vec(1,0) else Vec(-1,  0)
@@ -281,7 +288,12 @@ trait EnemyCycle {
   }
 }
 
-object EnemyCycleOffline extends LightCycleTrace(YELLOW) with EnemyCycle {
+object Enemy1CycleOffline extends EnemyCycle(
+  max_warning_distance = 20,
+  turn_probability     = 0.005,
+  check_distance       = 30,
+  aggression_factor    = 0.7,
+  color = YELLOW) {
   init {
     is_crashed = false
     tracer.addTrace(tracer.randomCoord(), this)
@@ -292,10 +304,7 @@ object EnemyCycleOffline extends LightCycleTrace(YELLOW) with EnemyCycle {
   // 1. trace a little further and check for obstacles
   // 2. make turns at random monets
   action(10) {
-    if(!is_crashed) ai(max_warning_distance = 20,
-                       turn_probability     = 0.005,
-                       check_distance       = 30,
-                       aggression_factor    = 2)
+    if(!is_crashed) ai()
   }
 
   action(10) {
@@ -322,7 +331,12 @@ object EnemyCycleOffline extends LightCycleTrace(YELLOW) with EnemyCycle {
   }
 }
 
-object Enemy2CycleOffline extends LightCycleTrace(BLUE) with EnemyCycle {
+object Enemy2CycleOffline extends EnemyCycle(
+  max_warning_distance = 30,
+  turn_probability     = 0.005,
+  check_distance       = 40,
+  aggression_factor    = 0.6,
+  color = BLUE) {
   init {
     is_crashed = false
     tracer.addTrace(tracer.randomCoord(), this)
@@ -333,10 +347,7 @@ object Enemy2CycleOffline extends LightCycleTrace(BLUE) with EnemyCycle {
   // 1. trace a little further and check for obstacles
   // 2. make turns at random monets
   action(10) {
-    if(!is_crashed) ai(max_warning_distance = 30,
-                       turn_probability     = 0.005,
-                       check_distance       = 40,
-                       aggression_factor    = 2)
+    if(!is_crashed) ai()
   }
 
   action(10) {
@@ -363,7 +374,12 @@ object Enemy2CycleOffline extends LightCycleTrace(BLUE) with EnemyCycle {
   }
 }
 
-object Enemy3CycleOffline extends LightCycleTrace(WHITE) with EnemyCycle {
+object Enemy3CycleOffline extends EnemyCycle(
+  max_warning_distance = 40,
+  turn_probability     = 0.005,
+  check_distance       = 50,
+  aggression_factor    = 0.5,
+  color = WHITE) {
   init {
     is_crashed = false
     tracer.addTrace(tracer.randomCoord(), this)
@@ -374,10 +390,7 @@ object Enemy3CycleOffline extends LightCycleTrace(WHITE) with EnemyCycle {
   // 1. trace a little further and check for obstacles
   // 2. make turns at random monets
   action(10) {
-    if(!is_crashed) ai(max_warning_distance = 40,
-                       turn_probability     = 0.005,
-                       check_distance       = 50,
-                       aggression_factor    = 2)
+    if(!is_crashed) ai()
   }
 
   action(10) {
