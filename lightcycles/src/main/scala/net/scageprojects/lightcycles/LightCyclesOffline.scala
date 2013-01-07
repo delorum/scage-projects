@@ -291,7 +291,7 @@ abstract class EnemyCycle(val max_warning_distance:Int,
 object Enemy1CycleOffline extends EnemyCycle(
   max_warning_distance = 20,
   turn_probability     = 0.005,
-  check_distance       = 30,
+  check_distance       = 50,
   aggression_factor    = 0.7,
   color = YELLOW) {
   init {
@@ -334,7 +334,7 @@ object Enemy1CycleOffline extends EnemyCycle(
 object Enemy2CycleOffline extends EnemyCycle(
   max_warning_distance = 30,
   turn_probability     = 0.005,
-  check_distance       = 40,
+  check_distance       = 70,
   aggression_factor    = 0.6,
   color = BLUE) {
   init {
@@ -377,7 +377,7 @@ object Enemy2CycleOffline extends EnemyCycle(
 object Enemy3CycleOffline extends EnemyCycle(
   max_warning_distance = 40,
   turn_probability     = 0.005,
-  check_distance       = 50,
+  check_distance       = 90,
   aggression_factor    = 0.5,
   color = WHITE) {
   init {
