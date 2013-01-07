@@ -85,17 +85,15 @@ object LightCyclesOffline extends ScageScreenApp("Light Cycles", 640, 480) {
     }
   }
 
-  def checkIntersection(v1:Vec, v2:Vec, v3:Vec, v4:Vec) = areLinesIntersect(v1, v2, v3, v4)
+  UserCycleOffline
+  Program1CycleOffline
+  Program2CycleOffline
+  Program3CycleOffline
 
-  PlayerCycleOffline
-  Enemy1CycleOffline
-  Enemy2CycleOffline
-  Enemy3CycleOffline
-
-  private var player_count  = 0
-  private var enemy1_count  = 0
-  private var enemy2_count  = 0
-  private var enemy3_count  = 0
+  private var user_count  = 0
+  private var program1_count  = 0
+  private var program2_count  = 0
+  private var program3_count  = 0
 
   private var result       = -1   // 0 - player won, 1 - enemy1 won, 2 - enemy2 won, 3 - enemy3 won, 4 - nobody won
   init {
@@ -108,20 +106,20 @@ object LightCyclesOffline extends ScageScreenApp("Light Cycles", 640, 480) {
         pause()
       case 1 =>
         tracer.tracesList.head match {
-          case PlayerCycleOffline =>
-            player_count += 1
+          case UserCycleOffline =>
+            user_count += 1
             result = 0
             pause()
-          case Enemy1CycleOffline =>
-            enemy1_count += 1
+          case Program1CycleOffline =>
+            program1_count += 1
             result = 1
             pause()
-          case Enemy2CycleOffline =>
-            enemy2_count += 1
+          case Program2CycleOffline =>
+            program2_count += 1
             result = 2
             pause()
-          case Enemy3CycleOffline =>
-            enemy3_count += 1
+          case Program3CycleOffline =>
+            program3_count += 1
             result = 3
             pause()
         }
@@ -144,16 +142,16 @@ object LightCyclesOffline extends ScageScreenApp("Light Cycles", 640, 480) {
   })
 
   render(-10) {
-    print(player_count+"\n\n"+enemy1_count+"\n\n"+enemy2_count+"\n\n"+enemy3_count, windowWidth-15, windowHeight-160, DARK_GRAY, align = "xcenter")
+    print(user_count+"\n\n"+program1_count+"\n\n"+program2_count+"\n\n"+program3_count, windowWidth-15, windowHeight-160, DARK_GRAY, align = "xcenter")
     drawTraceGrid(tracer, DARK_GRAY)
     if(onPause) {
       result match {
-        case 0 => print("PLAYER WON. PRESS SPACE", windowCenter, RED,       align = "center")
-        case 1 => print("ENEMY1 WON. PRESS SPACE", windowCenter, YELLOW,    align = "center")
-        case 2 => print("ENEMY2 WON. PRESS SPACE", windowCenter, BLUE,      align = "center")
-        case 3 => print("ENEMY3 WON. PRESS SPACE", windowCenter, WHITE,     align = "center")
-        case 4 => print("NOBODY WON. PRESS SPACE", windowCenter, DARK_GRAY, align = "center")
-        case _ => print("PAUSE. PRESS SPACE",      windowCenter, DARK_GRAY, align = "center")
+        case 0 => print("USER WON. PRESS SPACE",     windowCenter, RED,       align = "center")
+        case 1 => print("PROGRAM1 WON. PRESS SPACE", windowCenter, YELLOW,    align = "center")
+        case 2 => print("PROGRAM2 WON. PRESS SPACE", windowCenter, BLUE,      align = "center")
+        case 3 => print("PROGRAM3 WON. PRESS SPACE", windowCenter, WHITE,     align = "center")
+        case 4 => print("NOBODY WON. PRESS SPACE",   windowCenter, DARK_GRAY, align = "center")
+        case _ => print("PAUSE. PRESS SPACE",        windowCenter, DARK_GRAY, align = "center")
       }
     }
   }
@@ -177,7 +175,7 @@ abstract class LightCycleTrace(val color:ScageColor) extends DefaultTrace {
   def crash()
 }
 
-object PlayerCycleOffline extends LightCycleTrace(RED) {
+object UserCycleOffline extends LightCycleTrace(RED) {
   init {
     is_crashed = false
     tracer.addTrace(tracer.randomCoord(), this)
@@ -188,10 +186,10 @@ object PlayerCycleOffline extends LightCycleTrace(RED) {
     if(!is_crashed) tracer.updateLocation(id, location + dir)
   }
 
-  key(KEY_W, onKeyDown = if(dir != Vec( 0, -1)) dir = Vec( 0, 1))
-  key(KEY_A, onKeyDown = if(dir != Vec( 1,  0)) dir = Vec(-1, 0))
-  key(KEY_S, onKeyDown = if(dir != Vec( 0,  1)) dir = Vec( 0,-1))
-  key(KEY_D, onKeyDown = if(dir != Vec(-1,  0)) dir = Vec( 1, 0))
+  key(KEY_W, onKeyDown = if(!is_crashed && dir != Vec( 0, -1)) dir = Vec( 0, 1))
+  key(KEY_A, onKeyDown = if(!is_crashed && dir != Vec( 1,  0)) dir = Vec(-1, 0))
+  key(KEY_S, onKeyDown = if(!is_crashed && dir != Vec( 0,  1)) dir = Vec( 0,-1))
+  key(KEY_D, onKeyDown = if(!is_crashed && dir != Vec(-1,  0)) dir = Vec( 1, 0))
 
   render {
     if(!is_crashed) {
@@ -222,7 +220,7 @@ abstract class EnemyCycle(val max_warning_distance:Int,
 
   protected def minObstacleDist(d:Vec):Float = {
     otherLines(id).filter {
-      case (a1, a2) => checkIntersection(a1, a2, location, location + d*640)
+      case (a1, a2) => areLinesIntersect(a1, a2, location, location + d*640)
     }.map {
       case (a1, a2) => interpoint(a1, a2, location, location + d*640)
     }.foldLeft(1000f) {
@@ -235,7 +233,7 @@ abstract class EnemyCycle(val max_warning_distance:Int,
   private var warning_distance = max_warning_distance
   protected def ai() {
     if((otherLines(id).exists {
-      case (a1, a2) => checkIntersection(a1, a2, location, location + dir*warning_distance)
+      case (a1, a2) => areLinesIntersect(a1, a2, location, location + dir*warning_distance)
     } || math.random < turn_probability)) {
       dir = selectTurn(check_distance, aggression_factor)
       warning_distance -= (1 + math.random*4).toInt     // maybe make 4 a parameter
@@ -247,10 +245,10 @@ abstract class EnemyCycle(val max_warning_distance:Int,
     dir match {
       case Vec(0,1) | Vec( 0,-1) =>
         (otherLines(id).exists {
-          case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(1,0)*check_distance)
+          case (a1, a2) => areLinesIntersect(a1, a2, location, location + Vec(1,0)*check_distance)
         },
         otherLines(id).exists {
-          case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(-1,0)*check_distance)
+          case (a1, a2) => areLinesIntersect(a1, a2, location, location + Vec(-1,0)*check_distance)
         }) match {
           case (true,  false) => Vec(-1,0)
           case (false, true)  => Vec( 1,0)
@@ -258,18 +256,18 @@ abstract class EnemyCycle(val max_warning_distance:Int,
             val (min_right, min_left) = (minObstacleDist(Vec(1,0)), minObstacleDist(Vec(-1,0)))
             if(min_right > min_left) Vec(1,0) else Vec(-1,0)
           case (false, false) =>
-            if(!PlayerCycleOffline.isCrashed && math.random < aggression_factor) {   // turn to the player
-              val player_side = math.signum((PlayerCycleOffline.location - location).x)
+            if(!UserCycleOffline.isCrashed && math.random < aggression_factor) {   // turn to the player
+              val player_side = math.signum((UserCycleOffline.location - location).x)
               if(player_side != 0) Vec(player_side, 0)
               else if(math.random > 0.5) Vec(1,0) else Vec(-1,  0)
             } else if(math.random > 0.5) Vec(1,0) else Vec(-1,  0)
         }
       case Vec(1,0) | Vec(-1, 0) =>
         (otherLines(id).exists {
-          case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(0,1)*check_distance)
+          case (a1, a2) => areLinesIntersect(a1, a2, location, location + Vec(0,1)*check_distance)
         },
         otherLines(id).exists {
-          case (a1, a2) => checkIntersection(a1, a2, location, location + Vec(0,-1)*check_distance)
+          case (a1, a2) => areLinesIntersect(a1, a2, location, location + Vec(0,-1)*check_distance)
         }) match {
           case (true,  false) => Vec( 0,-1)
           case (false, true)  => Vec( 0, 1)
@@ -278,7 +276,7 @@ abstract class EnemyCycle(val max_warning_distance:Int,
             if(min_up > min_down) Vec(0,1) else Vec(0,-1)
           case (false, false) =>
             if(math.random < aggression_factor) {   // turn to the player
-              val player_side = math.signum((PlayerCycleOffline.location - location).y)
+              val player_side = math.signum((UserCycleOffline.location - location).y)
               if(player_side != 0) Vec(0, player_side)
               else if(math.random > 0.5) Vec(0,1) else Vec(0,-1)
             } else if(math.random > 0.5) Vec(0,1) else Vec(0,-1)
@@ -288,7 +286,7 @@ abstract class EnemyCycle(val max_warning_distance:Int,
   }
 }
 
-object Enemy1CycleOffline extends EnemyCycle(
+object Program1CycleOffline extends EnemyCycle(
   max_warning_distance = 20,
   turn_probability     = 0.005,
   check_distance       = 50,
@@ -331,12 +329,12 @@ object Enemy1CycleOffline extends EnemyCycle(
   }
 }
 
-object Enemy2CycleOffline extends EnemyCycle(
+object Program2CycleOffline extends EnemyCycle(
   max_warning_distance = 30,
   turn_probability     = 0.005,
   check_distance       = 70,
   aggression_factor    = 0.6,
-  color = BLUE) {
+  color = CYAN) {
   init {
     is_crashed = false
     tracer.addTrace(tracer.randomCoord(), this)
@@ -374,7 +372,7 @@ object Enemy2CycleOffline extends EnemyCycle(
   }
 }
 
-object Enemy3CycleOffline extends EnemyCycle(
+object Program3CycleOffline extends EnemyCycle(
   max_warning_distance = 40,
   turn_probability     = 0.005,
   check_distance       = 90,
