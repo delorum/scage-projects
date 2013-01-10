@@ -343,7 +343,7 @@ object Program2CycleOffline extends EnemyCycle(
 
   // simple ai:
   // 1. trace a little further and check for obstacles
-  // 2. make turns at random monets
+  // 2. make turns at random moments
   action(10) {
     if(!is_crashed) ai()
   }
