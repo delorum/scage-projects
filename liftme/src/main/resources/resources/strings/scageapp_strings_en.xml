@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<messages>
+    <message id="hello.world">
+        Hello World!
+    </message>
+
+    <message id="help">
+        WASD and left mouse button. Mouse wheel is for scaling
+    </message>
+</messages>
