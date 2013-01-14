@@ -1,4 +1,4 @@
-package net.scageprojects.liftme;
+package net.scageprojects.liftdriver;
 
 import junit.framework._;
 import Assert._;

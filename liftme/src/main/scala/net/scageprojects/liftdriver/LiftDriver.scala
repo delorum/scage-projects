@@ -1,9 +1,10 @@
-package net.scageprojects.liftme
+package net.scageprojects.liftdriver
 
 import net.scage.{ScreenApp, Screen, ScageScreenApp}
 import net.scage.support.Vec
 import net.scage.ScageLib._
 import net.scage.handlers.controller2.MultiController
+import collection.mutable.ArrayBuffer
 
 object ElevatorConstants {
   val floor_width = 40
@@ -14,12 +15,48 @@ object ElevatorConstants {
 
 import ElevatorConstants._
 
-object LiftMe extends ScreenApp("Lift Me!", 800, 600) with MultiController {
-  val elevator1 = new Elevator(windowCenter + Vec(-floor_width / 2, floor_height * 9 / 2), 9, this)
+object LiftDriver extends ScreenApp("Lift Me!", 800, 600) with MultiController {
+  val building1 = new Building(windowCenter + Vec(-floor_width / 2, floor_height * 9 / 2), 9, this)
+  building1.addElevator(8)
+  building1.addElevator(4)
+  building1.addElevator(4)
 }
 
-class Building(val left_down_corner: Vec, val num_floors: Int, val num_lifts: Int, screen: Screen) {
+class Building(val left_up_corner: Vec, val num_floors: Int, screen: Screen with MultiController) {
+  val building_height = num_floors*floor_height + 20
 
+  private val elevators = ArrayBuffer[Elevator]()
+  def addElevator(human_capacity:Int) {
+    val e_leftup = if(elevators.isEmpty) {
+      left_up_corner + Vec(2*floor_width, -10)
+    } else elevators.last.left_up_corner + Vec(floor_width + 10, 0)
+    val e = new Elevator(e_leftup, num_floors, human_capacity, screen)
+    elevators += e
+  }
+
+  def buildingWidth = 2*floor_width + floor_width*elevators.length + 10*(elevators.length)
+
+  private val render_func = screen.render {
+    currentColor = WHITE
+    drawRect(left_up_corner, buildingWidth, building_height)
+
+    val floor_lines = (0 to num_floors).map {
+      x => List(Vec(left_up_corner.x,                 left_up_corner.y - (num_floors - x) * floor_height - 10),
+                Vec(left_up_corner.x + buildingWidth, left_up_corner.y - (num_floors - x) * floor_height - 10))
+    }.flatten
+    drawGroupedLines(floor_lines)
+  }
+
+  private var removed = false
+  def remove() {
+    removed = true
+    screen.delOperations(render_func)
+  }
+
+  screen.clear {
+    remove()
+    screen.deleteSelf()
+  }
 }
 
 /**
@@ -29,7 +66,7 @@ class Building(val left_down_corner: Vec, val num_floors: Int, val num_lifts: In
  * @param num_floors
  * @param screen
  */
-class Elevator(val left_up_corner: Vec, val num_floors: Int, screen: Screen with MultiController) {
+class Elevator(val left_up_corner: Vec, val num_floors: Int, val human_capacity:Int, screen: Screen with MultiController) {
   val elevator_height = num_floors * floor_height
   val door_width = floor_width - 14
 
@@ -55,11 +92,7 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, screen: Screen with
     currentColor = WHITE
     drawRect(left_up_corner, floor_width, elevator_height)
 
-    val floor_lines = (1 until num_floors).map {
-      x => List(Vec(left_up_corner.x, left_up_corner.y - (num_floors - x) * floor_height), Vec(left_up_corner.x + floor_width, left_up_corner.y - (num_floors - x) * floor_height))
-    }.flatten
-    drawGroupedLines(floor_lines)
-    drawPolygon(elevator_area)
+    print("0/"+human_capacity, left_up_corner + Vec(5, 15))
 
     drawRectCentered(pos, floor_width - 7, floor_height - 7)
     drawDoor()
@@ -69,11 +102,7 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, screen: Screen with
     }
   }
 
-  val elevator_area = List(left_up_corner,
-                           left_up_corner + Vec(floor_width, 0),
-                           left_up_corner + Vec(floor_width, -elevator_height),
-                           left_up_corner + Vec(0,           -elevator_height))
-  private val left_mouse = screen.leftMouseOnArea(elevator_area, onBtnDown = mouse => {
+  private val left_mouse = screen.leftMouseOnRect(left_up_corner, floor_width, elevator_height, onBtnDown = mouse => {
     moveToFloor(floorForCoord(mouse))
   })
 

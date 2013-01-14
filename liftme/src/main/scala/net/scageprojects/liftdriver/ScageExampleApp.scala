@@ -1,4 +1,4 @@
-package net.scageprojects.liftme
+package net.scageprojects.liftdriver
 
 import net.scage.ScageLib._
 import net.scage.support.messages.ScageMessage
