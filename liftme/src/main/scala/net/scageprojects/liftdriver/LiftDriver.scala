@@ -20,10 +20,26 @@ object LiftDriver extends ScreenApp("Lift Me!", 800, 600) with MultiController {
   building1.addElevator(8)
   building1.addElevator(4)
   building1.addElevator(4)
+
+  action(1000) {
+    if(math.random < 0.1) building1.issuePassenger()
+  }
 }
+
+case class Passenger(floor:Int, target_floor:Int)
 
 class Building(val left_up_corner: Vec, val num_floors: Int, screen: Screen with MultiController) {
   val building_height = num_floors*floor_height + 20
+
+  private val floors = Array.fill(num_floors)(ArrayBuffer[Passenger]())
+  def issuePassenger() {
+    val floor = if(math.random < 0.3) 0 else 1+(math.random*(num_floors-2)).toInt
+    val target_floor = if (floor == 0) 1+(math.random*(num_floors-2)).toInt else {
+      if(math.random < 0.3) 0
+      else (1 to num_floors-1).filterNot(_ == floor)((math.random*(num_floors-2)).toInt)
+    }
+    floors(floor) += new Passenger(floor, target_floor)
+  }
 
   private val elevators = ArrayBuffer[Elevator]()
   def addElevator(human_capacity:Int) {
@@ -45,6 +61,17 @@ class Building(val left_up_corner: Vec, val num_floors: Int, screen: Screen with
                 Vec(left_up_corner.x + buildingWidth, left_up_corner.y - (num_floors - x) * floor_height - 10))
     }.flatten
     drawGroupedLines(floor_lines)
+
+    (0 until num_floors).foreach(num => {
+      print(floors(num).length, left_up_corner + Vec(floor_width, floor_height/2-10 - floor_height*(num_floors - num)), align = "center")
+    })
+  }
+
+  private val action_func = screen.action(10) {
+    elevators.withFilter(e => !e.isMoving && e.availableSpace > 0 && floors(e.currentFloor).length > 0).foreach(e => {
+      val e_floor = e.currentFloor
+      floors(e_floor) --= e.enter(floors(e_floor))
+    })
   }
 
   private var removed = false
@@ -66,11 +93,23 @@ class Building(val left_up_corner: Vec, val num_floors: Int, screen: Screen with
  * @param num_floors
  * @param screen
  */
-class Elevator(val left_up_corner: Vec, val num_floors: Int, val human_capacity:Int, screen: Screen with MultiController) {
+class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, screen: Screen with MultiController) {
   val elevator_height = num_floors * floor_height
   val door_width = floor_width - 14
 
   private var pos           = posForFloor(num_floors-1)
+  def currentFloor = floorForCoord(pos)
+
+  private val passengers = ArrayBuffer[Passenger]()
+  def availableSpace = capacity - passengers.length
+
+  def enter(passengers_from_floor:Seq[Passenger]):Seq[Passenger] = {
+    if(passengers.length < capacity) {
+      val to_enter = passengers_from_floor.take(capacity - passengers.length)
+      passengers ++= to_enter
+      to_enter
+    } else Seq()
+  }
 
   private var door_pos = 1f   // 1 - open door, 0 - close door
   private def drawDoor() {
@@ -92,7 +131,7 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val human_capacity:
     currentColor = WHITE
     drawRect(left_up_corner, floor_width, elevator_height)
 
-    print("0/"+human_capacity, left_up_corner + Vec(5, 15))
+    print(passengers.length+"/"+capacity, left_up_corner + Vec(5, 15))
 
     drawRectCentered(pos, floor_width - 7, floor_height - 7)
     drawDoor()
@@ -100,6 +139,11 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val human_capacity:
     if(moving_step.notZero) {
       drawRectCentered(target_floor_pos, floor_width+3, floor_height+3, RED)
     }
+
+    passengers.foreach(p => {
+      val p_target_floor_pos = posForFloor(p.target_floor)
+      drawRectCentered(p_target_floor_pos, floor_width+4, floor_height+4, YELLOW)
+    })
   }
 
   private val left_mouse = screen.leftMouseOnRect(left_up_corner, floor_width, elevator_height, onBtnDown = mouse => {
@@ -120,7 +164,10 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val human_capacity:
 
   private var target_floor_pos = pos
   private var moving_step      = Vec.zero
-  def moveToFloor(floor: Int) {
+
+  def isMoving = moving_step.notZero
+
+  private def moveToFloor(floor: Int) {
     if(moving_step.notZero) {
       val new_target_floor_pos = posForFloor(floor)
       if((moving_step.y <  0 && new_target_floor_pos.y < pos.y && new_target_floor_pos.y > target_floor_pos.y) ||
@@ -151,6 +198,7 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val human_capacity:
                       door_pos += elevator_door_speed
                       if (door_pos >= 1) {
                         door_pos = 1
+                        passengers --= passengers.filter(_.target_floor == floor)
                         screen.deleteSelf()
                         moving_step = Vec.zero
                       }
