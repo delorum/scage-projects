@@ -1,6 +1,6 @@
 package net.scageprojects.liftdriver
 
-import net.scage.{ScreenApp, Screen, ScageScreenApp}
+import net.scage.{ScreenApp, Screen}
 import net.scage.support.Vec
 import net.scage.ScageLib._
 import net.scage.handlers.controller2.MultiController
@@ -11,6 +11,7 @@ object ElevatorConstants {
   val floor_height = 50
   val elevator_speed = 1f
   val elevator_door_speed = 0.01f
+  val passengers_amount = 10
 }
 
 import ElevatorConstants._
@@ -21,24 +22,60 @@ object LiftDriver extends ScreenApp("Lift Me!", 800, 600) with MultiController {
   building1.addElevator(4)
   building1.addElevator(4)
 
+  private var num_issued_passengers = 0
   action(1000) {
-    if(math.random < 0.1) building1.issuePassenger()
+    if(num_transported >= num_issued_passengers) deleteSelf()
+    else {
+      if(math.random < 0.3) {
+        building1.issuePassenger(msecsFromInit)
+        num_issued_passengers += 1
+      }
+    }
   }
+
+  private var best_transport_time:Long = Long.MaxValue
+  private var worst_transport_time:Long = 0l
+  private var num_transported = 0
+  onEventWithArguments("transported") {
+    case transported_passengers:Seq[Passenger] =>
+      transported_passengers.foreach(p => {
+        val transport_time = msecsFromInit - p.start_waiting
+        if(transport_time > worst_transport_time) worst_transport_time = transport_time
+        if(transport_time < best_transport_time)  best_transport_time = transport_time
+      })
+      num_transported += transported_passengers.length
+  }
+
+  keyIgnorePause(KEY_SPACE, onKeyDown = switchPause())
+
+  render {
+    if(onPause) print("PAUSE. PRESS SPACE", windowCenter, YELLOW, align = "center")
+    currentColor = WHITE
+    print("Transported: "+num_transported+"/"+passengers_amount, 20, windowHeight-20)
+    if(best_transport_time < Long.MaxValue) {
+      print("Best Transport Time: "+best_transport_time,         20, windowHeight-40)
+    } else print("Best Transport Time: Unknown",                 20, windowHeight-40)
+    if(worst_transport_time > 0) {
+      print("Worst Transport Time: "+worst_transport_time,       20, windowHeight-60)
+    } else print("Worst Transport Time: Unknown",                20, windowHeight-60)
+  }
+
+  pause()
 }
 
-case class Passenger(floor:Int, target_floor:Int)
+case class Passenger(floor:Int, target_floor:Int, start_waiting:Long)
 
 class Building(val left_up_corner: Vec, val num_floors: Int, screen: Screen with MultiController) {
   val building_height = num_floors*floor_height + 20
 
   private val floors = Array.fill(num_floors)(ArrayBuffer[Passenger]())
-  def issuePassenger() {
+  def issuePassenger(moment:Long) {
     val floor = if(math.random < 0.3) 0 else 1+(math.random*(num_floors-2)).toInt
     val target_floor = if (floor == 0) 1+(math.random*(num_floors-2)).toInt else {
       if(math.random < 0.3) 0
       else (1 to num_floors-1).filterNot(_ == floor)((math.random*(num_floors-2)).toInt)
     }
-    floors(floor) += new Passenger(floor, target_floor)
+    floors(floor) += new Passenger(floor, target_floor, moment)
   }
 
   private val elevators = ArrayBuffer[Elevator]()
@@ -77,7 +114,7 @@ class Building(val left_up_corner: Vec, val num_floors: Int, screen: Screen with
   private var removed = false
   def remove() {
     removed = true
-    screen.delOperations(render_func)
+    screen.delOperations(render_func, action_func)
   }
 
   screen.clear {
@@ -89,9 +126,10 @@ class Building(val left_up_corner: Vec, val num_floors: Int, screen: Screen with
 /**
  * Нумерация этажей: от 0 до num_floors-1
  *
- * @param left_up_corner
- * @param num_floors
- * @param screen
+ * @param left_up_corner - верхний левый угол шахты лифта
+ * @param num_floors - количество этажей
+ * @param capacity - количество людей, которое вмещает лифт
+ * @param screen - экран, на котором действует объект лифта
  */
 class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, screen: Screen with MultiController) {
   val elevator_height = num_floors * floor_height
@@ -198,7 +236,11 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, s
                       door_pos += elevator_door_speed
                       if (door_pos >= 1) {
                         door_pos = 1
-                        passengers --= passengers.filter(_.target_floor == floor)
+                        val transported_passengers = passengers.filter(_.target_floor == floor)
+                        if(transported_passengers.length > 0) {
+                          passengers --= transported_passengers
+                          LiftDriver.callEvent("transported", transported_passengers)
+                        }
                         screen.deleteSelf()
                         moving_step = Vec.zero
                       }
