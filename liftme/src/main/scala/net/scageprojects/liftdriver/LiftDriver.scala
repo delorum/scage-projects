@@ -11,31 +11,45 @@ object ElevatorConstants {
   val floor_height = 50
   val elevator_speed = 1f
   val elevator_door_speed = 0.01f
-  val passengers_amount = 10
+  val passengers_amount = 20
 }
 
 import ElevatorConstants._
 
-object LiftDriver extends ScreenApp("Lift Me!", 800, 600) with MultiController {
-  val building1 = new Building(windowCenter + Vec(-floor_width / 2, floor_height * 9 / 2), 9, this)
-  building1.addElevator(8)
-  building1.addElevator(4)
-  building1.addElevator(4)
-
+object LiftDriver extends ScreenApp("Lift Driver", 800, 600) with MultiController {
   private var num_issued_passengers = 0
-  action(1000) {
-    if(num_transported >= num_issued_passengers) deleteSelf()
-    else {
-      if(math.random < 0.3) {
-        building1.issuePassenger(msecsFromInit)
-        num_issued_passengers += 1
+  private var best_transport_time = Long.MaxValue
+  private var worst_transport_time = 0l
+  private var num_transported = 0
+
+  init {
+    num_issued_passengers = 0
+    best_transport_time = Long.MaxValue
+    worst_transport_time = 0l
+    num_transported = 0
+
+    val building1 = new Building(windowCenter + Vec(-floor_width / 2, floor_height * 9 / 2), 9, this)
+    building1.addElevator(8)
+    building1.addElevator(4)
+    building1.addElevator(4)
+
+    val action_func = action(1000) {
+      if(num_issued_passengers >= passengers_amount) deleteSelf()
+      else {
+        if(math.random < 0.3) {
+          building1.issuePassenger(msecsFromInit)
+          num_issued_passengers += 1
+        }
       }
     }
+
+    clear {
+      delOperationsNoWarn(action_func, currentOperation)
+    }
+
+    pause()
   }
 
-  private var best_transport_time:Long = Long.MaxValue
-  private var worst_transport_time:Long = 0l
-  private var num_transported = 0
   onEventWithArguments("transported") {
     case transported_passengers:Seq[Passenger] =>
       transported_passengers.foreach(p => {
@@ -47,20 +61,20 @@ object LiftDriver extends ScreenApp("Lift Me!", 800, 600) with MultiController {
   }
 
   keyIgnorePause(KEY_SPACE, onKeyDown = switchPause())
+  keyIgnorePause(KEY_F2, onKeyDown = restart())
 
   render {
-    if(onPause) print("PAUSE. PRESS SPACE", windowCenter, YELLOW, align = "center")
+    if(onPause)                                   print("PAUSE. PRESS SPACE",  windowCenter, YELLOW, align = "center")
+    else if(num_transported >= passengers_amount) print("PRESS F2 TO RESTART", windowCenter, YELLOW, align = "center")
     currentColor = WHITE
-    print("Transported: "+num_transported+"/"+passengers_amount, 20, windowHeight-20)
+    print("Transported:                "+num_transported+"/"+passengers_amount, 20, windowHeight-20)
     if(best_transport_time < Long.MaxValue) {
-      print("Best Transport Time: "+best_transport_time,         20, windowHeight-40)
-    } else print("Best Transport Time: Unknown",                 20, windowHeight-40)
+      print("Best Transport Time:   "+(best_transport_time/1000)+" sec",        20, windowHeight-40)
+    } else print("Best Transport Time:   Unknown",                              20, windowHeight-40)
     if(worst_transport_time > 0) {
-      print("Worst Transport Time: "+worst_transport_time,       20, windowHeight-60)
-    } else print("Worst Transport Time: Unknown",                20, windowHeight-60)
+      print("Worst Transport Time: "+(worst_transport_time/1000)+" sec",        20, windowHeight-60)
+    } else print("Worst Transport Time: Unknown",                               20, windowHeight-60)
   }
-
-  pause()
 }
 
 case class Passenger(floor:Int, target_floor:Int, start_waiting:Long)
