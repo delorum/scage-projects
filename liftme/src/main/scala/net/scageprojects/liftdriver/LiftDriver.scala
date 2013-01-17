@@ -18,26 +18,27 @@ import ElevatorConstants._
 
 object LiftDriver extends ScreenApp("Lift Driver", 800, 600) with MultiController {
   private var num_issued_passengers = 0
-  private var best_transport_time = Long.MaxValue
-  private var worst_transport_time = 0l
-  private var num_transported = 0
+  private var best_transport_time   = Long.MaxValue
+  private var worst_transport_time  = 0l
+  private var num_transported       = 0
 
   init {
     num_issued_passengers = 0
-    best_transport_time = Long.MaxValue
-    worst_transport_time = 0l
-    num_transported = 0
+    best_transport_time   = Long.MaxValue
+    worst_transport_time  = 0l
+    num_transported       = 0
 
     val building1 = new Building(windowCenter + Vec(-floor_width / 2, floor_height * 9 / 2), 9, this)
     building1.addElevator(8)
     building1.addElevator(4)
     building1.addElevator(4)
+    val ai = new LiftDriverAI(building1, this)
 
     val action_func = action(1000) {
       if(num_issued_passengers >= passengers_amount) deleteSelf()
       else {
         if(math.random < 0.3) {
-          building1.issuePassenger(msecsFromInit)
+          building1.issuePassenger(msecsFromInitWithoutPause)
           num_issued_passengers += 1
         }
       }
@@ -53,7 +54,7 @@ object LiftDriver extends ScreenApp("Lift Driver", 800, 600) with MultiControlle
   onEventWithArguments("transported") {
     case transported_passengers:Seq[Passenger] =>
       transported_passengers.foreach(p => {
-        val transport_time = msecsFromInit - p.start_waiting
+        val transport_time = msecsFromInitWithoutPause - p.start_waiting
         if(transport_time > worst_transport_time) worst_transport_time = transport_time
         if(transport_time < best_transport_time)  best_transport_time = transport_time
       })
@@ -82,26 +83,31 @@ case class Passenger(floor:Int, target_floor:Int, start_waiting:Long)
 class Building(val left_up_corner: Vec, val num_floors: Int, screen: Screen with MultiController) {
   val building_height = num_floors*floor_height + 20
 
-  private val floors = Array.fill(num_floors)(ArrayBuffer[Passenger]())
+  private val _floors = Array.fill(num_floors)(ArrayBuffer[Passenger]())
+  def floors:Seq[Seq[Passenger]] = _floors
+  def passengers:Seq[Passenger] = _floors.flatMap(f => f.toSeq)
+
   def issuePassenger(moment:Long) {
     val floor = if(math.random < 0.3) 0 else 1+(math.random*(num_floors-2)).toInt
     val target_floor = if (floor == 0) 1+(math.random*(num_floors-2)).toInt else {
       if(math.random < 0.3) 0
       else (1 to num_floors-1).filterNot(_ == floor)((math.random*(num_floors-2)).toInt)
     }
-    floors(floor) += new Passenger(floor, target_floor, moment)
+    _floors(floor) += new Passenger(floor, target_floor, moment)
   }
 
-  private val elevators = ArrayBuffer[Elevator]()
+  private val _elevators = ArrayBuffer[Elevator]()
+  def elevators:Seq[Elevator] = _elevators
+
   def addElevator(human_capacity:Int) {
-    val e_leftup = if(elevators.isEmpty) {
+    val e_leftup = if(_elevators.isEmpty) {
       left_up_corner + Vec(2*floor_width, -10)
-    } else elevators.last.left_up_corner + Vec(floor_width + 10, 0)
+    } else _elevators.last.left_up_corner + Vec(floor_width + 10, 0)
     val e = new Elevator(e_leftup, num_floors, human_capacity, screen)
-    elevators += e
+    _elevators += e
   }
 
-  def buildingWidth = 2*floor_width + floor_width*elevators.length + 10*(elevators.length)
+  def buildingWidth = 2*floor_width + floor_width*_elevators.length + 10*(_elevators.length)
 
   private val render_func = screen.render {
     currentColor = WHITE
@@ -114,21 +120,23 @@ class Building(val left_up_corner: Vec, val num_floors: Int, screen: Screen with
     drawGroupedLines(floor_lines)
 
     (0 until num_floors).foreach(num => {
-      print(floors(num).length, left_up_corner + Vec(floor_width, floor_height/2-10 - floor_height*(num_floors - num)), align = "center")
+      print(_floors(num).length, left_up_corner + Vec(floor_width, floor_height/2-10 - floor_height*(num_floors - num)), align = "center")
     })
   }
 
   private val action_func = screen.action(10) {
-    elevators.withFilter(e => !e.isMoving && e.availableSpace > 0 && floors(e.currentFloor).length > 0).foreach(e => {
+    _elevators.withFilter(e => !e.isMoving && e.availableSpace > 0 && _floors(e.currentFloor).length > 0).foreach(e => {
       val e_floor = e.currentFloor
-      floors(e_floor) --= e.enter(floors(e_floor))
+      _floors(e_floor) --= e.enter(_floors(e_floor))
     })
   }
 
   private var removed = false
   def remove() {
-    removed = true
-    screen.delOperations(render_func, action_func)
+    if(!removed) {
+      removed = true
+      screen.delOperations(render_func, action_func)
+    }
   }
 
   screen.clear {
@@ -152,13 +160,14 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, s
   private var pos           = posForFloor(num_floors-1)
   def currentFloor = floorForCoord(pos)
 
-  private val passengers = ArrayBuffer[Passenger]()
-  def availableSpace = capacity - passengers.length
+  private val _passengers = ArrayBuffer[Passenger]()
+  def passengers:Seq[Passenger] = _passengers
+  def availableSpace = capacity - _passengers.length
 
   def enter(passengers_from_floor:Seq[Passenger]):Seq[Passenger] = {
-    if(passengers.length < capacity) {
-      val to_enter = passengers_from_floor.take(capacity - passengers.length)
-      passengers ++= to_enter
+    if(_passengers.length < capacity) {
+      val to_enter = passengers_from_floor.take(capacity - _passengers.length)
+      _passengers ++= to_enter
       to_enter
     } else Seq()
   }
@@ -183,7 +192,7 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, s
     currentColor = WHITE
     drawRect(left_up_corner, floor_width, elevator_height)
 
-    print(passengers.length+"/"+capacity, left_up_corner + Vec(5, 15))
+    print(_passengers.length+"/"+capacity, left_up_corner + Vec(5, 15))
 
     drawRectCentered(pos, floor_width - 7, floor_height - 7)
     drawDoor()
@@ -192,7 +201,7 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, s
       drawRectCentered(target_floor_pos, floor_width+3, floor_height+3, RED)
     }
 
-    passengers.foreach(p => {
+    _passengers.foreach(p => {
       val p_target_floor_pos = posForFloor(p.target_floor)
       drawRectCentered(p_target_floor_pos, floor_width+4, floor_height+4, YELLOW)
     })
@@ -217,9 +226,11 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, s
   private var target_floor_pos = pos
   private var moving_step      = Vec.zero
 
-  def isMoving = moving_step.notZero
-
-  private def moveToFloor(floor: Int) {
+  def isMoving     = moving_step.notZero
+  def isMovingDown = moving_step.y < 0
+  def isMovingUp   = moving_step.y > 0
+  def targetFloor  = floorForCoord(target_floor_pos)
+  def moveToFloor(floor: Int) {
     if(moving_step.notZero) {
       val new_target_floor_pos = posForFloor(floor)
       if((moving_step.y <  0 && new_target_floor_pos.y < pos.y && new_target_floor_pos.y > target_floor_pos.y) ||
@@ -250,9 +261,9 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, s
                       door_pos += elevator_door_speed
                       if (door_pos >= 1) {
                         door_pos = 1
-                        val transported_passengers = passengers.filter(_.target_floor == floor)
+                        val transported_passengers = _passengers.filter(_.target_floor == floor)
                         if(transported_passengers.length > 0) {
-                          passengers --= transported_passengers
+                          _passengers --= transported_passengers
                           LiftDriver.callEvent("transported", transported_passengers)
                         }
                         screen.deleteSelf()
@@ -271,8 +282,89 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, s
 
   private var removed = false
   def remove() {
-    removed = true
-    screen.delOperations(render_func, left_mouse)
+    if(!removed) {
+      removed = true
+      screen.delOperations(render_func, left_mouse)
+    }
+  }
+
+  screen.clear {
+    remove()
+    screen.deleteSelf()
+  }
+}
+
+class LiftDriverAI(building:Building, screen:Screen) {
+  private val action_func = screen.action(100) {
+    val (moving_lifts, non_moving_lifts) = building.elevators.partition(_.isMoving)
+    non_moving_lifts.foreach(l => { // если лифт не движется
+      if(l.passengers.nonEmpty) { // если в лифте есть пассажиры
+        // выбираем пассажира, нужный этаж которого ближе всего
+        val nearest_passenger = l.passengers.sortBy(p => {
+          math.abs(p.target_floor - l.currentFloor)
+        }).head
+
+        // едем туда
+        l.moveToFloor(nearest_passenger.target_floor)
+      } else {  // если в лифте нет пассажиров
+        // находим пассажиров, к которым ни один лифт еще не едет
+        val free_passengers = building.passengers.filter(p => {
+          building.elevators.forall(l => l.targetFloor != p.floor)
+        })
+
+        if(free_passengers.nonEmpty) {  // если такие есть
+          // выбираем ближайшего
+          val nearest_passenger = free_passengers.sortBy(p => {
+            math.abs(p.floor - l.currentFloor)
+          }).head
+
+          // едем к нему
+          l.moveToFloor(nearest_passenger.floor)
+        }
+      }
+    })
+
+    moving_lifts.foreach(l => {   // если лифт движется
+      if(l.availableSpace > 0) {  // если в лифте еще есть место
+        if(l.isMovingDown) {  // если мы едем вниз
+          // ищем пассажиров, которые ожидают лифт на этажах под нами, но выше того этажа, на которые мы в данный момент едем и к кому никто еще не едет
+          val passengers = building.passengers.filter(p => {
+            p.floor < l.currentFloor && p.floor > l.targetFloor && building.elevators.forall(l => l.targetFloor != p.floor)
+          })
+          if(passengers.nonEmpty) { // если такие есть
+            // выбираем ближайшего
+            val nearest_passenger = passengers.sortBy(p => {
+              math.abs(p.target_floor - l.currentFloor)
+            }).head
+
+            // едем к нему
+            l.moveToFloor(nearest_passenger.floor)
+          }
+        } else if(l.isMovingUp) {   // если мы едем вверх
+        // ищем пассажиров, которые ожидают лифт на этажах над нами, но нижк того этажа, на которые мы в данный момент едем и к кому никто еще не едет
+        val passengers = building.passengers.filter(p => {
+            p.floor > l.currentFloor && p.floor < l.targetFloor && building.elevators.forall(l => l.targetFloor != p.floor)
+          })
+          if(passengers.nonEmpty) { // если такие есть
+          // выбираем ближайшего
+          val nearest_passenger = passengers.sortBy(p => {
+              math.abs(p.target_floor - l.currentFloor)
+            }).head
+
+            // едем к нему
+            l.moveToFloor(nearest_passenger.floor)
+          }
+        }
+      }
+    })
+  }
+
+  private var removed = false
+  def remove() {
+    if(!removed) {
+      removed = true
+      screen.delOperation(action_func)
+    }
   }
 
   screen.clear {
