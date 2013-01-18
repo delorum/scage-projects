@@ -11,25 +11,32 @@ object ElevatorConstants {
   val floor_height = 50
   val elevator_speed = 1f
   val elevator_door_speed = 0.01f
-  val passengers_amount = 20
+  val passengers_amount = 50
 }
 
 import ElevatorConstants._
 
 object LiftDriver extends ScreenApp("Lift Driver", 800, 600) with MultiController {
-  private var num_issued_passengers = 0
-  private var best_transport_time   = Long.MaxValue
-  private var worst_transport_time  = 0l
-  private var num_transported       = 0
+  private var num_issued_passengers  = 0
+  private var best_transport_time    = Long.MaxValue
+  private var worst_transport_time   = 0l
+  private var overall_transport_time = 0l
+  private var average_transport_time = 0l
+  private var num_transported        = 0
 
   init {
     num_issued_passengers = 0
     best_transport_time   = Long.MaxValue
     worst_transport_time  = 0l
     num_transported       = 0
+    overall_transport_time = 0l
+    average_transport_time = 0l
 
     val building1 = new Building(windowCenter + Vec(-floor_width / 2, floor_height * 9 / 2), 9, this)
     building1.addElevator(8)
+    building1.addElevator(4)
+    building1.addElevator(4)
+    building1.addElevator(4)
     building1.addElevator(4)
     building1.addElevator(4)
     val ai = new LiftDriverAI(building1, this)
@@ -37,7 +44,7 @@ object LiftDriver extends ScreenApp("Lift Driver", 800, 600) with MultiControlle
     val action_func = action(1000) {
       if(num_issued_passengers >= passengers_amount) deleteSelf()
       else {
-        if(math.random < 0.3) {
+        if(math.random < 0.4) {
           building1.issuePassenger(msecsFromInitWithoutPause)
           num_issued_passengers += 1
         }
@@ -57,8 +64,10 @@ object LiftDriver extends ScreenApp("Lift Driver", 800, 600) with MultiControlle
         val transport_time = msecsFromInitWithoutPause - p.start_waiting
         if(transport_time > worst_transport_time) worst_transport_time = transport_time
         if(transport_time < best_transport_time)  best_transport_time = transport_time
+        overall_transport_time += transport_time
       })
       num_transported += transported_passengers.length
+      average_transport_time = overall_transport_time/num_transported
   }
 
   keyIgnorePause(KEY_SPACE, onKeyDown = switchPause())
@@ -75,6 +84,9 @@ object LiftDriver extends ScreenApp("Lift Driver", 800, 600) with MultiControlle
     if(worst_transport_time > 0) {
       print("Worst Transport Time: "+(worst_transport_time/1000)+" sec",        20, windowHeight-60)
     } else print("Worst Transport Time: Unknown",                               20, windowHeight-60)
+    if(average_transport_time > 0) {
+      print("Average Transport Time: "+(average_transport_time/1000)+" sec",    20, windowHeight-80)
+    } else print("Average Transport Time: Unknown",                             20, windowHeight-80)
   }
 }
 
@@ -163,6 +175,8 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, s
   private val _passengers = ArrayBuffer[Passenger]()
   def passengers:Seq[Passenger] = _passengers
   def availableSpace = capacity - _passengers.length
+  def isFree = _passengers.length == 0
+  def isFull = _passengers.length == capacity
 
   def enter(passengers_from_floor:Seq[Passenger]):Seq[Passenger] = {
     if(_passengers.length < capacity) {
@@ -296,64 +310,75 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, s
 
 class LiftDriverAI(building:Building, screen:Screen) {
   private val action_func = screen.action(100) {
+    // находим пассажиров, к которым ни один лифт еще не едет
+    val waiting_passengers = building.passengers.filter(p => {
+      building.elevators.forall(l => l.targetFloor != p.floor)
+    })
+
+    waiting_passengers.foreach(p => {
+      // находим лифты, которые никуда не едут, и где нет пассажиров и сортируем их по близости к пассажиру
+      val available_lifts = building.elevators
+        .filter(lift => !lift.isMoving && lift.isFree)
+        .sortBy(lift => {
+          math.abs(p.target_floor - lift.currentFloor)
+      })
+
+      if(available_lifts.nonEmpty) {  // если такие есть
+        // выбираем ближайший
+        val nearest_lift = available_lifts.head
+
+        // посылаем его к пассажиру
+        nearest_lift.moveToFloor(p.floor)
+      }
+    })
+
     val (moving_lifts, non_moving_lifts) = building.elevators.partition(_.isMoving)
-    non_moving_lifts.foreach(l => { // если лифт не движется
-      if(l.passengers.nonEmpty) { // если в лифте есть пассажиры
+    non_moving_lifts.foreach(lift => { // если лифт не движется
+      if(lift.passengers.nonEmpty) { // если в лифте есть пассажиры
         // выбираем пассажира, нужный этаж которого ближе всего
-        val nearest_passenger = l.passengers.sortBy(p => {
-          math.abs(p.target_floor - l.currentFloor)
+        val nearest_passenger = lift.passengers.sortBy(p => {
+          math.abs(p.target_floor - lift.currentFloor)
         }).head
 
         // едем туда
-        l.moveToFloor(nearest_passenger.target_floor)
-      } else {  // если в лифте нет пассажиров
+        lift.moveToFloor(nearest_passenger.target_floor)
+      } else {  // если в лифте нет пассажиров. По идее, эта секция излишняя, потому что такие лифты мы уже послали выше
         // находим пассажиров, к которым ни один лифт еще не едет
-        val free_passengers = building.passengers.filter(p => {
+        val waiting_passengers = building.passengers.filter(p => {
           building.elevators.forall(l => l.targetFloor != p.floor)
         })
 
-        if(free_passengers.nonEmpty) {  // если такие есть
+        if(waiting_passengers.nonEmpty) {  // если такие есть
           // выбираем ближайшего
-          val nearest_passenger = free_passengers.sortBy(p => {
-            math.abs(p.floor - l.currentFloor)
+          val nearest_passenger = waiting_passengers.sortBy(p => {
+            math.abs(p.floor - lift.currentFloor)
           }).head
 
           // едем к нему
-          l.moveToFloor(nearest_passenger.floor)
+          lift.moveToFloor(nearest_passenger.floor)
         }
       }
     })
 
     moving_lifts.foreach(l => {   // если лифт движется
       if(l.availableSpace > 0) {  // если в лифте еще есть место
-        if(l.isMovingDown) {  // если мы едем вниз
-          // ищем пассажиров, которые ожидают лифт на этажах под нами, но выше того этажа, на которые мы в данный момент едем и к кому никто еще не едет
-          val passengers = building.passengers.filter(p => {
-            p.floor < l.currentFloor && p.floor > l.targetFloor && building.elevators.forall(l => l.targetFloor != p.floor)
-          })
-          if(passengers.nonEmpty) { // если такие есть
-            // выбираем ближайшего
-            val nearest_passenger = passengers.sortBy(p => {
-              math.abs(p.target_floor - l.currentFloor)
-            }).head
-
-            // едем к нему
-            l.moveToFloor(nearest_passenger.floor)
-          }
-        } else if(l.isMovingUp) {   // если мы едем вверх
-        // ищем пассажиров, которые ожидают лифт на этажах над нами, но нижк того этажа, на которые мы в данный момент едем и к кому никто еще не едет
-        val passengers = building.passengers.filter(p => {
-            p.floor > l.currentFloor && p.floor < l.targetFloor && building.elevators.forall(l => l.targetFloor != p.floor)
-          })
-          if(passengers.nonEmpty) { // если такие есть
+        // если едем вниз, то ищем пассажиров, которые ожидают лифт на этажах под нами, но выше того этажа,
+        // на который мы в данный момент едем и к кому никто еще не едет
+        // если же едем вверх, то ищем пассажиров, которые ожидают лифт на этажах под нами, но выше того этажа,
+        // на который мы в данный момент едем и к кому никто еще не едет
+        val waiting_passengers = building.passengers.filter(p => {
+          if(l.isMovingDown) p.floor < l.currentFloor && p.floor > l.targetFloor && building.elevators.forall(l => l.targetFloor != p.floor)
+          else if(l.isMovingUp) p.floor > l.currentFloor && p.floor < l.targetFloor && building.elevators.forall(l => l.targetFloor != p.floor)
+          else false
+        })
+        if(waiting_passengers.nonEmpty) { // если такие есть
           // выбираем ближайшего
-          val nearest_passenger = passengers.sortBy(p => {
-              math.abs(p.target_floor - l.currentFloor)
-            }).head
+          val nearest_passenger = waiting_passengers.sortBy(p => {
+            math.abs(p.target_floor - l.currentFloor)
+          }).head
 
-            // едем к нему
-            l.moveToFloor(nearest_passenger.floor)
-          }
+          // едем к нему
+          l.moveToFloor(nearest_passenger.floor)
         }
       }
     })
