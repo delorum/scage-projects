@@ -11,18 +11,66 @@ object ElevatorConstants {
   val floor_height = 50
   val elevator_speed = 1f
   val elevator_door_speed = 0.01f
-  val passengers_amount = 50
 }
 
 import ElevatorConstants._
 
-object LiftDriver extends ScreenApp("Lift Driver", 800, 600) with MultiController {
+// Новая Игра, Демонстрация, Помощь, Выход
+// Внизу сбоку - выбор языка, ru и en, по умолчанию en
+object MainMenu extends ScreenApp("Lift Driver", 800, 600) with MultiController {
+  interface {
+    print("New Game",  windowCenter, align = "center")
+    print("Demo Mode", windowCenter - Vec(0, 30), align = "center")
+    print("Help",      windowCenter - Vec(0, 60), align = "center")
+    print("Exit",      windowCenter - Vec(0, 90), align = "center")
+    //print("English",   Vec(windowWidth-10, 10),      align = "right")
+  }
+
+  private var manual_mode = true
+  def manualMode = manual_mode
+
+  val Vec(new_w, new_h) = messageBounds("New Game")
+  leftMouseOnRectCentered(windowCenter, new_w, new_h, onBtnDown = m => {
+    manual_mode = true
+    LiftDriver.run()
+  })
+
+  val Vec(demo_w, demo_h) = messageBounds("Demo Mode")
+  leftMouseOnRectCentered(windowCenter - Vec(0, 30), demo_w, demo_h, onBtnDown = m => {
+    manual_mode = false
+    LiftDriver.run()
+  })
+
+  val Vec(help_w, help_h) = messageBounds("Help")
+  leftMouseOnRectCentered(windowCenter - Vec(0, 60), help_w, help_h, onBtnDown = m => {
+    HelpScreen.run()
+  })
+
+  val Vec(exit_w, exit_h) = messageBounds("Exit")
+  leftMouseOnRectCentered(windowCenter - Vec(0, 90), exit_w, exit_h, onBtnDown = m => stopApp())
+}
+
+object HelpScreen extends Screen with MultiController {
+  interface {
+    print("Navigate elevators to floors with passengers and then\n" +
+          "to the floors they want to go (yellow frames).\n" +
+          "And try to do it really fast!\n" +
+          "Click or press any key to exit", windowCenter, align = "center")
+  }
+
+  anykey(onKeyDown = stop())
+  leftMouse(onBtnDown = m => stop())
+}
+
+object LiftDriver extends Screen with MultiController {
   private var num_issued_passengers  = 0
   private var best_transport_time    = Long.MaxValue
   private var worst_transport_time   = 0l
   private var overall_transport_time = 0l
   private var average_transport_time = 0l
   private var num_transported        = 0
+
+  def passengersAmount = if(MainMenu.manualMode) 20 else 50
 
   init {
     num_issued_passengers = 0
@@ -33,16 +81,23 @@ object LiftDriver extends ScreenApp("Lift Driver", 800, 600) with MultiControlle
     average_transport_time = 0l
 
     val building1 = new Building(windowCenter + Vec(-floor_width / 2, floor_height * 9 / 2), 9, this)
-    building1.addElevator(8)
-    building1.addElevator(4)
-    building1.addElevator(4)
-    building1.addElevator(4)
-    building1.addElevator(4)
-    building1.addElevator(4)
-    val ai = new LiftDriverAI(building1, this)
+
+    if(MainMenu.manualMode) {
+      building1.addElevator(8)
+      building1.addElevator(4)
+      building1.addElevator(4)
+    } else {
+      building1.addElevator(8)
+      building1.addElevator(4)
+      building1.addElevator(4)
+      building1.addElevator(4)
+      building1.addElevator(4)
+      building1.addElevator(4)
+      new LiftDriverAI(building1, this)
+    }
 
     val action_func = action(1000) {
-      if(num_issued_passengers >= passengers_amount) deleteSelf()
+      if(num_issued_passengers >= passengersAmount) deleteSelf()
       else {
         if(math.random < 0.4) {
           building1.issuePassenger(msecsFromInitWithoutPause)
@@ -71,13 +126,18 @@ object LiftDriver extends ScreenApp("Lift Driver", 800, 600) with MultiControlle
   }
 
   keyIgnorePause(KEY_SPACE, onKeyDown = switchPause())
-  keyIgnorePause(KEY_F2, onKeyDown = restart())
+  keyIgnorePause(KEY_F2, onKeyDown = {
+    if(onPause || num_transported >= passengersAmount) restart()
+  })
+  keyIgnorePause(KEY_ESCAPE, onKeyDown = {
+    if(onPause || num_transported >= passengersAmount) stop()
+  })
 
   render {
-    if(onPause)                                   print("PAUSE. PRESS SPACE",  windowCenter, YELLOW, align = "center")
-    else if(num_transported >= passengers_amount) print("PRESS F2 TO RESTART", windowCenter, YELLOW, align = "center")
+    if(onPause)                                   print("PAUSE. PRESS SPACE. ESC TO EXIT",  windowCenter, YELLOW, align = "center")
+    else if(num_transported >= passengersAmount) print("PRESS F2 TO RESTART, ESC TO EXIT", windowCenter, YELLOW, align = "center")
     currentColor = WHITE
-    print("Transported:                "+num_transported+"/"+passengers_amount, 20, windowHeight-20)
+    print("Transported:                "+num_transported+"/"+passengersAmount, 20, windowHeight-20)
     if(best_transport_time < Long.MaxValue) {
       print("Best Transport Time:   "+(best_transport_time/1000)+" sec",        20, windowHeight-40)
     } else print("Best Transport Time:   Unknown",                              20, windowHeight-40)
@@ -222,7 +282,7 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, s
   }
 
   private val left_mouse = screen.leftMouseOnRect(left_up_corner, floor_width, elevator_height, onBtnDown = mouse => {
-    moveToFloor(floorForCoord(mouse))
+    if(MainMenu.manualMode) moveToFloor(floorForCoord(mouse))
   })
 
   def posForFloor(floor:Int):Vec = {
@@ -278,7 +338,7 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, s
                         val transported_passengers = _passengers.filter(_.target_floor == floor)
                         if(transported_passengers.length > 0) {
                           _passengers --= transported_passengers
-                          LiftDriver.callEvent("transported", transported_passengers)
+                          callEvent("transported", transported_passengers)
                         }
                         screen.deleteSelf()
                         moving_step = Vec.zero
