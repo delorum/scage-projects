@@ -17,45 +17,46 @@ import ElevatorConstants._
 
 // Новая Игра, Демонстрация, Помощь, Выход
 // Внизу сбоку - выбор языка, ru и en, по умолчанию en
-object MainMenu extends ScreenApp("Lift Driver", 800, 600) with MultiController {
+object MainMenu extends ScreenApp(xml("liftdriver"), 800, 600) with MultiController {
+  def areaForMessage(coord:Vec, message:String) = {
+    val Vec(w, h) = messageBounds(message)
+    List(coord + Vec(-w/2, h/2), coord + Vec(w/2, h/2), coord + Vec(w/2, -h/2), coord + Vec(-w/2, -h/2))
+  }
+
   interface {
-    print("New Game",  windowCenter, align = "center")
-    print("Demo Mode", windowCenter - Vec(0, 30), align = "center")
-    print("Help",      windowCenter - Vec(0, 60), align = "center")
-    print("Exit",      windowCenter - Vec(0, 90), align = "center")
-    //print("English",   Vec(windowWidth-10, 10),      align = "right")
+    print(xml("newgame"), windowCenter,              align = "center")
+    print(xml("demo"),    windowCenter - Vec(0, 30), align = "center")
+    print(xml("help"),    windowCenter - Vec(0, 60), align = "center")
+    print(xml("exit"),    windowCenter - Vec(0, 90), align = "center")
+    print(xml("lang"),    Vec(windowWidth-10, 10),   align = "right")
   }
 
   private var manual_mode = true
   def manualMode = manual_mode
 
-  val Vec(new_w, new_h) = messageBounds("New Game")
-  leftMouseOnRectCentered(windowCenter, new_w, new_h, onBtnDown = m => {
+  leftMouseOnArea(areaForMessage(windowCenter, xml("newgame")), onBtnDown = m => {
     manual_mode = true
     LiftDriver.run()
   })
-
-  val Vec(demo_w, demo_h) = messageBounds("Demo Mode")
-  leftMouseOnRectCentered(windowCenter - Vec(0, 30), demo_w, demo_h, onBtnDown = m => {
+  leftMouseOnArea(areaForMessage(windowCenter - Vec(0, 30), xml("demo")), onBtnDown = m => {
     manual_mode = false
     LiftDriver.run()
   })
-
-  val Vec(help_w, help_h) = messageBounds("Help")
-  leftMouseOnRectCentered(windowCenter - Vec(0, 60), help_w, help_h, onBtnDown = m => {
-    HelpScreen.run()
+  leftMouseOnArea(areaForMessage(windowCenter - Vec(0, 60), xml("help")), onBtnDown = m => HelpScreen.run())
+  leftMouseOnArea(areaForMessage(windowCenter - Vec(0, 90), xml("exit")), onBtnDown = m => stopApp())
+  leftMouseOnArea(areaForMessage(Vec(windowWidth-10, 10),   xml("lang")), onBtnDown = m => {
+    lang = lang match {
+      case "ru" => "en"
+      case "en" => "ru"
+      case _    => "en"
+    }
+    windowTitle = xml("liftdriver")
   })
-
-  val Vec(exit_w, exit_h) = messageBounds("Exit")
-  leftMouseOnRectCentered(windowCenter - Vec(0, 90), exit_w, exit_h, onBtnDown = m => stopApp())
 }
 
 object HelpScreen extends Screen with MultiController {
   interface {
-    print("Navigate elevators to floors with passengers and then\n" +
-          "to the floors they want to go (yellow frames).\n" +
-          "And try to do it really fast!\n" +
-          "Click or press any key to exit", windowCenter, align = "center")
+    print(xml("helptext"), windowCenter, align = "center")
   }
 
   anykey(onKeyDown = stop())

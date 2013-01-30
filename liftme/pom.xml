@@ -8,7 +8,7 @@
 
   <name>Lift Driver</name>
   <description>The game about controlling elevators</description>
-  <url>http://fzeulf.netris.ru/bot/liftdriver</url>
+  <url>http://fzeulf.netris.ru/bor/liftdriver</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<messages>
+    <message id="liftdriver">
+        Водитель лифта
+    </message>
+
+    <message id="newgame">
+        Новая игра
+    </message>
+
+    <message id="demo">
+        Демонстрация
+    </message>
+
+    <message id="help">
+        Помощь
+    </message>
+
+    <message id="helptext">
+        Забирайте пассажиров (клик по этажу)
+и доставляйте на нужные этажи (желтая рамка) - как можно быстрее!
+Кликните или нажмите любую клавишу.
+    </message>
+
+    <message id="exit">
+        Выход
+    </message>
+
+    <message id="lang">
+        Русский
+    </message>
+</messages>

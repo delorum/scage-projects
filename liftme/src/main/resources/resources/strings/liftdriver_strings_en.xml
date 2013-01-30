@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<messages>
+    <message id="liftdriver">
+        Lift Driver
+    </message>
+
+    <message id="newgame">
+        New Game
+    </message>
+
+    <message id="demo">
+        Demo
+    </message>
+
+    <message id="help">
+        Help
+    </message>
+
+    <message id="helptext">
+        Navigate elevators to floors with passengers and then
+to the floors they want to go (yellow frames)
+And try to do it really fast!
+Click or press any key to exit
+    </message>
+
+    <message id="exit">
+        Exit
+    </message>
+
+    <message id="lang">
+        English
+    </message>
+</messages>
