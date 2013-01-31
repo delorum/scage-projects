@@ -18,11 +18,6 @@ import ElevatorConstants._
 // Новая Игра, Демонстрация, Помощь, Выход
 // Внизу сбоку - выбор языка, ru и en, по умолчанию en
 object MainMenu extends ScreenApp(xml("liftdriver"), 800, 600) with MultiController {
-  def areaForMessage(coord:Vec, message:String) = {
-    val Vec(w, h) = messageBounds(message)
-    List(coord + Vec(-w/2, h/2), coord + Vec(w/2, h/2), coord + Vec(w/2, -h/2), coord + Vec(-w/2, -h/2))
-  }
-
   interface {
     print(xml("newgame"), windowCenter,              align = "center")
     print(xml("demo"),    windowCenter - Vec(0, 30), align = "center")
