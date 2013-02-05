@@ -1,9 +1,6 @@
 package net.scageprojects.liftdriver
 
-import net.scage.{ScreenApp, Screen}
-import net.scage.support.Vec
 import net.scage.ScageLib._
-import net.scage.handlers.controller2.MultiController
 import collection.mutable.ArrayBuffer
 
 object ElevatorConstants {
@@ -29,17 +26,17 @@ object MainMenu extends ScreenApp(xml("liftdriver"), 800, 600) with MultiControl
   private var manual_mode = true
   def manualMode = manual_mode
 
-  leftMouseOnArea(areaForMessage(windowCenter, xml("newgame")), onBtnDown = m => {
+  leftMouseOnArea(areaForMessage(xml("newgame"), windowCenter), onBtnDown = m => {
     manual_mode = true
     LiftDriver.run()
   })
-  leftMouseOnArea(areaForMessage(windowCenter - Vec(0, 30), xml("demo")), onBtnDown = m => {
+  leftMouseOnArea(areaForMessage(xml("demo"), windowCenter - Vec(0, 30)), onBtnDown = m => {
     manual_mode = false
     LiftDriver.run()
   })
-  leftMouseOnArea(areaForMessage(windowCenter - Vec(0, 60), xml("help")), onBtnDown = m => HelpScreen.run())
-  leftMouseOnArea(areaForMessage(windowCenter - Vec(0, 90), xml("exit")), onBtnDown = m => stopApp())
-  leftMouseOnArea(areaForMessage(Vec(windowWidth-10, 10),   xml("lang")), onBtnDown = m => {
+  leftMouseOnArea(areaForMessage(xml("help"), windowCenter - Vec(0, 60)), onBtnDown = m => HelpScreen.run())
+  leftMouseOnArea(areaForMessage(xml("exit"), windowCenter - Vec(0, 90)), onBtnDown = m => stopApp())
+  leftMouseOnArea(areaForMessage(xml("lang"), Vec(windowWidth-10, 10), align = "right"),   onBtnDown = m => {
     lang = lang match {
       case "ru" => "en"
       case "en" => "ru"
@@ -49,7 +46,7 @@ object MainMenu extends ScreenApp(xml("liftdriver"), 800, 600) with MultiControl
   })
 }
 
-object HelpScreen extends Screen with MultiController {
+object HelpScreen extends ScageScreen {
   interface {
     print(xml("helptext"), windowCenter, align = "center")
   }
@@ -131,7 +128,7 @@ object LiftDriver extends Screen with MultiController {
 
   render {
     if(onPause)                                   print("PAUSE. PRESS SPACE. ESC TO EXIT",  windowCenter, YELLOW, align = "center")
-    else if(num_transported >= passengersAmount) print("PRESS F2 TO RESTART, ESC TO EXIT", windowCenter, YELLOW, align = "center")
+    else if(num_transported >= passengersAmount)  print("PRESS F2 TO RESTART, ESC TO EXIT", windowCenter, YELLOW, align = "center")
     currentColor = WHITE
     print("Transported:                "+num_transported+"/"+passengersAmount, 20, windowHeight-20)
     if(best_transport_time < Long.MaxValue) {
