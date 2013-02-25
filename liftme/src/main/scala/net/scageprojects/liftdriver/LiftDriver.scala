@@ -20,7 +20,7 @@ object MainMenu extends ScreenApp(xml("liftdriver"), 800, 600) with MultiControl
     print(xml("demo"),    windowCenter - Vec(0, 30), align = "center")
     print(xml("help"),    windowCenter - Vec(0, 60), align = "center")
     print(xml("exit"),    windowCenter - Vec(0, 90), align = "center")
-    print(xml("lang"),    Vec(windowWidth-10, 10),   align = "right")
+    print(xml("lang"),    Vec(windowWidth-10, 10),   align = "bottom-right")
   }
 
   private var manual_mode = true
@@ -36,7 +36,7 @@ object MainMenu extends ScreenApp(xml("liftdriver"), 800, 600) with MultiControl
   })
   leftMouseOnArea(areaForMessage(xml("help"), windowCenter - Vec(0, 60)), onBtnDown = m => HelpScreen.run())
   leftMouseOnArea(areaForMessage(xml("exit"), windowCenter - Vec(0, 90)), onBtnDown = m => stopApp())
-  leftMouseOnArea(areaForMessage(xml("lang"), Vec(windowWidth-10, 10), align = "right"),   onBtnDown = m => {
+  leftMouseOnArea(areaForMessage(xml("lang"), Vec(windowWidth-10, 10), align = "bottom-right"),   onBtnDown = m => {
     lang = lang match {
       case "ru" => "en"
       case "en" => "ru"
