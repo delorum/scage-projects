@@ -126,21 +126,26 @@ object LiftDriver extends Screen with MultiController {
     if(onPause || num_transported >= passengersAmount) stop()
   })
 
-  render {
-    if(onPause)                                   print("PAUSE. PRESS SPACE. ESC TO EXIT",  windowCenter, YELLOW, align = "center")
-    else if(num_transported >= passengersAmount)  print("PRESS F2 TO RESTART, ESC TO EXIT", windowCenter, YELLOW, align = "center")
+  interface {
+    if(onPause)                                   print(xml("pausetext"),  windowCenter, YELLOW, align = "center")
+    else if(num_transported >= passengersAmount)  print(xml("restarttext"), windowCenter, YELLOW, align = "center")
     currentColor = WHITE
-    print("Transported:                "+num_transported+"/"+passengersAmount, 20, windowHeight-20)
-    if(best_transport_time < Long.MaxValue) {
-      print("Best Transport Time:   "+(best_transport_time/1000)+" sec",        20, windowHeight-40)
-    } else print("Best Transport Time:   Unknown",                              20, windowHeight-40)
-    if(worst_transport_time > 0) {
-      print("Worst Transport Time: "+(worst_transport_time/1000)+" sec",        20, windowHeight-60)
-    } else print("Worst Transport Time: Unknown",                               20, windowHeight-60)
-    if(average_transport_time > 0) {
-      print("Average Transport Time: "+(average_transport_time/1000)+" sec",    20, windowHeight-80)
-    } else print("Average Transport Time: Unknown",                             20, windowHeight-80)
+    if(best_transport_time < Long.MaxValue && worst_transport_time > 0) {
+      print(xml("stats", num_transported, passengersAmount, (best_transport_time/1000), (worst_transport_time/1000), (average_transport_time/1000)), 20, windowHeight-20)
+    } else {
+      print(xml("stats.init", passengersAmount), 20, windowHeight-20)
+    }
+    print(xml("lang"),    Vec(windowWidth-10, 10),   align = "bottom-right")
   }
+
+  leftMouseOnAreaIgnorePause(areaForMessage(xml("lang"), Vec(windowWidth-10, 10), align = "bottom-right"),   onBtnDown = m => {
+    lang = lang match {
+      case "ru" => "en"
+      case "en" => "ru"
+      case _    => "en"
+    }
+    windowTitle = xml("liftdriver")
+  })
 }
 
 case class Passenger(floor:Int, target_floor:Int, start_waiting:Long)

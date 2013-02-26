@@ -29,4 +29,26 @@
     <message id="lang">
         Русский
     </message>
+
+    <message id="stats.init">
+Перевезено:    0/$0
+Лучшее время:  неизвестно
+Худшее время:  неизвестно
+Среднее время: неизвестно
+    </message>
+
+    <message id="stats">
+Перевезено:    $0/$1
+Лучшее время:  $2 сек
+Худшее время:  $3 сек
+Среднее время: $4 сек
+    </message>
+
+    <message id="pausetext">
+        ПАУЗА. ПРОБЕЛ - ПРОДОЛЖИТЬ. ESC - ВЫХОД
+    </message>
+
+    <message id="restarttext">
+        НАЧАТЬ ЗАНОВО - F2, ESC - ВЫХОД
+    </message>
 </messages>
