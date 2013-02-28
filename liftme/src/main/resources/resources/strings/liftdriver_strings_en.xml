@@ -30,4 +30,26 @@ Click or press any key to exit
     <message id="lang">
         English
     </message>
+
+    <message id="stats.init">
+Transported:  0/$0
+Best time:    unknown
+Worst time:   unknown
+Average time: unknown
+    </message>
+
+    <message id="stats">
+Transported:  $0/$1
+Best time:    $2 sec
+Worst time:   $3 sec
+Average time: $4 sec
+    </message>
+
+    <message id="pausetext">
+        PAUSE. PRESS SPACE. ESC TO EXIT
+    </message>
+
+    <message id="restarttext">
+        PRESS F2 TO RESTART, ESC TO EXIT
+    </message>
 </messages>
