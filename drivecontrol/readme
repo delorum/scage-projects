@@ -1,0 +1,39 @@
+To create a runnable offline distribution type in console:
+
+  $ mvn clean package -Pbuild
+
+Or just
+
+  $ mvn clean package
+
+as the "build" profile is default one. Add "-Dmaven.test.skip" if you want to skip tests.
+
+The distribution will be created in the "target" folder. It will be folder or zip-archive - depends on the "install.type" setting in
+the "build.properties" file.
+
+To build the project for distribution via Java Web Start type in console:
+
+  $ mvn clean package -Pwebstart
+
+The distribution will be created in the "target/jnlp" folder. Copy this folder to your server where your website situated.
+
+You need to fill the "url" tag in pom.xml with the correct website url:
+<url>http://example.com</url>
+
+During the build process all jar-files must be signed. For that purpose you need to create certificate and pass it to the builder using
+this properties in the "build.properties" or "local-build.properties" which is preferred:
+
+  keystore = /path/to/keystore
+  keystore.alias = my_keystore
+  keystore.pass = mypassword
+  key.pass = mypassword
+
+To create new certificate type in command prompt:
+
+  $ keytool -genkey -keystore my_keystore -alias my_keystore
+
+Keytool is a part of jdk. The program will ask your to specifiy several parameters including passwords. The file "my_keystore" will be
+created in your current directory.
+
+For security reasons please use the "local-build.properties" file to store that data and add this file to .gitignore so it won't be
+commited to public repositories.
