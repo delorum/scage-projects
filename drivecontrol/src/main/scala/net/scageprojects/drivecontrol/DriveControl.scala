@@ -13,7 +13,9 @@ object DriveControl extends ScageScreenApp("Drive Control", 800, 600) {
 
   key(KEY_LEFT, 10, onKeyDown = car.turnLeft())
   key(KEY_RIGHT, 10, onKeyDown = car.turnRight())
+
   key(KEY_UP, onKeyDown = car.gasEnabled(), onKeyUp = car.gasDisabled())
+  key(KEY_DOWN, onKeyDown = car.reverseEnabled(), onKeyUp = car.reverseDisabled())
 }
 
 import DriveControl._
@@ -109,38 +111,50 @@ class Car(start_position:Vec) extends DefaultTrace {
     if(wheel_rotation > -35) wheel_rotation -= wheel_rotation_speed
   }
 
-  private var speed       = 0.0f
-  private val k           = 0.05f
-  private val motor_force = 0.1f
-  private var gas_enabled = false
-  private val mass        = 1f
-  private val dt          = 1f
+  private var speed           = Vec.zero
+  private val k               = 0.05f
+  private val motor_force     = 0.1f
+  private var gas_enabled     = false
+  private var reverse_enabled = false
+  private val mass            = 1f
+  private val dt              = 1f
+
+  def direction = Vec(0,1).rotateDeg(car_rotation)
+  def velocity = speed.norma
 
   action(50) {
-    speed += ((if(gas_enabled) motor_force else 0f) - (if(speed > 0) k else 0f))/mass*dt
-    if(speed.abs < 0.1f) speed = 0f
-    val new_location = location + Vec(0,1).rotateDeg(car_rotation)*speed*dt
-    if(speed > 0) {
-      if(wheel_rotation != 0) {
-        car_rotation += wheel_rotation.signum*car_rotation_speed
-        wheel_rotation -= wheel_rotation.signum*car_rotation_speed
+    val current_force = (if(gas_enabled) direction*motor_force else Vec.zero) + (if(reverse_enabled) direction*(-motor_force) else Vec.zero) + (if(velocity > 0) speed.n*k*(-1) else Vec.zero)
+    speed += current_force/mass*dt
+    if(velocity < 0.1f) speed = Vec.zero
+    val new_location = location + speed*dt
+    if(velocity > 0) {
+      if(direction*speed > 0) {
+        if(wheel_rotation != 0) {
+          car_rotation += wheel_rotation.signum*car_rotation_speed
+          wheel_rotation -= wheel_rotation.signum*car_rotation_speed
+        }
+      } else {
+        if(wheel_rotation != 0) {
+          car_rotation -= wheel_rotation.signum*car_rotation_speed
+          wheel_rotation += wheel_rotation.signum*car_rotation_speed
+        }
       }
     }
-    log.info("speed: "+speed)
+    log.info("speed: "+speed+" velocity: "+velocity)
     tracer.updateLocation(this, new_location)
   }
 
-  def gasEnabled() {
-    gas_enabled = true
-  }
-  def gasDisabled() {
-    gas_enabled = false
-  }
+  def gasEnabled() {gas_enabled = true}
+  def gasDisabled() {gas_enabled = false}
+
+  def reverseEnabled() {reverse_enabled = true}
+  def reverseDisabled() {reverse_enabled = false}
 
   tracer.addTrace(start_position, this)
   render {
     openglMove(location)
     openglRotateDeg(car_rotation)
+    drawLine(Vec(0,20), Vec(0,20)+direction*20, WHITE)
     drawRectCentered(Vec.zero, 20, 50, WHITE)
     if(left_light_on) {
       drawFilledRectCentered(Vec.zero + Vec(-10, 25), 5, 5, ORANGE)
