@@ -1,141 +1,165 @@
 package net.scageprojects.drivecontrol
 
-import net.scage.ScageLib._
+import net.scage.ScageLib.{drawCircle => scageDrawCircle, print => scagePrint, _}
 import org.jbox2d.collision.AABB
-import org.jbox2d.dynamics.{Body, BodyType, BodyDef, World}
-import org.jbox2d.common.Vec2
+import org.jbox2d.dynamics._
+import org.jbox2d.common.{Transform, Color3f, OBBViewportTransform, Vec2}
 import org.jbox2d.collision.shapes.PolygonShape
 import org.jbox2d.dynamics.joints.{PrismaticJointDef, RevoluteJoint, RevoluteJointDef}
+import org.jbox2d.callbacks.DebugDraw
 
-object PhysicsDrive extends ScageScreenApp("Physics Drive", 640, 480) {
-  val MAX_STEER_ANGLE = math.Pi/3
-  val STEER_SPEED = 1.5
-  val SIDEWAYS_FRICTION_FORCE:Number = 10
-  val HORSEPOWERS:Number = 40
-  val CAR_STARTING_POS = new Vec2(10, 10)
+class Physics2(val gravity:Vec = Vec.zero, val hz:Int = 60) {
+  val dt = 1f/hz
+  private val world = new World(new Vec2(gravity.x, gravity.y), true)
+  private val debug_drawer = new ScageDrawer
+  world.setDebugDraw(debug_drawer)
 
-  val leftRearWheelPosition = new Vec2(-1.5f, 1.90f)
-  val rightRearWheelPosition = new Vec2(1.5f, 1.9f)
-  val leftFrontWheelPosition = new Vec2(-1.5f, -1.9f)
-  val rightFrontWheelPosition = new Vec2(1.5f, -1.9f)
+  def flags:Int = debug_drawer.getFlags
+  def flags_=(new_flags:Int) = debug_drawer.setFlags(new_flags)
 
-  var engineSpeed = 0
-  var steeringAngle = 0
+  def staticBox(position:Vec, width:Float, height:Float, angle:Float = 0.0f) {
+    val fd: FixtureDef = new FixtureDef
+    val sd: PolygonShape = new PolygonShape
+    sd.setAsBox(width, height, new Vec2(position.x, position.y), angle)
 
-  val worldBox = new AABB()
-  worldBox.lowerBound.set(-100, -100)
-  worldBox.upperBound.set(100,100)
+    fd.shape = sd
+    val bd: BodyDef = new BodyDef
+    bd.position = new Vec2(position.x, position.y)
+    world.createBody(bd).createFixture(fd)
+  }
 
-  val myWorld = new World(new Vec2(0, 0), true)
+  def dynamicBox(position:Vec, angle:Float, width:Float, height:Float, density:Float, friction:Float) {
+    val fd: FixtureDef = new FixtureDef
+    val sd: PolygonShape = new PolygonShape
+    sd.setAsBox(width, height)
+    fd.shape = sd
+    fd.density = density
+    val bd: BodyDef = new BodyDef
+    bd.`type` = BodyType.DYNAMIC
+    fd.friction = friction
+    bd.position = new Vec2(position.x, position.y)
+    bd.angle = angle
+    world.createBody(bd).createFixture(fd)
+  }
 
-  //Create some static stuff
-  val staticDef = new BodyDef()
-  staticDef.position.set(5, 20)
-  val staticBox = new PolygonShape()
-  staticBox.setAsBox(5, 5)
-  myWorld.createBody(staticDef).createFixture(staticBox, 0)
-  staticDef.position.x = 25
-  myWorld.createBody(staticDef).createFixture(staticBox, 0)
-  staticDef.position.set(15, 24)
-  myWorld.createBody(staticDef).createFixture(staticBox, 0)
+  def step() {
+    world.step(dt, 8, 3)
+  }
 
-  // define our body
-  val bodyDef = new BodyDef()
-  bodyDef.`type` = BodyType.DYNAMIC
-  bodyDef.linearDamping = 1
-  bodyDef.angularDamping = 1
-  bodyDef.position = CAR_STARTING_POS.clone()
+  def drawDebugData() {
+    world.drawDebugData()
+  }
 
-  val body = myWorld.createBody(bodyDef)
+  def clearAll() {
+    world.clearForces()
+    var joint = world.getJointList
+    while(joint != null) {
+      world.destroyJoint(joint)
+      joint = joint.getNext
+    }
+    var body = world.getBodyList
+    while(body != null) {
+      world.destroyBody(body)
+      body = body.getNext
+    }
+  }
+}
 
-  val leftWheelDef = new BodyDef()
-  leftWheelDef.`type` = BodyType.DYNAMIC
-  leftWheelDef.position = CAR_STARTING_POS.clone()
-  leftWheelDef.position.add(leftFrontWheelPosition)
-  val leftWheel = myWorld.createBody(leftWheelDef)
+class ScageDrawer extends DebugDraw(new OBBViewportTransform) {
+  setFlags(DebugDraw.e_shapeBit)
 
-  val rightWheelDef = new BodyDef()
-  rightWheelDef.`type` = BodyType.DYNAMIC
-  rightWheelDef.position = CAR_STARTING_POS.clone()
-  rightWheelDef.position.add(rightFrontWheelPosition)
-  val rightWheel = myWorld.createBody(rightWheelDef)
+  def drawPoint(argPoint: Vec2, argRadiusOnScreen: Float, color: Color3f) {
+    scageDrawCircle(Vec(argPoint.x, argPoint.y), argRadiusOnScreen, ScageColor(color.x, color.y, color.z))
+  }
 
-  val leftRearWheelDef = new BodyDef()
-  leftRearWheelDef.`type` = BodyType.DYNAMIC
-  leftRearWheelDef.position = CAR_STARTING_POS.clone()
-  leftRearWheelDef.position.add(leftRearWheelPosition)
-  val leftRearWheel = myWorld.createBody(leftRearWheelDef)
+  def drawSolidPolygon(vertices: Array[Vec2], vertexCount: Int, color: Color3f) {
+    drawFilledPolygon(vertices.take(vertexCount).map(v => Vec(v.x, v.y)), ScageColor(color.x, color.y, color.z))
+  }
 
-  val rightRearWheelDef = new BodyDef()
-  rightRearWheelDef.`type` = BodyType.DYNAMIC
-  rightRearWheelDef.position = CAR_STARTING_POS.clone()
-  rightRearWheelDef.position.add(rightRearWheelPosition)
-  val rightRearWheel = myWorld.createBody(rightRearWheelDef)
+  def drawCircle(center: Vec2, radius: Float, color: Color3f) {
+    scageDrawCircle(Vec(center.x, center.y), radius, ScageColor(color.x, color.y, color.z))
+  }
 
-  // define our shapes
-  val boxDef:PolygonShape = new PolygonShape()
-  boxDef.setAsBox(1.5f, 2.5f)
-  body.createFixture(boxDef, 1)
+  def drawSolidCircle(center: Vec2, radius: Float, axis: Vec2, color: Color3f) {
+    drawFilledCircle(Vec(center.x, center.y), radius, ScageColor(color.x, color.y, color.z))
+  }
 
-  //Left Wheel shape
-  val leftWheelShapeDef = new PolygonShape()
-  leftWheelShapeDef.setAsBox(0.2f, 0.5f)
-  leftWheel.createFixture(leftWheelShapeDef, 1)
+  def drawSegment(p1: Vec2, p2: Vec2, color: Color3f) {
+    drawLine(Vec(p1.x, p1.y), Vec(p2.x, p2.y), ScageColor(color.x, color.y, color.z))
+  }
 
-  //Right Wheel shape
-  val rightWheelShapeDef = new PolygonShape()
-  rightWheelShapeDef.setAsBox(0.2f, 0.5f)
-  rightWheel.createFixture(rightWheelShapeDef, 1)
+  def drawTransform(xf: Transform) {
+    println("drawing transform...")
+  }
 
-  //Rear Left Wheel shape
-  val leftRearWheelShapeDef = new PolygonShape()
-  leftRearWheelShapeDef.setAsBox(0.2f, 0.5f)
-  leftRearWheel.createFixture(leftRearWheelShapeDef, 1)
+  def drawString(x: Float, y: Float, s: String, color: Color3f) {
+    scagePrint(s, x, y, WHITE, align = "center")
+  }
+}
 
-  //Rear Right Wheel shape
-  val rightRearWheelShapeDef = new PolygonShape()
-  rightRearWheelShapeDef.setAsBox(0.2f, 0.5f)
-  rightRearWheel.createFixture(rightRearWheelShapeDef, 1)
+abstract class TestBox(title:String, gravity:Vec) extends ScageScreenApp(title, 640, 480) {
+  protected val physics = new Physics2(Vec(0, -10))
 
-  val leftJointDef = new RevoluteJointDef()
-  leftJointDef.initialize(body, leftWheel, leftWheel.getWorldCenter)
-  leftJointDef.enableMotor = true
-  leftJointDef.maxMotorTorque = 100
+  def initTest()
 
-  val rightJointDef = new RevoluteJointDef()
-  rightJointDef.initialize(body, rightWheel, rightWheel.getWorldCenter)
-  rightJointDef.enableMotor = true
-  rightJointDef.maxMotorTorque = 100
-
-  val leftJoint = new RevoluteJoint(myWorld.getPool, leftJointDef)
-  val rightJoint = new RevoluteJoint(myWorld.getPool, rightJointDef)
-
-  val leftRearJointDef = new PrismaticJointDef()
-  leftRearJointDef.initialize(body, leftRearWheel, leftRearWheel.getWorldCenter, new Vec2(1, 0))
-  leftRearJointDef.enableLimit = true
-  leftRearJointDef.lowerTranslation = 0
-  leftRearJointDef.upperTranslation = 0
-
-  val rightRearJointDef = new PrismaticJointDef()
-  rightRearJointDef.initialize(body, rightRearWheel, rightRearWheel.getWorldCenter, new Vec2(1, 0))
-  rightRearJointDef.enableLimit = true
-  rightRearJointDef.lowerTranslation = 0
-  rightRearJointDef.upperTranslation = 0
-
-  myWorld.createJoint(leftRearJointDef)
-  myWorld.createJoint(rightRearJointDef)
-
-  def killOrthogonalVelocity(targetBody:Body) {
-    val localPoint = new Vec2(0, 0)
-    val velocity = targetBody.getLinearVelocityFromLocalPoint(localPoint)
-
-    val sidewaysAxis = new Vec2(1, 0)//targetBody.get.getXForm().R.col2.Copy()
-    sidewaysAxis.mul(Vec2.dot(velocity, sidewaysAxis))
-
-    targetBody.setLinearVelocity(sidewaysAxis) //targetBody.GetWorldPoint(localPoint));
+  init {
+    initTest()
   }
 
   action {
-    myWorld.step(1.0f/30, 8, 8)
+    physics.step()
+  }
+
+  private var c = Vec.zero
+  center = c
+  render {
+    physics.drawDebugData()
+  }
+
+  key(KEY_F2, onKeyDown = restart())
+  key(KEY_W, 10, onKeyDown = c += Vec(0, 1f/globalScale))
+  key(KEY_A, 10, onKeyDown = c += Vec(-1f/globalScale, 0))
+  key(KEY_S, 10, onKeyDown = c += Vec(0, -1f/globalScale))
+  key(KEY_D, 10, onKeyDown = c += Vec(1f/globalScale, 0))
+
+  mouseWheelUp(onWheelUp = m => globalScale += 1)
+  mouseWheelDown(onWheelDown = m => if(globalScale > 0) globalScale -= 1)
+
+  clear {
+    physics.clearAll()
+  }
+}
+
+object Test1 extends TestBox("Test 1", Vec(0, -10)) {
+  def initTest() {
+    //floor
+    physics.staticBox(Vec(0.0f, -10.0f), 50.0f, 10.0f)
+
+    // platforms
+    for(i <- 0 until 4) {
+      physics.staticBox(Vec(0.0f, 5f + 5f * i), 15.0f, 0.125f)
+    }
+
+    {
+      val numPerRow: Int = 25
+      for {
+        i <- 0 until 4
+        j <- 0 until numPerRow
+        angle = if(i == 2 && j == 0) -0.1f else if(i == 3 && j == numPerRow - 1) .1f else 0f
+        x = -14.75f + j * (29.5f / (numPerRow - 1))
+        position = Vec(
+          if(i == 2 && j == 0) x+0.1f else if(i == 3 && j == numPerRow - 1) x-0.1f else x,
+          7.3f + 5f * i
+        )
+      } physics.dynamicBox(position, angle, width = 0.125f, height = 2f, density = 25.0f, friction = .5f)
+    }
+  }
+}
+
+object Test2 extends TestBox("Test 2", Vec(0, -10)) {
+  def initTest() {
+    physics.staticBox(Vec.zero, 50.0f, 0.4f)
+    physics.staticBox(Vec(-10.0f, 0.0f), 0.4f, 50.0f)
+    physics.staticBox(Vec(10.0f, 0.0f), 0.4f, 50.0f)
   }
 }
