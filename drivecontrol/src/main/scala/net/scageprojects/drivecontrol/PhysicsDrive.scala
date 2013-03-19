@@ -7,8 +7,9 @@ import org.jbox2d.collision.shapes.{CircleShape, PolygonShape}
 import joints._
 import org.jbox2d.callbacks.DebugDraw
 
-sealed abstract class Shape
-case class BoxShape(width:Float, height:Float, center:Vec = Vec.zero, angle_rad:Float = 0.0f, density:Float = 0f, friction:Float = 0.2f) extends Shape
+sealed abstract class ShapeDef
+case class BoxShapeDef(width:Float, height:Float, center:Vec = Vec.zero, angle_rad:Float = 0.0f, density:Float = 0f, friction:Float = 0.2f) extends ShapeDef
+case class CircleShapeDef(radius:Float, density:Float = 0f, friction:Float = 0.2f) extends ShapeDef
 
 class Physics2(val gravity:Vec = Vec.zero, val hz:Int = 60) {
   val dt = 1f/hz
@@ -41,11 +42,7 @@ class Physics2(val gravity:Vec = Vec.zero, val hz:Int = 60) {
     body
   }
 
-  def dynamicBox(position:Vec, shape:BoxShape, angle_rad:Float = 0.0f, fixed_rotation:Boolean = false):Body = {
-    dynamicBody(position, Seq(shape), angle_rad, fixed_rotation)
-  }
-
-  def dynamicBody(position:Vec, parts:Seq[Shape], angle_rad:Float = 0.0f, fixed_rotation:Boolean = false):Body = {
+  def dynamicBody(position:Vec, parts:Seq[ShapeDef], angle_rad:Float = 0.0f, fixed_rotation:Boolean = false):Body = {
     val bd: BodyDef = new BodyDef
     bd.`type` = BodyType.DYNAMIC
     bd.position = new Vec2(position.x, position.y)
@@ -54,7 +51,7 @@ class Physics2(val gravity:Vec = Vec.zero, val hz:Int = 60) {
     val body = world.createBody(bd)
 
     parts.foreach {
-      case BoxShape(width, height, center, local_angle_rad, density, friction) =>
+      case BoxShapeDef(width, height, center, local_angle_rad, density, friction) =>
         val fd: FixtureDef = new FixtureDef
         val sd: PolygonShape = new PolygonShape
         sd.setAsBox(width/2, height/2, new Vec2(center.x, center.y), local_angle_rad)
@@ -62,27 +59,27 @@ class Physics2(val gravity:Vec = Vec.zero, val hz:Int = 60) {
         fd.density = density
         fd.friction = friction
         body.createFixture(fd)
+      case CircleShapeDef(radius, density, friction) =>
+        val fd: FixtureDef = new FixtureDef
+        val cd: CircleShape = new CircleShape
+        cd.m_radius = radius
+        fd.shape = cd
+        fd.density = density
+        fd.friction = friction
+        //fd.filter.groupIndex = -2
+        body.createFixture(fd)
       case _ =>
     }
 
     body
   }
 
-  def dynamicCircle(position:Vec, radius:Float, angleRad:Float = 0f, density:Float = 0f):Body = {
-    val bd: BodyDef = new BodyDef
-    bd.fixedRotation = true
-    bd.position.set(new Vec2(position.x, position.y))
-    bd.`type` = BodyType.DYNAMIC
-    bd.angle = angleRad
-    val body: Body = world.createBody(bd)
-    val fd: FixtureDef = new FixtureDef
-    val cd: CircleShape = new CircleShape
-    cd.m_radius = radius
-    fd.shape = cd
-    fd.density = density
-    //fd.filter.groupIndex = -2
-    body.createFixture(fd)
-    body
+  def dynamicBox(position:Vec, shape:BoxShapeDef, angle_rad:Float = 0.0f, fixed_rotation:Boolean = false):Body = {
+    dynamicBody(position, Seq(shape), angle_rad, fixed_rotation)
+  }
+
+  def dynamicCircle(position:Vec, shape:CircleShapeDef, angle_rad:Float = 0f, fixed_rotation:Boolean = false):Body = {
+    dynamicBody(position, Seq(shape), angle_rad, fixed_rotation)
   }
 
   def constantVolumeJoint(frequencyHz:Float = 0.0f, dampingRatio:Float = 0.0f, bodies:Seq[Body]):Joint = {
@@ -124,7 +121,12 @@ class ScageDrawer extends DebugDraw(new OBBViewportTransform) {
   }
 
   def drawSolidPolygon(vertices: Array[Vec2], vertexCount: Int, color: Color3f) {
-    drawFilledPolygon(vertices.take(vertexCount).map(v => Vec(v.x, v.y)), ScageColor(color.x, color.y, color.z))
+    vertexCount match {
+      case 0 =>
+      case 1 => scageDrawCircle(Vec(vertices(0).x, vertices(0).y), 3, ScageColor(color.x, color.y, color.z))
+      case 2 => drawLine(Vec(vertices(0).x, vertices(0).y), Vec(vertices(1).x, vertices(1).y), ScageColor(color.x, color.y, color.z))
+      case _ => drawFilledPolygon(vertices.take(vertexCount).map(v => Vec(v.x, v.y)), ScageColor(color.x, color.y, color.z))
+    }
   }
 
   def drawCircle(center: Vec2, radius: Float, color: Color3f) {
@@ -205,7 +207,7 @@ object Test1 extends TestBox("Test 1", Vec(0, -10)) {
           if(i == 2 && j == 0) x+0.1f else if(i == 3 && j == numPerRow - 1) x-0.1f else x,
           7.3f + 5f * i
         )
-      } physics.dynamicBox(position, shape = BoxShape(width = 0.125f*2, height = 2f*2, angle_rad = angle, density = 25.0f, friction = .5f))
+      } physics.dynamicBox(position, shape = BoxShapeDef(width = 0.125f*2, height = 2f*2, angle_rad = angle, density = 25.0f, friction = .5f))
     }
   }
 }
@@ -226,11 +228,11 @@ object Test2 extends TestBox("Test 2", Vec(0, -10)) {
       i <- 0 until nBodies
       angle = MathUtils.map(i, 0, nBodies, 0, 2 * 3.1415f)
     } yield {
-      physics.dynamicCircle(Vec(cx + rx*math.sin(angle), cy + ry*math.cos(angle)), bodyRadius, 1.0f)
+      physics.dynamicCircle(Vec(cx + rx*math.sin(angle), cy + ry*math.cos(angle)), CircleShapeDef(bodyRadius, density = 1.0f, friction = 1.0f))
     }
     physics.constantVolumeJoint(10.0f, 1.0f, bodies)
 
-    physics.dynamicBox(position = Vec(cx, cy+15.0f), shape = BoxShape(width = 3.0f, height = 1.5f, density = 1.0f))
+    physics.dynamicBox(position = Vec(cx, cy+15.0f), shape = BoxShapeDef(width = 3.0f*2, height = 1.5f*2, density = 1.0f, friction = 1.0f))
   }
 }
 
@@ -243,7 +245,7 @@ object Test3 extends TestBox("Test 2", Vec(0, -10)) {
       angle = MathUtils.randomFloat(-MathUtils.PI, MathUtils.PI)
       x = MathUtils.randomFloat(-0.1f, 0.1f)
       position = Vec(x + 5.0f, 1.05f + 2.5f*i)
-    } physics.dynamicCircle(position, radius = 0.5f, angleRad = angle, density = 2.0f)
+    } physics.dynamicCircle(position, CircleShapeDef(radius = 0.5f, density = 2.0f), angle_rad = angle)
 
     for {
       i <- 0 until 10
@@ -251,14 +253,14 @@ object Test3 extends TestBox("Test 2", Vec(0, -10)) {
       x = MathUtils.randomFloat(-0.1f, 0.1f)
       position = Vec(x - 5.0f, 1.05f + 2.5f*i)
     } physics.dynamicBody(position, parts = Seq(
-      BoxShape(0.25f*2, 0.5f*2, density = 2.0f),
-      BoxShape(0.25f*2, 0.5f*2, center = Vec(0.0f, -0.5f), angle_rad = 0.5f*MathUtils.PI, density = 2.0f)
+      BoxShapeDef(0.25f*2, 0.5f*2, density = 2.0f),
+      BoxShapeDef(0.25f*2, 0.5f*2, center = Vec(0.0f, -0.5f), angle_rad = 0.5f*MathUtils.PI, density = 2.0f)
     ), angle_rad = angle)
 
     physics.dynamicBody(Vec(0, 2), parts = Seq(
-      BoxShape(1.5f*2, 0.15f*2, density = 4.0f),
-      BoxShape(0.15f*2, 2.7f*2, center = Vec(-1.45f, 2.35f), angle_rad = 0.2f, density = 4.0f),
-      BoxShape(0.15f*2, 2.7f*2, center = Vec(1.45f, 2.35f), angle_rad = -0.2f, density = 4.0f)
+      BoxShapeDef(1.5f*2, 0.15f*2, density = 4.0f),
+      BoxShapeDef(0.15f*2, 2.7f*2, center = Vec(-1.45f, 2.35f), angle_rad = 0.2f, density = 4.0f),
+      BoxShapeDef(0.15f*2, 2.7f*2, center = Vec(1.45f, 2.35f), angle_rad = -0.2f, density = 4.0f)
     ))
   }
 }
