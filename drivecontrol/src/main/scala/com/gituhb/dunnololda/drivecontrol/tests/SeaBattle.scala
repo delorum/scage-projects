@@ -126,7 +126,7 @@ object SeaBattle extends ScageScreenApp("Sea Battle Helper", 400, 500) {
   key(KEY_4, onKeyDown = {current_scan_status = Four;  giveAdvice()})
   interface {
     print("current scan status: "+current_scan_status, 20, windowHeight - 20, WHITE)
-    print("varaints: "+variants, 20, windowHeight - 40, WHITE)
+    print("variants: "+variants, 20, windowHeight - 40, WHITE)
     print("advice: "+advice, 20, windowHeight - 60, WHITE)
   }
 
