@@ -2,6 +2,8 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLib._
 
+case class BodyState(vel:Vec, coord:Vec)
+
 object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
   val ship = new RectangleBody(50, 100, windowCenter, math.Pi.toFloat/4)
 
@@ -15,7 +17,26 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
   key(KEY_NUMPAD8, onKeyDown = ship.eight.is_active = true, onKeyUp = ship.eight.is_active = false)
   key(KEY_NUMPAD9, onKeyDown = ship.nine.is_active = true, onKeyUp = ship.nine.is_active = false)
 
+  private var _center = windowCenter
+  center = _center
+
+  key(KEY_W, 10, onKeyDown = _center += Vec(0, 5/globalScale))
+  key(KEY_A, 10, onKeyDown = _center += Vec(-5/globalScale, 0))
+  key(KEY_S, 10, onKeyDown = _center += Vec(0, -5/globalScale))
+  key(KEY_D, 10, onKeyDown = _center += Vec(5/globalScale, 0))
+
+  mouseWheelDown(onWheelDown = m => if(globalScale > 1) globalScale -= 1)
+  mouseWheelUp(onWheelUp = m => globalScale += 1)
+
   val dt:Float = 0.01f
+
+  def bodyStateFrom(dt:Float, mass:Float, force: => Vec)(bp:BodyState):Stream[BodyState] = {
+    val next_acc = force / mass
+    val next_vel = bp.vel + next_acc*dt
+    val next_coord = bp.coord + next_vel*dt
+    val next_bp = BodyState(next_vel, next_coord)
+    BodyState(next_vel, next_coord) #:: bodyStateFrom(dt, mass, force)(next_bp)
+  }
 }
 
 import OrbitalKiller._
