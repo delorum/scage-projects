@@ -7,8 +7,8 @@
   <inceptionYear>2011</inceptionYear>
 
   <name>Orbital Killer</name>
-  <description>Simple Scage Project Stub</description>
-  <url>http://example.com</url>
+  <description>Killing Your Enemies in Space</description>
+  <url>http://fzeulf.netris.ru/bor/${artifactId}</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

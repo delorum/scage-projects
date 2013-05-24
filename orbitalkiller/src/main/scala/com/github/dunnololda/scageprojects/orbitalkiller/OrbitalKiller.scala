@@ -6,33 +6,35 @@ import collection.mutable.ArrayBuffer
 object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   val ship = new RectangleBody(50, 100, windowCenter, math.Pi.toFloat/4)
 
-  key(KEY_NUMPAD1, onKeyDown = ship.one.switchActive())
-  key(KEY_NUMPAD2, onKeyDown = ship.two.switchActive())
-  key(KEY_NUMPAD3, onKeyDown = ship.three.switchActive())
-  key(KEY_NUMPAD4, onKeyDown = ship.four.switchActive())
-  key(KEY_NUMPAD5, onKeyDown = ship.stopRotation())
-  key(KEY_NUMPAD6, onKeyDown = ship.six.switchActive())
-  key(KEY_NUMPAD7, onKeyDown = ship.seven.switchActive())
-  key(KEY_NUMPAD8, onKeyDown = ship.eight.switchActive())
-  key(KEY_NUMPAD9, onKeyDown = ship.nine.switchActive())
+  key(KEY_NUMPAD1, onKeyDown = {ship.one.switchActive(); ship.updateFutureTrajectory()})
+  key(KEY_NUMPAD2, onKeyDown = {ship.two.switchActive(); ship.updateFutureTrajectory()})
+  key(KEY_NUMPAD3, onKeyDown = {ship.three.switchActive(); ship.updateFutureTrajectory()})
+  key(KEY_NUMPAD4, onKeyDown = {ship.four.switchActive(); ship.updateFutureTrajectory()})
+  key(KEY_NUMPAD5, onKeyDown = {ship.stopRotation(); ship.updateFutureTrajectory()})
+  key(KEY_NUMPAD6, onKeyDown = {ship.six.switchActive(); ship.updateFutureTrajectory()})
+  key(KEY_NUMPAD7, onKeyDown = {ship.seven.switchActive(); ship.updateFutureTrajectory()})
+  key(KEY_NUMPAD8, onKeyDown = {ship.eight.switchActive(); ship.updateFutureTrajectory()})
+  key(KEY_NUMPAD9, onKeyDown = {ship.nine.switchActive(); ship.updateFutureTrajectory()})
 
   private var _center = windowCenter
   center = _center
 
-  key(KEY_W, 10, onKeyDown = _center += Vec(0, 5/globalScale))
-  key(KEY_A, 10, onKeyDown = _center += Vec(-5/globalScale, 0))
-  key(KEY_S, 10, onKeyDown = _center += Vec(0, -5/globalScale))
-  key(KEY_D, 10, onKeyDown = _center += Vec(5/globalScale, 0))
+  keyIgnorePause(KEY_W, 10, onKeyDown = _center += Vec(0, 5/globalScale))
+  keyIgnorePause(KEY_A, 10, onKeyDown = _center += Vec(-5/globalScale, 0))
+  keyIgnorePause(KEY_S, 10, onKeyDown = _center += Vec(0, -5/globalScale))
+  keyIgnorePause(KEY_D, 10, onKeyDown = _center += Vec(5/globalScale, 0))
 
-  mouseWheelDown(onWheelDown = m => if(globalScale > 1) globalScale -= 1)
-  mouseWheelUp(onWheelUp = m => globalScale += 1)
+  mouseWheelDownIgnorePause(onWheelDown = m => if(globalScale > 1) globalScale -= 1)
+  mouseWheelUpIgnorePause(onWheelUp = m => globalScale += 1)
 
-  key(KEY_SPACE, onKeyDown = _center = ship.coord)
+  keyIgnorePause(KEY_SPACE, onKeyDown = _center = ship.coord)
 
   keyIgnorePause(KEY_P, onKeyDown = switchPause())
   interface {
-    if(onPause) print("PAUSE", 20, windowHeight - 30, color = WHITE)
+    if(onPause) print("Пауза", 20, windowHeight - 30, color = WHITE)
+    print("F1 - Справка", windowWidth - 20, 20, align = "bottom-right", color = GREEN)
   }
+  keyIgnorePause(KEY_F1, onKeyDown = {pause(); HelpScreen.run()})
 
   val dt:Float = 0.01f
 }
@@ -40,6 +42,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
 import OrbitalKiller._
 
 case class Engine(position:Vec, force:Vec, sin_angle:Float) {
+  val torque = force.norma*position.norma*sin_angle
   var is_active:Boolean = false
   def switchActive() {is_active = !is_active}
 }
@@ -55,6 +58,7 @@ class RectangleBody(val a:Float, val b:Float, val init_coord:Vec, val init_rotat
       openglMove(_coord)
       openglRotateRad(_rotation)
       drawRectCentered(Vec.zero, a, b, color = WHITE)
+      drawLine(Vec(-a/2, b/4 + b/8), Vec(a/2, b/4 + b/8), color = WHITE)
 
       drawRectCentered(Vec(0, -b/2-2.5f), 10, 5, color = (if (two.is_active) RED else WHITE))
       drawRectCentered(Vec(0, b/2+2.5f), 10, 5, color = (if (eight.is_active) RED else WHITE))
@@ -69,15 +73,17 @@ class RectangleBody(val a:Float, val b:Float, val init_coord:Vec, val init_rotat
       drawRectCentered(Vec(a/2+2.5f, -b/4), 5, 10, color = (if (three.is_active) RED else WHITE))
     }
 
-    drawFilledCircle(coord, 2, GREEN)       // mass center
-    drawLine(coord, coord + _force.n*20, RED) // current force
+    drawFilledCircle(coord, 2, GREEN)                   // mass center
+    drawLine(coord, coord + _force.n*20, RED)           // current force
     drawLine(coord, coord + linear_velocity.n*20, CYAN) // current velocity
 
     drawSlidingLines(body_trajectory, color = GREEN)
-    drawSlidingLines(bodyStateFrom(dt, mass, I, Vec.zero, 0)(currentBodyState).take(10000).map(_.coord), color = YELLOW)
+    drawSlidingLines(future_trajectory, color = YELLOW)
   }
 
-  def bodyStateFrom(dt:Float, mass:Float, I:Float, force: => Vec, M: => Float)(bp:BodyState):Stream[BodyState] = {
+  def bodyStateFrom(bp:BodyState):Stream[BodyState] = {
+    val force = currentForce(bp.ang)
+    val M = currentTorque(bp.ang)
     val next_acc = force / mass
     val next_vel = bp.vel + next_acc*dt
     val next_coord = bp.coord + next_vel*dt
@@ -85,13 +91,40 @@ class RectangleBody(val a:Float, val b:Float, val init_coord:Vec, val init_rotat
     val next_ang_vel = bp.ang_vel + ang_acc*dt
     val next_ang = (bp.ang + next_ang_vel*dt) % (2*math.Pi.toFloat)
     val next_bp = BodyState(next_vel, next_coord, next_ang_vel, next_ang)
-    next_bp #:: bodyStateFrom(dt, mass, I, force, M)(next_bp)
+    next_bp #:: bodyStateFrom(next_bp)
   }
 
-  def currentBodyState = BodyState(linear_velocity, coord, angular_velocity, _rotation)
+  def currentBodyState = BodyState(linear_velocity, _coord, angular_velocity, _rotation)
+
+  def currentForce(rotation:Float):Vec = {
+    engines.filter(_.is_active).foldLeft(Vec.zero) {
+      case (sum, e) => sum + e.force.rotateRad(rotation)
+    }
+  }
+
+  def currentTorque(rotation:Float):Float = {
+    engines.filter(_.is_active).foldLeft(0f) {
+      case (sum, e) => sum + e.torque
+    }
+  }
 
   private val body_trajectory = ArrayBuffer[Vec]()
   val trajectory_capacity = 100000
+
+  private val future_trajectory = ArrayBuffer[Vec]()
+  def updateFutureTrajectory() {
+    future_trajectory.clear()
+    future_trajectory ++= bodyStateFrom(currentBodyState).take(10000).map(_.coord)
+  }
+  action {
+    if(future_trajectory.isEmpty) updateFutureTrajectory()
+    future_trajectory.remove(0)
+  }
+
+  def switchEngine(e:Engine) {
+    e.switchActive()
+    updateFutureTrajectory()
+  }
 
   private var _linear_acceleration:Vec = Vec.zero
   def linearAcceleration = _linear_acceleration
@@ -164,7 +197,7 @@ class RectangleBody(val a:Float, val b:Float, val init_coord:Vec, val init_rotat
   interface {
     print(f"Позиция: ${coord.x}%.2f : ${coord.y}%.2f", 20, 80, ORANGE)
     print(f"Угловая скорость: ${angular_velocity/math.Pi*180*60*dt}%.2f град/сек", 20, 60, ORANGE)
-    print(f"Скорость: ${linear_velocity.norma}%.2f м/сек ( velx = ${linear_velocity.x}%.2f м/сек, vely = ${linear_velocity.y}%.2f м/сек)", 20, 40, ORANGE)
+    print(f"Скорость: ${linear_velocity.norma*60*dt}%.2f м/сек ( velx = ${linear_velocity.x*60*dt}%.2f м/сек, vely = ${linear_velocity.y*60*dt}%.2f м/сек)", 20, 40, ORANGE)
     print(s"Угол: ${(_rotation/math.Pi*180).toInt} град", 20, 20, ORANGE)
     /*print("F = "+_force, 20, 40, WHITE)
     print("M = "+_M, 20, 20, WHITE)*/
