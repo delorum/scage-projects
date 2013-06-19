@@ -8,7 +8,7 @@
 
   <name>Simple Shooter</name>
   <description>Project to test simple-net</description>
-  <url>http://example.com</url>
+  <url>http://fzeulf.netris.ru/bor/${project.artifactId}</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -61,7 +61,7 @@
     <dependency>
       <groupId>com.github.dunnololda</groupId>
       <artifactId>simple-net</artifactId>
-      <version>1.1</version>
+      <version>1.2</version>
     </dependency>
 
     <dependency>
@@ -206,80 +206,116 @@
                   </execution>
                 </executions>
       </plugin>
-
-      <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <version>2.7.2</version>
-            <configuration>
-                <argLine>
-                    -Dscage.properties=${scageproperties} -Djava.library.path=${project.build.directory}/native/${os.type} -DLWJGL_DISABLE_XRANDR=true -Dfile.encoding=UTF-8
-                </argLine>
-            </configuration>
-      </plugin>
-
-      <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-jar-plugin</artifactId>
-                    <version>2.3.1</version>
-                    <configuration>
-                       <archive>
-                          <manifest>
-                             <addClasspath>true</addClasspath>
-                             <mainClass>${jar.mainclass}</mainClass>
-                          </manifest>
-                       </archive>
-                    </configuration>
-      </plugin>
     </plugins>
   </build>
 
   <profiles>
       <profile>
-          <id>build</id>
-          <activation>
-              <activeByDefault>true</activeByDefault>
-          </activation>
+          <id>server</id>
           <build>
               <plugins>
-                <plugin>
-                            <!-- NOTE: We don't need a groupId specification because the group is
-                                 org.apache.maven.plugins ...which is assumed by default.
-                             -->
-                            <artifactId>maven-assembly-plugin</artifactId>
-                            <version>2.2-beta-2</version>
-                            <configuration>
-                              <finalName>${project.artifactId}-${project.version}-${os.type}</finalName>
-                              <outputDirectory>${project.build.directory}</outputDirectory>
-                                <descriptors>
-                                    <descriptor>assembly.xml</descriptor>
-                                </descriptors>
-                            </configuration>
-                            <executions>
-                                  <execution>
-                                    <id>make-assembly</id> <!-- this is used for inheritance merges -->
-                                    <phase>package</phase> <!-- append to the packaging phase. -->
-                                    <goals>
-                                      <goal>single</goal> <!-- goals == mojos -->
-                                    </goals>
-                                  </execution>
-                            </executions>
+                  <plugin>
+                      <groupId>org.apache.maven.plugins</groupId>
+                      <artifactId>maven-jar-plugin</artifactId>
+                      <version>2.3.1</version>
+                      <configuration>
+                          <finalName>simpleshooter</finalName>
+                          <archive>
+                              <manifest>
+                                  <addClasspath>true</addClasspath>
+                                  <mainClass>com.github.dunnololda.scageprojects.simpleshooter.ShooterServer</mainClass>
+                              </manifest>
+                          </archive>
+                      </configuration>
+                  </plugin>
+                  <plugin>
+                      <!-- NOTE: We don't need a groupId specification because the group is
+                           org.apache.maven.plugins ...which is assumed by default.
+                       -->
+                      <artifactId>maven-assembly-plugin</artifactId>
+                      <version>2.2-beta-2</version>
+                      <configuration>
+                          <finalName>simpleshooter-server</finalName>
+                          <outputDirectory>${project.build.directory}</outputDirectory>
+                          <descriptors>
+                              <descriptor>assembly-server.xml</descriptor>
+                          </descriptors>
+                      </configuration>
+                      <executions>
+                          <execution>
+                              <id>make-assembly</id> <!-- this is used for inheritance merges -->
+                              <phase>package</phase> <!-- append to the packaging phase. -->
+                              <goals>
+                                  <goal>single</goal> <!-- goals == mojos -->
+                              </goals>
+                          </execution>
+                      </executions>
                   </plugin>
               </plugins>
           </build>
       </profile>
       <profile>
-          <id>webstart</id>
+          <id>mapcreator</id>
           <build>
-              <resources>
-                  <resource>
-                      <directory>.</directory>
-                      <includes>
-                          <include>scageapp.properties</include>
-                      </includes>
-                  </resource>
-              </resources>
               <plugins>
+                  <plugin>
+                      <groupId>org.apache.maven.plugins</groupId>
+                      <artifactId>maven-jar-plugin</artifactId>
+                      <version>2.3.1</version>
+                      <configuration>
+                          <finalName>simpleshooter</finalName>
+                          <archive>
+                              <manifest>
+                                  <addClasspath>true</addClasspath>
+                                  <mainClass>com.github.dunnololda.scageprojects.simpleshooter.MapCreator</mainClass>
+                              </manifest>
+                          </archive>
+                      </configuration>
+                  </plugin>
+                  <plugin>
+                      <!-- NOTE: We don't need a groupId specification because the group is
+                           org.apache.maven.plugins ...which is assumed by default.
+                       -->
+                      <artifactId>maven-assembly-plugin</artifactId>
+                      <version>2.2-beta-2</version>
+                      <configuration>
+                          <finalName>simpleshooter-mapcreator</finalName>
+                          <outputDirectory>${project.build.directory}</outputDirectory>
+                          <descriptors>
+                              <descriptor>assembly.xml</descriptor>
+                          </descriptors>
+                      </configuration>
+                      <executions>
+                          <execution>
+                              <id>make-assembly</id> <!-- this is used for inheritance merges -->
+                              <phase>package</phase> <!-- append to the packaging phase. -->
+                              <goals>
+                                  <goal>single</goal> <!-- goals == mojos -->
+                              </goals>
+                          </execution>
+                      </executions>
+                  </plugin>
+              </plugins>
+          </build>
+      </profile>
+      <profile>
+          <id>client</id>
+          <build>
+              <plugins>
+                  <plugin>
+                      <groupId>org.apache.maven.plugins</groupId>
+                      <artifactId>maven-jar-plugin</artifactId>
+                      <version>2.3.1</version>
+                      <configuration>
+                          <finalName>simpleshooter</finalName>
+                          <archive>
+                              <manifest>
+                                  <addClasspath>true</addClasspath>
+                                  <mainClass>com.github.dunnololda.scageprojects.simpleshooter.ShooterClient</mainClass>
+                              </manifest>
+                          </archive>
+                      </configuration>
+                  </plugin>
                   <plugin>
                     <groupId>org.codehaus.mojo.webstart</groupId>
                     <artifactId>webstart-maven-plugin</artifactId>
@@ -301,9 +337,10 @@
 
                         <!-- used to automatically identify the jar containing the main class. -->
                         <!-- this is perhaps going to change -->
-                        <mainClass>${jar.mainclass}</mainClass>
+                        <mainClass>com.github.dunnololda.scageprojects.simpleshooter.ShooterClient</mainClass>
                       </jnlp>
                       <verbose>true</verbose>
+                      <verifyjar>true</verifyjar>
                       <!--
                       <sign>
                         <keystore>scage_keystore</keystore>

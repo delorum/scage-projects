@@ -1,12 +1,19 @@
 package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.scage.ScageLib._
-import com.github.dunnololda.simplenet.{State => NetState, ClientDisconnected, NewMessage, NewClient, NetServer}
+import com.github.dunnololda.simplenet.{State => NetState, _}
 import collection.mutable
 import collection.mutable.ArrayBuffer
+import com.github.dunnololda.cli.Cli
 
-case class Client(id:Long, var coord:Vec, var health:Int) {
-  def netState:NetState = NetState("id" -> id, "x" -> coord.x, "y" -> coord.y, "hp" -> health)
+case class Client(id:Long, var coord:Vec, var health:Int, var wins:Int, var deaths:Int, var visible:Boolean) {
+  def netState:NetState = NetState("id" -> id,
+                                   "x"  -> coord.x,
+                                   "y"  -> coord.y,
+                                   "hp" -> health,
+                                   "w"  -> wins,
+                                   "d"  -> deaths,
+                                   "v" -> visible)
 }
 case class ClientData(up:Boolean, left:Boolean, down:Boolean, right:Boolean, shoots:List[Vec])
 
@@ -14,14 +21,17 @@ case class Wall(from:Vec, to:Vec) {
   def netState = NetState("fromx" -> from.x, "fromy" -> from.y, "tox" -> to.x, "toy" -> to.y)
 }
 
-case class Bullet(dir:Vec, shooter:Long, var coord:Vec, var count:Int) {
-  def netState = NetState("shooter" -> shooter, "x" -> coord.x, "y" -> coord.y)
+case class Bullet(dir:Vec, shooter:Client, var coord:Vec, var count:Int) {
+  def netState = NetState("x" -> coord.x, "y" -> coord.y)
 }
 
-object ShooterServer extends ScageApp("Simple Shooter Server") {
-  private val server = NetServer(10000)
-
-  private val speed = 9f
+object ShooterServer extends ScageApp("Simple Shooter Server") with Cli {
+  programDescription = s"Simple Shooter Server v$appVersion"
+  commandLineArgsAndParse(
+    ("p", "port", "port to bind server on. default: 10000", true, false),
+    ("m", "map",  "map file to load. default: map.ss", true, false)
+  )
+  private val server = UdpNetServer(port = property("port", 10000), ping_timeout= 500, check_timeout = 1000)
 
   def vec(message:NetState):Vec = {
     Vec(message.value[Float]("x").get, message.value[Float]("y").get)
@@ -38,42 +48,32 @@ object ShooterServer extends ScageApp("Simple Shooter Server") {
     )
   }
 
-  private def randomPos:Vec = Vec(math.random*640, math.random*480)
+  private val map_name = property("map", "map.ss")
 
   private val players = mutable.HashMap[Long, Client]()
   private val bullets = ArrayBuffer[Bullet]()
-
-  private val walls = List(Wall(Vec(320, 50), Vec(320, 240-40)), Wall(Vec(320, 240+40), Vec(320, 480-50)))
-
-  private def isCoordNearWall(coord:Vec, wall:Wall, proximity:Float):Boolean = {
-    val one = (wall.to - wall.from).rotateDeg(135).n*proximity + wall.from
-    val two = (wall.to - wall.from).rotateDeg(-135).n*proximity + wall.from
-    val three = (wall.from - wall.to).rotateDeg(135).n*proximity + wall.to
-    val four = (wall.from - wall.to).rotateDeg(-135).n*proximity + wall.to
-    val area = List(one, two, three, four)
-    coordOnArea(coord, area)
-  }
+  private val walls = loadMap(map_name)
 
   // receive data
   action(10) {
     server.newEvent {
-      case NewClient(client_id) =>
-        players(client_id) = Client(client_id, randomPos, 100)
+      case NewUdpConnection(client_id) =>
+        players(client_id) = Client(client_id, randomCoord(map_width, map_height, body_radius, walls), 100, 0, 0, visible = true)
         server.sendToClient(client_id, NetState("walls" -> walls.map(_.netState).toList))
-      case NewMessage(client_id, message) =>
-        println(message.toJsonString)
+      case NewUdpMessage(client_id, message) =>
+        //println(message.toJsonString)
         val ClientData(up, left, down, right, shoots) = clientData(message)
         val delta = Vec((if(left) -1 else 0) + (if(right) 1 else 0), (if(down) -1 else 0) + (if(up) 1 else 0)).n
         val new_coord = players(client_id).coord + delta*speed
-        if(walls.forall(w => !isCoordNearWall(new_coord, w, 10))) {
+        if(isCoordCorrect(new_coord, body_radius, walls)) {
           players(client_id).coord = new_coord
         }
         shoots.foreach(sh => {
           val dir = (sh - new_coord).n
-          bullets += Bullet(dir, client_id, new_coord + dir*11, 30)
+          bullets += Bullet(dir, players(client_id), new_coord + dir*(body_radius+1), bullet_count)
         })
         //println(players(client_id).coord)
-      case ClientDisconnected(client_id) =>
+      case UdpClientDisconnected(client_id) =>
         players -= client_id
     }
   }
@@ -81,14 +81,22 @@ object ShooterServer extends ScageApp("Simple Shooter Server") {
   // update state
   action(100) {
     bullets.foreach(b => {
-      val new_coord = b.coord + b.dir*speed*1.2f
+      val new_coord = b.coord + b.dir*speed*bullet_speed_multiplier
       b.count -= 1
-      if (walls.exists(w => areLinesIntersect(b.coord, new_coord, w.from, w.to))) {
+      if (!isPathCorrect(b.coord, new_coord, bullet_size, walls)) {
         b.count = 0
       } else b.coord = new_coord
-      val damaged_players = players.filter(p => p._2.coord.dist2(b.coord) < 100)
+      val damaged_players = players.values.filter(_.coord.dist2(b.coord) < 100)
       if (damaged_players.nonEmpty) {
-        damaged_players.foreach(_._2.health -= 10)
+        damaged_players.foreach(p => {
+          p.health -= bullet_damage
+          if (p.health <= 0) {
+            p.deaths += 1
+            p.coord = randomCoord(map_width, map_height, body_radius, walls)
+            p.health = 100
+            b.shooter.wins += 1
+          }
+        })
         b.count = 0
       }
     })
@@ -101,17 +109,9 @@ object ShooterServer extends ScageApp("Simple Shooter Server") {
       case (id, client) =>
         val builder = ArrayBuffer[(String, Any)]()
         builder += ("you" -> client.netState)
-        val others = players.filterNot(_._1 == id).filter(x => {
-          walls.forall(w => {
-            !areLinesIntersect(client.coord, x._2.coord, w.from, w.to)
-          })
-        }).map(x => x._2.netState).toList
+        val others = players.filterNot(_._1 == id).map(x => x._2.copy(visible = isCoordVisible(x._2.coord, client.coord, walls)).netState).toList
         if(others.nonEmpty) builder += ("others" -> others)
-        val (your_bullets, other_bullets) = bullets.filter(b => {
-          walls.forall(w => {
-            !areLinesIntersect(client.coord, b.coord, w.from, w.to)
-          })
-        }).partition(b => b.shooter == id)
+        val (your_bullets, other_bullets) = bullets.filter(b => isCoordVisible(b.coord, client.coord, walls)).partition(_.shooter.id == id)
         if (your_bullets.nonEmpty) builder += ("your_bullets" -> your_bullets.map(_.netState).toList)
         if (other_bullets.nonEmpty) builder += ("other_bullets" -> other_bullets.map(_.netState).toList)
         val data = NetState(builder:_*)

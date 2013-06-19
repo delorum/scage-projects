@@ -1,14 +1,15 @@
 package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.scage.ScageLib._
-import com.github.dunnololda.simplenet.{State => NetState, ServerDisconnected, ServerConnected, NewServerMessage, NetClient}
+import com.github.dunnololda.simplenet.{State => NetState, _}
 import collection.mutable
 import collection.mutable.ArrayBuffer
+import scala.Some
 
 case class ServerData(you:Client, others:List[Client], your_bullets:List[Vec], other_bullets:List[Vec])
 
-object ShooterClient extends ScageScreenApp("Simple Shooter", 640, 480) {
-  private val client = NetClient("localhost", 10000)
+object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", map_width, map_height) {
+  private val client = UdpNetClient(address = "localhost", port = 10000, ping_timeout= 500, check_timeout = 1000)
 
   private val moves = mutable.HashMap[String, Boolean]("up" -> false, "left" -> false, "down" -> false, "right" -> false)
   private val shoots = ArrayBuffer[Vec]()
@@ -38,17 +39,20 @@ object ShooterClient extends ScageScreenApp("Simple Shooter", 640, 480) {
     }
   }
 
-  private val positions = mutable.ArrayBuffer[ServerData]()
-  private def optRemoveHeadPosition:Option[ServerData] = {
-    if(positions.length > 1) Some(positions.remove(0))
-    else if (positions.nonEmpty) Some(positions.head)
+  private val states = mutable.ArrayBuffer[ServerData]()
+  private def optRemoveHeadState:Option[ServerData] = {
+    if(states.length > 1) Some(states.remove(0))
+    else if (states.nonEmpty) Some(states.head)
     else None
   }
 
   def client(message:NetState):Client = {
     Client(id = message.value[Long]("id").get,
            coord = vec(message),
-           health = message.value[Int]("hp").get
+           health = message.value[Int]("hp").get,
+           wins = message.value[Int]("w").get,
+           deaths = message.value[Int]("d").get,
+           visible = message.value[Boolean]("v").get
     )
   }
 
@@ -73,18 +77,18 @@ object ShooterClient extends ScageScreenApp("Simple Shooter", 640, 480) {
   // receive data
   action(10) {
     client.newEvent {
-      case NewServerMessage(message) =>
-        println(message.toJsonString)
+      case NewUdpServerMessage(message) =>
+        //println(message.toJsonString)
         if(message.contains("walls")) {
           walls.clear()
           walls ++= serverWalls(message)
         } else {
           val sd = serverData(message)
           //println(sd)
-          positions += sd
+          states += sd
         }
-      case ServerConnected => is_connected = true
-      case ServerDisconnected => is_connected = false
+      case UdpServerConnected => is_connected = true
+      case UdpServerDisconnected => is_connected = false
     }
   }
 
@@ -99,22 +103,29 @@ object ShooterClient extends ScageScreenApp("Simple Shooter", 640, 480) {
     if(!is_connected) {
       print("Connecting to Server...", windowCenter, DARK_GRAY, align = "center")
     } else {
-      optRemoveHeadPosition match {
+      optRemoveHeadState match {
         case Some(ServerData(you, others, your_bullets, other_bullets)) =>
           drawCircle(you.coord, 10, RED)
-          others.foreach(c => drawCircle(c.coord, 10, WHITE))
+          others.filter(_.visible).zipWithIndex.foreach(c => {
+            drawCircle(c._1.coord, 10, WHITE)
+            print(c._2+1, c._1.coord, WHITE, align = "center")
+          })
           your_bullets.foreach(b => {
-            drawRectCentered(b, 3, 3, RED)
+            drawRectCentered(b, bullet_size, bullet_size, RED)
           })
           other_bullets.foreach(b => {
-            drawRectCentered(b, 3, 3, WHITE)
+            drawRectCentered(b, bullet_size, bullet_size, WHITE)
           })
-          print(you.health, 20, 20, WHITE)
+
+          walls.filter(w => isWallVisible(w, you.coord, walls.filterNot(ow => ow == w))).foreach(wall => {
+            drawLine(wall.from, wall.to, WHITE)
+          })
+
+          val other_stats = others.zipWithIndex.map(c => s"${c._2+1}:(${c._1.wins}, ${c._1.deaths})").mkString(" ")
+          print(s"[ryou:(${you.wins}, ${you.deaths})] $other_stats", 20, windowHeight-20, WHITE)
+          print(s"hp: ${you.health}", 20, 20, RED)
         case None =>
       }
-      walls.foreach(wall => {
-        drawLine(wall.from, wall.to, WHITE)
-      })
     }
   }
 }

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly version="1.0">
+    <id></id>
+    <includeBaseDirectory>false</includeBaseDirectory>
+    <formats>
+        <format>dir</format>
+    </formats>
+    <fileSets>
+        <fileSet>
+            <directory>${project.build.directory}/lib</directory>
+            <outputDirectory>lib</outputDirectory>
+        </fileSet>
+    </fileSets>
+    <files>
+        <file>
+            <source>${project.build.directory}/simpleshooter.jar</source>
+            <outputDirectory>lib</outputDirectory>
+        </file>
+        <file>
+            <source>simpleshooterd</source>
+            <outputDirectory>/</outputDirectory>
+            <fileMode>755</fileMode>
+        </file>
+    </files>
+</assembly>

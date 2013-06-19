@@ -1,0 +1,62 @@
+#!/bin/bash
+# chkconfig: - 90 74
+# description: Statserver scat util control script
+# autor: A.Borunov
+# Source function library.
+. /etc/init.d/functions
+
+# Source networking configuration.
+. /etc/sysconfig/network
+
+# Check that networking is up.
+[ ${NETWORKING} = "no" ] && exit 0
+
+#Where is caster?
+APPLOCATION=/opt/statserver/rbuilder
+APPJAR=rbuilder/rbuilder.jar
+PORT=10000
+MAP=map.ss
+JAVABIN=/usr/java/latest/bin/java
+RETVAL=0
+
+start() {
+	echo -e "Starting Simple Shooter Server\n"
+        if [ -f "${APPLOCATION}/app-running" ]; then
+                echo "Simple Shooter Server already started or lock file hasn't deleted."
+                exit 1
+        fi
+        cd $APPLOCATION
+        rm -f ./nohup.out
+        nohup ${JAVABIN} -XX:MaxPermSize=128m -Xmx2G -Xms512M -jar ${APPJAR} --port ${PORT} --map ${MAP} > /dev/null 1>&2 &
+	touch app-running
+        return $RETVAL
+}
+stop() {
+	echo -e "Stopping Simple Shooter Server\n"
+	PID=`ps ax | grep ${APPJAR} | grep -v grep | awk '{print $1}'`
+        kill -9 $PID 2> /dev/null && echo "${APPJAR} killed"
+	rm -f ${APPLOCATION}/app-running
+	return $RETVAL
+}
+status() {
+        echo "====== status ======"
+        /bin/ps waux|/bin/grep ${APPJAR}|/bin/grep -v grep
+        echo "===================="
+        return $RETVAL
+}
+# See how we were called.
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        status
+        ;;
+*)
+echo $"Usage: $0 {start|stop|status}"
+exit 1
+esac
+exit $RETVAL
