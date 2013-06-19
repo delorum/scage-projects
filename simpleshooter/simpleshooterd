@@ -12,8 +12,8 @@
 [ ${NETWORKING} = "no" ] && exit 0
 
 #Where is caster?
-APPLOCATION=/opt/statserver/rbuilder
-APPJAR=rbuilder/rbuilder.jar
+APPLOCATION=/var/www/html/bor/simpleshooter-server
+APPJAR=lib/simpleshooter.jar
 PORT=10000
 MAP=map.ss
 JAVABIN=/usr/java/latest/bin/java
