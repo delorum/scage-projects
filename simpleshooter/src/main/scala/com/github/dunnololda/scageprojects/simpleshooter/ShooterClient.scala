@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.scage.ScageLib._
-import com.github.dunnololda.simplenet.{State => NetState, NewServerMessage, NetClient}
+import com.github.dunnololda.simplenet.{State => NetState, ServerDisconnected, ServerConnected, NewServerMessage, NetClient}
 import collection.mutable
 import collection.mutable.ArrayBuffer
 
@@ -68,6 +68,8 @@ object ShooterClient extends ScageScreenApp("Simple Shooter", 640, 480) {
     message.value[List[NetState]]("walls").get.map(x => wall(x))
   }
 
+  private var is_connected = false
+
   // receive data
   action(10) {
     client.newEvent {
@@ -81,6 +83,8 @@ object ShooterClient extends ScageScreenApp("Simple Shooter", 640, 480) {
           //println(sd)
           positions += sd
         }
+      case ServerConnected => is_connected = true
+      case ServerDisconnected => is_connected = false
     }
   }
 
@@ -92,21 +96,25 @@ object ShooterClient extends ScageScreenApp("Simple Shooter", 640, 480) {
   private val walls = ArrayBuffer[Wall]()
 
   render {
-    optRemoveHeadPosition match {
-      case Some(ServerData(you, others, your_bullets, other_bullets)) =>
-        drawCircle(you.coord, 10, RED)
-        others.foreach(c => drawCircle(c.coord, 10, WHITE))
-        your_bullets.foreach(b => {
-          drawRectCentered(b, 3, 3, RED)
-        })
-        other_bullets.foreach(b => {
-          drawRectCentered(b, 3, 3, WHITE)
-        })
-        print(you.health, 20, 20, WHITE)
-      case None =>
+    if(!is_connected) {
+      print("Connecting to Server...", windowCenter, DARK_GRAY, align = "center")
+    } else {
+      optRemoveHeadPosition match {
+        case Some(ServerData(you, others, your_bullets, other_bullets)) =>
+          drawCircle(you.coord, 10, RED)
+          others.foreach(c => drawCircle(c.coord, 10, WHITE))
+          your_bullets.foreach(b => {
+            drawRectCentered(b, 3, 3, RED)
+          })
+          other_bullets.foreach(b => {
+            drawRectCentered(b, 3, 3, WHITE)
+          })
+          print(you.health, 20, 20, WHITE)
+        case None =>
+      }
+      walls.foreach(wall => {
+        drawLine(wall.from, wall.to, WHITE)
+      })
     }
-    walls.foreach(wall => {
-      drawLine(wall.from, wall.to, WHITE)
-    })
   }
 }
