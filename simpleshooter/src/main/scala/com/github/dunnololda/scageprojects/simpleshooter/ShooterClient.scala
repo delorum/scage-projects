@@ -6,10 +6,8 @@ import collection.mutable
 import collection.mutable.ArrayBuffer
 import scala.Some
 
-case class ServerData(you:Client, others:List[Client], your_bullets:List[Vec], other_bullets:List[Vec])
-
 object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", map_width, map_height) {
-  private val client = UdpNetClient(address = "localhost", port = 10000, ping_timeout= 500, check_timeout = 1000)
+  private val client = UdpNetClient(address = "fzeulf.netris.ru", port = 10000, ping_timeout= 1000, check_timeout = 5000)
 
   private val moves = mutable.HashMap[String, Boolean]("up" -> false, "left" -> false, "down" -> false, "right" -> false)
   private val shoots = ArrayBuffer[Vec]()
@@ -27,11 +25,15 @@ object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", map_
 
   // send data
   action(100) {
-    if(moves.exists(_._2) || shoots.nonEmpty) {
+
+    if(moves.exists(_._2) || shoots.nonEmpty || walls.isEmpty) {
       val builder = ArrayBuffer[(String, Any)]()
       builder ++= moves.filter(_._2)
       if(shoots.nonEmpty) {
         builder += ("shoots" -> shoots.map(v => NetState("x" -> v.x, "y" -> v.y)).toList)
+      }
+      if(walls.isEmpty) {
+        builder += ("sendmap" -> true)
       }
       val state = NetState(builder:_*)
       client.send(state)
@@ -77,7 +79,7 @@ object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", map_
   // receive data
   action(10) {
     client.newEvent {
-      case NewUdpServerMessage(message) =>
+      case NewUdpServerData(message) =>
         //println(message.toJsonString)
         if(message.contains("walls")) {
           walls.clear()
@@ -121,11 +123,14 @@ object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", map_
             drawLine(wall.from, wall.to, WHITE)
           })
 
-          val other_stats = others.zipWithIndex.map(c => s"${c._2+1}:(${c._1.wins}, ${c._1.deaths})").mkString(" ")
-          print(s"[ryou:(${you.wins}, ${you.deaths})] $other_stats", 20, windowHeight-20, WHITE)
-          print(s"hp: ${you.health}", 20, 20, RED)
+          val other_stats = others.zipWithIndex.map(c => s"${c._2+1} : {${c._1.health} : ${c._1.wins} : ${c._1.deaths}}").mkString(" ")
+          print(s"[r{${you.health} : ${you.wins} : ${you.deaths}}] "+other_stats, 20, 20, WHITE)
         case None =>
       }
     }
+  }
+
+  dispose {
+    client.stop()
   }
 }

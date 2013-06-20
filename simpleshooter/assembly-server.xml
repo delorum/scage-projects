@@ -21,5 +21,9 @@
             <outputDirectory>/</outputDirectory>
             <fileMode>755</fileMode>
         </file>
+	<file>
+            <source>map.ss</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
     </files>
 </assembly>

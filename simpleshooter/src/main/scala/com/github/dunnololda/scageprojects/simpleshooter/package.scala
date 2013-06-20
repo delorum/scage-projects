@@ -1,8 +1,30 @@
 package com.github.dunnololda.scageprojects
 
 import com.github.dunnololda.scage.ScageLib._
+import com.github.dunnololda.simplenet.{State => NetState}
 
 package object simpleshooter {
+  case class Client(id:Long, var coord:Vec, var health:Int, var wins:Int, var deaths:Int, var visible:Boolean) {
+    def netState:NetState = NetState("id" -> id,
+      "x"  -> coord.x,
+      "y"  -> coord.y,
+      "hp" -> health,
+      "w"  -> wins,
+      "d"  -> deaths,
+      "v" -> visible)
+  }
+  case class ClientData(up:Boolean, left:Boolean, down:Boolean, right:Boolean, shoots:List[Vec])
+
+  case class Wall(from:Vec, to:Vec) {
+    def netState = NetState("fromx" -> from.x, "fromy" -> from.y, "tox" -> to.x, "toy" -> to.y)
+  }
+
+  case class Bullet(dir:Vec, shooter:Client, var coord:Vec, var count:Int) {
+    def netState = NetState("x" -> coord.x, "y" -> coord.y)
+  }
+
+  case class ServerData(you:Client, others:List[Client], your_bullets:List[Vec], other_bullets:List[Vec])
+
   val speed = 9f
   val bullet_speed_multiplier = 1.2f
   val bullet_count = 30

@@ -12,17 +12,22 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <scala.version>2.9.1</scala.version>
-    <lwjgl.version>2.7.1</lwjgl.version>
-    <scage.version>0.8</scage.version>
+    <scala.version>2.10.1</scala.version>
+    <lwjgl.version>2.8.2</lwjgl.version>
+    <scage.version>0.9.3-SNAPSHOT</scage.version>
     <src.dir>src</src.dir>
   </properties>
 
   <repositories>
+      <repository>
+          <id>dunnololda's maven repo</id>
+          <url>https://raw.github.com/dunnololda/mvn-repo/master</url>
+      </repository>
+
     <repository>
       <id>scala-tools.org</id>
       <name>Scala-Tools Maven2 Repository</name>
-      <url>http://scala-tools.org/repo-releases</url>
+      <url>https://oss.sonatype.org/content/groups/scala-tools</url>
     </repository>
 
     <repository>
@@ -35,12 +40,6 @@
       <id>lwjgl</id>
       <name>lwjgl</name>
       <url>http://adterrasperaspera.com/lwjgl</url>
-    </repository>
-
-    <repository>
-      <id>scage</id>
-      <name>Scage Maven Repo</name>
-      <url>http://scage.googlecode.com/svn/maven-repository</url>
     </repository>
   </repositories>
 
@@ -72,7 +71,7 @@
     </dependency>
 
     <dependency>
-        <groupId>su.msk.dunno</groupId>
+        <groupId>com.github.dunnololda.scage</groupId>
         <artifactId>scage</artifactId>
         <version>${scage.version}</version>
         <scope>compile</scope>
@@ -87,16 +86,16 @@
         <resource>
             <directory>${src.dir}/main/resources</directory>
             <includes>
-                <include>log4j.properties</include>
-                 <include>logback.xml</include>
-               </includes>
-               <filtering>true</filtering>
-           </resource>
-           <resource>
-               <directory>${src.dir}/main/resources</directory>
-               <excludes>
-               	<exclude>log4j.properties</exclude>
-                 <exclude>logback.xml</exclude>
+                <include>logback.xml</include>
+                <include>maven.properties</include>
+            </includes>
+            <filtering>true</filtering>
+        </resource>
+        <resource>
+            <directory>${src.dir}/main/resources</directory>
+            <excludes>
+                <exclude>logback.xml</exclude>
+                <exclude>maven.properties</exclude>
             </excludes>
             <filtering>false</filtering>
         </resource>
@@ -104,6 +103,7 @@
 
     <filters>
         <filter>build.properties</filter>
+        <filter>local-build.properties</filter>
     </filters>
 
     <plugins>
@@ -120,6 +120,7 @@
                   <configuration>
                     <files>
                       <file>build.properties</file>
+                      <file>local-build.properties</file>
                     </files>
                     <quiet>true</quiet>
                   </configuration>

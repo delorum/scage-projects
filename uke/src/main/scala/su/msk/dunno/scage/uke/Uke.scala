@@ -1,17 +1,13 @@
 package su.msk.dunno.scage.uke
 
 import org.newdawn.slick.util.ResourceLoader
-import java.util.ArrayList
 import org.newdawn.slick.openal.{SoundStore, AudioLoader}
-import net.scage.support.Vec
-import net.scage.support.physics.{Physical, ScagePhysics}
-import net.scage.support.physics.objects.{DynaBox, StaticPolygon, DynaBall}
-import net.scage.ScageScreenApp
-import com.weiglewilczek.slf4s.Logger
-import net.scage.ScageLib._
+import com.github.dunnololda.scage.ScageLib._
+import com.github.dunnololda.cli.MySimpleLogger
+import collection.mutable.ArrayBuffer
 
-object World extends ScageScreenApp("Uke") {
-  private val log = Logger(this.getClass.getName)
+object World extends ScageScreenApp("Uke", 800, 600) {
+  private val log = MySimpleLogger(this.getClass.getName)
 
   private var uke_speed = 30
   def ukeSpeed = uke_speed
@@ -19,7 +15,7 @@ object World extends ScageScreenApp("Uke") {
     uke_speed = 30
   }
 
-  val physics = new ScagePhysics
+  val physics = ScagePhysics(gravity = Vec(0, -10))
   physics.addPhysical(Uke)
 
   if(property("sound", false)) {
@@ -28,20 +24,20 @@ object World extends ScageScreenApp("Uke") {
       oggStream.playAsMusic(1.0f, 1.0f, true)
     }
 
-    actionNoPause {
+    actionIgnorePause {
       SoundStore.get().poll(0)
     }
   }
 
   def loseCondition = {
-    Uke.velocity.x < 10 || farthest_coord.y - Uke.coord.y > window_height
+    Uke.velocity.x < 10 || farthest_coord.y - Uke.coord.y > windowHeight
   }
 
   private var farthest_coord = Vec.zero
   private var lost = false
   init {
     lost = false
-    farthest_coord = LevelBuilder.continueLevel(Vec(0, window_height/2-100), 0, 1000)
+    farthest_coord = LevelBuilder.continueLevel(Vec(0, windowHeight/2-100), 0, 1000)
 
     action {
       if(loseCondition) {
@@ -62,7 +58,7 @@ object World extends ScageScreenApp("Uke") {
     }
   }
 
-  actionStaticPeriod(5000) {
+  action(5000) {
     if(uke_speed < 50) {
       log.info("increasing speed:" + uke_speed)
       uke_speed += 3
@@ -70,14 +66,14 @@ object World extends ScageScreenApp("Uke") {
   }
 
   backgroundColor = WHITE
-  center = Uke.coord + Vec(window_width/2-50, 0)
+  center = Uke.coord + Vec(windowWidth/2-50, 0)
 
-  key(KEY_F2, onKeyDown = {
+  keyIgnorePause(KEY_F2, onKeyDown = {
     restart()
     pauseOff()
   })
 
-  key(KEY_P, onKeyDown = if(!lost) switchPause())
+  keyIgnorePause(KEY_P, onKeyDown = if(!lost) switchPause())
 
   interface {
     print("Z to jump (Z twice to double jump)\n" +
@@ -85,13 +81,13 @@ object World extends ScageScreenApp("Uke") {
           "Down Arrow to fast down\n" +
           "P to pause current game\n" +
           "F2 to start the new one\n\n" +
-          "Press P", 20, window_height-20)
+          "Press P", 20, windowHeight-20)
     if(!onPause) {
       interface {
-        print(Uke.coord.ix/100, 20, window_height-20)
+        print(Uke.coord.ix/100, 20, windowHeight-20)
         if(onPause) {
-          if(lost) print("Oops! You smashed to death (press F2 to start new game)", 20, window_height-40)
-          else  print("Pause (Press P)", window_width/2, window_height/2)
+          if(lost) print("Oops! You smashed to death (press F2 to start new game)", 20, windowHeight-40)
+          else print("Pause (Press P)", windowWidth/2, windowHeight/2)
         }
       }
       deleteSelf()
@@ -103,7 +99,7 @@ object World extends ScageScreenApp("Uke") {
 
 import World._
 
-object Uke extends DynaBall(Vec(20, window_height/2-70), radius = 30) {
+object Uke extends DynaBall(Vec(20, windowHeight/2-70), radius = 30, 1, true) {
   val uke_stand = image("uke-stand.png", 56, 70, 96, 0, 160, 200)         // 48, 60
   val uke_animation = animation("uke-animation.png", 56, 70, 160, 200, 6)
 
@@ -122,7 +118,7 @@ object Uke extends DynaBall(Vec(20, window_height/2-70), radius = 30) {
 
   init {
     setDefaultSpeed()
-    coord = Vec(20, window_height/2-70)
+    coord = Vec(20, windowHeight/2-70)
     velocity = Vec(ukeSpeed, 0)
   }
 
@@ -146,7 +142,7 @@ object Uke extends DynaBall(Vec(20, window_height/2-70), radius = 30) {
 
   key(KEY_DOWN, onKeyDown = addForce(Vec(0, -3000)))
 
-  actionStaticPeriod(100) {
+  action(100) {
     frame += 1
     if(frame >= 6) frame = 0
 
@@ -168,28 +164,28 @@ object Uke extends DynaBall(Vec(20, window_height/2-70), radius = 30) {
   }
 
   /*interface {
-    print("velocity: "+velocity.norma, 20, window_height-20)
-    print("velocity: "+velocity, 20, window_height-40)
+    print("velocity: "+velocity.norma, 20, windowHeight-20)
+    print("velocity: "+velocity, 20, windowHeight-40)
 
-    drawFilledRect(Vec(20, window_height-60), (100 - num_jump*10), 15, GRAY)
-    drawFilledRect(Vec(20, window_height-80), (100 - num_jump2*10), 15, DARK_GRAY)
-    drawFilledRect(Vec(20, window_height-100), (100 - num_forward*10), 15, BLUE)
+    drawFilledRect(Vec(20, windowHeight-60), (100 - num_jump*10), 15, GRAY)
+    drawFilledRect(Vec(20, windowHeight-80), (100 - num_jump2*10), 15, DARK_GRAY)
+    drawFilledRect(Vec(20, windowHeight-100), (100 - num_forward*10), 15, BLUE)
   }*/
 }
 
 object LevelBuilder {
-  private val log = Logger(this.getClass.getName)
+  private val log = MySimpleLogger(this.getClass.getName)
 
-  private var _platforms = new ArrayList[Physical]
+  private val _platforms = ArrayBuffer[Physical]()
   def platforms = _platforms
 
   clear {
-    while(_platforms.size() > 0) removeOldestPlatform()
+    while(_platforms.length > 0) removeOldestPlatform()
   }
   def addPlatform(platform:Physical) {
     physics.addPhysical(platform)
-    _platforms.add(platform)
-    if(_platforms.size() > 10) removeOldestPlatform()
+    _platforms += platform
+    if(_platforms.length > 10) removeOldestPlatform()
   }
   def removeOldestPlatform() {
     val platform = _platforms.remove(0)
@@ -210,7 +206,7 @@ object LevelBuilder {
       val platform_points:List[Vec] =
         (List(leftup_coord, leftup_coord + Vec(random_width/num_upper_points, 0)) :::
         platform_inner_points :::
-        List(leftup_coord+Vec(random_width, -window_height), leftup_coord+Vec(0, -window_height))).reverse
+        List(leftup_coord+Vec(random_width, -windowHeight), leftup_coord+Vec(0, -windowHeight))).reverse
       val platform = new Platform(platform_points:_*)
       addPlatform(platform)
 
@@ -244,7 +240,7 @@ object LevelBuilder {
 
   def infiniteUpperPlatform(points:List[Vec]) = {
     val upper_platform_points =
-      (List(Vec(points.head.x, points.head.y + window_height), Vec(points.last.x, points.last.y + window_height)) :::
+      (List(Vec(points.head.x, points.head.y + windowHeight), Vec(points.last.x, points.last.y + windowHeight)) :::
       (for(point <- points) yield (point + Vec(0, Uke.radius*5))).toList.reverse).reverse
     new Platform(upper_platform_points:_*)
   }
@@ -254,11 +250,14 @@ class Platform(platform_points:Vec*) extends StaticPolygon(platform_points:_*) {
   val platform_color = randomColor
   render {
     if(physics.containsPhysical(this)) drawPolygon(points, /*platform_color*/BLACK)
-    else deleteSelf()
+    else {
+      println("youo")
+      deleteSelf()
+    }
   }
 }
 
-class Obstacle(init_coord:Vec) extends DynaBox(init_coord, 70, 70, box_mass = 1000) {
+class Obstacle(init_coord:Vec) extends DynaBox(init_coord, 70, 70, box_mass = 1000, true) {
   val obstacle_color = randomColor
   render {
     if(physics.containsPhysical(this)) {

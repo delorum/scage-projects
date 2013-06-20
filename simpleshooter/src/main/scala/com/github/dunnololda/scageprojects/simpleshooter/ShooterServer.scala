@@ -6,32 +6,13 @@ import collection.mutable
 import collection.mutable.ArrayBuffer
 import com.github.dunnololda.cli.Cli
 
-case class Client(id:Long, var coord:Vec, var health:Int, var wins:Int, var deaths:Int, var visible:Boolean) {
-  def netState:NetState = NetState("id" -> id,
-                                   "x"  -> coord.x,
-                                   "y"  -> coord.y,
-                                   "hp" -> health,
-                                   "w"  -> wins,
-                                   "d"  -> deaths,
-                                   "v" -> visible)
-}
-case class ClientData(up:Boolean, left:Boolean, down:Boolean, right:Boolean, shoots:List[Vec])
-
-case class Wall(from:Vec, to:Vec) {
-  def netState = NetState("fromx" -> from.x, "fromy" -> from.y, "tox" -> to.x, "toy" -> to.y)
-}
-
-case class Bullet(dir:Vec, shooter:Client, var coord:Vec, var count:Int) {
-  def netState = NetState("x" -> coord.x, "y" -> coord.y)
-}
-
 object ShooterServer extends ScageApp("Simple Shooter Server") with Cli {
   programDescription = s"Simple Shooter Server v$appVersion"
   commandLineArgsAndParse(
     ("p", "port", "port to bind server on. default: 10000", true, false),
     ("m", "map",  "map file to load. default: map.ss", true, false)
   )
-  private val server = UdpNetServer(port = property("port", 10000), ping_timeout= 500, check_timeout = 1000)
+  private val server = UdpNetServer(port = property("port", 10000), ping_timeout= 1000, check_timeout = 5000)
 
   def vec(message:NetState):Vec = {
     Vec(message.value[Float]("x").get, message.value[Float]("y").get)
@@ -54,17 +35,29 @@ object ShooterServer extends ScageApp("Simple Shooter Server") with Cli {
   private val bullets = ArrayBuffer[Bullet]()
   private val walls = loadMap(map_name)
 
+  private def outsideCoord(coord:Vec):Vec = {
+    def checkC(c:Float, from:Float, to:Float):Float = {
+      val dist = to - from
+      if(c >= to) checkC(c - dist, from, to)
+      else if(c < from) checkC(c + dist, from, to)
+      else c
+    }
+    val x = checkC(coord.x, 0, map_width)
+    val y = checkC(coord.y, 0, map_height)
+    Vec(x, y)
+  }
+
   // receive data
   action(10) {
     server.newEvent {
       case NewUdpConnection(client_id) =>
         players(client_id) = Client(client_id, randomCoord(map_width, map_height, body_radius, walls), 100, 0, 0, visible = true)
-        server.sendToClient(client_id, NetState("walls" -> walls.map(_.netState).toList))
-      case NewUdpMessage(client_id, message) =>
+      case NewUdpClientData(client_id, message) =>
         //println(message.toJsonString)
+        if(message.contains("sendmap")) server.sendToClient(client_id, NetState("walls" -> walls.map(_.netState).toList))
         val ClientData(up, left, down, right, shoots) = clientData(message)
         val delta = Vec((if(left) -1 else 0) + (if(right) 1 else 0), (if(down) -1 else 0) + (if(up) 1 else 0)).n
-        val new_coord = players(client_id).coord + delta*speed
+        val new_coord = outsideCoord(players(client_id).coord + delta*speed)
         if(isCoordCorrect(new_coord, body_radius, walls)) {
           players(client_id).coord = new_coord
         }
