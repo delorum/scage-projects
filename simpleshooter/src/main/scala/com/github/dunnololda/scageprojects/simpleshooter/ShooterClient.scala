@@ -19,10 +19,6 @@ object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", map_
 
   leftMouse(100, onBtnDown = m => shoots += m)
 
-  def vec(message:NetState):Vec = {
-    Vec(message.value[Float]("x").get, message.value[Float]("y").get)
-  }
-
   // send data
   action(100) {
 
@@ -46,32 +42,6 @@ object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", map_
     if(states.length > 1) Some(states.remove(0))
     else if (states.nonEmpty) Some(states.head)
     else None
-  }
-
-  def client(message:NetState):Client = {
-    Client(id = message.value[Long]("id").get,
-           coord = vec(message),
-           health = message.value[Int]("hp").get,
-           wins = message.value[Int]("w").get,
-           deaths = message.value[Int]("d").get,
-           visible = message.value[Boolean]("v").get
-    )
-  }
-
-  private def serverData(message:NetState):ServerData = {
-    val you = client(message.value[NetState]("you").get)
-    val others = message.value[List[NetState]]("others").getOrElse(Nil).map(m => client(m))
-    val your_bullets = message.value[List[NetState]]("your_bullets").getOrElse(Nil).map(m => vec(m))
-    val other_bullets = message.value[List[NetState]]("other_bullets").getOrElse(Nil).map(m => vec(m))
-    ServerData(you, others, your_bullets, other_bullets)
-  }
-
-  private def wall(message:NetState):Wall = {
-    Wall(Vec(message.value[Float]("fromx").get, message.value[Float]("fromy").get), Vec(message.value[Float]("tox").get, message.value[Float]("toy").get))
-  }
-
-  private def serverWalls(message:NetState):List[Wall] = {
-    message.value[List[NetState]]("walls").get.map(x => wall(x))
   }
 
   private var is_connected = false

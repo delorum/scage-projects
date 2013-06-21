@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.github.dunnololda.scageprojects</groupId>
   <artifactId>simpleshooter</artifactId>
-  <version>0.1</version>
+  <version>1.0</version>
   <inceptionYear>2013</inceptionYear>
 
   <name>Simple Shooter</name>
@@ -223,7 +223,7 @@
                           <archive>
                               <manifest>
                                   <addClasspath>true</addClasspath>
-                                  <mainClass>com.github.dunnololda.scageprojects.simpleshooter.ShooterServer</mainClass>
+                                  <mainClass>com.github.dunnololda.scageprojects.simpleshooter.TacticShooterServer</mainClass>
                               </manifest>
                           </archive>
                       </configuration>
@@ -311,7 +311,7 @@
                           <archive>
                               <manifest>
                                   <addClasspath>true</addClasspath>
-                                  <mainClass>com.github.dunnololda.scageprojects.simpleshooter.ShooterClient</mainClass>
+                                  <mainClass>com.github.dunnololda.scageprojects.simpleshooter.TacticShooterClient</mainClass>
                               </manifest>
                           </archive>
                       </configuration>
@@ -337,7 +337,7 @@
 
                         <!-- used to automatically identify the jar containing the main class. -->
                         <!-- this is perhaps going to change -->
-                        <mainClass>com.github.dunnololda.scageprojects.simpleshooter.ShooterClient</mainClass>
+                        <mainClass>com.github.dunnololda.scageprojects.simpleshooter.TacticShooterClient</mainClass>
                       </jnlp>
                       <verbose>true</verbose>
                       <verifyjar>true</verifyjar>
