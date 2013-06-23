@@ -49,7 +49,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
   }
 
   // update state
-  action(100) {
+  action(10) {
     players.values.foreach(p => {
       p.ds.headOption.foreach(d => {
         if(d.dist2(p.coord) > speed*speed) {
@@ -66,7 +66,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
                 System.currentTimeMillis() - op.last_bullet_shot > fire_pace)
         .headOption.foreach(x => {
         val dir = (x.coord - p.coord).n
-        bullets += TacticBullet(dir, p, p.coord + dir*(body_radius+1), bullet_count)
+        bullets += TacticBullet(nextId, dir, p, p.coord + dir*(body_radius+1), bullet_count)
         x.last_bullet_shot = System.currentTimeMillis()
       })
     })
@@ -95,7 +95,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
   }
 
   // send data
-  action(100) {
+  action(50) {
     players.foreach {
       case (id, client) =>
         val builder = ArrayBuffer[(String, Any)]()

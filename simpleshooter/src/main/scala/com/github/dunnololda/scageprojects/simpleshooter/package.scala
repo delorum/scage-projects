@@ -130,16 +130,17 @@ package object simpleshooter {
   case class TacticServerData(
                                you:TacticClientPlayer,
                                others:List[TacticClientPlayer],
-                               your_bullets:List[Vec],
-                               other_bullets:List[Vec]
+                               your_bullets:List[TacticClientBullet],
+                               other_bullets:List[TacticClientBullet],
+                               receive_moment:Long
   )
 
-  def tacticServerData(message:NetState):TacticServerData = {
+  def tacticServerData(message:NetState, receive_moment:Long):TacticServerData = {
     val you = tacticClient(message.value[NetState]("you").get)
     val others = message.value[List[NetState]]("others").getOrElse(Nil).map(m => tacticClient(m))
-    val your_bullets = message.value[List[NetState]]("your_bullets").getOrElse(Nil).map(m => vec(m, "x", "y"))
-    val other_bullets = message.value[List[NetState]]("other_bullets").getOrElse(Nil).map(m => vec(m, "x", "y"))
-    TacticServerData(you, others, your_bullets, other_bullets)
+    val your_bullets = message.value[List[NetState]]("your_bullets").getOrElse(Nil).map(m => tacticClientBullet(m))
+    val other_bullets = message.value[List[NetState]]("other_bullets").getOrElse(Nil).map(m => tacticClientBullet(m))
+    TacticServerData(you, others, your_bullets, other_bullets, receive_moment)
   }
 
   case class Wall(from:Vec, to:Vec) {
@@ -158,13 +159,19 @@ package object simpleshooter {
     def netState = NetState("x" -> coord.x, "y" -> coord.y)
   }
 
-  case class TacticBullet(dir:Vec, shooter:TacticServerPlayer, var coord:Vec, var count:Int) {
-    def netState = NetState("x" -> coord.x, "y" -> coord.y)
+  case class TacticBullet(id:Long, dir:Vec, shooter:TacticServerPlayer, var coord:Vec, var count:Int) {
+    def netState = NetState("id" -> id, "x" -> coord.x, "y" -> coord.y)
   }
 
-  val speed = 9f
+  case class TacticClientBullet(id:Long, coord:Vec)
+
+  def tacticClientBullet(message:NetState):TacticClientBullet = {
+    TacticClientBullet(message.value[Long]("id").get, vec(message, "x", "y"))
+  }
+
+  val speed = 1f
   val bullet_speed_multiplier = 2.0f
-  val bullet_count = 30
+  val bullet_count = 300
   val bullet_damage = 10
   val map_width = 800
   val map_height = 600
