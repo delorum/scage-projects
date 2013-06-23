@@ -44,6 +44,7 @@ package object simpleshooter {
 
   case class TacticServerPlayer(
                           id:Long,
+                          number:Int,
                           private var _coord:Vec,
                           private var _pov:Vec,
                           var health:Int,
@@ -70,6 +71,7 @@ package object simpleshooter {
 
     def netState:NetState = NetState(
       "id" -> id,
+      "n" -> number,
       "x"  -> _coord.x,
       "y"  -> _coord.y,
       "ds"  -> ds.toList.map(d => NetState("x" -> d.x, "y" -> d.y)),
@@ -84,6 +86,7 @@ package object simpleshooter {
 
   case class TacticClientPlayer(
      id:Long,
+     number:Int,
      coord:Vec,
      destinations:List[Vec],
      pov:Vec,
@@ -97,6 +100,7 @@ package object simpleshooter {
   def tacticClient(message:NetState):TacticClientPlayer = {
     TacticClientPlayer(
       id = message.value[Long]("id").get,
+      number = message.value[Int]("n").get,
       coord = vec(message, "x", "y"),
       destinations = message.value[List[NetState]]("ds").getOrElse(Nil).map(m => vec(m, "x", "y")),
       pov = vec(message, "px", "py"),
@@ -108,10 +112,11 @@ package object simpleshooter {
     )
   }
 
-  case class TacticClientData(destination:Option[Vec], pov: Option[Vec])
+  case class TacticClientData(player_num:Int, destination:Option[Vec], pov: Option[Vec])
 
   def tacticClientData(message:NetState):TacticClientData = {
     TacticClientData(
+      player_num = message.value[Int]("pn").get,
       destination = message.value[NetState]("d").map(x => vec(x, "x", "y")),
       pov = message.value[NetState]("pov").map(x => vec(x, "x", "y"))
     )
@@ -128,7 +133,7 @@ package object simpleshooter {
   }
 
   case class TacticServerData(
-                               you:TacticClientPlayer,
+                               yours:List[TacticClientPlayer],
                                others:List[TacticClientPlayer],
                                your_bullets:List[TacticClientBullet],
                                other_bullets:List[TacticClientBullet],
@@ -136,11 +141,11 @@ package object simpleshooter {
   )
 
   def tacticServerData(message:NetState, receive_moment:Long):TacticServerData = {
-    val you = tacticClient(message.value[NetState]("you").get)
+    val yours = message.value[List[NetState]]("yours").getOrElse(Nil).map(m => tacticClient(m))
     val others = message.value[List[NetState]]("others").getOrElse(Nil).map(m => tacticClient(m))
     val your_bullets = message.value[List[NetState]]("your_bullets").getOrElse(Nil).map(m => tacticClientBullet(m))
     val other_bullets = message.value[List[NetState]]("other_bullets").getOrElse(Nil).map(m => tacticClientBullet(m))
-    TacticServerData(you, others, your_bullets, other_bullets, receive_moment)
+    TacticServerData(yours, others, your_bullets, other_bullets, receive_moment)
   }
 
   case class Wall(from:Vec, to:Vec) {
@@ -217,10 +222,18 @@ package object simpleshooter {
     walls.forall(w => !isCoordNearWall(coord, w, body_radius))
   }
 
-  def randomCoord(width:Float, height:Float, body_radius:Float, walls:Seq[Wall]):Vec = {
-    val coord = Vec(math.random*width, math.random*height)
-    if (isCoordCorrect(coord, body_radius, walls)) coord
-    else randomCoord(width, height, body_radius, walls)
+  def randomCoord(width:Float, height:Float, near:Option[Vec], body_radius:Float, walls:Seq[Wall]):Vec = {
+    near match {
+      case Some(pos) =>
+        val dir = Vec(math.random, math.random).n
+        val coord = pos + dir*body_radius*3
+        if (isCoordCorrect(coord, body_radius, walls)) coord
+        else randomCoord(width, height, near, body_radius, walls)
+      case None =>
+        val coord = Vec(math.random*width, math.random*height)
+        if (isCoordCorrect(coord, body_radius, walls)) coord
+        else randomCoord(width, height, near, body_radius, walls)
+    }
   }
 
   def isCoordVisible(coord:Vec, from:Vec, povArea:List[Vec], walls:Seq[Wall]):Boolean = {

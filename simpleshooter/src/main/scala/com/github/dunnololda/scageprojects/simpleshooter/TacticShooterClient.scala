@@ -16,17 +16,19 @@ object TacticShooterClient extends ScageScreenApp(s"Tactic Shooter v$appVersion"
   }
 
   private def interpolateServerState(third:TacticServerData, second:TacticServerData):TacticServerData = {
-    val TacticServerData(third_you, third_others, third_your_bullets, third_other_bullets, third_receive_moment) = third
-    val TacticServerData(second_you, second_others, second_your_bullets, second_other_bullets, _) = second
-    val result_you = third_you.copy(
-      coord = third_you.coord + (second_you.coord - third_you.coord)*(System.currentTimeMillis() - third_receive_moment)/100f,
-      pov =  third_you.pov + (second_you.pov - third_you.pov)*(System.currentTimeMillis() - third_receive_moment)/100f,
-      pov_area = third_you.pov_area.zip(second_you.pov_area).map {
-        case (tpp, spp) => tpp + (spp - tpp)*(System.currentTimeMillis() - third_receive_moment)/100f
+    val TacticServerData(third_yours, third_others, third_your_bullets, third_other_bullets, third_receive_moment) = third
+    val TacticServerData(second_yours, second_others, second_your_bullets, second_other_bullets, _) = second
+    val result_yours = third_yours.map(ty => {
+      second_yours.find(_.number == ty.number) match {
+        case Some(sy) =>
+          ty.copy(
+            coord = ty.coord + (sy.coord - ty.coord)*(System.currentTimeMillis() - third_receive_moment)/100f
+          )
+        case None => ty
       }
-    )
+    })
     val result_others = third_others.map(to => {
-      second_others.find(_.id == to.id) match {
+      second_others.find(x => x.id == to.id && x.number == to.number) match {
         case Some(so) =>
           to.copy(
             coord = to.coord + (so.coord - to.coord)*(System.currentTimeMillis() - third_receive_moment)/100f
@@ -52,7 +54,7 @@ object TacticShooterClient extends ScageScreenApp(s"Tactic Shooter v$appVersion"
         case None => tb
       }
     })
-    TacticServerData(result_you, result_others, result_your_bullets, result_other_bullets, System.currentTimeMillis())
+    TacticServerData(result_yours, result_others, result_your_bullets, result_other_bullets, System.currentTimeMillis())
   }
 
   private def optInterpolatedState:Option[TacticServerData] = {
@@ -74,6 +76,21 @@ object TacticShooterClient extends ScageScreenApp(s"Tactic Shooter v$appVersion"
   private var clear_destinations = false
   private var pov_fixed = false
 
+  private var selected_player = 0
+  key(KEY_1, onKeyDown = selected_player = 0)
+  key(KEY_2, onKeyDown = selected_player = 1)
+  key(KEY_3, onKeyDown = selected_player = 2)
+
+  mouseWheelDown(m => {
+    selected_player -= 1
+    if(selected_player < 0) selected_player = 2
+  })
+
+  mouseWheelUp(m => {
+    selected_player += 1
+    if(selected_player > 2) selected_player = 0
+  })
+
   leftMouse(onBtnDown = m => {
     new_destination = Some(m)
   })
@@ -90,6 +107,7 @@ object TacticShooterClient extends ScageScreenApp(s"Tactic Shooter v$appVersion"
   action(50) {
     if(new_destination.nonEmpty || new_pov.nonEmpty || walls.isEmpty) {
       val builder = NetState.newBuilder
+      builder += ("pn", selected_player)
       new_destination.foreach(nd => {
         builder += ("d", NetState("x" -> nd.x, "y" -> nd.y))
         new_destination = None
@@ -100,7 +118,7 @@ object TacticShooterClient extends ScageScreenApp(s"Tactic Shooter v$appVersion"
       })
       if(walls.isEmpty) builder += ("sendmap", true)
       if(clear_destinations) {
-        builder += ("cleardest", true)
+        builder += ("cleardest", selected_player)
         clear_destinations = false
       }
       client.send(builder.toState)
@@ -132,32 +150,46 @@ object TacticShooterClient extends ScageScreenApp(s"Tactic Shooter v$appVersion"
       print("Connecting to Server...", windowCenter, DARK_GRAY, align = "center")
     } else {
       optInterpolatedState match {
-        case Some(TacticServerData(you, others, your_bullets, other_bullets, _)) =>
-          drawCircle(you.coord, 10, RED)
-          you.destinations.foreach(d => drawFilledCircle(d, 3, YELLOW))
-          if(you.destinations.length > 1) drawSlidingLines(you.destinations, YELLOW)
-          if(!pov_fixed) {
-            val m = mouseCoord
-            val pov = (m - you.coord).n
-            val pov_point = you.coord + (m - you.coord).n*pov_distance/2f
-            drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), RED)
-            drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), RED)
-            if(pov_fixed) drawCircle(pov_point, 7, RED)
-            val pov_area = povTriangle(you.coord, pov, pov_distance, pov_angle)
-            drawSlidingLines(pov_area, DARK_GRAY)
-          } else {
-            val pov_point = you.coord + you.pov*pov_distance/2f
-            drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), RED)
-            drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), RED)
-            if(pov_fixed) drawCircle(pov_point, 7, RED)
-            drawSlidingLines(you.pov_area, DARK_GRAY)
-          }
-          drawCircle(you.coord, audibility_radius, DARK_GRAY)
+        case Some(TacticServerData(yours, others, your_bullets, other_bullets, _)) =>
+          yours.foreach(you => {
+            if(you.number == selected_player) {
+              drawCircle(you.coord, 10, YELLOW)
+              you.destinations.foreach(d => drawFilledCircle(d, 3, YELLOW))
+              if(you.destinations.length > 1) drawSlidingLines(you.destinations, YELLOW)
+              if(!pov_fixed) {
+                val m = mouseCoord
+                val pov = (m - you.coord).n
+                val pov_point = you.coord + (m - you.coord).n*pov_distance/2f
+                drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), YELLOW)
+                drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), YELLOW)
+                if(pov_fixed) drawCircle(pov_point, 7, YELLOW)
+                val pov_area = povTriangle(you.coord, pov, pov_distance, pov_angle)
+                drawSlidingLines(pov_area, DARK_GRAY)
+              } else {
+                val pov_point = you.coord + you.pov*pov_distance/2f
+                drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), YELLOW)
+                drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), YELLOW)
+                if(pov_fixed) drawCircle(pov_point, 7, YELLOW)
+                drawSlidingLines(you.pov_area, DARK_GRAY)
+              }
+              drawCircle(you.coord, audibility_radius, DARK_GRAY)
+            } else {
+              drawCircle(you.coord, 10, GREEN)
+              you.destinations.foreach(d => drawFilledCircle(d, 3, GREEN))
+              if(you.destinations.length > 1) drawSlidingLines(you.destinations, GREEN)
+              val pov_point = you.coord + you.pov*pov_distance/2f
+              drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), GREEN)
+              drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), GREEN)
+              drawCircle(pov_point, 7, GREEN)
+              drawSlidingLines(you.pov_area, DARK_GRAY)
+              drawCircle(you.coord, audibility_radius, DARK_GRAY)
+            }
+          })
 
           others.filter(_.visible).zipWithIndex.foreach {
             case (player, number) =>
-              drawCircle(player.coord, 10, WHITE)
-              print(number+1, player.coord, WHITE, align = "center")
+              drawCircle(player.coord, 10, RED)
+              print(number+1, player.coord, RED, align = "center")
               val pov_point = player.coord + player.pov*pov_distance/2f
               drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), RED)
               drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), RED)
@@ -177,8 +209,8 @@ object TacticShooterClient extends ScageScreenApp(s"Tactic Shooter v$appVersion"
             drawLine(wall.from, wall.to, WHITE)
           })
 
-          val other_stats = others.zipWithIndex.map(c => s"${c._2+1} : {${c._1.health} : ${c._1.wins} : ${c._1.deaths}}").mkString(" ")
-          print(s"[r{${you.health} : ${you.wins} : ${you.deaths}}] "+other_stats, 20, 20, WHITE)
+          val stats = (yours ++ others).zipWithIndex.map(c => s"${c._2+1} : {${c._1.health} : ${c._1.wins} : ${c._1.deaths}}").mkString(" ")
+          print(stats, 20, 20, WHITE)
         case None =>
       }
     }

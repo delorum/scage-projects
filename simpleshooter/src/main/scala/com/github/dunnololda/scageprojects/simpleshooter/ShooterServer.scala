@@ -24,7 +24,7 @@ object ShooterServer extends ScageApp("Simple Shooter Server") with Cli {
   action(10) {
     server.newEvent {
       case NewUdpConnection(client_id) =>
-        players(client_id) = Client(client_id, randomCoord(map_width, map_height, body_radius, walls), 100, 0, 0, visible = true)
+        players(client_id) = Client(client_id, randomCoord(map_width, map_height, None, body_radius, walls), 100, 0, 0, visible = true)
         server.sendToClient(client_id, NetState("walls" -> walls.map(_.netState).toList))
       case NewUdpClientData(client_id, message) =>
         //println(message.toJsonString)
@@ -59,7 +59,7 @@ object ShooterServer extends ScageApp("Simple Shooter Server") with Cli {
           p.health -= bullet_damage
           if (p.health <= 0) {
             p.deaths += 1
-            p.coord = randomCoord(map_width, map_height, body_radius, walls)
+            p.coord = randomCoord(map_width, map_height, None, body_radius, walls)
             p.health = 100
             b.shooter.wins += 1
           }
