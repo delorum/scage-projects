@@ -6,7 +6,7 @@ import collection.mutable.ArrayBuffer
 import com.github.dunnololda.simplenet.{State => NetState, _}
 
 object TacticShooterClient extends ScageScreenApp(s"Tactic Shooter v$appVersion", map_width, map_height) {
-  private val client = UdpNetClient(address = "localhost", port = 10000, ping_timeout= 1000, check_timeout = 5000)
+  private val client = UdpNetClient(address = "fzeulf.netris.ru", port = 10000, ping_timeout= 1000, check_timeout = 5000)
 
   private val states = mutable.ArrayBuffer[TacticServerData]()
   private def optRemoveHeadState:Option[TacticServerData] = {
@@ -198,11 +198,12 @@ object TacticShooterClient extends ScageScreenApp(s"Tactic Shooter v$appVersion"
           }
 
           your_bullets.foreach(b => {
-            drawRectCentered(b.coord, bullet_size, bullet_size, RED)
+            val color = if(b.player_number == selected_player) YELLOW else GREEN
+            drawRectCentered(b.coord, bullet_size, bullet_size, color)
           })
 
           other_bullets.foreach(b => {
-            drawRectCentered(b.coord, bullet_size, bullet_size, WHITE)
+            drawRectCentered(b.coord, bullet_size, bullet_size, RED)
           })
 
           walls.foreach(wall => {

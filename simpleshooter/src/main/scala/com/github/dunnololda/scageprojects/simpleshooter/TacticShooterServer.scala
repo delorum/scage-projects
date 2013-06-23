@@ -110,7 +110,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
         val (your_players, other_players) = players.values.flatten.partition(_.id == id)
         val yours = your_players.map(x => x.netState).toList
         builder += ("yours" -> yours)
-        val others = other_players.map(x => x.copy(visible = your_players.exists(y => isCoordVisibleOrAudible(x.coord, y.coord, y.povArea, x.ds.nonEmpty, audibility_radius, walls))).netState).toList
+        val others = other_players.map(x => x.copy(visible = your_players.exists(y => isCoordVisibleOrAudible(x.coord, y.coord, y.povArea, is_moving = /*x.ds.nonEmpty*/true, audibility_radius, walls))).netState).toList
         if(others.nonEmpty) builder += ("others" -> others)
         val (your_bullets, other_bullets) = bullets.filter(b => your_players.exists(y => isCoordVisibleOrAudible(b.coord, y.coord, y.povArea, is_moving = true, audibility_radius, walls))).partition(_.shooter.id == id)
         if (your_bullets.nonEmpty) builder += ("your_bullets" -> your_bullets.map(_.netState).toList)
