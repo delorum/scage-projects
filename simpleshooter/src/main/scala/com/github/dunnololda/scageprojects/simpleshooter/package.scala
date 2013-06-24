@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects
 import com.github.dunnololda.scage.ScageLib._
 import com.github.dunnololda.simplenet.{State => NetState}
 import collection.mutable.ArrayBuffer
+import scala.collection.mutable
 
 package object simpleshooter {
   def vec(message:NetState, x:String, y:String):Vec = {
@@ -184,6 +185,27 @@ package object simpleshooter {
       coord = vec(message, "x", "y"))
   }
 
+  case class TacticGame(game_id:Int,
+                        players:mutable.HashMap[Long, List[TacticServerPlayer]] = mutable.HashMap[Long, List[TacticServerPlayer]](),
+                        bullets:ArrayBuffer[TacticBullet] = ArrayBuffer[TacticBullet]())
+
+  case class GameInfo(game_id:Int, players:Int) {
+    def netState = NetState(
+      "gid" -> game_id,
+      "ps" -> players
+    )
+  }
+
+  def gameInfo(message:NetState):GameInfo = {
+    GameInfo(message.value[Int]("gid").get, message.value[Int]("ps").get)
+  }
+
+  def gamesList(message:NetState):List[GameInfo] = {
+    message.value[List[NetState]]("gameslist").getOrElse(Nil).map(m => gameInfo(m))
+  }
+
+  val host = "localhost"
+  val port = 10000
   val speed = 1f
   val bullet_speed_multiplier = 2.0f
   val bullet_count = 300
@@ -193,7 +215,7 @@ package object simpleshooter {
   val body_radius = 10
   val bullet_size = 3
   val pov_distance = 400
-  val pov_angle = 15
+  val pov_angle = 50
   val fire_pace = 300 // msec/bullet
   val audibility_radius = 60
 
@@ -253,9 +275,9 @@ package object simpleshooter {
   }
 
   def isCoordVisibleOrAudible(coord:Vec, from:Vec, povArea:List[Vec], is_moving:Boolean, audibility_radius:Float, walls:Seq[Wall]):Boolean = {
-    (is_moving && coord.dist2(from) <= audibility_radius*audibility_radius) || (coordOnArea(coord, povArea) && walls.forall(w => {
+    is_moving && coord.dist2(from) <= audibility_radius * audibility_radius || coordOnArea(coord, povArea) && walls.forall(w => {
       !areLinesIntersect(from, coord, w.from, w.to)
-    }))
+    })
   }
 
   def isPathCorrect(from:Vec, to:Vec, body_radius:Float, walls:Seq[Wall]):Boolean = {
@@ -290,5 +312,11 @@ package object simpleshooter {
     val one = coord + axis.rotateDeg(angle)
     val two = coord + axis.rotateDeg(-angle)
     List(coord, one, two, coord)
+  }
+
+  def messageArea(message:Any, coord:Vec, printer:ScageMessage = ScageMessage):List[Vec] = {
+    val Vec(w, h) = messageBounds(message)
+    val Vec(x, y) = coord
+    List(Vec(x-w/2, y+h/2), Vec(x+w/2, y+h/2), Vec(x+w/2, y-h/2), Vec(x-w/2, y-h/2))
   }
 }

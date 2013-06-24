@@ -5,15 +5,15 @@ import collection.mutable
 import collection.mutable.ArrayBuffer
 import com.github.dunnololda.simplenet.{State => NetState, _}
 
-object TacticShooterClient extends ScageScreenApp(s"Tactic Shooter v$appVersion", map_width, map_height) {
-  private val client = UdpNetClient(address = "fzeulf.netris.ru", port = 10000, ping_timeout= 1000, check_timeout = 5000)
+class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Shooter Client") {
+  private val client = UdpNetClient(address = host, port = port, ping_timeout= 1000, check_timeout = 5000)
 
   private val states = mutable.ArrayBuffer[TacticServerData]()
-  private def optRemoveHeadState:Option[TacticServerData] = {
+  /*private def optRemoveHeadState:Option[TacticServerData] = {
     if(states.length > 1) Some(states.remove(0))
     else if (states.nonEmpty) Some(states.head)
     else None
-  }
+  }*/
 
   private def interpolateServerState(third:TacticServerData, second:TacticServerData):TacticServerData = {
     val TacticServerData(third_yours, third_others, third_your_bullets, third_other_bullets, third_receive_moment) = third
@@ -103,25 +103,34 @@ object TacticShooterClient extends ScageScreenApp(s"Tactic Shooter v$appVersion"
 
   key(KEY_SPACE, onKeyDown = clear_destinations = true)
 
+  private var is_game_started = false
+
   // send data
   action(50) {
-    if(new_destination.nonEmpty || new_pov.nonEmpty || walls.isEmpty) {
-      val builder = NetState.newBuilder
-      builder += ("pn", selected_player)
-      new_destination.foreach(nd => {
-        builder += ("d", NetState("x" -> nd.x, "y" -> nd.y))
-        new_destination = None
-      })
-      new_pov.foreach(nd => {
-        builder += ("pov", NetState("x" -> nd.x, "y" -> nd.y))
-        new_pov = None
-      })
-      if(walls.isEmpty) builder += ("sendmap", true)
-      if(clear_destinations) {
-        builder += ("cleardest", selected_player)
-        clear_destinations = false
+    if(!is_game_started) {
+      join_game match {
+        case Some(game_id) => client.send(NetState("join" -> game_id))
+        case None => client.send(NetState("create" -> true))
       }
-      client.send(builder.toState)
+    } else {
+      if(new_destination.nonEmpty || new_pov.nonEmpty || walls.isEmpty) {
+        val builder = NetState.newBuilder
+        builder += ("pn", selected_player)
+        new_destination.foreach(nd => {
+          builder += ("d", NetState("x" -> nd.x, "y" -> nd.y))
+          new_destination = None
+        })
+        new_pov.foreach(nd => {
+          builder += ("pov", NetState("x" -> nd.x, "y" -> nd.y))
+          new_pov = None
+        })
+        if(walls.isEmpty) builder += ("sendmap", true)
+        if(clear_destinations) {
+          builder += ("cleardest", selected_player)
+          clear_destinations = false
+        }
+        client.send(builder.toState)
+      }
     }
   }
 
@@ -131,6 +140,7 @@ object TacticShooterClient extends ScageScreenApp(s"Tactic Shooter v$appVersion"
   action(10) {
     client.newEvent {
       case NewUdpServerData(message) =>
+        if(message.contains("gamestarted")) is_game_started = true
         if(message.contains("walls")) {
           walls.clear()
           walls ++= serverWalls(message)
@@ -145,15 +155,21 @@ object TacticShooterClient extends ScageScreenApp(s"Tactic Shooter v$appVersion"
 
   private val walls = ArrayBuffer[Wall]()
 
+  private var current_state:Option[TacticServerData] = None
+
+  // update state
+  action(10) {
+    current_state = optInterpolatedState
+  }
+
   render {
-    if(!is_connected) {
-      print("Connecting to Server...", windowCenter, DARK_GRAY, align = "center")
-    } else {
-      optInterpolatedState match {
+    if(is_connected) {
+      current_state match {
         case Some(TacticServerData(yours, others, your_bullets, other_bullets, _)) =>
           yours.foreach(you => {
             if(you.number == selected_player) {
               drawCircle(you.coord, 10, YELLOW)
+              print(you.number+1, you.coord, YELLOW, align = "center")
               you.destinations.foreach(d => drawFilledCircle(d, 3, YELLOW))
               if(you.destinations.length > 1) drawSlidingLines(you.destinations, YELLOW)
               if(!pov_fixed) {
@@ -175,6 +191,7 @@ object TacticShooterClient extends ScageScreenApp(s"Tactic Shooter v$appVersion"
               drawCircle(you.coord, audibility_radius, DARK_GRAY)
             } else {
               drawCircle(you.coord, 10, GREEN)
+              print(you.number+1, you.coord, GREEN, align = "center")
               you.destinations.foreach(d => drawFilledCircle(d, 3, GREEN))
               if(you.destinations.length > 1) drawSlidingLines(you.destinations, GREEN)
               val pov_point = you.coord + you.pov*pov_distance/2f
@@ -209,9 +226,23 @@ object TacticShooterClient extends ScageScreenApp(s"Tactic Shooter v$appVersion"
           walls.foreach(wall => {
             drawLine(wall.from, wall.to, WHITE)
           })
+        case None =>
+      }
+    }
+  }
 
-          val stats = (yours ++ others).zipWithIndex.map(c => s"${c._2+1} : {${c._1.health} : ${c._1.wins} : ${c._1.deaths}}").mkString(" ")
-          print(stats, 20, 20, WHITE)
+  interface {
+    if(!is_connected) {
+      print("Connecting to Server...", windowCenter, DARK_GRAY, align = "center")
+    } else {
+      current_state match {
+        case Some(TacticServerData(yours, others, your_bullets, other_bullets, _)) =>
+          val stats_builder = new StringBuilder
+          val (your_wins, your_deaths) = yours.foldLeft((0, 0)) {case ((resw, resd), you) => (resw+you.wins, resd+you.deaths)}
+          stats_builder append s"[r{$your_wins : $your_deaths}] "
+          val pewpew = others.groupBy(x => x.id).values.map(x => x.foldLeft((0, 0)) {case ((resw, resd), y) => (resw+y.wins, resd+y.deaths)})
+          pewpew.zipWithIndex.foreach(x => stats_builder append s"${x._2} : {${x._1._1} : ${x._1._1}} ")
+          print(stats_builder.toString().trim, 20, 20, WHITE)
         case None =>
       }
     }
