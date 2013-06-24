@@ -165,13 +165,23 @@ package object simpleshooter {
   }
 
   case class TacticBullet(id:Long, dir:Vec, shooter:TacticServerPlayer, var coord:Vec, var count:Int) {
-    def netState = NetState("id" -> id, "x" -> coord.x, "y" -> coord.y)
+    def netState = NetState(
+      "id" -> id,
+      "pid" -> shooter.id,
+      "pn" -> shooter.number,
+      "x" -> coord.x,
+      "y" -> coord.y
+    )
   }
 
-  case class TacticClientBullet(id:Long, coord:Vec)
+  case class TacticClientBullet(id:Long, player_id:Long, player_number:Int, coord:Vec)
 
   def tacticClientBullet(message:NetState):TacticClientBullet = {
-    TacticClientBullet(message.value[Long]("id").get, vec(message, "x", "y"))
+    TacticClientBullet(
+      id = message.value[Long]("id").get,
+      player_id = message.value[Long]("pid").get,
+      player_number = message.value[Int]("pn").get,
+      coord = vec(message, "x", "y"))
   }
 
   val speed = 1f

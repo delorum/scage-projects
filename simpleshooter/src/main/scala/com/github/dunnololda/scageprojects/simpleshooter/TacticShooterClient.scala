@@ -198,11 +198,12 @@ object TacticShooterClient extends ScageScreenApp(s"Tactic Shooter v$appVersion"
           }
 
           your_bullets.foreach(b => {
-            drawRectCentered(b.coord, bullet_size, bullet_size, RED)
+            val color = if(b.player_number == selected_player) YELLOW else GREEN
+            drawRectCentered(b.coord, bullet_size, bullet_size, color)
           })
 
           other_bullets.foreach(b => {
-            drawRectCentered(b.coord, bullet_size, bullet_size, WHITE)
+            drawRectCentered(b.coord, bullet_size, bullet_size, RED)
           })
 
           walls.foreach(wall => {
