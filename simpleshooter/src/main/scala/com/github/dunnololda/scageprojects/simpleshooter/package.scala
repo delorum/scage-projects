@@ -6,6 +6,21 @@ import collection.mutable.ArrayBuffer
 import scala.collection.mutable
 
 package object simpleshooter {
+  val host = "localhost"
+  val port = 10000
+  val speed = 0.332f  // px / 10msec = 33.2 px / sec = 3.32 m/sec = 12 km/h
+  val bullet_speed = 12f  // 12 px / 10msec = 1200 px / sec = 120 m/sec
+  val bullet_count = 50  // 60 meters = 600 px = 0.5 sec = 50*10msec
+  val bullet_damage = 100
+  val map_width = 800
+  val map_height = 600
+  val body_radius = 10  // 10px is 1 meter
+  val bullet_size = 3
+  val pov_distance = 600
+  val pov_angle = 50
+  val fire_pace = 100 // 100 msec/bullet = 60000 msec / 600 bullet = 600 bullet/min -> AK
+  val audibility_radius = 60
+
   def vec(message:NetState, x:String, y:String):Vec = {
     Vec(message.value[Float](x).get, message.value[Float](y).get)
   }
@@ -113,13 +128,14 @@ package object simpleshooter {
     )
   }
 
-  case class TacticClientData(player_num:Int, destination:Option[Vec], pov: Option[Vec])
+  case class TacticClientData(player_num:Int, destination:Option[Vec], pov: Option[Vec], clear_destinations:Boolean)
 
   def tacticClientData(message:NetState):TacticClientData = {
     TacticClientData(
       player_num = message.value[Int]("pn").get,
       destination = message.value[NetState]("d").map(x => vec(x, "x", "y")),
-      pov = message.value[NetState]("pov").map(x => vec(x, "x", "y"))
+      pov = message.value[NetState]("pov").map(x => vec(x, "x", "y")),
+      clear_destinations = message.value[Boolean]("cleardest").getOrElse(false)
     )
   }
 
@@ -165,7 +181,7 @@ package object simpleshooter {
     def netState = NetState("x" -> coord.x, "y" -> coord.y)
   }
 
-  case class TacticBullet(id:Long, dir:Vec, shooter:TacticServerPlayer, var coord:Vec, var count:Int) {
+  case class TacticBullet(id:Long, dir:Vec, shooter:TacticServerPlayer, var prev_coord:Vec, var coord:Vec, var count:Int) {
     def netState = NetState(
       "id" -> id,
       "pid" -> shooter.id,
@@ -203,21 +219,6 @@ package object simpleshooter {
   def gamesList(message:NetState):List[GameInfo] = {
     message.value[List[NetState]]("gameslist").getOrElse(Nil).map(m => gameInfo(m))
   }
-
-  val host = "localhost"
-  val port = 10000
-  val speed = 1f
-  val bullet_speed_multiplier = 2.0f
-  val bullet_count = 300
-  val bullet_damage = 10
-  val map_width = 800
-  val map_height = 600
-  val body_radius = 10
-  val bullet_size = 3
-  val pov_distance = 400
-  val pov_angle = 50
-  val fire_pace = 300 // msec/bullet
-  val audibility_radius = 60
 
   def loadMap(map_name:String):List[Wall] = {
     def tryFloat(str:String):Boolean = {
@@ -282,6 +283,12 @@ package object simpleshooter {
 
   def isPathCorrect(from:Vec, to:Vec, body_radius:Float, walls:Seq[Wall]):Boolean = {
     walls.forall(w => !areLinesIntersect(from, to, w.from, w.to)) && isCoordCorrect(to, body_radius, walls)
+  }
+
+  def isBodyHit(from:Vec, to:Vec, body_position:Vec, body_radius:Float):Boolean = {
+    val a = body_position + (to - from).rotateDeg(90)
+    val b = body_position + (to - from).rotateDeg(-90)
+    areLinesIntersect(from ,to, a, b)
   }
 
   def isCoordVisible(coord:Vec, from:Vec, walls:Seq[Wall]):Boolean = {

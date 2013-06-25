@@ -13,19 +13,19 @@ object MainMenu extends ScageScreenApp("Simple Shooter", 800, 600) {
     ("Выход",        Vec(windowWidth/2, windowHeight/2-30*3), () => stop())
   ))
 
-  interface {
-    title_printer.print("Простая стрелялка", Vec(windowWidth/2, windowHeight/2 + 30*4), WHITE, align = "center")
-    menu_items.foreach {
-      case (title, coord, _, _) =>
-        print(title, coord, WHITE, align = "center")
-    }
-    print(s"v$appVersion", 20, 20, WHITE, align = "center")
-  }
-
   leftMouse(onBtnDown = m => {
     menu_items.find(x => mouseOnArea(x._3)) match {
       case Some((_, _, _, action)) => action()
       case None =>
     }
   })
+
+  interface {
+    title_printer.print("Простая стрелялка", Vec(windowWidth/2, windowHeight/2 + 30*4), WHITE, align = "center")
+    menu_items.foreach {
+      case (title, coord, _, _) =>
+        print(title, coord, WHITE, align = "center")
+    }
+    print(s"v$appVersion", 30, 20, WHITE, align = "center")
+  }
 }

@@ -76,9 +76,9 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
             case Some(TacticGame(_, players, bullets)) =>
               val client_players = players(client_id)
               if(message.contains("sendmap")) server.sendToClient(client_id, NetState("walls" -> walls.map(_.netState).toList))
-              if(message.contains("cleardest")) client_players(message.value[Int]("cleardest").get).ds.clear()
-              val TacticClientData(player_num, destination, pov) = tacticClientData(message)
+              val TacticClientData(player_num, destination, pov, clear_destinations) = tacticClientData(message)
               val player = client_players(player_num)
+              if(clear_destinations) player.ds.clear()
               destination.foreach(d => player.ds += d)
               pov.foreach(p => player.pov = (p - player.coord).n)
             case None =>
@@ -110,38 +110,46 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
               } else p.ds.clear()
             } else p.ds.remove(0)
           })
-          players
-            .values
-            .flatten
-            .find(op =>
-            op.id != p.id &&
-            isCoordVisible(op.coord, p.coord, p.povArea, walls) &&
-            System.currentTimeMillis() - op.last_bullet_shot > fire_pace)
-            .foreach(x => {
+          if(System.currentTimeMillis() - p.last_bullet_shot > fire_pace) {
+            players
+              .values
+              .flatten
+              .find(op => op.id != p.id && isCoordVisible(op.coord, p.coord, p.povArea, walls))
+              .foreach(x => {
               val dir = (x.coord - p.coord).n
-              bullets += TacticBullet(nextId, dir, p, p.coord + dir*(body_radius+1), bullet_count)
-              x.last_bullet_shot = System.currentTimeMillis()
+              val init_coord = p.coord + dir*(body_radius+1)
+              bullets += TacticBullet(nextId, dir, p, init_coord, init_coord, bullet_count)
+              p.last_bullet_shot = System.currentTimeMillis()
             })
+          }
         })
         bullets.foreach(b => {
-          val new_coord = b.coord + b.dir*speed*bullet_speed_multiplier
+          val new_coord = b.coord + b.dir*bullet_speed
           b.count -= 1
           if (!isPathCorrect(b.coord, new_coord, bullet_size, walls)) {
             b.count = 0
-          } else b.coord = new_coord
-          val damaged_players = players.values.flatten.filter(_.coord.dist2(b.coord) < 100)
-          if (damaged_players.nonEmpty) {
-            damaged_players.foreach(p => {
-              p.health -= bullet_damage
-              if (p.health <= 0) {
-                p.deaths += 1
-                p.coord = randomCoord(map_width, map_height, None, body_radius, walls)
-                p.pov = Vec(0, 1)
-                p.health = 100
-                b.shooter.wins += 1
-              }
-            })
-            b.count = 0
+          } else {
+            b.prev_coord = b.coord
+            b.coord = new_coord
+            val damaged_players = players
+              .values
+              .flatten
+              .filter(p => isBodyHit(b.prev_coord, b.coord, p.coord, body_radius) ||
+              p.coord.dist2(b.coord) < body_radius*body_radius)
+            if (damaged_players.nonEmpty) {
+              damaged_players.foreach(p => {
+                p.health -= bullet_damage
+                if (p.health <= 0) {
+                  p.deaths += 1
+                  p.ds.clear()
+                  p.coord = randomCoord(map_width, map_height, None, body_radius, walls)
+                  p.pov = Vec(0, 1)
+                  p.health = 100
+                  b.shooter.wins += 1
+                }
+              })
+              b.count = 0
+            }
           }
         })
         bullets --= bullets.filter(b => b.count <= 0)

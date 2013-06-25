@@ -48,7 +48,7 @@ object ShooterServer extends ScageApp("Simple Shooter Server") with Cli {
   // update state
   action(100) {
     bullets.foreach(b => {
-      val new_coord = b.coord + b.dir*speed*bullet_speed_multiplier
+      val new_coord = b.coord + b.dir*bullet_speed
       b.count -= 1
       if (!isPathCorrect(b.coord, new_coord, bullet_size, walls)) {
         b.count = 0
