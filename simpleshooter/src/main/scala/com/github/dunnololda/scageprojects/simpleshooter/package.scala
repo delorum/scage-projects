@@ -4,6 +4,7 @@ import com.github.dunnololda.scage.ScageLib._
 import com.github.dunnololda.simplenet.{State => NetState}
 import collection.mutable.ArrayBuffer
 import scala.collection.mutable
+import java.io.FileOutputStream
 
 package object simpleshooter {
   val host = "localhost"
@@ -12,8 +13,8 @@ package object simpleshooter {
   val bullet_speed = 12f  // 12 px / 10msec = 1200 px / sec = 120 m/sec
   val bullet_count = 50  // 60 meters = 600 px = 0.5 sec = 50*10msec
   val bullet_damage = 100
-  val map_width = 800
-  val map_height = 600
+  val map_width = 1024
+  val map_height = 768
   val body_radius = 10  // 10px is 1 meter
   val bullet_size = 3
   val pov_distance = 600
@@ -220,7 +221,26 @@ package object simpleshooter {
     message.value[List[NetState]]("gameslist").getOrElse(Nil).map(m => gameInfo(m))
   }
 
-  def loadMap(map_name:String):List[Wall] = {
+  case class GameMap(walls:List[Wall], safe_zones:List[List[Vec]]) {
+    def isInsideSafeZone(coord:Vec):Boolean = safe_zones.exists(
+      sz => coordOnArea(coord, sz)
+    )
+
+    def saveMap(map_name:String) {
+      val fos = new FileOutputStream(map_name)
+      fos.write("walls\n".getBytes)
+      walls.foreach(w => {
+        fos.write(s"${w.from.x} ${w.from.y} ${w.to.x} ${w.to.y}\n".getBytes)
+      })
+      fos.write("safe zones\n".getBytes)
+      safe_zones.foreach(sz => {
+        fos.write(sz.map(p => s"${p.x} ${p.y}").mkString("", " ", "\n").getBytes)
+      })
+      fos.close()
+    }
+  }
+
+  def loadMap(map_name:String):GameMap = {
     def tryFloat(str:String):Boolean = {
       try {
         str.toFloat
@@ -230,15 +250,31 @@ package object simpleshooter {
       }
     }
 
+    val walls = ArrayBuffer[Wall]()
+    val safe_zones = ArrayBuffer[List[Vec]]()
+    var mode = ""
     try {
-      (for {
+      for {
         line <- io.Source.fromFile(map_name).getLines()
         if !line.startsWith("#")
-        coords = line.split(" ")
-        if coords.length == 4 && coords.forall(c => tryFloat(c))
-      } yield Wall(Vec(coords(0).toFloat, coords(1).toFloat), Vec(coords(2).toFloat, coords(3).toFloat))).toList
+      } {
+        if(line == "walls") mode = "walls"
+        else if(line == "safe zones") mode = "safe zones"
+        else {
+          mode match {
+            case "walls" =>
+              val coords = line.split(" ")
+              if(coords.length == 4 && coords.forall(c => tryFloat(c))) {
+                walls += Wall(Vec(coords(0).toFloat, coords(1).toFloat), Vec(coords(2).toFloat, coords(3).toFloat))
+              }
+            case "safe zones" =>
+            case _ =>
+          }
+        }
+      }
+      GameMap(walls.toList, safe_zones.toList)
     } catch {
-      case e:Exception => Nil
+      case e:Exception => GameMap(Nil, Nil)
     }
   }
 

@@ -2,7 +2,7 @@ package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.scage.ScageLib._
 
-object MainMenu extends ScageScreenApp("Simple Shooter", 800, 600) {
+object MainMenu extends ScageScreenApp("Simple Shooter", map_width, map_height) {
   private val title_printer = new ScageMessage(max_font_size = 50)
 
   private val menu_items:List[(String, Vec, List[Vec],        () => Any)] = createMenuItems(List(

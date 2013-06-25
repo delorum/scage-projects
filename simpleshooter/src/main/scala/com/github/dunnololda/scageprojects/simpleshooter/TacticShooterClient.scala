@@ -111,16 +111,6 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
 
   rightMouse(onBtnDown = m => pov_fixed = !pov_fixed)
 
-  mouseWheelDown(m => {
-    selected_player -= 1
-    if(selected_player < 0) selected_player = 2
-  })
-
-  mouseWheelUp(m => {
-    selected_player += 1
-    if(selected_player > 2) selected_player = 0
-  })
-
   mouseMotion(onMotion = m => {
     if(!pov_fixed) new_pov = Some(m)
   })
