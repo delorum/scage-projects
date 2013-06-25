@@ -148,8 +148,11 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
           val sd = tacticServerData(message, System.currentTimeMillis())
           states += sd
         }
-      case UdpServerConnected => is_connected = true
-      case UdpServerDisconnected => is_connected = false
+      case UdpServerConnected =>
+        is_connected = true
+      case UdpServerDisconnected =>
+        is_connected = false
+        is_game_started = false
     }
   }
 
@@ -241,7 +244,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
           val (your_wins, your_deaths) = yours.foldLeft((0, 0)) {case ((resw, resd), you) => (resw+you.wins, resd+you.deaths)}
           stats_builder append s"[r{$your_wins : $your_deaths}] "
           val pewpew = others.groupBy(x => x.id).values.map(x => x.foldLeft((0, 0)) {case ((resw, resd), y) => (resw+y.wins, resd+y.deaths)})
-          pewpew.zipWithIndex.foreach(x => stats_builder append s"${x._2} : {${x._1._1} : ${x._1._1}} ")
+          pewpew.zipWithIndex.foreach(x => stats_builder append s"${x._2+1} : {${x._1._1} : ${x._1._2}} ")
           print(stats_builder.toString().trim, 20, 20, WHITE)
         case None =>
       }

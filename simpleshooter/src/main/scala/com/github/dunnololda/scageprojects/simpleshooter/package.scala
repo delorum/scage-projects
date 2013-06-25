@@ -319,4 +319,10 @@ package object simpleshooter {
     val Vec(x, y) = coord
     List(Vec(x-w/2, y+h/2), Vec(x+w/2, y+h/2), Vec(x+w/2, y-h/2), Vec(x-w/2, y-h/2))
   }
+
+  def createMenuItems(menu_items:List[(String, Vec,  () => Any)], printer:ScageMessage = ScageMessage):List[(String, Vec, List[Vec], () => Any)] = {
+    menu_items.map {
+      case (title, coord, action) => (title, coord, messageArea(title, coord, printer), action)
+    }
+  }
 }

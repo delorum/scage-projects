@@ -23,58 +23,48 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
   private val bullets = ArrayBuffer[TacticBullet]()*/
 
   private val games = mutable.HashMap[Int, TacticGame]()
+
   private val games_by_clientid = mutable.HashMap[Long, TacticGame]()
+
+  private def addNewPlayerToGame(client_id:Long, game:TacticGame) {
+    val coord1 = randomCoord(map_width, map_height, None, body_radius, walls)
+    val coord2 = randomCoord(map_width, map_height, Some(coord1), body_radius, walls)
+    val coord3 = randomCoord(map_width, map_height, Some(coord1), body_radius, walls)
+    val player1 = TacticServerPlayer(
+      client_id,
+      0,
+      coord1,
+      _pov = Vec(0, 1),
+      health = 100,
+      wins = 0,
+      deaths = 0,
+      visible = true)
+    val player2 = player1.copy(number = 1, _coord = coord2)
+    val player3 = player1.copy(number = 2, _coord = coord3)
+    game.players(client_id) = List(player1, player2, player3)
+    games_by_clientid += (client_id -> game)
+  }
 
   // receive data
   action(10) {
     server.newEvent {
       case NewUdpConnection(client_id) =>
       case NewUdpClientData(client_id, message) =>
-        println(message.toJsonString)
         if(message.contains("gameslist")) {
           server.sendToClient(client_id, NetState("gameslist" -> games.map(x => GameInfo(x._1, x._2.players.size).netState).toList))
         } else if(message.contains("create")) {
           if(!games_by_clientid.contains(client_id)) {
-            val new_game = new TacticGame(nextId)
-            games += (nextId -> new_game)
-            val coord1 = randomCoord(map_width, map_height, None, body_radius, walls)
-            val coord2 = randomCoord(map_width, map_height, Some(coord1), body_radius, walls)
-            val coord3 = randomCoord(map_width, map_height, Some(coord1), body_radius, walls)
-            val player1 = TacticServerPlayer(
-              client_id,
-              0,
-              coord1,
-              _pov = Vec(0, 1),
-              health = 100,
-              wins = 0,
-              deaths = 0,
-              visible = true)
-            val player2 = player1.copy(number = 1, _coord = coord2)
-            val player3 = player1.copy(number = 2, _coord = coord3)
-            new_game.players(client_id) = List(player1, player2, player3)
-            games_by_clientid += (client_id -> new_game)
+            val new_game_id = nextId
+            val new_game = new TacticGame(new_game_id)
+            games += (new_game_id -> new_game)
+            addNewPlayerToGame(client_id, new_game)
             server.sendToClient(client_id, NetState("gamestarted" -> true, "walls" -> walls.map(_.netState).toList))
           }
         } else if(message.contains("join")) {
           if(!games_by_clientid.contains(client_id)) {
             games.get(message.value[Int]("join").get) match {
-              case Some(game @ TacticGame(_, players, bullets)) =>
-                val coord1 = randomCoord(map_width, map_height, None, body_radius, walls)
-                val coord2 = randomCoord(map_width, map_height, Some(coord1), body_radius, walls)
-                val coord3 = randomCoord(map_width, map_height, Some(coord1), body_radius, walls)
-                val player1 = TacticServerPlayer(
-                  client_id,
-                  0,
-                  coord1,
-                  _pov = Vec(0, 1),
-                  health = 100,
-                  wins = 0,
-                  deaths = 0,
-                  visible = true)
-                val player2 = player1.copy(number = 1, _coord = coord2)
-                val player3 = player1.copy(number = 2, _coord = coord3)
-                players(client_id) = List(player1, player2, player3)
-                games_by_clientid += (client_id -> game)
+              case Some(game) =>
+                addNewPlayerToGame(client_id, game)
                 server.sendToClient(client_id, NetState("gamestarted" -> true, "walls" -> walls.map(_.netState).toList))
               case None =>
                 server.sendToClient(client_id, NetState("gamenotfound" -> true))

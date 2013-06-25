@@ -61,6 +61,10 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
     }
   }
 
+  private val menu_items:List[(String, Vec, List[Vec], () => Any)] = createMenuItems(List(
+    ("Создать", Vec(windowWidth/2, windowHeight/2 - 30), () => new TacticShooterClient(None).run())
+  ))
+
   interface {
     if(!is_connected) {
       print("Connecting to Server...", windowCenter, DARK_GRAY, align = "center")
@@ -69,7 +73,11 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
         print("Receiving Games List...", windowCenter, DARK_GRAY, align = "center")
       } else {
         if(games_list.length == 0) {
-          print("No Games Found", windowCenter, DARK_GRAY, align = "center")
+          print("No Games Found", windowCenter, WHITE, align = "center")
+          menu_items.foreach {
+            case (title, coord, _, _) =>
+              print(title, coord, WHITE, align = "center")
+          }
         } else {
           games_list.foreach {
             case (GameInfo(game_id, players), str, coord, area) =>
@@ -80,6 +88,13 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
     }
     print("F5 to Refresh, Escape to Exit to Main Menu", 20, 20, GREEN)
   }
+
+  leftMouse(onBtnDown = m => {
+    menu_items.find(x => mouseOnArea(x._3)) match {
+      case Some((_, _, _, action)) => action()
+      case None =>
+    }
+  })
 
   key(KEY_F5, onKeyDown = is_list_received = false)
   key(KEY_ESCAPE, onKeyDown = stop())

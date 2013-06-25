@@ -4,26 +4,28 @@ import com.github.dunnololda.scage.ScageLib._
 
 object MainMenu extends ScageScreenApp("Simple Shooter", 800, 600) {
   private val title_printer = new ScageMessage(max_font_size = 50)
+
+  private val menu_items:List[(String, Vec, List[Vec],        () => Any)] = createMenuItems(List(
+    ("Создать",      Vec(windowWidth/2, windowHeight/2 + 30), () => new TacticShooterClient(None).run()),
+    ("Подключиться", Vec(windowWidth/2, windowHeight/2),      () => new GamesListScreen().run()),
+    ("Настройки",    Vec(windowWidth/2, windowHeight/2-30),   () => Unit),
+    ("Справка",      Vec(windowWidth/2, windowHeight/2-30*2), () => Unit),
+    ("Выход",        Vec(windowWidth/2, windowHeight/2-30*3), () => stop())
+  ))
+
   interface {
-    title_printer.print("Simple Shooter", Vec(windowWidth/2, windowHeight/2 + 30*4), WHITE, align = "center")
-    print("Создать", Vec(windowWidth/2, windowHeight/2 + 30), WHITE, align = "center")
-    print("Подключиться", Vec(windowWidth/2, windowHeight/2), WHITE, align = "center")
-    print("Настройки", Vec(windowWidth/2, windowHeight/2-30), WHITE, align = "center")
-    print("Справка", Vec(windowWidth/2, windowHeight/2-30*2), WHITE, align = "center")
-    print("Выход", Vec(windowWidth/2, windowHeight/2-30*3), WHITE, align = "center")
+    title_printer.print("Простая стрелялка", Vec(windowWidth/2, windowHeight/2 + 30*4), WHITE, align = "center")
+    menu_items.foreach {
+      case (title, coord, _, _) =>
+        print(title, coord, WHITE, align = "center")
+    }
     print(s"v$appVersion", 20, 20, WHITE, align = "center")
   }
 
-  private val create_area = messageArea("Создать", Vec(windowWidth/2, windowHeight/2 + 30))
-  private val join_area = messageArea("Подключиться", Vec(windowWidth/2, windowHeight/2))
-  private val exit_area = messageArea("Выход", Vec(windowWidth/2, windowHeight/2-30*3))
   leftMouse(onBtnDown = m => {
-    if(mouseOnArea(create_area)) {
-      new TacticShooterClient(None).run()
-    } else if(mouseOnArea(join_area)) {
-      new GamesListScreen().run()
-    } else if(mouseOnArea(exit_area)) {
-      stop()
+    menu_items.find(x => mouseOnArea(x._3)) match {
+      case Some((_, _, _, action)) => action()
+      case None =>
     }
   })
 }
