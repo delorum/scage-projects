@@ -22,13 +22,13 @@ object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", map_
   // send data
   action(100) {
 
-    if(moves.exists(_._2) || shoots.nonEmpty || walls.isEmpty) {
+    if(moves.exists(_._2) || shoots.nonEmpty || map.walls.isEmpty) {
       val builder = ArrayBuffer[(String, Any)]()
       builder ++= moves.filter(_._2)
       if(shoots.nonEmpty) {
         builder += ("shoots" -> shoots.map(v => NetState("x" -> v.x, "y" -> v.y)).toList)
       }
-      if(walls.isEmpty) {
+      if(map.isEmpty) {
         builder += ("sendmap" -> true)
       }
       val state = NetState(builder:_*)
@@ -52,8 +52,7 @@ object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", map_
       case NewUdpServerData(message) =>
         //println(message.toJsonString)
         if(message.contains("walls")) {
-          walls.clear()
-          walls ++= serverWalls(message)
+          map = gameMap(message.value[NetState]("map").get)
         } else {
           val sd = serverData(message)
           //println(sd)
@@ -69,7 +68,7 @@ object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", map_
 
   }*/
 
-  private val walls = ArrayBuffer[Wall]()
+  private var map = GameMap()
 
   render {
     if(!is_connected) {
@@ -89,7 +88,7 @@ object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", map_
             drawRectCentered(b, bullet_size, bullet_size, WHITE)
           })
 
-          walls.filter(w => isWallVisible(w, you.coord, walls.filterNot(ow => ow == w))).foreach(wall => {
+          map.walls.filter(w => isWallVisible(w, you.coord, map.walls.filterNot(ow => ow == w))).foreach(wall => {
             drawLine(wall.from, wall.to, WHITE)
           })
 

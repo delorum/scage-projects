@@ -25,7 +25,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
 
   private var is_game_started = false
   private var is_connected = false
-  private val walls = ArrayBuffer[Wall]()
+  private var map = GameMap()
   private var current_state:Option[TacticServerData] = None
 
   private val menu_items:List[(String, Vec, List[Vec],        () => Any)] = createMenuItems(List(
@@ -119,10 +119,10 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
   actionIgnorePause(10) {
     client.newEvent {
       case NewUdpServerData(message) =>
+        //println(message.toJsonString)
         if(message.contains("gamestarted")) is_game_started = true
-        if(message.contains("walls")) {
-          walls.clear()
-          walls ++= serverWalls(message)
+        if(message.contains("map")) {
+          map = gameMap(message.value[NetState]("map").get)
         } else {
           val sd = tacticServerData(message, System.currentTimeMillis())
           states += sd
@@ -148,7 +148,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
         case None => client.send(NetState("create" -> true))
       }
     } else {
-      if(new_destination.nonEmpty || new_pov.nonEmpty || walls.isEmpty) {
+      if(new_destination.nonEmpty || new_pov.nonEmpty || map.walls.isEmpty || clear_destinations) {
         val builder = NetState.newBuilder
         builder += ("pn", selected_player)
         new_destination.foreach(nd => {
@@ -159,7 +159,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
           builder += ("pov", NetState("x" -> nd.x, "y" -> nd.y))
           new_pov = None
         })
-        if(walls.isEmpty) builder += ("sendmap", true)
+        if(map.isEmpty) builder += ("sendmap", true)
         if(clear_destinations) {
           builder += ("cleardest", true)
           clear_destinations = false
@@ -169,8 +169,10 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
     }
   }
 
+  private var render_mouse = mouseCoord
+
   render {
-    if(is_connected) {
+    if(is_connected && is_game_started) {
       current_state match {
         case Some(TacticServerData(yours, others, your_bullets, other_bullets, _)) =>
           yours.foreach(you => {
@@ -186,9 +188,9 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
                 }
               }
               if(!pov_fixed && !on_pause) {
-                val m = mouseCoord
-                val pov = (m - you.coord).n
-                val pov_point = you.coord + (m - you.coord).n*100f
+                render_mouse = mouseCoord
+                val pov = (render_mouse - you.coord).n
+                val pov_point = you.coord + (render_mouse - you.coord).n*100f
                 drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), checkPausedColor(YELLOW))
                 drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), checkPausedColor(YELLOW))
                 if(pov_fixed) drawCircle(pov_point, 7, checkPausedColor(YELLOW))
@@ -202,6 +204,10 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
                 drawSlidingLines(you.pov_area, DARK_GRAY)
               }
               drawCircle(you.coord, audibility_radius, DARK_GRAY)
+              drawLine(you.coord, render_mouse, DARK_GRAY)
+              val r = render_mouse.dist(you.coord)
+              print(f"${r/10f}%.2f m", render_mouse, DARK_GRAY)
+              drawCircle(you.coord, r, DARK_GRAY)
             } else {
               drawCircle(you.coord, 10, checkPausedColor(GREEN))
               print(you.number+1, you.coord, checkPausedColor(GREEN), align = "center")
@@ -242,7 +248,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
             drawRectCentered(b.coord, bullet_size, bullet_size, checkPausedColor(RED))
           })
 
-          walls.foreach(wall => {
+          map.walls.foreach(wall => {
             drawLine(wall.from, wall.to, checkPausedColor(WHITE))
           })
         case None =>
@@ -251,7 +257,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
   }
 
   interface {
-    if(!is_connected) {
+    if(!is_connected || !is_game_started) {
       print("Подключаемся к серверу...", windowCenter, DARK_GRAY, align = "center")
     } else {
       current_state match {

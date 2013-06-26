@@ -221,23 +221,34 @@ package object simpleshooter {
     message.value[List[NetState]]("gameslist").getOrElse(Nil).map(m => gameInfo(m))
   }
 
-  case class GameMap(walls:List[Wall], safe_zones:List[List[Vec]]) {
+  case class GameMap(walls:List[Wall] = Nil, safe_zones:List[List[Vec]] = Nil) {
     def isInsideSafeZone(coord:Vec):Boolean = safe_zones.exists(
       sz => coordOnArea(coord, sz)
     )
 
-    def saveMap(map_name:String) {
-      val fos = new FileOutputStream(map_name)
+    def isEmpty:Boolean = walls.isEmpty && safe_zones.isEmpty
+
+    def netState = NetState(
+      "ws" -> walls.map(w => w.netState).toList,
+      "szs" -> safe_zones.map(sz => sz.map(p => NetState("x" -> p.x, "y" -> p.y)))
+    )
+  }
+
+  def saveMap(map_name:String, walls:Seq[Wall], safe_zones:Seq[Seq[Vec]]) {
+    val fos = new FileOutputStream(map_name)
+    if(walls.nonEmpty) {
       fos.write("walls\n".getBytes)
       walls.foreach(w => {
         fos.write(s"${w.from.x} ${w.from.y} ${w.to.x} ${w.to.y}\n".getBytes)
       })
+    }
+    if(safe_zones.nonEmpty) {
       fos.write("safe zones\n".getBytes)
       safe_zones.foreach(sz => {
         fos.write(sz.map(p => s"${p.x} ${p.y}").mkString("", " ", "\n").getBytes)
       })
-      fos.close()
     }
+    fos.close()
   }
 
   def loadMap(map_name:String):GameMap = {
@@ -278,6 +289,13 @@ package object simpleshooter {
     }
   }
 
+  def gameMap(message:NetState):GameMap = {
+    GameMap(
+      walls = message.value[List[NetState]]("ws").getOrElse(Nil).map(m => wall(m)),
+      safe_zones = message.value[List[List[NetState]]]("szs").getOrElse(Nil).map(m => m.map(p => vec(p, "x", "y")))
+    )
+  }
+
   def isCoordNearWall(coord:Vec, wall:Wall, body_radius:Float):Boolean = {
     val one = (wall.to - wall.from).rotateDeg(135).n*body_radius + wall.from
     val two = (wall.to - wall.from).rotateDeg(-135).n*body_radius + wall.from
@@ -291,18 +309,21 @@ package object simpleshooter {
     walls.forall(w => !isCoordNearWall(coord, w, body_radius))
   }
 
-  def randomCoord(width:Float, height:Float, near:Option[Vec], body_radius:Float, walls:Seq[Wall]):Vec = {
-    near match {
-      case Some(pos) =>
-        val dir = Vec(math.random, math.random).n
-        val coord = pos + dir*body_radius*3
-        if (isCoordCorrect(coord, body_radius, walls)) coord
-        else randomCoord(width, height, near, body_radius, walls)
-      case None =>
-        val coord = Vec(math.random*width, math.random*height)
-        if (isCoordCorrect(coord, body_radius, walls)) coord
-        else randomCoord(width, height, near, body_radius, walls)
-    }
+  def randomCoord(width:Float, height:Float, body_radius:Float, walls:Seq[Wall]):Vec = {
+    val coord = Vec(math.random*width, math.random*height)
+    if (isCoordCorrect(coord, body_radius, walls)) coord
+    else randomCoord(width, height, body_radius, walls)
+  }
+
+  def randomCoordNear(near:Vec, radius:Float, body_radius:Float, walls:Seq[Wall]):Vec = {
+    val dir = Vec(math.random, math.random).n
+    val coord = near + dir*radius
+    if (isCoordCorrect(coord, body_radius, walls)) coord
+    else randomCoordNear(near, radius, body_radius, walls)
+  }
+
+  def randomCoordInsideArea(area:List[Vec], body_radius:Float, walls:Seq[Wall]):Vec = {
+    ???
   }
 
   def isCoordVisible(coord:Vec, from:Vec, povArea:List[Vec], walls:Seq[Wall]):Boolean = {

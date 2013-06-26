@@ -10,12 +10,12 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
   commandLineArgsAndParse(("m", "map", "optional map file name to edit or the name for new map. Default: map.ss", true, false))
   private val map_name = property("map", "map.ss")
 
-  private val loaded_map = loadMap(map_name)
+  private var loaded_map = loadMap(map_name)
 
-  private val walls = ArrayBuffer[Wall](loaded_map:_*)
+  private val walls = ArrayBuffer[Wall](loaded_map.walls:_*)
   private var walls_counter = 0
 
-  private val safe_zones = ArrayBuffer[List[Vec]]()
+  private val safe_zones = ArrayBuffer[List[Vec]](loaded_map.safe_zones:_*)
   private val new_safe_zone = ArrayBuffer[Vec]()
   private var safe_zones_counter = 0
 
@@ -24,7 +24,7 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
   private var _center:Vec = windowCenter
 
   private def isMapChanged:Boolean = {
-    walls.toList != loaded_map
+    walls.toList != loaded_map.walls || safe_zones.toList != loaded_map.safe_zones
   }
 
   key(KEY_Z, onKeyDown = {
@@ -38,23 +38,29 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
 
   key(KEY_F1, onKeyDown = {
     walls.clear()
-    walls ++= loaded_map
+    walls ++= loaded_map.walls
+    safe_zones.clear()
+    safe_zones ++= loaded_map.safe_zones
   })
   key(KEY_F5, onKeyDown = {
-    if(isMapChanged) saveMap(map_name)
+    if(isMapChanged) {
+      saveMap(map_name, walls, safe_zones)
+      loaded_map = GameMap(walls.toList, safe_zones.toList)
+    }
   })
 
   leftMouse(onBtnDown = m => {
+    val sm = scaledCoord(m)
     if(!safe_zone_creation_mode) {
       from match {
         case Some(f) =>
-          walls += Wall(f, m)
+          walls += Wall(f, sm)
           from = None
-        case None => from = Some(m)
+        case None => from = Some(sm)
       }
     } else {
       if(new_safe_zone.length > 0) {
-        if(m.dist2(new_safe_zone.head) < body_radius*body_radius) {
+        if(sm.dist2(new_safe_zone.head) < body_radius*body_radius) {
           if(new_safe_zone.length < 3) {
             new_safe_zone.clear()
           } else {
@@ -62,16 +68,24 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
             safe_zones += new_safe_zone.toList
             new_safe_zone.clear()
           }
-        } else new_safe_zone += m
-      } else new_safe_zone += m
+        } else new_safe_zone += sm
+      } else new_safe_zone += sm
     }
   })
 
   rightMouse(onBtnDown = m => {
-    if(walls.length > 0 && walls_counter >= 0 && walls_counter < walls.length) {
-      walls.remove(walls_counter)
-      if(walls.length > 0) walls_counter -= 1
-      else walls_counter = 0
+    if(!safe_zone_creation_mode) {
+      if(walls.length > 0 && walls_counter >= 0 && walls_counter < walls.length) {
+        walls.remove(walls_counter)
+        if(walls.length > 0) walls_counter -= 1
+        else walls_counter = 0
+      }
+    } else {
+      if(safe_zones.length > 0 && safe_zones_counter >= 0 && safe_zones_counter < safe_zones.length) {
+        safe_zones.remove(safe_zones_counter)
+        if(safe_zones.length > 0) safe_zones_counter -= 1
+        else safe_zones_counter = 0
+      }
     }
   })
 
@@ -123,15 +137,16 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
       from match {
         case Some(f) =>
           drawFilledCircle(f, 2, WHITE)
-          drawLine(f, mouseCoord, WHITE)
+          drawLine(f, scaledCoord(mouseCoord), WHITE)
         case None =>
       }
     } else {
-      drawSlidingLines(new_safe_zone.toList ::: mouseCoord :: Nil, GREEN)
+      drawSlidingLines(new_safe_zone.toList ::: scaledCoord(mouseCoord) :: Nil, GREEN)
     }
   }
 
   interface {
+    print(fps, 20, windowHeight-20, WHITE)
     print(if(safe_zone_creation_mode) "Добавляем мертвяк" else "Добавляем стены", 20, 80, GREEN)
     print(f"Центр: x = ${_center.x/10f}%.2f м, y = ${_center.y/10f}%.2f м", 20, 50, GREEN)
     val s = if(isMapChanged) {
@@ -141,6 +156,6 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
   }
 
   dispose {
-    if(isMapChanged) saveMap(map_name)
+    if(isMapChanged) saveMap(map_name, walls, safe_zones)
   }
 }

@@ -17,7 +17,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
   private val server = UdpNetServer(port = property("port", port), ping_timeout= 1000, check_timeout = 5000)
 
   private val map_name = property("map", "map.ss")
-  private val walls = loadMap(map_name)
+  private val map = loadMap(map_name)
 
   /*private val players = mutable.HashMap[Long, List[TacticServerPlayer]]()
   private val bullets = ArrayBuffer[TacticBullet]()*/
@@ -27,9 +27,9 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
   private val games_by_clientid = mutable.HashMap[Long, TacticGame]()
 
   private def addNewPlayerToGame(client_id:Long, game:TacticGame) {
-    val coord1 = randomCoord(map_width, map_height, None, body_radius, walls)
-    val coord2 = randomCoord(map_width, map_height, Some(coord1), body_radius, walls)
-    val coord3 = randomCoord(map_width, map_height, Some(coord1), body_radius, walls)
+    val coord1 = randomCoord(map_width, map_height, body_radius, map.walls)
+    val coord2 = randomCoordNear(coord1, body_radius*3, body_radius, map.walls)
+    val coord3 = randomCoordNear(coord1, body_radius*3, body_radius, map.walls)
     val player1 = TacticServerPlayer(
       client_id,
       0,
@@ -50,32 +50,39 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
     server.newEvent {
       case NewUdpConnection(client_id) =>
       case NewUdpClientData(client_id, message) =>
+        //println(message.toJsonString)
         if(message.contains("gameslist")) {
           server.sendToClient(client_id, NetState("gameslist" -> games.map(x => GameInfo(x._1, x._2.players.size).netState).toList))
         } else if(message.contains("create")) {
-          if(!games_by_clientid.contains(client_id)) {
-            val new_game_id = nextId
-            val new_game = new TacticGame(new_game_id)
-            games += (new_game_id -> new_game)
-            addNewPlayerToGame(client_id, new_game)
-            server.sendToClient(client_id, NetState("gamestarted" -> true, "walls" -> walls.map(_.netState).toList))
+          games_by_clientid.get(client_id) match {
+            case Some(game) =>
+              server.sendToClient(client_id, NetState("gamestarted" -> true, "map" -> map.netState))
+            case None =>
+              val new_game_id = nextId
+              val new_game = new TacticGame(new_game_id)
+              games += (new_game_id -> new_game)
+              addNewPlayerToGame(client_id, new_game)
+              server.sendToClient(client_id, NetState("gamestarted" -> true, "map" -> map.netState))
           }
         } else if(message.contains("join")) {
-          if(!games_by_clientid.contains(client_id)) {
-            games.get(message.value[Int]("join").get) match {
-              case Some(game) =>
-                addNewPlayerToGame(client_id, game)
-                server.sendToClient(client_id, NetState("gamestarted" -> true, "walls" -> walls.map(_.netState).toList))
-              case None =>
-                server.sendToClient(client_id, NetState("gamenotfound" -> true))
-                server.disconnectClient(client_id)
-            }
+          games_by_clientid.get(client_id) match {
+            case Some(game) =>
+              server.sendToClient(client_id, NetState("gamestarted" -> true, "map" -> map.netState))
+            case None =>
+              games.get(message.value[Int]("join").get) match {
+                case Some(game) =>
+                  addNewPlayerToGame(client_id, game)
+                  server.sendToClient(client_id, NetState("gamestarted" -> true, "map" -> map.netState))
+                case None =>
+                  server.sendToClient(client_id, NetState("gamenotfound" -> true))
+                  server.disconnectClient(client_id)
+              }
           }
         } else {
           games_by_clientid.get(client_id) match {
             case Some(TacticGame(_, players, bullets)) =>
               val client_players = players(client_id)
-              if(message.contains("sendmap")) server.sendToClient(client_id, NetState("walls" -> walls.map(_.netState).toList))
+              if(message.contains("sendmap")) server.sendToClient(client_id, NetState("map" -> map.netState))
               val TacticClientData(player_num, destination, pov, clear_destinations) = tacticClientData(message)
               val player = client_players(player_num)
               if(clear_destinations) player.ds.clear()
@@ -105,7 +112,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
           p.ds.headOption.foreach(d => {
             if(d.dist2(p.coord) > speed*speed) {
               val new_coord = outsideCoord(p.coord + (d - p.coord).n*speed, map_width, map_height)
-              if(isCoordCorrect(new_coord, body_radius, walls)) {
+              if(isCoordCorrect(new_coord, body_radius, map.walls)) {
                 p.coord = new_coord
               } else p.ds.clear()
             } else p.ds.remove(0)
@@ -114,7 +121,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
             players
               .values
               .flatten
-              .find(op => op.id != p.id && isCoordVisible(op.coord, p.coord, p.povArea, walls))
+              .find(op => op.id != p.id && isCoordVisible(op.coord, p.coord, p.povArea, map.walls))
               .foreach(x => {
               val dir = (x.coord - p.coord).n
               val init_coord = p.coord + dir*(body_radius+1)
@@ -126,7 +133,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
         bullets.foreach(b => {
           val new_coord = b.coord + b.dir*bullet_speed
           b.count -= 1
-          if (!isPathCorrect(b.coord, new_coord, bullet_size, walls)) {
+          if (!isPathCorrect(b.coord, new_coord, bullet_size, map.walls)) {
             b.count = 0
           } else {
             b.prev_coord = b.coord
@@ -142,7 +149,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
                 if (p.health <= 0) {
                   p.deaths += 1
                   p.ds.clear()
-                  p.coord = randomCoord(map_width, map_height, None, body_radius, walls)
+                  p.coord = randomCoord(map_width, map_height, body_radius, map.walls)
                   p.pov = Vec(0, 1)
                   p.health = 100
                   b.shooter.wins += 1
@@ -166,9 +173,9 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
             val (your_players, other_players) = players.values.flatten.partition(_.id == id)
             val yours = your_players.map(x => x.netState).toList
             builder += ("yours" -> yours)
-            val others = other_players.map(x => x.copy(visible = your_players.exists(y => isCoordVisibleOrAudible(x.coord, y.coord, y.povArea, is_moving = /*x.ds.nonEmpty*/true, audibility_radius, walls))).netState).toList
+            val others = other_players.map(x => x.copy(visible = your_players.exists(y => isCoordVisibleOrAudible(x.coord, y.coord, y.povArea, is_moving = /*x.ds.nonEmpty*/true, audibility_radius, map.walls))).netState).toList
             if(others.nonEmpty) builder += ("others" -> others)
-            val (your_bullets, other_bullets) = bullets.filter(b => your_players.exists(y => isCoordVisibleOrAudible(b.coord, y.coord, y.povArea, is_moving = true, audibility_radius, walls))).partition(_.shooter.id == id)
+            val (your_bullets, other_bullets) = bullets.filter(b => your_players.exists(y => isCoordVisibleOrAudible(b.coord, y.coord, y.povArea, is_moving = true, audibility_radius, map.walls))).partition(_.shooter.id == id)
             if (your_bullets.nonEmpty) builder += ("your_bullets" -> your_bullets.map(_.netState).toList)
             if (other_bullets.nonEmpty) builder += ("other_bullets" -> other_bullets.map(_.netState).toList)
             val data = NetState(builder:_*)
