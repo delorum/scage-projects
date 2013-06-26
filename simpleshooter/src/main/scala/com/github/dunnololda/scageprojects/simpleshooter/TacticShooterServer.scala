@@ -22,17 +22,37 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
   /*private val players = mutable.HashMap[Long, List[TacticServerPlayer]]()
   private val bullets = ArrayBuffer[TacticBullet]()*/
 
-  private val games = mutable.HashMap[Int, TacticGame]()
+  private val games = mutable.HashMap[Int, TacticGame]()  // game_id -> game
 
-  private val games_by_clientid = mutable.HashMap[Long, TacticGame]()
+  private val games_by_clientid = mutable.HashMap[Long, TacticGame]() // client_id -> game
+
+  private val numbers_in_teams = mutable.HashMap[Int, ArrayBuffer[Boolean]]() // team -> list of positions
 
   private def addNewPlayerToGame(client_id:Long, game:TacticGame) {
-    val coord1 = randomCoord(map_width, map_height, body_radius, map.walls)
-    val coord2 = randomCoordNear(coord1, body_radius*3, body_radius, map.walls)
-    val coord3 = randomCoordNear(coord1, body_radius*3, body_radius, map.walls)
+    val team = {
+      val team1_amount = game.players.values.flatten.count(_.team == 1)
+      val team2_amount = game.players.size - team1_amount
+      if(team1_amount <= team2_amount) 1
+      else 2
+    }
+
+    val number_in_team = {
+      val maybe_position = numbers_in_teams.getOrElseUpdate(team, ArrayBuffer[Boolean]()).indexWhere(x => !x)
+      if(maybe_position == -1) {
+        numbers_in_teams(team) += true
+        numbers_in_teams(team).length-1
+      } else maybe_position
+    }
+
+    val coord1 = respawnCoord(team, map_width, map_height, body_radius, map)
+    val coord2 = respawnCoord(team, map_width, map_height, body_radius, map)
+    val coord3 = respawnCoord(team, map_width, map_height, body_radius, map)
+
     val player1 = TacticServerPlayer(
       client_id,
       0,
+      team,
+      number_in_team,
       coord1,
       _pov = Vec(0, 1),
       health = 100,
@@ -95,6 +115,20 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
         games_by_clientid.get(client_id) match {
           case Some(TacticGame(game_id, players, bullets)) =>
             games_by_clientid -= client_id
+            for {
+              client_players <- players.get(client_id)
+              head_player <- client_players.headOption
+              team_numbers <- numbers_in_teams.get(head_player.team)
+              if head_player.number_in_team >= 0 && head_player.number_in_team < team_numbers.length
+            } {
+              team_numbers(head_player.number_in_team) = false
+            }
+            players.get(client_id).foreach(x => {
+              x.headOption.foreach(h => {
+
+              })
+              x.head.number_in_team
+            })
             players -= client_id
             if(players.size == 0) {
               games -= game_id
@@ -117,17 +151,19 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
               } else p.ds.clear()
             } else p.ds.remove(0)
           })
-          if(System.currentTimeMillis() - p.last_bullet_shot > fire_pace) {
+          if(p.canShoot && !map.isInsideSafeZone(p.coord)) {
             players
               .values
               .flatten
-              .find(op => op.id != p.id && isCoordVisible(op.coord, p.coord, p.povArea, map.walls))
+              .find(op => op.team != p.team && op.isAlive && isCoordVisible(op.coord, p.coord, p.povArea, map.walls) && !map.isInsideSafeZone(op.coord))
               .foreach(x => {
               val dir = (x.coord - p.coord).n
-              val init_coord = p.coord + dir*(body_radius+1)
-              bullets += TacticBullet(nextId, dir, p, init_coord, init_coord, bullet_count)
-              p.last_bullet_shot = System.currentTimeMillis()
+              bullets += p.shootBullet(nextId, dir, body_radius, bullet_count)
             })
+          }
+          if(map.isInsideSafeZone(p.coord)) {
+            if(p.isDead) p.health = 100
+            if(p.bullets < max_bullets) p.replenishAmmo()
           }
         })
         bullets.foreach(b => {
@@ -148,10 +184,6 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
                 p.health -= bullet_damage
                 if (p.health <= 0) {
                   p.deaths += 1
-                  p.ds.clear()
-                  p.coord = randomCoord(map_width, map_height, body_radius, map.walls)
-                  p.pov = Vec(0, 1)
-                  p.health = 100
                   b.shooter.wins += 1
                 }
               })
