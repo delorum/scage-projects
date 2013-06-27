@@ -2,7 +2,6 @@ package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.scage.ScageLib._
 import collection.mutable
-import collection.mutable.ArrayBuffer
 import com.github.dunnololda.simplenet.{State => NetState, _}
 
 class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Shooter Client") {
@@ -27,6 +26,12 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
   private var is_connected = false
   private var map = GameMap()
   private var current_state:Option[TacticServerData] = None
+
+  private val fire_toggles = mutable.HashMap[Int, Int]()
+  private def fireToggle = fire_toggles.getOrElseUpdate(selected_player, 0)
+  private def fireToggle_=(new_ft:Int) {fire_toggles(selected_player) = new_ft}
+
+  private var send_fire_toggle:Option[Int] = None // Some(0), Some(1), Some(2): no fire, single fire, rapid fire
 
   private val menu_items = createMenuItems(List(
     ("Продолжить",    Vec(windowWidth/2, windowHeight/2 + 30), WHITE, () => pauseOff()),
@@ -109,11 +114,25 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
     else RED
   }
 
+  private def inputChanged:Boolean = {
+    new_destination.nonEmpty || new_pov.nonEmpty || map.walls.isEmpty || clear_destinations || send_fire_toggle.nonEmpty
+  }
+
   key(KEY_1, onKeyDown = selected_player = 0)
   key(KEY_2, onKeyDown = selected_player = 1)
   key(KEY_3, onKeyDown = selected_player = 2)
   key(KEY_SPACE, onKeyDown = clear_destinations = true)
   keyIgnorePause(KEY_ESCAPE, onKeyDown = switchPause())
+
+  key(KEY_LCONTROL, onKeyDown = {
+    fireToggle = if(fireToggle != 2) 2 else 0
+    send_fire_toggle = Some(fireToggle)
+  })
+
+  key(KEY_LSHIFT, onKeyDown = {
+    fireToggle = if(fireToggle != 1) 1 else 0
+    send_fire_toggle = Some(fireToggle)
+  })
 
   leftMouseIgnorePause(onBtnDown = m => {
     if(!on_pause) new_destination = Some(m)
@@ -137,13 +156,14 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
       case NewUdpServerData(message) =>
         //println(message.toJsonString)
         if(message.contains("gamestarted")) is_game_started = true
+        if(message.contains("fire_toggle_set")) send_fire_toggle = None
+        if(message.contains("dests_cleared")) clear_destinations = false
         if(message.contains("map")) {
           //println(message.value[NetState]("map").get.toJsonString)
           map = gameMap(message.value[NetState]("map").get)
-        } else {
-          val sd = tacticServerData(message, System.currentTimeMillis())
-          states += sd
         }
+        val sd = tacticServerData(message, System.currentTimeMillis())
+        states += sd
       case UdpServerConnected =>
         is_connected = true
       case UdpServerDisconnected =>
@@ -165,22 +185,22 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
         case None => client.send(NetState("create" -> true))
       }
     } else {
-      if(new_destination.nonEmpty || new_pov.nonEmpty || map.walls.isEmpty || clear_destinations) {
+      if(inputChanged) {
         val builder = NetState.newBuilder
-        builder += ("pn", selected_player)
+        builder += ("pn" -> selected_player)
         new_destination.foreach(nd => {
-          builder += ("d", NetState("x" -> nd.x, "y" -> nd.y))
+          builder += ("d" -> NetState("x" -> nd.x, "y" -> nd.y))
           new_destination = None
         })
         new_pov.foreach(nd => {
-          builder += ("pov", NetState("x" -> nd.x, "y" -> nd.y))
+          builder += ("pov" -> NetState("x" -> nd.x, "y" -> nd.y))
           new_pov = None
         })
-        if(map.isEmpty) builder += ("sendmap", true)
+        if(map.isEmpty) builder += ("sendmap" -> true)
         if(clear_destinations) {
-          builder += ("cleardest", true)
-          clear_destinations = false
+          builder += ("cleardest" -> true)
         }
+        send_fire_toggle.foreach(ft => builder += ("ft" -> ft))
         client.send(builder.toState)
       }
     }
@@ -190,6 +210,21 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
     if(is_connected && is_game_started) {
       current_state match {
         case Some(TacticServerData(yours, others, your_bullets, other_bullets, _)) =>
+          val walls_color = checkPausedColor(WHITE)
+          map.walls.foreach(wall => {
+            drawLine(wall.from, wall.to, walls_color)
+          })
+
+          val safe_zones_color = checkPausedColor(GREEN)
+          map.safe_zones.foreach(sz => {
+            drawSlidingLines(sz, safe_zones_color)
+          })
+
+          val chance_modificators_color = checkPausedColor(GRAY)
+          map.chance_modificators.foreach(sz => {
+            drawSlidingLines(sz._2, chance_modificators_color)
+          })
+
           yours.foreach(you => {
             if(you.number == selected_player) {
               val color = ourPlayerColor(you, is_selected = true)
@@ -249,9 +284,15 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
 
           others.filter(_.visible).foreach {
             case player =>
-              val player_color = if(player.team == yours.head.team) ourPlayerColor(player, is_selected = false) else enemyPlayerColor(player)
+              val you = yours(selected_player)
+              val player_color = if(player.team == you.team) ourPlayerColor(player, is_selected = false) else enemyPlayerColor(player)
               drawCircle(player.coord, 10, player_color)
-              print(s"${player.number_in_team+1}.${player.number+1}  ${if(player.is_reloading) "перезарядка" else player.bullets}", player.coord+number_place, player_color, align = "center")
+              val info = if(player.team == yours.head.team) {
+                s"${player.number_in_team+1}.${player.number+1} ${if(player.is_reloading) "пз" else player.bullets}"
+              } else {
+                s"${player.number_in_team+1}.${player.number+1} ${if(player.is_reloading) "пз" else player.bullets} ${(chanceToHit(you.coord, you.pov_area, you.isMoving, player.coord, player.isMoving, map)*100).toInt}%"
+              }
+              print(info, player.coord+number_place, player_color, align = "center")
               val pov_point = player.coord + player.pov*100f
               drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), player_color)
               drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), player_color)
@@ -268,16 +309,6 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
             val color = if(b.player_team == yours.head.team) checkPausedColor(GREEN) else checkPausedColor(RED)
             drawRectCentered(b.coord, bullet_size, bullet_size, color)
           })
-
-          val walls_color = checkPausedColor(WHITE)
-          map.walls.foreach(wall => {
-            drawLine(wall.from, wall.to, walls_color)
-          })
-
-          val safe_zones_color = checkPausedColor(GREEN)
-          map.safe_zones.foreach(sz => {
-            drawSlidingLines(sz, safe_zones_color)
-          })
         case None =>
       }
     }
@@ -288,7 +319,13 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
     if(!is_connected || !is_game_started) {
       print("Подключаемся к серверу...", windowCenter, DARK_GRAY, align = "center")
     } else {
-      current_state match {
+      fireToggle match {
+        case 0 => print("предохранитель", 20, 20, WHITE)
+        case 1 => print("одиночный огонь", 20, 20, WHITE)
+        case 2 => print("автоматический огонь", 20, 20, WHITE)
+        case _ =>
+      }
+      /*current_state match {
         case Some(TacticServerData(yours, others, your_bullets, other_bullets, _)) =>
           val stats_builder = new StringBuilder
           val (your_wins, your_deaths) = yours.foldLeft((0, 0)) {case ((resw, resd), you) => (resw+you.wins, resd+you.deaths)}
@@ -297,7 +334,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
           pewpew.zipWithIndex.foreach(x => stats_builder append s"${x._2+1} : {${x._1._1} : ${x._1._2}} ")
           print(stats_builder.toString().trim, 20, 20, checkPausedColor(WHITE))
         case None =>
-      }
+      }*/
     }
     if(on_pause) {
       menu_items.foreach {
