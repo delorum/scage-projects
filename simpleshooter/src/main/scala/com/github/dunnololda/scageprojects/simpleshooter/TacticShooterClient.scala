@@ -133,14 +133,18 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
   key(KEY_SPACE, onKeyDown = clear_destinations = true)
   keyIgnorePause(KEY_ESCAPE, onKeyDown = switchPause())
 
-  key(KEY_LCONTROL, onKeyDown = {
-    fireToggle = if(fireToggle != 2) 2 else 0
-    send_fire_toggle = Some(fireToggle)
+  key(KEY_LSHIFT, onKeyDown = {
+    if(fireToggle > 0) {
+      fireToggle -= 1
+      send_fire_toggle = Some(fireToggle)
+    }
   })
 
-  key(KEY_LSHIFT, onKeyDown = {
-    fireToggle = if(fireToggle != 1) 1 else 0
-    send_fire_toggle = Some(fireToggle)
+  key(KEY_LCONTROL, onKeyDown = {
+    if(fireToggle < 2) {
+      fireToggle += 1
+      send_fire_toggle = Some(fireToggle)
+    }
   })
 
   key(KEY_W, 10, onKeyDown = dir += Vec(0, 1))
