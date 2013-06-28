@@ -34,13 +34,16 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
   private var send_fire_toggle:Option[Int] = None // Some(0), Some(1), Some(2): no fire, single fire, rapid fire
 
   private val menu_items = createMenuItems(List(
-    ("Продолжить",    Vec(windowWidth/2, windowHeight/2 + 30), WHITE, () => pauseOff()),
-    ("Выход в меню",  Vec(windowWidth/2, windowHeight/2),      WHITE, () => stop()),
-    ("Выход из игры", Vec(windowWidth/2, windowHeight/2-30),   WHITE, () => stopApp())
+    ("Продолжить",    () => Vec(windowWidth/2, windowHeight/2 + 30), WHITE, () => pauseOff()),
+    ("Выход в меню",  () => Vec(windowWidth/2, windowHeight/2),      WHITE, () => stop()),
+    ("Выход из игры", () => Vec(windowWidth/2, windowHeight/2-30),   WHITE, () => stopApp())
   ))
 
-  private var render_mouse = mouseCoord
+  private var render_mouse = scaledCoord(mouseCoord)
   private val number_place = Vec(1, 1).n*body_radius*2
+
+  private var _center = Vec.zero
+  private var dir = Vec.zero
 
   private def interpolateServerState(third:TacticServerData, second:TacticServerData):TacticServerData = {
     val TacticServerData(third_yours, third_others, third_your_bullets, third_other_bullets, third_receive_moment) = third
@@ -118,9 +121,15 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
     new_destination.nonEmpty || new_pov.nonEmpty || map.walls.isEmpty || clear_destinations || send_fire_toggle.nonEmpty
   }
 
-  key(KEY_1, onKeyDown = selected_player = 0)
-  key(KEY_2, onKeyDown = selected_player = 1)
-  key(KEY_3, onKeyDown = selected_player = 2)
+  private def selectPlayer(number:Int) {
+    if(selected_player == number) {
+      _center = current_state.map(x => x.yours(selected_player).coord).getOrElse(_center)
+    } else selected_player = number
+  }
+
+  key(KEY_1, onKeyDown = selectPlayer(0))
+  key(KEY_2, onKeyDown = selectPlayer(1))
+  key(KEY_3, onKeyDown = selectPlayer(2))
   key(KEY_SPACE, onKeyDown = clear_destinations = true)
   keyIgnorePause(KEY_ESCAPE, onKeyDown = switchPause())
 
@@ -134,10 +143,20 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
     send_fire_toggle = Some(fireToggle)
   })
 
+  key(KEY_W, 10, onKeyDown = dir += Vec(0, 1))
+  key(KEY_A, 10, onKeyDown = dir += Vec(-1, 0))
+  key(KEY_S, 10, onKeyDown = dir += Vec(0, -1))
+  key(KEY_D, 10, onKeyDown = dir += Vec(1, 0))
+
   leftMouseIgnorePause(onBtnDown = m => {
-    if(!on_pause) new_destination = Some(m)
+    if(!on_pause) {
+      val sm = scaledCoord(m)
+      if(isCoordInsideMap(sm)) {
+        new_destination = Some(sm)
+      }
+    }
     else {
-      menu_items.find(x => mouseOnArea(x._3)) match {
+      menu_items.find(x => mouseOnArea(x._3())) match {
         case Some((_, _, _, _, action)) => action()
         case None =>
       }
@@ -146,8 +165,20 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
 
   rightMouse(onBtnDown = m => pov_fixed = !pov_fixed)
 
+  mouseWheelDown(onWheelDown = m => {
+    if(globalScale > 0.1f) {
+      if(globalScale > 1) globalScale -= 1
+      else globalScale -= 0.1f
+    }
+  })
+
+  mouseWheelUp(onWheelUp = m => {
+    if(globalScale < 1) globalScale += 0.1f
+    else globalScale += 1
+  })
+
   mouseMotion(onMotion = m => {
-    if(!pov_fixed) new_pov = Some(m)
+    if(!pov_fixed) new_pov = Some(scaledCoord(m))
   })
 
   // receive data
@@ -175,6 +206,18 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
   // update state
   actionIgnorePause(10) {
     current_state = optInterpolatedState
+    if(dir.notZero) {
+      val new_center = _center + dir.n*body_radius/2
+      if(isCoordInsideMap(new_center)) _center = new_center
+      dir = Vec.zero
+    }
+  }
+
+  action {
+    if(current_state.nonEmpty) {
+      selectPlayer(selected_player)
+      deleteSelf()
+    }
   }
 
   // send data
@@ -206,6 +249,11 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
     }
   }
 
+  center = /*current_state.map {
+    case TacticServerData(yours, others, your_bullets, other_bullets, _) =>
+      yours(selected_player).coord
+  }.getOrElse(Vec.zero)*/_center
+
   render {
     if(is_connected && is_game_started) {
       current_state match {
@@ -214,32 +262,33 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
           map.walls.foreach(wall => {
             drawLine(wall.from, wall.to, walls_color)
           })
-
           val safe_zones_color = checkPausedColor(GREEN)
           map.safe_zones.foreach(sz => {
             drawSlidingLines(sz, safe_zones_color)
           })
-
           val chance_modificators_color = checkPausedColor(GRAY)
           map.chance_modificators.foreach(sz => {
-            drawSlidingLines(sz._2, chance_modificators_color)
+            drawSlidingLines(sz.area, chance_modificators_color)
+            print(sz.value, sz.area_center, max_font_size/globalScale, chance_modificators_color, align = "center")
           })
+          val edges_color = checkPausedColor(GRAY)
+          drawSlidingLines(map_edges, edges_color)
 
           yours.foreach(you => {
             if(you.number == selected_player) {
               val color = ourPlayerColor(you, is_selected = true)
               drawCircle(you.coord, 10, color)
-              print(s"${you.number_in_team+1}.${you.number+1} ${if(you.is_reloading) "перезарядка" else you.bullets}", you.coord+number_place, color, align = "center")
+              print(s"${you.number_in_team+1}.${you.number+1} ${if(you.is_reloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
               you.destinations.foreach(d => drawFilledCircle(d, 3, color))
               if(you.destinations.length > 0) {
                 (you.coord :: you.destinations).sliding(2).foreach {
                   case List(a, b) =>
                     drawLine(a, b, color)
-                    print(f"${b.dist(a)/10f}%.2f m", a + (b - a).n * (b.dist(a) * 0.5f), color)
+                    print(f"${b.dist(a)/10f}%.2f m", a + (b - a).n * (b.dist(a) * 0.5f), max_font_size/globalScale, color)
                 }
               }
               if(!on_pause) {
-                render_mouse = mouseCoord
+                render_mouse = scaledCoord(mouseCoord)
               }
               if(!pov_fixed && !on_pause) {
                 val pov = (render_mouse - you.coord).n
@@ -247,38 +296,47 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
                 drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), color)
                 drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), color)
                 if(pov_fixed) drawCircle(pov_point, 7, color)
-                val pov_area = povTriangle(you.coord, pov, pov_distance, pov_angle)
-                drawSlidingLines(pov_area, DARK_GRAY)
+                val pov_point1 = you.coord + pov.rotateDeg(pov_angle) * pov_distance
+                val pov_point2 = you.coord + pov.rotateDeg(-pov_angle) * pov_distance
+                drawLine(you.coord, pov_point1, DARK_GRAY)
+                drawLine(you.coord, pov_point2, DARK_GRAY)
               } else {
                 val pov_point = you.coord + you.pov*100f
                 drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), color)
                 drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), color)
                 if(pov_fixed) drawCircle(pov_point, 7, color)
-                drawSlidingLines(you.pov_area, DARK_GRAY)
+                val pov_point1 = you.coord + you.pov.rotateDeg(pov_angle) * pov_distance
+                val pov_point2 = you.coord + you.pov.rotateDeg(-pov_angle) * pov_distance
+                drawLine(you.coord, pov_point1, DARK_GRAY)
+                drawLine(you.coord, pov_point2, DARK_GRAY)
               }
-              drawCircle(you.coord, audibility_radius, DARK_GRAY)
+              drawCircle(you.coord, human_audibility_radius, DARK_GRAY)
+              drawCircle(you.coord, bullet_audibility_radius, DARK_GRAY)
               drawLine(you.coord, render_mouse, DARK_GRAY)
               val r = render_mouse.dist(you.coord)
-              print(f"${r/10f}%.2f m", render_mouse, DARK_GRAY)
-              drawCircle(you.coord, r, DARK_GRAY)
+              print(f"${r/10f}%.2f m", render_mouse, max_font_size/globalScale, DARK_GRAY)
             } else {
               val color = ourPlayerColor(you, is_selected = false)
               drawCircle(you.coord, 10, color)
-              print(s"${you.number_in_team+1}.${you.number+1}  ${if(you.is_reloading) "перезарядка" else you.bullets}", you.coord+number_place, color, align = "center")
+              print(s"${you.number_in_team+1}.${you.number+1}  ${if(you.is_reloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
               you.destinations.foreach(d => drawFilledCircle(d, 3, color))
               if(you.destinations.length > 0) {
                 (you.coord :: you.destinations).sliding(2).foreach {
                   case List(a, b) =>
                     drawLine(a, b, color)
-                    print(f"${b.dist(a)/10f}%.2f m", a + (b - a).n * (b.dist(a) * 0.5f), color)
+                    print(f"${b.dist(a)/10f}%.2f m", a + (b - a).n * (b.dist(a) * 0.5f), max_font_size/globalScale, color)
                 }
               }
               val pov_point = you.coord + you.pov*100f
               drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), color)
               drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), color)
               drawCircle(pov_point, 7, color)
-              drawSlidingLines(you.pov_area, DARK_GRAY)
-              drawCircle(you.coord, audibility_radius, DARK_GRAY)
+              val pov_point1 = you.coord + you.pov.rotateDeg(pov_angle) * pov_distance
+              val pov_point2 = you.coord + you.pov.rotateDeg(-pov_angle) * pov_distance
+              drawLine(you.coord, pov_point1, DARK_GRAY)
+              drawLine(you.coord, pov_point2, DARK_GRAY)
+              drawCircle(you.coord, human_audibility_radius, DARK_GRAY)
+              drawCircle(you.coord, bullet_audibility_radius, DARK_GRAY)
             }
           })
 
@@ -288,16 +346,26 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
               val player_color = if(player.team == you.team) ourPlayerColor(player, is_selected = false) else enemyPlayerColor(player)
               drawCircle(player.coord, 10, player_color)
               val info = if(player.team == yours.head.team) {
-                s"${player.number_in_team+1}.${player.number+1} ${if(player.is_reloading) "пз" else player.bullets}"
+                s"${player.number_in_team+1}.${player.number+1} ${if(player.is_reloading) "перезарядка" else player.bullets}"
               } else {
-                s"${player.number_in_team+1}.${player.number+1} ${if(player.is_reloading) "пз" else player.bullets} ${(chanceToHit(you.coord, you.pov_area, you.isMoving, player.coord, player.isMoving, map)*100).toInt}%"
+                s"${player.number_in_team+1}.${player.number+1} ${if(player.is_reloading) "перезарядка" else player.bullets} ${(chanceToHit(you.coord,
+                                                                                                                                   you.pov,
+                                                                                                                                   pov_distance,
+                                                                                                                                   pov_angle,
+                                                                                                                                   you.isMoving,
+                                                                                                                                   player.coord,
+                                                                                                                                   player.isMoving, map)*100).toInt}%"
               }
-              print(info, player.coord+number_place, player_color, align = "center")
+              print(info, player.coord+number_place, max_font_size/globalScale, player_color, align = "center")
               val pov_point = player.coord + player.pov*100f
               drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), player_color)
               drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), player_color)
-              drawSlidingLines(player.pov_area, DARK_GRAY)
-              drawCircle(player.coord, audibility_radius, DARK_GRAY)
+              val pov_point1 = player.coord + player.pov.rotateDeg(pov_angle) * pov_distance
+              val pov_point2 = player.coord + player.pov.rotateDeg(-pov_angle) * pov_distance
+              drawLine(player.coord, pov_point1, DARK_GRAY)
+              drawLine(player.coord, pov_point2, DARK_GRAY)
+              drawCircle(player.coord, human_audibility_radius, DARK_GRAY)
+              drawCircle(player.coord, bullet_audibility_radius, DARK_GRAY)
           }
 
           your_bullets.foreach(b => {
@@ -339,7 +407,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
     if(on_pause) {
       menu_items.foreach {
         case (title, coord, _, color, _) =>
-          print(title, coord, color, align = "center")
+          print(title, coord(), color, align = "center")
       }
     }
   }

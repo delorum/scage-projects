@@ -57,13 +57,13 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
       team,
       number_in_team,
       coord1,
-      _pov = Vec(0, 1),
+      pov = Vec(0, 1),
       health = 100,
       wins = 0,
       deaths = 0,
       visible = true)
-    val player2 = player1.copy(number = 1, _coord = coord2)
-    val player3 = player1.copy(number = 2, _coord = coord3)
+    val player2 = player1.copy(number = 1, coord = coord2)
+    val player3 = player1.copy(number = 2, coord = coord3)
     game.players(client_id) = List(player1, player2, player3)
     games_by_clientid += (client_id -> game)
   }
@@ -155,23 +155,21 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
         players.values.flatten.foreach(p => {
           p.ds.headOption.foreach(d => {
             if(d.dist2(p.coord) > speed*speed) {
-              val new_coord = outsideCoord(p.coord + (d - p.coord).n*speed, map_width, map_height)
+              val new_coord = p.coord + (d - p.coord).n*speed
               if(isCoordCorrect(new_coord, body_radius, map.walls)) {
                 p.coord = new_coord
               } else p.ds.clear()
             } else p.ds.remove(0)
           })
           if(p.canShoot && !map.isInsideSafeZone(p.coord)) {
-            val dir = players
+            players
               .values
               .flatten
-              .find(op => op.team != p.team && op.isAlive && isCoordVisible(op.coord, p.coord, p.povArea, map.walls) && !map.isInsideSafeZone(op.coord))
-              .map(x => (x.coord - p.coord).n)
-              .getOrElse({
-                val random_deg = -15 + math.random*15*2
-                p.pov.rotateDeg(random_deg)
-              })
-            bullets += p.shootBullet(nextId, dir, body_radius, bullet_count)
+              .find(op => op.team != p.team && op.isAlive && isCoordVisible(op.coord, p.coord, p.pov, pov_distance, pov_angle, map.walls) && !map.isInsideSafeZone(op.coord))
+              .foreach(x => {
+              val dir = (x.coord - p.coord).n
+              bullets += p.shootBullet(nextId, dir, body_radius, bullet_count)
+            })
           }
           if(map.isInsideSafeZone(p.coord)) {
             if(p.isDead) p.health = 100
@@ -196,7 +194,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
                 !map.isInsideSafeZone(p.coord))
             if (damaged_players.nonEmpty) {
               damaged_players.foreach(p => {
-                val chance = chanceToHit(b.shooter.coord, b.shooter.povArea, b.shooter.isMoving, p.coord, p.isMoving, map)
+                val chance = chanceToHit(b.shooter.coord, b.shooter.pov, pov_distance, pov_angle, b.shooter.isMoving, p.coord, p.isMoving, map)
                 if(math.random < chance) {
                   p.health -= bullet_damage
                   if (p.health <= 0) {
@@ -226,14 +224,20 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
             val others = other_players.view
                                       .map(x => x.copy(visible = your_players.exists(y => isCoordVisibleOrAudible(x.coord,
                                                                                                                   y.coord,
-                                                                                                                  y.povArea,
+                                                                                                                  y.pov, pov_distance, pov_angle,
                                                                                                                   is_moving = /*x.ds.nonEmpty*/true,
-                                                                                                                  audibility_radius,
+                                                                                                                  human_audibility_radius,
                                                                                                                   map.walls))))
                                       .filter(_.visible)
                                       .map(_.netState).toList
             if(others.nonEmpty) builder += ("others" -> others)
-            val (your_bullets, other_bullets) = bullets.filter(b => your_players.exists(y => isCoordVisibleOrAudible(b.coord, y.coord, y.povArea, is_moving = true, audibility_radius, map.walls))).partition(_.shooter.id == id)
+            val (your_bullets, other_bullets) = bullets.filter(b => your_players.exists(y => isCoordVisibleOrAudible(b.coord,
+                                                                                                                     y.coord,
+                                                                                                                     y.pov,
+                                                                                                                     pov_distance,
+                                                                                                                     pov_angle,
+                                                                                                                     is_moving = true,
+                                                                                                                     bullet_audibility_radius, map.walls))).partition(_.shooter.id == id)
             if (your_bullets.nonEmpty) builder += ("your_bullets" -> your_bullets.map(_.netState).toList)
             if (other_bullets.nonEmpty) builder += ("other_bullets" -> other_bullets.map(_.netState).toList)
             val data = NetState(builder.toState)

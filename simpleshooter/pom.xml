@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.github.dunnololda.scageprojects</groupId>
   <artifactId>simpleshooter</artifactId>
-  <version>1.3</version>
+  <version>1.4</version>
   <inceptionYear>2013</inceptionYear>
 
   <name>Simple Shooter</name>

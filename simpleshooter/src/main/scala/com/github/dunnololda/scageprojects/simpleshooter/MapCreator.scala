@@ -4,7 +4,7 @@ import com.github.dunnololda.scage.ScageLib._
 import collection.mutable.ArrayBuffer
 import com.github.dunnololda.cli.Cli
 
-object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersion", map_width, map_height) with Cli {
+object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersion", game_window_width, game_window_height) with Cli {
   programDescription = s"Simple Shooter Map Creator $appVersion"
   commandLineArgsAndParse(("m", "map", "optional map file name to edit or the name for new map. Default: map.ss", true, false))
   private val map_name = property("map", "map.ss")
@@ -19,28 +19,25 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
   private val new_safe_zone = ArrayBuffer[Vec]()
   private var safe_zones_counter = 0
 
-  case class NewChanceModificator(var modification_value:Float, area:List[Vec]) {
-    val area_center = Vec(area.map(_.x).sum/area.length, area.map(_.y).sum/area.length)
-  }
-  private val chance_modificators = ArrayBuffer[ChanceModificator](loaded_map.chance_modificators.map(x => ChanceModificator(x._1, x._2)):_*)
-  private val new_chance_modificator = ArrayBuffer[Vec]()
+  private val chance_modificators = ArrayBuffer[MutableChanceModificator](loaded_map.chance_modificators.map(x => x.toMutable):_*)
+  private val new_chance_modificator_area = ArrayBuffer[Vec]()
   private var chance_modificators_counter = 0
 
   private var mode = 0  // 0 - walls, 1 - safe zones, 2 - chance modificators
 
 
-  private var _center:Vec = windowCenter
+  private var _center:Vec = Vec.zero
 
   private var _map_changed = false
   private def isMapChanged:Boolean = _map_changed
 
   private def setModificationValue(new_value:Float) {
     if(chance_modificators.length > 0 && chance_modificators_counter >= 0 && chance_modificators_counter < chance_modificators.length)
-    chance_modificators(chance_modificators_counter).modification_value = new_value
+    chance_modificators(chance_modificators_counter).value = new_value
     _map_changed = true
   }
 
-  key(KEY_2, onKeyDown = setModificationValue(2))  // TODO: add counter inside bounds check
+  key(KEY_2, onKeyDown = setModificationValue(2))
   key(KEY_3, onKeyDown = setModificationValue(3))
   key(KEY_4, onKeyDown = setModificationValue(4))
   key(KEY_5, onKeyDown = setModificationValue(5))
@@ -56,17 +53,19 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
         new_safe_zone.clear()
       case 1 =>
         mode = 2
-        new_chance_modificator.clear()
+        new_chance_modificator_area.clear()
       case 2 =>
         mode = 0
       case _ =>
         from = None
     }
   })
-  key(KEY_W, 100, onKeyDown = _center += Vec(0, body_radius))
-  key(KEY_A, 100, onKeyDown = _center += Vec(-body_radius, 0))
-  key(KEY_S, 100, onKeyDown = _center += Vec(0, -body_radius))
-  key(KEY_D, 100, onKeyDown = _center += Vec(body_radius, 0))
+
+  private var dir = Vec.zero
+  key(KEY_W, 100, onKeyDown = dir += Vec(0, 1))
+  key(KEY_A, 100, onKeyDown = dir += Vec(-1, 0))
+  key(KEY_S, 100, onKeyDown = dir += Vec(0, -1))
+  key(KEY_D, 100, onKeyDown = dir += Vec(1, 0))
 
   key(KEY_F1, onKeyDown = {
     walls.clear()
@@ -76,56 +75,58 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
     safe_zones ++= loaded_map.safe_zones
     safe_zones_counter = 0
     chance_modificators.clear()
-    chance_modificators ++= loaded_map.chance_modificators.map(x => ChanceModificator(x._1, x._2))
+    chance_modificators ++= loaded_map.chance_modificators.map(x => x.toMutable)
     chance_modificators_counter = 0
     _map_changed = false
   })
   key(KEY_F5, onKeyDown = {
     if(isMapChanged) {
-      saveMap(map_name, walls, safe_zones, chance_modificators.map(x => (x.modification_value, x.area)))
-      loaded_map = GameMap(walls.toList, safe_zones.toList, chance_modificators.map(x => (x.modification_value, x.area)).toList)
+      saveMap(map_name, walls, safe_zones, chance_modificators.map(x => x.toImmutable))
+      loaded_map = GameMap(walls.toList, safe_zones.toList, chance_modificators.map(x => x.toImmutable).toList)
       _map_changed = false
     }
   })
 
   leftMouse(onBtnDown = m => {
     val sm = scaledCoord(m)
-    mode match {
-      case 0 =>
-        from match {
-          case Some(f) =>
-            walls += Wall(f, sm)
-            _map_changed = true
-            from = None
-          case None => from = Some(sm)
-        }
-      case 1 =>
-        if(new_safe_zone.length > 0) {
-          if(sm.dist2(new_safe_zone.head) < body_radius*body_radius) {
-            if(new_safe_zone.length < 3) {
-              new_safe_zone.clear()
-            } else {
-              new_safe_zone += new_safe_zone.head
-              safe_zones += new_safe_zone.toList
-              new_safe_zone.clear()
+    if(isCoordInsideMap(sm)) {
+      mode match {
+        case 0 =>
+          from match {
+            case Some(f) =>
+              walls += Wall(f, sm)
               _map_changed = true
-            }
+              from = None
+            case None => from = Some(sm)
+          }
+        case 1 =>
+          if(new_safe_zone.length > 0) {
+            if(sm.dist2(new_safe_zone.head) < body_radius*body_radius) {
+              if(new_safe_zone.length < 3) {
+                new_safe_zone.clear()
+              } else {
+                new_safe_zone += new_safe_zone.head
+                safe_zones += new_safe_zone.toList
+                new_safe_zone.clear()
+                _map_changed = true
+              }
+            } else new_safe_zone += sm
           } else new_safe_zone += sm
-        } else new_safe_zone += sm
-      case 2 =>
-        if(new_chance_modificator.length > 0) {
-          if(sm.dist2(new_chance_modificator.head) < body_radius*body_radius) {
-            if(new_chance_modificator.length < 3) {
-              new_chance_modificator.clear()
-            } else {
-              new_chance_modificator += new_chance_modificator.head
-              chance_modificators += ChanceModificator(2, new_chance_modificator.toList)
-              new_chance_modificator.clear()
-              _map_changed = true
-            }
-          } else new_chance_modificator += sm
-        } else new_chance_modificator += sm
-      case _ =>
+        case 2 =>
+          if(new_chance_modificator_area.length > 0) {
+            if(sm.dist2(new_chance_modificator_area.head) < body_radius*body_radius) {
+              if(new_chance_modificator_area.length < 3) {
+                new_chance_modificator_area.clear()
+              } else {
+                new_chance_modificator_area += new_chance_modificator_area.head
+                chance_modificators += MutableChanceModificator(2, new_chance_modificator_area.toList)
+                new_chance_modificator_area.clear()
+                _map_changed = true
+              }
+            } else new_chance_modificator_area += sm
+          } else new_chance_modificator_area += sm
+        case _ =>
+      }
     }
   })
 
@@ -198,11 +199,20 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
     }
   })
 
+  action {
+    if(dir.notZero) {
+      val new_center = _center + dir.n*body_radius
+      if(isCoordInsideMap(new_center)) _center = new_center
+      dir = Vec.zero
+    }
+  }
+
   center = _center
 
   render {
-    (0 to map_width by body_radius*2).foreach(x => drawLine(Vec(x, 0), Vec(x, map_height), DARK_GRAY))
-    (0 to map_height by body_radius*2).foreach(y => drawLine(Vec(0, y), Vec(map_width, y), DARK_GRAY))
+    drawSlidingLines(map_edges, DARK_GRAY)
+    (-map_width/2 to map_width/2 by body_radius*2).foreach(x => drawLine(Vec(x, -map_height/2), Vec(x, map_height/2), DARK_GRAY))
+    (-map_height/2 to map_height/2 by body_radius*2).foreach(y => drawLine(Vec(-map_width/2, y), Vec(map_width/2, y), DARK_GRAY))
     drawFilledCircle(_center, 2, GREEN)
     walls.zipWithIndex.foreach {
       case (w, i) =>
@@ -218,10 +228,10 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
       case (cm, idx) =>
         if(mode == 2 && idx == chance_modificators_counter) {
           drawSlidingLines(cm.area, RED)
-          print(cm.modification_value, cm.area_center, RED, align = "center")
+          print(cm.value, cm.area_center, RED, align = "center")
         } else {
           drawSlidingLines(cm.area, YELLOW)
-          print(cm.modification_value, cm.area_center, YELLOW, align = "center")
+          print(cm.value, cm.area_center, YELLOW, align = "center")
         }
     }
     mode match {
@@ -235,7 +245,7 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
       case 1 =>
         drawSlidingLines(new_safe_zone.toList ::: scaledCoord(mouseCoord) :: Nil, GREEN)
       case 2 =>
-        drawSlidingLines(new_chance_modificator.toList ::: scaledCoord(mouseCoord) :: Nil, YELLOW)
+        drawSlidingLines(new_chance_modificator_area.toList ::: scaledCoord(mouseCoord) :: Nil, YELLOW)
       case _ =>
     }
   }
@@ -257,6 +267,6 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
   }
 
   dispose {
-    if(isMapChanged) saveMap(map_name, walls, safe_zones, chance_modificators.map(x => (x.modification_value, x.area)))
+    if(isMapChanged) saveMap(map_name, walls, safe_zones, chance_modificators.map(x => x.toImmutable))
   }
 }

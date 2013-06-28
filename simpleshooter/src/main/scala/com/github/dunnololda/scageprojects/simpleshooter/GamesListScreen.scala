@@ -12,7 +12,7 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
   private var is_connected = false
 
   private val menu_items = createMenuItems(List(
-    ("Создать", Vec(windowWidth/2, windowHeight/2 - 30), WHITE, () => new TacticShooterClient(None).run())
+    ("Создать", () => Vec(windowWidth/2, windowHeight/2 - 30), WHITE, () => new TacticShooterClient(None).run())
   ))
 
   key(KEY_1, onKeyDown = if(games_list.length > 0) new TacticShooterClient(Some(games_list(0)._1.game_id)).run())
@@ -35,7 +35,7 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
       case Some((GameInfo(game_id, players), str, coord, area)) =>
         new TacticShooterClient(Some(game_id)).run()
       case None =>
-        menu_items.find(x => mouseOnArea(x._3)) match {
+        menu_items.find(x => mouseOnArea(x._3())) match {
           case Some((_, _, _, _, action)) => action()
           case None =>
         }
@@ -81,7 +81,7 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
           print("Игры не найдены", windowCenter, WHITE, align = "center")
           menu_items.foreach {
             case (title, coord, _, color, _) =>
-              print(title, coord, color, align = "center")
+              print(title, coord(), color, align = "center")
           }
         } else {
           games_list.foreach {
