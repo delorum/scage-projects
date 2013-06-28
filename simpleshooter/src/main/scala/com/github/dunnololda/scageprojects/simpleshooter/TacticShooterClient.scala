@@ -174,7 +174,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
 
   mouseWheelUp(onWheelUp = m => {
     if(globalScale < 1) globalScale += 0.1f
-    else globalScale += 1
+    else if(globalScale < 3) globalScale += 1
   })
 
   mouseMotion(onMotion = m => {
