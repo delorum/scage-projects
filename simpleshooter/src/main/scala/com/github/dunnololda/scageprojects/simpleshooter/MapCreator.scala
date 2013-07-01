@@ -19,7 +19,7 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
   private val new_safe_zone = ArrayBuffer[Vec]()
   private var safe_zones_counter = 0
 
-  private val control_points = ArrayBuffer[ControlPoint](loaded_map.control_points:_*)
+  private val control_points = ArrayBuffer[(Int, ControlPoint)](loaded_map.control_points.toSeq:_*)
   private val new_control_point_area = ArrayBuffer[Vec]()
   private var control_points_counter = 0
 
@@ -60,21 +60,21 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
     safe_zones ++= loaded_map.safe_zones
     safe_zones_counter = 0
     control_points.clear()
-    control_points ++= loaded_map.control_points
+    control_points ++= loaded_map.control_points.toSeq
     control_points_counter = 0
     _map_changed = false
   })
   key(KEY_F5, onKeyDown = {
     if(isMapChanged) {
       saveMap(map_name, walls, safe_zones, control_points)
-      loaded_map = GameMap(walls.toList, safe_zones.toList, control_points.toList)
+      loaded_map = GameMap(walls.toList, safe_zones.toList, control_points.toMap)
       _map_changed = false
     }
   })
 
   leftMouse(onBtnDown = m => {
     val sm = scaledCoord(m)
-    if(isCoordInsideMap(sm)) {
+    if(isCoordInsideMapBorders(sm)) {
       mode match {
         case 0 =>
           from match {
@@ -86,7 +86,7 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
           }
         case 1 =>
           if(new_safe_zone.length > 0) {
-            if(sm.dist2(new_safe_zone.head) < body_radius*body_radius) {
+            if(sm.dist2(new_safe_zone.head) < human_size*human_size) {
               if(new_safe_zone.length < 3) {
                 new_safe_zone.clear()
               } else {
@@ -99,12 +99,13 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
           } else new_safe_zone += sm
         case 2 =>
           if(new_control_point_area.length > 0) {
-            if(sm.dist2(new_control_point_area.head) < body_radius*body_radius) {
+            if(sm.dist2(new_control_point_area.head) < human_size*human_size) {
               if(new_control_point_area.length < 3) {
                 new_control_point_area.clear()
               } else {
                 new_control_point_area += new_control_point_area.head
-                control_points += ControlPoint(None, new_control_point_area.toList)
+                val number = control_points.length
+                control_points += (number -> ControlPoint(number, None, 0l, new_control_point_area.toList))
                 new_control_point_area.clear()
                 _map_changed = true
               }
@@ -186,8 +187,8 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
 
   action {
     if(dir.notZero) {
-      val new_center = _center + dir.n*body_radius
-      if(isCoordInsideMap(new_center)) _center = new_center
+      val new_center = _center + dir.n*human_size
+      if(isCoordInsideMapBorders(new_center)) _center = new_center
       dir = Vec.zero
     }
   }
@@ -196,8 +197,8 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
 
   render {
     drawSlidingLines(map_edges, DARK_GRAY)
-    (-map_width/2 to map_width/2 by body_radius*2).foreach(x => drawLine(Vec(x, -map_height/2), Vec(x, map_height/2), DARK_GRAY))
-    (-map_height/2 to map_height/2 by body_radius*2).foreach(y => drawLine(Vec(-map_width/2, y), Vec(map_width/2, y), DARK_GRAY))
+    (-map_width/2 to map_width/2 by human_size*2).foreach(x => drawLine(Vec(x, -map_height/2), Vec(x, map_height/2), DARK_GRAY))
+    (-map_height/2 to map_height/2 by human_size*2).foreach(y => drawLine(Vec(-map_width/2, y), Vec(map_width/2, y), DARK_GRAY))
     drawFilledCircle(_center, 2, GREEN)
     walls.zipWithIndex.foreach {
       case (w, i) =>
@@ -212,7 +213,7 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
         else drawSlidingLines(sz, GREEN)
     }
     control_points.zipWithIndex.foreach {
-      case (cm, idx) =>
+      case ((number, cm), idx) =>
         if(mode == 2 && idx == control_points_counter) {
           drawSlidingLines(cm.area, RED)
         } else {
