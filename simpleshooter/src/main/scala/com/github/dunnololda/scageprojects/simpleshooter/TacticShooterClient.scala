@@ -262,18 +262,19 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
     if(is_connected && is_game_started) {
       current_state match {
         case Some(TacticServerData(yours, others, your_bullets, other_bullets, _)) =>
+          val you = yours(selected_player)
           val walls_color = checkPausedColor(WHITE)
           map.walls.foreach(wall => {
             drawLine(wall.from, wall.to, walls_color)
+            drawCircle(wall.from, near_wall_area, GRAY)
+            drawCircle(wall.to, near_wall_area, GRAY)
           })
           val safe_zones_color = checkPausedColor(GREEN)
           map.safe_zones.foreach(sz => {
             drawSlidingLines(sz, safe_zones_color)
           })
-          val chance_modificators_color = checkPausedColor(GRAY)
-          map.chance_modificators.foreach(sz => {
-            drawSlidingLines(sz.area, chance_modificators_color)
-            print(sz.value, sz.area_center, max_font_size/globalScale, chance_modificators_color, align = "center")
+          map.control_points.foreach(cp => {
+            drawSlidingLines(cp.area, checkPausedColor(cp.controlPointColor(you.team)))
           })
           val edges_color = checkPausedColor(GRAY)
           drawSlidingLines(map_edges, edges_color)
@@ -346,7 +347,6 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
 
           others.filter(_.visible).foreach {
             case player =>
-              val you = yours(selected_player)
               val player_color = if(player.team == you.team) ourPlayerColor(player, is_selected = false) else enemyPlayerColor(player)
               drawCircle(player.coord, 10, player_color)
               val info = if(player.team == yours.head.team) {
