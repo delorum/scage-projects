@@ -40,7 +40,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
   ))
 
   private var render_mouse = scaledCoord(mouseCoord)
-  private val number_place = Vec(1, 1).n*body_radius*2
+  private val number_place = Vec(1, 1).n*human_size*2
 
   private var _center = Vec.zero
   private var dir = Vec.zero
@@ -155,7 +155,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
   leftMouseIgnorePause(onBtnDown = m => {
     if(!on_pause) {
       val sm = scaledCoord(m)
-      if(isCoordInsideMap(sm)) {
+      if(isCoordInsideMapBorders(sm)) {
         new_destination = Some(sm)
       }
     }
@@ -197,6 +197,12 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
           //println(message.value[NetState]("map").get.toJsonString)
           map = gameMap(message.value[NetState]("map").get)
         }
+        controlPointInfos(message).foreach {
+          case ControlPointInfo(number, team, control_time) => map.control_points.get(number).foreach(x => {
+            x.team = team
+            x.control_start_time = control_time
+          })
+        }
         val sd = tacticServerData(message, System.currentTimeMillis())
         states += sd
       case UdpServerConnected =>
@@ -211,8 +217,8 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
   actionIgnorePause(10) {
     current_state = optInterpolatedState
     if(dir.notZero) {
-      val new_center = _center + dir.n*body_radius/2
-      if(isCoordInsideMap(new_center)) _center = new_center
+      val new_center = _center + dir.n*human_size/2
+      if(isCoordInsideMapBorders(new_center)) _center = new_center
       dir = Vec.zero
     }
   }
@@ -262,18 +268,19 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
     if(is_connected && is_game_started) {
       current_state match {
         case Some(TacticServerData(yours, others, your_bullets, other_bullets, _)) =>
+          val you = yours(selected_player)
           val walls_color = checkPausedColor(WHITE)
           map.walls.foreach(wall => {
             drawLine(wall.from, wall.to, walls_color)
+            drawCircle(wall.from, near_wall_area, GRAY)
+            drawCircle(wall.to, near_wall_area, GRAY)
           })
           val safe_zones_color = checkPausedColor(GREEN)
           map.safe_zones.foreach(sz => {
             drawSlidingLines(sz, safe_zones_color)
           })
-          val chance_modificators_color = checkPausedColor(GRAY)
-          map.chance_modificators.foreach(sz => {
-            drawSlidingLines(sz.area, chance_modificators_color)
-            print(sz.value, sz.area_center, max_font_size/globalScale, chance_modificators_color, align = "center")
+          map.control_points.foreach(cp => {
+            drawSlidingLines(cp._2.area, checkPausedColor(cp._2.controlPointColor(you.team)))
           })
           val edges_color = checkPausedColor(GRAY)
           drawSlidingLines(map_edges, edges_color)
@@ -346,19 +353,16 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
 
           others.filter(_.visible).foreach {
             case player =>
-              val you = yours(selected_player)
               val player_color = if(player.team == you.team) ourPlayerColor(player, is_selected = false) else enemyPlayerColor(player)
               drawCircle(player.coord, 10, player_color)
               val info = if(player.team == yours.head.team) {
                 s"${player.number_in_team+1}.${player.number+1} ${if(player.is_reloading) "перезарядка" else player.bullets}"
               } else {
-                s"${player.number_in_team+1}.${player.number+1} ${if(player.is_reloading) "перезарядка" else player.bullets} ${(chanceToHit(you.coord,
-                                                                                                                                   you.pov,
-                                                                                                                                   pov_distance,
-                                                                                                                                   pov_angle,
-                                                                                                                                   you.isMoving,
-                                                                                                                                   player.coord,
-                                                                                                                                   player.isMoving, map)*100).toInt}%"
+                s"${player.number_in_team+1}.${player.number+1} ${if(player.is_reloading) "перезарядка" else player.bullets} ${(map.chanceToHit(you.coord,
+                                                                                                                                                you.pov,
+                                                                                                                                                you.isMoving,
+                                                                                                                                                player.coord,
+                                                                                                                                                player.isMoving)*100).toInt}%"
               }
               print(info, player.coord+number_place, max_font_size/globalScale, player_color, align = "center")
               val pov_point = player.coord + player.pov*100f

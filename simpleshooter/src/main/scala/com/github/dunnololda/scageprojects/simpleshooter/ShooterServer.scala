@@ -24,20 +24,20 @@ object ShooterServer extends ScageApp("Simple Shooter Server") with Cli {
   action(10) {
     server.newEvent {
       case NewUdpConnection(client_id) =>
-        players(client_id) = Client(client_id, randomCoord(map_width, map_height, body_radius, map.walls), 100, 0, 0, visible = true)
+        players(client_id) = Client(client_id, map.randomHumanCoord, 100, 0, 0, visible = true)
         server.sendToClient(client_id, NetState("map" -> map.netState))
       case NewUdpClientData(client_id, message) =>
         //println(message.toJsonString)
         if(message.contains("sendmap")) server.sendToClient(client_id, NetState("map" -> map.netState))
         val ClientData(up, left, down, right, shoots) = clientData(message)
         val delta = Vec((if(left) -1 else 0) + (if(right) 1 else 0), (if(down) -1 else 0) + (if(up) 1 else 0)).n
-        val new_coord = outsideCoord(players(client_id).coord + delta*speed, map_width, map_height)
-        if(isCoordCorrect(new_coord, body_radius, map.walls)) {
+        val new_coord = outsideCoord(players(client_id).coord + delta*human_speed)
+        if(map.isCoordCorrect(new_coord, human_size)) {
           players(client_id).coord = new_coord
         }
         shoots.foreach(sh => {
           val dir = (sh - new_coord).n
-          bullets += Bullet(dir, players(client_id), new_coord + dir*(body_radius+1), bullet_count)
+          bullets += Bullet(dir, players(client_id), new_coord + dir*(human_size+1))
         })
         //println(players(client_id).coord)
       case UdpClientDisconnected(client_id) =>
@@ -50,7 +50,7 @@ object ShooterServer extends ScageApp("Simple Shooter Server") with Cli {
     bullets.foreach(b => {
       val new_coord = b.coord + b.dir*bullet_speed
       b.count -= 1
-      if (!isPathCorrect(b.coord, new_coord, bullet_size, map.walls)) {
+      if (!map.isPathCorrect(b.coord, new_coord, bullet_size)) {
         b.count = 0
       } else b.coord = new_coord
       val damaged_players = players.values.filter(_.coord.dist2(b.coord) < 100)
@@ -59,7 +59,7 @@ object ShooterServer extends ScageApp("Simple Shooter Server") with Cli {
           p.health -= bullet_damage
           if (p.health <= 0) {
             p.deaths += 1
-            p.coord = randomCoord(map_width, map_height, body_radius, map.walls)
+            p.coord = map.randomHumanCoord
             p.health = 100
             b.shooter.wins += 1
           }

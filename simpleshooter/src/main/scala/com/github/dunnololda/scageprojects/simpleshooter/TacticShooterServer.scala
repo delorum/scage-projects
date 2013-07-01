@@ -17,10 +17,9 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
   private val server = UdpNetServer(port = property("port", port), ping_timeout= 1000, check_timeout = 5000)
 
   private val map_name = property("map", "map.ss")
-  private val map = loadMap(map_name)
 
   /*private val players = mutable.HashMap[Long, List[TacticServerPlayer]]()
-  private val bullets = ArrayBuffer[TacticBullet]()*/
+  private val bullets = ArrayBuffer[TacticServerBullet]()*/
 
   private val games = mutable.HashMap[Int, TacticGame]()  // game_id -> game
 
@@ -47,9 +46,9 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
       } else maybe_position
     }
 
-    val coord1 = respawnCoord(team, map_width, map_height, body_radius, map)
-    val coord2 = respawnCoord(team, map_width, map_height, body_radius, map)
-    val coord3 = respawnCoord(team, map_width, map_height, body_radius, map)
+    val coord1 = game.map.respawnCoord(team)
+    val coord2 = game.map.respawnCoord(team)
+    val coord3 = game.map.respawnCoord(team)
 
     val player1 = TacticServerPlayer(
       client_id,
@@ -80,30 +79,36 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
         } else if(message.contains("create")) {
           games_by_clientid.get(client_id) match {
             case Some(game) =>
-              builder += ("gamestarted" -> true, "map" -> map.netState)
+              builder += ("gamestarted" -> true, "map" -> game.map.netState)
             case None =>
               val new_game_id = nextId
-              val new_game = new TacticGame(new_game_id)
+              val new_map = loadMap(map_name) // TODO: allow to select map on creation
+              val new_game = new TacticGame(new_game_id, map = new_map, count = mutable.HashMap(1 -> 0, 2 -> 0))
               games += (new_game_id -> new_game)
               addNewPlayerToGame(client_id, new_game)
-              builder += ("gamestarted" -> true, "map" -> map.netState)
+              builder += ("gamestarted" -> true, "map" -> new_map.netState)
           }
         } else if(message.contains("join")) {
           games_by_clientid.get(client_id) match {
             case Some(game) =>
-              builder += ("gamestarted" -> true, "map" -> map.netState)
+              builder += ("gamestarted" -> true, "map" -> game.map.netState)
             case None =>
               games.get(message.value[Int]("join").get) match {
                 case Some(game) =>
                   addNewPlayerToGame(client_id, game)
-                  builder += ("gamestarted" -> true, "map" -> map.netState)
+                  builder += ("gamestarted" -> true, "map" -> game.map.netState)
                 case None =>
-                  builder += ("gamenotfound" -> true)
+                  val new_game_id = nextId
+                  val new_map = loadMap(map_name) // TODO: allow to select map on creation
+                  val new_game = new TacticGame(new_game_id, map = new_map, count = mutable.HashMap(1 -> 0, 2 -> 0))
+                  games += (new_game_id -> new_game)
+                  addNewPlayerToGame(client_id, new_game)
+                  builder += ("gamestarted" -> true, "map" -> new_map.netState)
               }
           }
         } else {
           games_by_clientid.get(client_id) match {
-            case Some(TacticGame(_, players, bullets)) =>
+            case Some(TacticGame(_, players, bullets, map, _)) =>
               val client_players = players(client_id)
               if(message.contains("sendmap")) builder += ("map" -> map.netState)
               val TacticClientData(player_num, destination, pov, fire_toggle, clear_destinations) = tacticClientData(message)
@@ -123,7 +128,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
         }
       case UdpClientDisconnected(client_id) =>
         games_by_clientid.get(client_id) match {
-          case Some(TacticGame(game_id, players, bullets)) =>
+          case Some(TacticGame(game_id, players, bullets, _, _)) =>
             games_by_clientid -= client_id
             for {
               client_players <- players.get(client_id)
@@ -150,14 +155,25 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
 
   // update state
   action(10) {
-    games.values.foreach {
-      case TacticGame(_, players, bullets) =>
+    val all_games = games.values
+    val games_not_started = all_games.filter(!_.isStarted)
+    games_not_started.foreach {
+      case game =>
+        if(game.players.size >= 2) game.startGame()
+    }
+    val nonfinished_games = all_games.filter(!_.isFinished)
+    nonfinished_games.foreach {
+      case game @ TacticGame(_, players, bullets, map, _) =>
         players.values.flatten.foreach(p => {
           p.ds.headOption.foreach(d => {
-            if(d.dist2(p.coord) > speed*speed) {
-              val new_coord = p.coord + (d - p.coord).n*speed
-              if(isCoordCorrect(new_coord, body_radius, map.walls)) {
+            if(d.dist2(p.coord) > human_speed*human_speed) {
+              val new_coord = p.coord + (d - p.coord).n*human_speed
+              if(map.isCoordCorrect(new_coord, human_size) && (game.isStarted || map.isInsideSafeZone(new_coord))) {
                 p.coord = new_coord
+                map.control_points.values.find(cp => cp.team != p.team && coordOnArea(p.coord, cp.area)).foreach(cp => {
+                  cp.team = Some(p.team)
+                  cp.control_start_time = System.currentTimeMillis()
+                })
               } else p.ds.clear()
             } else p.ds.remove(0)
           })
@@ -165,10 +181,14 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
             players
               .values
               .flatten
-              .find(op => op.team != p.team && op.isAlive && isCoordVisible(op.coord, p.coord, p.pov, pov_distance, pov_angle, map.walls) && !map.isInsideSafeZone(op.coord))
+              .find(op =>
+                op.team != p.team &&
+                op.isAlive &&
+                map.isCoordVisible(op.coord, p.coord, p.pov) &&
+                !map.isInsideSafeZone(op.coord))
               .foreach(x => {
               val dir = (x.coord - p.coord).n
-              bullets += p.shootBullet(nextId, dir, body_radius, bullet_count)
+              bullets += p.shootBullet(dir)
             })
           }
           if(map.isInsideSafeZone(p.coord)) {
@@ -179,7 +199,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
         bullets.foreach(b => {
           val new_coord = b.coord + b.dir*bullet_speed
           b.count -= 1
-          if (!isPathCorrect(b.coord, new_coord, bullet_size, map.walls)) {
+          if (!map.isPathCorrect(b.coord, new_coord, bullet_size)) {
             b.count = 0
           } else {
             b.prev_coord = b.coord
@@ -189,12 +209,11 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
               .flatten
               .filter(p =>
                 p.team != b.shooter.team &&
-                (isBodyHit(b.prev_coord, b.coord, p.coord, body_radius) ||
-                p.coord.dist2(b.coord) < body_radius*body_radius) &&
+                isBodyHit(b.prev_coord, b.coord, p.coord) &&
                 !map.isInsideSafeZone(p.coord))
             if (damaged_players.nonEmpty) {
               damaged_players.foreach(p => {
-                val chance = chanceToHit(b.shooter.coord, b.shooter.pov, pov_distance, pov_angle, b.shooter.isMoving, p.coord, p.isMoving, map)
+                val chance = map.chanceToHit(b.shooter.coord, b.shooter.pov, b.shooter.isMoving, p.coord, p.isMoving)
                 if(math.random < chance) {
                   p.health -= bullet_damage
                   if (p.health <= 0) {
@@ -208,13 +227,34 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
           }
         })
         bullets --= bullets.filter(b => b.count <= 0)
+        game.map.control_points.values.foreach {
+          case cp =>
+            cp.team match {
+              case Some(t) =>
+                if(System.currentTimeMillis() - cp.control_start_time > control_time_length) {
+                  game.count(t) = game.count.getOrElse(t, 0) + 1
+                  cp.control_start_time = System.currentTimeMillis()
+                }
+              case None =>
+            }
+        }
+    }
+  }
+
+  action(1000) {
+    games.values.foreach {
+      case game =>
+        game.players.foreach {
+          case p =>
+            clientBuilder(p._1) += ("gs" -> game.gameStats.netState)
+        }
     }
   }
 
   // send data
   action(50) {
     games.values.foreach {
-      case TacticGame(_, players, bullets) =>
+      case TacticGame(_, players, bullets, map, count) =>
         players.foreach {
           case (id, client) =>
             val builder = clientBuilder(id)
@@ -222,24 +262,23 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
             val yours = your_players.map(x => x.netState).toList
             builder += ("yours" -> yours)
             val others = other_players.view
-                                      .map(x => x.copy(visible = your_players.exists(y => isCoordVisibleOrAudible(x.coord,
-                                                                                                                  y.coord,
-                                                                                                                  y.pov, pov_distance, pov_angle,
-                                                                                                                  is_moving = /*x.ds.nonEmpty*/true,
-                                                                                                                  human_audibility_radius,
-                                                                                                                  map.walls))))
+                                      .map(x => x.copy(visible = your_players.exists(y => map.isCoordVisibleOrAudible(x.coord,
+                                                                                                                      y.coord,
+                                                                                                                      y.pov,
+                                                                                                                      is_moving = /*x.ds.nonEmpty*/true,
+                                                                                                                      human_audibility_radius))))
                                       .filter(_.visible)
                                       .map(_.netState).toList
             if(others.nonEmpty) builder += ("others" -> others)
-            val (your_bullets, other_bullets) = bullets.filter(b => your_players.exists(y => isCoordVisibleOrAudible(b.coord,
-                                                                                                                     y.coord,
-                                                                                                                     y.pov,
-                                                                                                                     pov_distance,
-                                                                                                                     pov_angle,
-                                                                                                                     is_moving = true,
-                                                                                                                     bullet_audibility_radius, map.walls))).partition(_.shooter.id == id)
+            val (your_bullets, other_bullets) = bullets.filter(b => your_players.exists(y => map.isCoordVisibleOrAudible(b.coord,
+                                                                                                                         y.coord,
+                                                                                                                         y.pov,
+                                                                                                                         is_moving = true,
+                                                                                                                         bullet_audibility_radius)))
+                                                                                                .partition(_.shooter.id == id)
             if (your_bullets.nonEmpty) builder += ("your_bullets" -> your_bullets.map(_.netState).toList)
             if (other_bullets.nonEmpty) builder += ("other_bullets" -> other_bullets.map(_.netState).toList)
+            builder += ("cps_infos" -> map.control_points.values.map(_.infoNetState).toList)
             val data = NetState(builder.toState)
             builder.clear()
             server.sendToClient(id, data)

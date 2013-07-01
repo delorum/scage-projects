@@ -12,9 +12,9 @@ package object simpleshooter {
   val window_settings_title_printer = new ScageMessage(max_font_size = 30)
   val help_printer = new ScageMessage(max_font_size = 15)
 
-  val host = "fzeulf.netris.ru"
+  val host = "localhost"
   val port = 10000
-  val speed = 0.332f  // px / 10msec = 33.2 px / sec = 3.32 m/sec = 12 km/h
+  val human_speed = 0.332f  // px / 10msec = 33.2 px / sec = 3.32 m/sec = 12 km/h
   val bullet_speed = 12f  // 12 px / 10msec = 1200 px / sec = 120 m/sec
   val bullet_count = 50  // 60 meters = 600 px = 0.5 sec = 50*10msec
   val bullet_damage = 100
@@ -22,7 +22,8 @@ package object simpleshooter {
   val map_height = 4000
   val game_window_width = 640
   val game_window_height = 480
-  val body_radius = 10  // 10px is 1 meter
+  val human_size = 10  // 10px is 1 meter
+  val near_wall_area = human_size*2.5f
   val bullet_size = 3
   val pov_distance = 600
   val pov_angle = 50
@@ -30,9 +31,12 @@ package object simpleshooter {
   val rapid_fire_pace = 100 // 100 msec/bullet = 60000 msec / 600 bullet = 600 bullet/min -> AK, rapid mode
   val human_audibility_radius = 60
   val bullet_audibility_radius = 600
-  val reload_time = 5000  // 5 sec to swap frames
+  val reload_time = 5000  // 5 sec to swap magazines
   val magazine = 30 // 30 rounds in AK's magazine
   val max_bullets = 90  // three magazines
+  val count_update_interval = 15000   // in msec
+  val game_period_length = 15l*60*1000  // 15 minutes
+  val control_time_length = 15l*1000  // 15 seconds to control to receive 1 point
 
   val map_edges = List(Vec(-map_width/2, map_height/2), Vec(map_width/2, map_height/2), Vec(map_width/2, -map_height/2), Vec(-map_width/2, -map_height/2), Vec(-map_width/2, map_height/2))
 
@@ -83,7 +87,8 @@ package object simpleshooter {
     ServerData(you, others, your_bullets, other_bullets)
   }
 
-  case class Bullet(dir:Vec, shooter:Client, var coord:Vec, var count:Int) {
+  case class Bullet(dir:Vec, shooter:Client, var coord:Vec) {
+    var count:Int = bullet_count
     def netState = NetState("x" -> coord.x, "y" -> coord.y)
   }
 
@@ -108,12 +113,13 @@ package object simpleshooter {
 
     var fire_toggle = 0
 
-    def shootBullet(bullet_id:Long, dir:Vec, body_radius:Float, bullet_count:Int):TacticBullet = {
+    def shootBullet(dir:Vec):TacticServerBullet = {
       _bullets -= 1
       if(_bullets > 0 && _bullets % magazine == 0) reload_start_time = System.currentTimeMillis()
       last_bullet_shot = System.currentTimeMillis()
-      val init_coord = coord + dir*(body_radius+1)
-      TacticBullet(bullet_id, dir, this, init_coord, init_coord, bullet_count)
+      val init_coord = coord + dir*(human_size+1)
+      val bullet_id:Long = nextId
+      TacticServerBullet(bullet_id, dir, this, init_coord, init_coord)
     }
     def bullets = _bullets
     def replenishAmmo() {_bullets = max_bullets}
@@ -166,7 +172,7 @@ package object simpleshooter {
     def isMoving = destinations.nonEmpty
   }
 
-  def tacticClient(message:NetState):TacticClientPlayer = {
+  def tacticClientPlayer(message:NetState):TacticClientPlayer = {
     TacticClientPlayer(
       id = message.value[Long]("id").get,
       number = message.value[Int]("n").get,
@@ -205,8 +211,8 @@ package object simpleshooter {
   )
 
   def tacticServerData(message:NetState, receive_moment:Long):TacticServerData = {
-    val yours = message.value[List[NetState]]("yours").getOrElse(Nil).map(m => tacticClient(m))
-    val others = message.value[List[NetState]]("others").getOrElse(Nil).map(m => tacticClient(m))
+    val yours = message.value[List[NetState]]("yours").getOrElse(Nil).map(m => tacticClientPlayer(m))
+    val others = message.value[List[NetState]]("others").getOrElse(Nil).map(m => tacticClientPlayer(m))
     val your_bullets = message.value[List[NetState]]("your_bullets").getOrElse(Nil).map(m => tacticClientBullet(m))
     val other_bullets = message.value[List[NetState]]("other_bullets").getOrElse(Nil).map(m => tacticClientBullet(m))
     TacticServerData(yours, others, your_bullets, other_bullets, receive_moment)
@@ -224,7 +230,8 @@ package object simpleshooter {
     message.value[List[NetState]]("walls").get.map(x => wall(x))
   }
 
-  case class TacticBullet(id:Long, dir:Vec, shooter:TacticServerPlayer, var prev_coord:Vec, var coord:Vec, var count:Int) {
+  case class TacticServerBullet(id:Long, dir:Vec, shooter:TacticServerPlayer, var prev_coord:Vec, var coord:Vec) {
+    var count:Int = bullet_count
     def netState = NetState(
       "id" -> id,
       "pid" -> shooter.id,
@@ -246,9 +253,82 @@ package object simpleshooter {
       coord = vec(message, "x", "y"))
   }
 
+  case class PlayerStats(team:Int, number_in_team:Int, number:Int, wins:Int, deaths:Int) {
+    def netState = NetState(
+      "t"   -> team,
+      "nit" -> number_in_team,
+      "n"   -> number,
+      "w"   -> wins,
+      "d"   -> deaths
+    )
+  }
+
+  case class TeamStats(team:Int, team_points:Int, player_stats:List[PlayerStats]) {
+    def netState = NetState(
+      "t" -> team,
+      "tp" -> team_points,
+      "ps" -> player_stats.map(_.netState)
+    )
+  }
+
+  case class GameStats(teams_stats:List[TeamStats], game_started:Boolean, game_finished:Boolean, time_left:Long) {
+    def netState = NetState(
+      "tl" -> time_left,
+      "gs" -> game_started,
+      "gf" -> game_finished,
+      "ts" -> teams_stats.map(_.netState)
+    )
+  }
+
   case class TacticGame(game_id:Int,
                         players:mutable.HashMap[Long, List[TacticServerPlayer]] = mutable.HashMap[Long, List[TacticServerPlayer]](),  // client_id -> list of players
-                        bullets:ArrayBuffer[TacticBullet] = ArrayBuffer[TacticBullet]())
+                        bullets:ArrayBuffer[TacticServerBullet] = ArrayBuffer[TacticServerBullet](),
+                        map:GameMap,
+                        count:mutable.HashMap[Int, Int]) {
+    private var last_count_updated_moment = 0l
+    def updateCount() {
+      if(System.currentTimeMillis() - last_count_updated_moment > count_update_interval) {
+        map.control_points.foreach {
+          case (number, ControlPoint(_, team, _, _)) =>
+            team match {
+              case Some(t) => count(t) = count.getOrElse(t, 0) + 1
+              case None =>
+            }
+        }
+        last_count_updated_moment = System.currentTimeMillis()
+      }
+    }
+
+    private var game_start_moment = 0l
+    private var game_started = false
+    def startGame() {
+      game_started = true
+      game_start_moment = System.currentTimeMillis()
+    }
+
+    def isStarted = game_started
+    def isFinished = game_started && System.currentTimeMillis() - game_start_moment > game_period_length
+
+    def gameStats:GameStats = {
+      if(!game_started) {
+        GameStats(Nil, game_started = false, game_finished = false, game_period_length)
+      } else {
+        val teams_stats = count.toList.map {
+          case (team, points) =>
+            val player_stats = players.values.flatten.filter(_.team == team).map(p => {
+              PlayerStats(p.team, p.number_in_team, p.number, p.wins, p.deaths)
+            }).toList
+            TeamStats(team, points, player_stats)
+        }
+        if(!isFinished) {
+          val time_left = game_start_moment + game_period_length - System.currentTimeMillis()
+          GameStats(teams_stats, game_started = true, game_finished = false, time_left)
+        } else {
+          GameStats(teams_stats, game_started = true, game_finished = true, 0l)
+        }
+      }
+    }
+  }
 
   case class GameInfo(game_id:Int, players:Int) {
     def netState = NetState(
@@ -265,37 +345,150 @@ package object simpleshooter {
     message.value[List[NetState]]("gameslist").getOrElse(Nil).map(m => gameInfo(m))
   }
 
-  case class MutableChanceModificator(var value:Float, area:List[Vec]) {
+  case class ControlPoint(number:Int, var team:Option[Int], var control_start_time:Long, area:List[Vec]) {
     val area_center = Vec(area.map(_.x).sum/area.length, area.map(_.y).sum/area.length)
-    def toImmutable = ChanceModificator(value, area)
+
+    def controlPointColor(your_team:Int):ScageColor = {
+      team match {
+        case Some(cp_team) => if(cp_team != your_team) RED else GREEN
+        case None => GRAY
+      }
+    }
+
+    def netState = {
+      val builder = NetState.newBuilder
+      builder += ("n" -> number)
+      if(team.nonEmpty) builder += ("t" -> team.get)
+      builder += ("cst" -> control_start_time)
+      builder += ("a" -> area.map(p => NetState("x" -> p.x, "y" -> p.y)))
+      builder.toState
+    }
+
+    def infoNetState = {
+      val builder = NetState.newBuilder
+      builder += ("n" -> number)
+      if(team.nonEmpty) builder += ("t" -> team.get)
+      builder += ("cst" -> control_start_time)
+      builder.toState
+    }
   }
 
-  case class ChanceModificator(value:Float, area:List[Vec]) {
-    val area_center = Vec(area.map(_.x).sum/area.length, area.map(_.y).sum/area.length)
-    def toMutable = MutableChanceModificator(value, area)
+  def controlPoint(message:NetState):ControlPoint = {
+    ControlPoint(
+      number = message.value[Int]("n").get,
+      team = message.value[Int]("t"),
+      control_start_time = message.value[Long]("cst").get,
+      area = message.value[List[NetState]]("a").get.map(p => vec(p, "x", "y"))
+    )
   }
 
-  case class GameMap(walls:List[Wall] = Nil, safe_zones:List[List[Vec]] = Nil, chance_modificators:List[ChanceModificator] = Nil) {
+  case class ControlPointInfo(number:Int, team:Option[Int], control_start_time:Long)
+
+  def controlPointInfos(message:NetState):List[ControlPointInfo] = {
+    message.value[List[NetState]]("cps_infos").getOrElse(Nil).map(x => {
+      ControlPointInfo(
+        number = x.value[Int]("n").get,
+        team = x.value[Int]("t"),
+        control_start_time = x.value[Long]("cst").get
+      )
+    })
+  }
+
+  case class GameMap(walls:List[Wall] = Nil, safe_zones:List[List[Vec]] = Nil, control_points:Map[Int, ControlPoint] = Map()) {
+    def isEmpty:Boolean = walls.isEmpty && safe_zones.isEmpty && control_points.isEmpty
+
+    def isCoordCorrect(coord:Vec, body_radius:Float):Boolean = {
+      isCoordInsideMapBorders(coord) && walls.forall(w => !isCoordNearWall(coord, w, body_radius))
+    }
+
+    def isPathCorrect(from:Vec, to:Vec, body_radius:Float):Boolean = {
+      walls.forall(w => !areLinesIntersect(from, to, w.from, w.to)) && isCoordCorrect(to, body_radius)
+    }
+
+    def randomHumanCoord:Vec = {
+      val coord = Vec(math.random*map_width, math.random*map_height)
+      if (isCoordCorrect(coord, human_size)) coord
+      else randomHumanCoord
+    }
+
+    def randomHumanCoordNear(near:Vec, radius:Float):Vec = {
+      val dir = Vec(math.random, math.random).n
+      val coord = near + dir*radius
+      if (isCoordCorrect(coord, human_size)) coord
+      else randomHumanCoordNear(near, radius)
+    }
+
+    def randomHumanCoordInsideArea(area:List[Vec]):Vec = {
+      val area_center = Vec(area.map(_.x).sum/area.length, area.map(_.y).sum/area.length)
+      val random_corner = area((math.random*area.length).toInt)
+      val coord = area_center + (random_corner - area_center).n*(math.random*random_corner.dist(area_center))
+      if (isCoordCorrect(coord, human_size)) coord
+      else randomHumanCoordInsideArea(area)
+    }
+
+    def respawnCoord(team:Int):Vec = {
+      if(safe_zones.length == 0) {
+        randomHumanCoord
+      } else if(safe_zones.length == 0) {
+        randomHumanCoordInsideArea(safe_zones.head)
+      } else {
+        val team1_area = safe_zones(0)
+        val team2_area = safe_zones(1)
+        team match {
+          case 1 => randomHumanCoordInsideArea(team1_area)
+          case 2 => randomHumanCoordInsideArea(team2_area)
+          case _ => randomHumanCoordInsideArea(team1_area)
+        }
+      }
+    }
+
+    def isCoordVisible(coord:Vec, from:Vec, pov:Vec):Boolean = {
+      isCoordInsidePov(coord, from, pov) && walls.forall(w => {
+        !areLinesIntersect(from, coord, w.from, w.to)
+      })
+    }
+
+    def isCoordVisibleOrAudible(coord:Vec, from:Vec, pov:Vec, is_moving:Boolean, audibility_radius:Float):Boolean = {
+      is_moving && coord.dist2(from) <= audibility_radius * audibility_radius || isCoordInsidePov(coord, from, pov) && walls.forall(w => {
+        !areLinesIntersect(from, coord, w.from, w.to)
+      })
+    }
+
     def isInsideSafeZone(coord:Vec):Boolean = safe_zones.exists(
       sz => coordOnArea(coord, sz)
     )
 
-    def chanceModificatorInCoord(coord:Vec):Float = {
-      chance_modificators.find(x => coordOnArea(coord, x.area)).map(_.value).getOrElse(1f)
+    def hitChanceModification(shooter_coord:Vec, target_coord:Vec):Boolean = {
+      walls.exists(w => {
+        w.from.dist2(target_coord) < near_wall_area*near_wall_area && areLinesIntersect(shooter_coord, target_coord, w.from, w.from + w.from - w.to) ||
+          w.to.dist2(target_coord) < near_wall_area*near_wall_area && areLinesIntersect(shooter_coord, target_coord, w.to, w.to + w.to - w.from)
+      })
     }
 
-    def isEmpty:Boolean = walls.isEmpty && safe_zones.isEmpty
+    def chanceToHit(shooter_coord:Vec,
+                    shooter_pov:Vec,
+                    shooter_moving:Boolean,
+                    target_coord:Vec,
+                    target_moving:Boolean):Float = {
+      if(!isCoordVisible(target_coord, shooter_coord, shooter_pov)) 0f
+      else {
+        val d = target_coord.dist(shooter_coord)
+        var result = -0.001125f*d + 0.6125f
+        if(shooter_moving) result /= 2f
+        if(target_moving) result /= 2f
+        if(hitChanceModification(shooter_coord, target_coord)) result /= 2f
+        if(result > 1f) 1f else result
+      }
+    }
 
     def netState = NetState(
       "ws" -> walls.map(w => w.netState).toList,
       "szs" -> safe_zones.map(sz => sz.map(p => NetState("x" -> p.x, "y" -> p.y))),
-      "cms" -> chance_modificators.map(cm => {
-        NetState("v" -> cm.value, "a" -> cm.area.map(p => NetState("x" -> p.x, "y" -> p.y)))
-      })
+      "cps" -> control_points.map(cp => cp._2.netState)
     )
   }
 
-  def saveMap(map_name:String, walls:Seq[Wall], safe_zones:Seq[Seq[Vec]], chance_modificators:Seq[ChanceModificator]) {
+  def saveMap(map_name:String, walls:Seq[Wall], safe_zones:Seq[Seq[Vec]], control_points:Seq[(Int, ControlPoint)]) {
     val fos = new FileOutputStream(map_name)
     if(walls.nonEmpty) {
       fos.write("walls\n".getBytes)
@@ -309,12 +502,11 @@ package object simpleshooter {
         fos.write(sz.map(p => s"${p.x} ${p.y}").mkString("", " ", "\n").getBytes)
       })
     }
-    if(chance_modificators.nonEmpty) {
-      fos.write("chance modificators\n".getBytes)
-       chance_modificators.foreach {
-         case ChanceModificator(mode_value, area) =>
-           val area_str = area.map(p => s"${p.x} ${p.y}").mkString(" ")
-           fos.write(s"$mode_value $area_str\n".getBytes)
+    if(control_points.nonEmpty) {
+      fos.write("control points\n".getBytes)
+       control_points.foreach {
+         case (number, ControlPoint(_, _, _, area)) =>
+           fos.write(area.map(p => s"${p.x} ${p.y}").mkString("", " ", "\n").getBytes)
        }
     }
     fos.close()
@@ -332,16 +524,16 @@ package object simpleshooter {
 
     val walls = ArrayBuffer[Wall]()
     val safe_zones = ArrayBuffer[List[Vec]]()
-    val chance_modificators = ArrayBuffer[ChanceModificator]()
+    val control_points = ArrayBuffer[(Int, ControlPoint)]()
     var mode = ""
     try {
       for {
         line <- io.Source.fromFile(map_name).getLines()
         if !line.startsWith("#")
       } {
-        if(line == "walls") mode = "walls"
-        else if(line == "safe zones") mode = "safe zones"
-        else if(line == "chance modificators") mode = "chance modificators"
+        if(line == "walls")               mode = "walls"
+        else if(line == "safe zones")     mode = "safe zones"
+        else if(line == "control points") mode = "control points"
         else {
           mode match {
             case "walls" =>
@@ -359,22 +551,22 @@ package object simpleshooter {
                 }
                 safe_zones += new_safe_zone.toList
               }
-            case "chance modificators" =>
-              val mode_value_and_coords = line.split(" ")
-              if(mode_value_and_coords.length % 2 != 0 && mode_value_and_coords.forall(c => tryFloat(c))) {
-                val new_chance_modificator_coords = ArrayBuffer[Vec]()
-                val mode_value = mode_value_and_coords(0).toFloat
-                mode_value_and_coords.tail.grouped(2).foreach {
-                  case Array(x, y) => new_chance_modificator_coords += Vec(x.toFloat, y.toFloat)
+            case "control points" =>
+              val control_point_coords = line.split(" ")
+              if(control_point_coords.length % 2 == 0 && control_point_coords.forall(c => tryFloat(c))) {
+                val new_control_point_coords = ArrayBuffer[Vec]()
+                control_point_coords.grouped(2).foreach {
+                  case Array(x, y) => new_control_point_coords += Vec(x.toFloat, y.toFloat)
                   case _ =>
                 }
-                chance_modificators += ChanceModificator(mode_value, new_chance_modificator_coords.toList)
+                val number = control_points.length
+                control_points += (number -> ControlPoint(number, None, 0l, new_control_point_coords.toList))
               }
             case _ =>
           }
         }
       }
-      GameMap(walls.toList, safe_zones.toList, chance_modificators.toList)
+      GameMap(walls.toList, safe_zones.toList, control_points.toMap)
     } catch {
       case e:Exception => GameMap(Nil, Nil)
     }
@@ -384,11 +576,10 @@ package object simpleshooter {
     GameMap(
       walls = message.value[List[NetState]]("ws").getOrElse(Nil).map(m => wall(m)),
       safe_zones = message.value[List[List[NetState]]]("szs").getOrElse(Nil).map(m => m.map(p => vec(p, "x", "y"))),
-      chance_modificators = message.value[List[NetState]]("cms").getOrElse(Nil).map(m => {
-        val mv = m.value[Float]("v").get
-        val area = m.value[List[NetState]]("a").get.map(p => vec(p, "x", "y"))
-        ChanceModificator(mv, area)
-      })
+      control_points = message.value[List[NetState]]("cps").getOrElse(Nil).map(m => {
+        val cp = controlPoint(m)
+        (cp.number, cp)
+      }).toMap
     )
   }
 
@@ -401,69 +592,18 @@ package object simpleshooter {
     coordOnArea(coord, area)
   }
 
-  def isCoordCorrect(coord:Vec, body_radius:Float, walls:Seq[Wall]):Boolean = {
-    isCoordInsideMap(coord) && walls.forall(w => !isCoordNearWall(coord, w, body_radius))
+  def isCoordInsideMapBorders(coord:Vec):Boolean = {
+    coord.x >= -map_width / 2 && coord.x <= map_width / 2 && coord.y >= -map_height / 2 && coord.y <= map_height / 2
   }
 
-  def randomCoord(width:Float, height:Float, body_radius:Float, walls:Seq[Wall]):Vec = {
-    val coord = Vec(math.random*width, math.random*height)
-    if (isCoordCorrect(coord, body_radius, walls)) coord
-    else randomCoord(width, height, body_radius, walls)
-  }
-
-  def randomCoordNear(near:Vec, radius:Float, body_radius:Float, walls:Seq[Wall]):Vec = {
-    val dir = Vec(math.random, math.random).n
-    val coord = near + dir*radius
-    if (isCoordCorrect(coord, body_radius, walls)) coord
-    else randomCoordNear(near, radius, body_radius, walls)
-  }
-
-  def randomCoordInsideArea(area:List[Vec], body_radius:Float, walls:Seq[Wall]):Vec = {
-    val area_center = Vec(area.map(_.x).sum/area.length, area.map(_.y).sum/area.length)
-    val random_corner = area((math.random*area.length).toInt)
-    area_center + (random_corner - area_center).n*(math.random*random_corner.dist(area_center))
-  }
-
-  def respawnCoord(team:Int, map_width:Float, map_height:Float, body_radius:Float, map:GameMap):Vec = {
-    if(map.safe_zones.length == 0) {
-      randomCoord(map_width, map_height, body_radius, map.walls)
-    } else if(map.safe_zones.length == 0) {
-      randomCoordInsideArea(map.safe_zones.head, body_radius, map.walls)
-    } else {
-      val team1_area = map.safe_zones(0)
-      val team2_area = map.safe_zones(1)
-      team match {
-        case 1 => randomCoordInsideArea(team1_area, body_radius, map.walls)
-        case 2 => randomCoordInsideArea(team2_area, body_radius, map.walls)
-        case _ => randomCoordInsideArea(team1_area, body_radius, map.walls)
-      }
-    }
-  }
-
-  def isCoordInsidePov(coord:Vec, from:Vec, pov:Vec, pov_distance:Float, pov_angle:Float):Boolean = {
+  def isCoordInsidePov(coord:Vec, from:Vec, pov:Vec):Boolean = {
     coord.dist2(from) < pov_distance*pov_distance && math.abs((coord - from).deg(pov)) < pov_angle
   }
 
-  def isCoordVisible(coord:Vec, from:Vec, pov:Vec, pov_distance:Float, pov_angle:Float, walls:Seq[Wall]):Boolean = {
-    isCoordInsidePov(coord, from, pov, pov_distance, pov_angle) && walls.forall(w => {
-      !areLinesIntersect(from, coord, w.from, w.to)
-    })
-  }
-
-  def isCoordVisibleOrAudible(coord:Vec, from:Vec, pov:Vec, pov_distance:Float, pov_angle:Float, is_moving:Boolean, audibility_radius:Float, walls:Seq[Wall]):Boolean = {
-    is_moving && coord.dist2(from) <= audibility_radius * audibility_radius || isCoordInsidePov(coord, from, pov, pov_distance, pov_angle) && walls.forall(w => {
-      !areLinesIntersect(from, coord, w.from, w.to)
-    })
-  }
-
-  def isPathCorrect(from:Vec, to:Vec, body_radius:Float, walls:Seq[Wall]):Boolean = {
-    walls.forall(w => !areLinesIntersect(from, to, w.from, w.to)) && isCoordCorrect(to, body_radius, walls)
-  }
-
-  def isBodyHit(from:Vec, to:Vec, body_position:Vec, body_radius:Float):Boolean = {
+  def isBodyHit(from:Vec, to:Vec, body_position:Vec):Boolean = {
     val a = body_position + (to - from).rotateDeg(90)
     val b = body_position + (to - from).rotateDeg(-90)
-    areLinesIntersect(from ,to, a, b)
+    areLinesIntersect(from ,to, a, b) || body_position.dist2(to) < human_size*human_size
   }
 
   def isCoordVisible(coord:Vec, from:Vec, walls:Seq[Wall]):Boolean = {
@@ -477,20 +617,16 @@ package object simpleshooter {
     isCoordVisible(wall.from, from, other_walls) || isCoordVisible(middle, from, other_walls) || isCoordVisible(wall.to, from, other_walls)
   }
 
-  def outsideCoord(coord:Vec, width:Float, height:Float):Vec = {
+  def outsideCoord(coord:Vec):Vec = {
     def checkC(c:Float, from:Float, to:Float):Float = {
       val dist = to - from
       if(c >= to) checkC(c - dist, from, to)
       else if(c < from) checkC(c + dist, from, to)
       else c
     }
-    val x = checkC(coord.x, 0, width)
-    val y = checkC(coord.y, 0, height)
+    val x = checkC(coord.x, 0, map_width)
+    val y = checkC(coord.y, 0, map_height)
     Vec(x, y)
-  }
-
-  def isCoordInsideMap(coord:Vec):Boolean = {
-  coord.x >= -map_width / 2 && coord.x <= map_width / 2 && coord.y >= -map_height / 2 && coord.y <= map_height / 2
   }
 
   /*def povTriangle(coord:Vec, pov:Vec, distance:Float, angle:Float):List[Vec] = {
@@ -499,26 +635,6 @@ package object simpleshooter {
     val two = coord + axis.rotateDeg(-angle)
     List(coord, one, two, coord)
   }*/
-
-  def chanceToHit(shooter_coord:Vec,
-                  shooter_pov:Vec,
-                  pov_distance:Float,
-                  pov_angle:Float,
-                  shooter_moving:Boolean,
-                  target_coord:Vec,
-                  target_moving:Boolean,
-                  map:GameMap):Float = {
-    if(!isCoordVisible(target_coord, shooter_coord, shooter_pov, pov_distance, pov_angle, map.walls)) 0f
-    else {
-      val d = target_coord.dist(shooter_coord)
-      var result = -0.001125f*d + 0.6125f
-      if(shooter_moving) result /= 2f
-      if(target_moving) result /= 2f
-      val coord_modificator = map.chanceModificatorInCoord(target_coord)
-      result /= coord_modificator
-      if(result > 1f) 1f else result
-    }
-  }
 
   def messageArea(message:Any, coord:Vec, printer:ScageMessage = ScageMessage):List[Vec] = {
     val Vec(w, h) = messageBounds(message)
