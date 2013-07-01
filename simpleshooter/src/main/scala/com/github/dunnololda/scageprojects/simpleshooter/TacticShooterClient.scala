@@ -39,6 +39,14 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
     ("Выход из игры", () => Vec(windowWidth/2, windowHeight/2-30),   WHITE, () => stopApp())
   ))
 
+  private var selected_menu_item:Option[Int] = None
+  private def menuItemColor(idx:Int, color:ScageColor):ScageColor = {
+    selected_menu_item match {
+      case Some(selected_idx) if idx == selected_idx => RED
+      case _ => color
+    }
+  }
+
   private var render_mouse = scaledCoord(mouseCoord)
   private val number_place = Vec(1, 1).n*human_size*2
 
@@ -152,20 +160,27 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
   key(KEY_S, 10, onKeyDown = dir += Vec(0, -1))
   key(KEY_D, 10, onKeyDown = dir += Vec(1, 0))
 
-  leftMouseIgnorePause(onBtnDown = m => {
-    if(!on_pause) {
-      val sm = scaledCoord(m)
-      if(isCoordInsideMapBorders(sm)) {
-        new_destination = Some(sm)
+  leftMouseIgnorePause(
+    onBtnDown = m => {
+      if(!on_pause) {
+        val sm = scaledCoord(m)
+        if(isCoordInsideMapBorders(sm)) {
+          new_destination = Some(sm)
+        }
+      } else {
+        menu_items.zipWithIndex.find(x => mouseOnArea(x._1._3())) match {
+          case Some((pewpew, idx)) => selected_menu_item = Some(idx)
+          case None =>
+        }
+      }
+    },
+    onBtnUp = m => {
+      if(on_pause) {
+        selected_menu_item.foreach(idx => menu_items(idx)._5())
+        selected_menu_item = None
       }
     }
-    else {
-      menu_items.find(x => mouseOnArea(x._3())) match {
-        case Some((_, _, _, _, action)) => action()
-        case None =>
-      }
-    }
-  })
+  )
 
   rightMouse(onBtnDown = m => pov_fixed = !pov_fixed)
 
@@ -351,7 +366,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
             }
           })
 
-          others.filter(_.visible).foreach {
+          others.foreach {
             case player =>
               val player_color = if(player.team == you.team) ourPlayerColor(player, is_selected = false) else enemyPlayerColor(player)
               drawCircle(player.coord, 10, player_color)
@@ -413,9 +428,9 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
       }*/
     }
     if(on_pause) {
-      menu_items.foreach {
-        case (title, coord, _, color, _) =>
-          print(title, coord(), color, align = "center")
+      menu_items.zipWithIndex.foreach {
+        case ((title, coord, _, color, _), idx) =>
+          print(title, coord(), menuItemColor(idx, color), align = "center")
       }
     }
   }

@@ -11,8 +11,17 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
   private val games_list = ArrayBuffer[(GameInfo, String, Vec, List[Vec])]()
   private var is_connected = false
 
+  private var selected_menu_item:Option[Int] = None
+  private def menuItemColor(idx:Int, color:ScageColor):ScageColor = {
+    selected_menu_item match {
+      case Some(selected_idx) if idx == selected_idx => RED
+      case _ => color
+    }
+  }
+
   private val menu_items = createMenuItems(List(
-    ("Создать", () => Vec(windowWidth/2, windowHeight/2 - 30), WHITE, () => new TacticShooterClient(None).run())
+    ("Создать", () => Vec(windowWidth/2, windowHeight/2 - 30), WHITE, () => new TacticShooterClient(None).run()),
+    ("Назад", () => Vec(windowWidth/2, windowHeight/2 - 30*2), WHITE, () => stop())
   ))
 
   key(KEY_1, onKeyDown = if(games_list.length > 0) new TacticShooterClient(Some(games_list(0)._1.game_id)).run())
@@ -27,20 +36,26 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
   key(KEY_F5, onKeyDown = is_list_received = false)
   key(KEY_ESCAPE, onKeyDown = stop())
 
-  leftMouse(onBtnDown = m => {
-    games_list.find {
-      case (GameInfo(game_id, players), str, coord, area) =>
-        mouseOnArea(area)
-    } match {
-      case Some((GameInfo(game_id, players), str, coord, area)) =>
-        new TacticShooterClient(Some(game_id)).run()
-      case None =>
-        menu_items.find(x => mouseOnArea(x._3())) match {
-          case Some((_, _, _, _, action)) => action()
-          case None =>
-        }
+  leftMouse(
+    onBtnDown = m => {
+      games_list.find {
+        case (GameInfo(game_id, players), str, coord, area) =>
+          mouseOnArea(area)
+      } match {
+        case Some((GameInfo(game_id, players), str, coord, area)) =>
+          new TacticShooterClient(Some(game_id)).run()
+        case None =>
+          menu_items.zipWithIndex.find(x => mouseOnArea(x._1._3())) match {
+            case Some((pewpew, idx)) => selected_menu_item = Some(idx)
+            case None =>
+          }
+      }
+    },
+    onBtnUp = m => {
+      selected_menu_item.foreach(idx => menu_items(idx)._5())
+      selected_menu_item = None
     }
-  })
+  )
 
   // receive data
   action(10) {
@@ -79,9 +94,9 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
       } else {
         if(games_list.length == 0) {
           print("Игры не найдены", windowCenter, WHITE, align = "center")
-          menu_items.foreach {
-            case (title, coord, _, color, _) =>
-              print(title, coord(), color, align = "center")
+          menu_items.zipWithIndex.foreach {
+            case ((title, coord, _, color, _), idx) =>
+              print(title, coord(), menuItemColor(idx, color), align = "center")
           }
         } else {
           games_list.foreach {

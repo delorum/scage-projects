@@ -29,20 +29,34 @@ object HelpScreen extends ScageScreen("Help Screen") {
     ("Назад", () => Vec(windowWidth/2, windowHeight/2-30*4), WHITE, () => stop())
   ))
 
+  private var selected_menu_item:Option[Int] = None
+  private def menuItemColor(idx:Int, color:ScageColor):ScageColor = {
+    selected_menu_item match {
+      case Some(selected_idx) if idx == selected_idx => RED
+      case _ => color
+    }
+  }
+
   key(KEY_ESCAPE, onKeyDown = stop())
 
-  leftMouse(onBtnDown = m => {
-    menu_items.find(x => mouseOnArea(x._3())) match {
-      case Some((_, _, _, _, action)) => action()
-      case None =>
+  leftMouse(
+    onBtnDown = m => {
+      menu_items.zipWithIndex.find(x => mouseOnArea(x._1._3())) match {
+        case Some((pewpew, idx)) => selected_menu_item = Some(idx)
+        case None =>
+      }
+    },
+    onBtnUp = m => {
+      selected_menu_item.foreach(idx => menu_items(idx)._5())
+      selected_menu_item = None
     }
-  })
+  )
 
   interface {
     help_printer.print(help_info, 20, windowHeight-20, WHITE)
-    menu_items.foreach {
-      case (title, coord, _, color, _) =>
-        print(title, coord(), color, align = "center")
+    menu_items.zipWithIndex.foreach {
+      case ((title, coord, _, color, _), idx) =>
+        print(title, coord(), menuItemColor(idx, color), align = "center")
     }
   }
 }

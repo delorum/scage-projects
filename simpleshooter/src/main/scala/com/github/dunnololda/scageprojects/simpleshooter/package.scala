@@ -101,8 +101,7 @@ package object simpleshooter {
                           var pov:Vec,
                           var health:Int,
                           var wins:Int,
-                          var deaths:Int,
-                          var visible:Boolean) {
+                          var deaths:Int) {
     val ds = ArrayBuffer[Vec]()
     def isMoving = ds.nonEmpty
 
@@ -149,8 +148,7 @@ package object simpleshooter {
       "r" -> isReloading,
       "hp" -> health,
       "w"  -> wins,
-      "d"  -> deaths,
-      "v" -> visible)
+      "d"  -> deaths)
   }
 
   case class TacticClientPlayer(
@@ -165,8 +163,7 @@ package object simpleshooter {
      is_reloading:Boolean,
      health:Int,
      wins:Int,
-     deaths:Int,
-     visible:Boolean
+     deaths:Int
   ) {
     def isDead = health <= 0
     def isMoving = destinations.nonEmpty
@@ -185,8 +182,7 @@ package object simpleshooter {
       is_reloading = message.value[Boolean]("r").get,
       health = message.value[Int]("hp").get,
       wins = message.value[Int]("w").get,
-      deaths = message.value[Int]("d").get,
-      visible = message.value[Boolean]("v").get
+      deaths = message.value[Int]("d").get
     )
   }
 
@@ -279,6 +275,10 @@ package object simpleshooter {
       "ts" -> teams_stats.map(_.netState)
     )
   }
+
+  case class TacticClientStuff(
+    var control_points_update_required:Boolean = false
+  )
 
   case class TacticGame(game_id:Int,
                         players:mutable.HashMap[Long, List[TacticServerPlayer]] = mutable.HashMap[Long, List[TacticServerPlayer]](),  // client_id -> list of players
