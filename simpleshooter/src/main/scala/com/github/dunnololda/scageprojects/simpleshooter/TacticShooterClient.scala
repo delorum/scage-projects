@@ -8,11 +8,10 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
   private val client = UdpNetClient(address = host, port = port, ping_timeout= 1000, check_timeout = 5000)
 
   private val states = mutable.ArrayBuffer[TacticServerData]()
-  /*private def optRemoveHeadState:Option[TacticServerData] = {
-    if(states.length > 1) Some(states.remove(0))
-    else if (states.nonEmpty) Some(states.head)
-    else None
-  }*/
+
+  private var game_stats:Option[GameStats] = None
+
+  private val builder = NetState.newBuilder
 
   private var new_destination:Option[Vec] = None
   private var new_pov:Option[Vec] = None
@@ -126,7 +125,12 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
   }
 
   private def inputChanged:Boolean = {
-    new_destination.nonEmpty || new_pov.nonEmpty || map.walls.isEmpty || clear_destinations || send_fire_toggle.nonEmpty
+    new_destination.nonEmpty ||
+    new_pov.nonEmpty ||
+    map.walls.isEmpty ||
+    clear_destinations ||
+    send_fire_toggle.nonEmpty ||
+    builder.nonEmpty
   }
 
   private def selectPlayer(number:Int) {
@@ -208,10 +212,11 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
         if(message.contains("gamestarted")) is_game_started = true
         if(message.contains("fire_toggle_set")) send_fire_toggle = None
         if(message.contains("dests_cleared")) clear_destinations = false
-        if(message.contains("map")) {
-          //println(message.value[NetState]("map").get.toJsonString)
-          map = gameMap(message.value[NetState]("map").get)
-        }
+        message.value[NetState]("map").foreach(m => map = gameMap(m))
+        message.value[NetState]("gs").foreach(m => {
+          game_stats = Some(gameStats(m))
+          builder += ("game_stats_update_received" -> true)
+        })
         controlPointInfos(message).foreach {
           case ControlPointInfo(number, team, control_time) => map.control_points.get(number).foreach(x => {
             x.team = team
@@ -254,7 +259,6 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
       }
     } else {
       if(inputChanged) {
-        val builder = NetState.newBuilder
         builder += ("pn" -> selected_player)
         new_destination.foreach(nd => {
           builder += ("d" -> NetState("x" -> nd.x, "y" -> nd.y))
@@ -270,6 +274,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
         }
         send_fire_toggle.foreach(ft => builder += ("ft" -> ft))
         client.send(builder.toState)
+        builder.clear()
       }
     }
   }

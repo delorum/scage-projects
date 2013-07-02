@@ -259,25 +259,49 @@ package object simpleshooter {
     )
   }
 
-  case class TeamStats(team:Int, team_points:Int, player_stats:List[PlayerStats]) {
-    def netState = NetState(
-      "t" -> team,
-      "tp" -> team_points,
-      "ps" -> player_stats.map(_.netState)
+  def playerStats(message:NetState):PlayerStats = {
+    PlayerStats(
+      team           = message.value[Int]("t").get,
+      number_in_team = message.value[Int]("nit").get,
+      number         = message.value[Int]("n").get,
+      wins           = message.value[Int]("w").get,
+      deaths         = message.value[Int]("d").get
     )
   }
 
-  case class GameStats(teams_stats:List[TeamStats], game_started:Boolean, game_finished:Boolean, time_left:Long) {
+  case class TeamStats(team:Int, team_points:Int, players_stats:List[PlayerStats]) {
     def netState = NetState(
-      "tl" -> time_left,
-      "gs" -> game_started,
-      "gf" -> game_finished,
-      "ts" -> teams_stats.map(_.netState)
+      "t" -> team,
+      "tp" -> team_points,
+      "ps" -> players_stats.map(_.netState)
+    )
+  }
+
+  def teamStats(message:NetState):TeamStats = {
+    TeamStats(
+      team = message.value[Int]("t").get,
+      team_points = message.value[Int]("tp").get,
+      players_stats = message.value[List[NetState]]("tp").getOrElse(Nil).map(x => playerStats(x))
+    )
+  }
+
+  case class GameStats(teams_stats:List[TeamStats], game_started:Option[Long]) {
+    def netState = NetState(
+      "ts" -> teams_stats.map(_.netState),
+      "gs" -> game_started
+    )
+  }
+
+  def gameStats(message:NetState):GameStats = {
+    GameStats(
+      teams_stats = message.value[List[NetState]]("ts").getOrElse(Nil).map(x => teamStats(x)),
+      game_started = message.value[Long]("gs")
     )
   }
 
   case class TacticClientStuff(
-    var control_points_update_required:Boolean = false
+    var control_points_update_required:Boolean = false,
+    var game_stats_update_required:Boolean = false
   )
 
   case class TacticGame(game_id:Int,
@@ -311,7 +335,7 @@ package object simpleshooter {
 
     def gameStats:GameStats = {
       if(!game_started) {
-        GameStats(Nil, game_started = false, game_finished = false, game_period_length)
+        GameStats(Nil, game_started = None)
       } else {
         val teams_stats = count.toList.map {
           case (team, points) =>
@@ -320,12 +344,7 @@ package object simpleshooter {
             }).toList
             TeamStats(team, points, player_stats)
         }
-        if(!isFinished) {
-          val time_left = game_start_moment + game_period_length - System.currentTimeMillis()
-          GameStats(teams_stats, game_started = true, game_finished = false, time_left)
-        } else {
-          GameStats(teams_stats, game_started = true, game_finished = true, 0l)
-        }
+        GameStats(teams_stats, game_started = Some(game_start_moment))
       }
     }
   }

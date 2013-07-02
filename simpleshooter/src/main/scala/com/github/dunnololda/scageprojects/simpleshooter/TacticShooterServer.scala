@@ -221,6 +221,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
                   if (p.health <= 0) {
                     p.deaths += 1
                     b.shooter.wins += 1
+                    stuffForClients(players.keys.toSeq).foreach(_.game_stats_update_required = true)
                   }
                 }
               })
@@ -236,6 +237,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
                 if(System.currentTimeMillis() - cp.control_start_time > control_time_length) {
                   game.count(t) = game.count.getOrElse(t, 0) + 1
                   cp.control_start_time = System.currentTimeMillis()
+                  stuffForClients(players.keys.toSeq).foreach(_.game_stats_update_required = true)
                 }
               case None =>
             }
@@ -243,20 +245,10 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
     }
   }
 
-  action(1000) {
-    games.values.foreach {
-      case game =>
-        game.players.foreach {
-          case p =>
-            clientBuilder(p._1) += ("gs" -> game.gameStats.netState)
-        }
-    }
-  }
-
   // send data
   action(50) {
     games.values.foreach {
-      case TacticGame(_, players, bullets, map, count) =>
+      case game @ TacticGame(_, players, bullets, map, count) =>
         players.foreach {
           case (id, client) =>
             val (builder, player_data) = clientBuilderAndStuff(id)
@@ -273,6 +265,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
             if (your_bullets.nonEmpty) builder += ("your_bullets" -> your_bullets.map(_.netState).toList)
             if (other_bullets.nonEmpty) builder += ("other_bullets" -> other_bullets.map(_.netState).toList)
             if(player_data.control_points_update_required) builder += ("cps_infos" -> map.control_points.values.map(_.infoNetState).toList)
+            if(player_data.game_stats_update_required) builder += ("gs" -> game.gameStats.netState)
             val data = NetState(builder.toState)
             builder.clear()
             server.sendToClient(id, data)
