@@ -25,7 +25,6 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
   private val numbers_in_teams = mutable.HashMap[Int, ArrayBuffer[Boolean]]() // team -> list of positions
 
   private val client_builders = mutable.HashMap[Long, (StateBuilder, TacticClientStuff)]()
-  private def clientBuilder(client_id:Long) = client_builders.getOrElseUpdate(client_id, (NetState.newBuilder, TacticClientStuff()))._1
   private def nonEmptyClientBuilders = client_builders.withFilter(x => x._2._1.nonEmpty).map(x => (x._1, x._2._1))
   private def stuffForClients(client_ids:Seq[Long]) = client_builders.withFilter(x => client_ids.contains(x._1)).map(_._2._2)
   private def clientBuilderAndStuff(client_id:Long) = client_builders.getOrElseUpdate(client_id, (NetState.newBuilder, TacticClientStuff()))
@@ -175,7 +174,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
               val new_coord = p.coord + (d - p.coord).n*human_speed
               if(map.isCoordCorrect(new_coord, human_size) && (game.isStarted || map.isInsideSafeZone(new_coord))) {
                 p.coord = new_coord
-                map.control_points.values.find(cp => cp.team != p.team && coordOnArea(p.coord, cp.area)).foreach(cp => {
+                map.control_points.values.find(cp => (cp.team.isEmpty || cp.team.exists(cpt => cpt != p.team)) && coordOnArea(p.coord, cp.area)).foreach(cp => {
                   cp.team = Some(p.team)
                   cp.control_start_time_sec = System.currentTimeMillis()/1000
                   stuffForClients(players.keys.toSeq).foreach(_.control_points_update_required = true)

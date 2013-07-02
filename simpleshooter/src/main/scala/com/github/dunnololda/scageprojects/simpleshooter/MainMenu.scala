@@ -6,9 +6,10 @@ object MainMenu extends ScageScreenApp("Simple Shooter", game_window_width, game
   private val menu_items:List[(String, () => Vec, () => List[Vec], ScageColor, () => Any)] = createMenuItems(List(
     ("Создать",      () => Vec(windowWidth/2, windowHeight/2 + 30), WHITE, () => new TacticShooterClient(None).run()),
     ("Подключиться", () => Vec(windowWidth/2, windowHeight/2),      WHITE, () => new GamesListScreen().run()),
-    ("Настройки",    () => Vec(windowWidth/2, windowHeight/2-30),   WHITE, () => SettingsScreen.run()),
-    ("Справка",      () => Vec(windowWidth/2, windowHeight/2-30*2), WHITE, () => HelpScreen.run()),
-    ("Выход",        () => Vec(windowWidth/2, windowHeight/2-30*3), WHITE, () => stop())
+    ("Обучение",     () => Vec(windowWidth/2, windowHeight/2-30),   WHITE, () => new TutorialScreen().run()),
+    ("Настройки",    () => Vec(windowWidth/2, windowHeight/2-30*2), WHITE, () => SettingsScreen.run()),
+    ("Справка",      () => Vec(windowWidth/2, windowHeight/2-30*3), WHITE, () => HelpScreen.run()),
+    ("Выход",        () => Vec(windowWidth/2, windowHeight/2-30*4), WHITE, () => stop())
   ))
 
   private var selected_menu_item:Option[Int] = None

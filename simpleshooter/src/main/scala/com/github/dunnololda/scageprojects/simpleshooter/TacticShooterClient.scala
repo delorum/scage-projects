@@ -135,7 +135,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
 
   private def selectPlayer(number:Int) {
     if(selected_player == number) {
-      _center = current_state.map(x => x.yours(selected_player).coord).getOrElse(_center)
+      current_state.map(x => x.yours(selected_player).coord).foreach(c => _center = c)
     } else selected_player = number
   }
 
@@ -349,7 +349,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
               }
               if(!pov_fixed && !on_pause) {
                 val pov = (render_mouse - you.coord).n
-                val pov_point = you.coord + (render_mouse - you.coord).n*100f
+                val pov_point = you.coord + pov*100f
                 drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), color)
                 drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), color)
                 if(pov_fixed) drawCircle(pov_point, 7, color)
@@ -451,8 +451,8 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
           case Some(GameStats(team_stats, Some(game_start_moment_sec))) =>
             val time_left = timeLeft(game_start_moment_sec + game_period_length_sec - System.currentTimeMillis()/1000)
             print(s"Осталось времени: $time_left", 20, windowHeight-10, WHITE, align = "top-left")
-            print(s"Команда 1: ${team_stats.find(x => x.team == 1).map(_.team_points).getOrElse(0)}", 20, windowHeight-10-30, WHITE, align = "top-left")
-            print(s"Команда 2: ${team_stats.find(x => x.team == 2).map(_.team_points).getOrElse(0)}", 20, windowHeight-10-30*2, WHITE, align = "top-left")
+            print(s"Команда 1: ${team_stats.find(x => x.team == 1).map(_.team_points).getOrElse(0)} очков", 20, windowHeight-10-30, WHITE, align = "top-left")
+            print(s"Команда 2: ${team_stats.find(x => x.team == 2).map(_.team_points).getOrElse(0)} очков", 20, windowHeight-10-30*2, WHITE, align = "top-left")
           case _ =>
             print("Ждем еще игроков", 20, windowHeight-10, WHITE, align = "top-left")
         }
@@ -464,14 +464,14 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
               val team2_points = team_stats.find(x => x.team == 2).map(_.team_points).getOrElse(0)
               val winner = if(team1_points > team2_points) "победила команда 1" else if(team2_points > team1_points) "победила команда 2" else "ничья"
               print(s"Игра закончена. Результат: $winner", 20, windowHeight-10, WHITE, align = "top-left")
-              print(s"Команда 1: ${team_stats.find(x => x.team == 1).map(_.team_points).getOrElse(0)}", 20, windowHeight-10-30, WHITE, align = "top-left")
+              print(s"Команда 1: ${team_stats.find(x => x.team == 1).map(_.team_points).getOrElse(0)} очков", 20, windowHeight-10-30, WHITE, align = "top-left")
               val team1_player_stats = team_stats.find(x => x.team == 1).map(_.players_stats).getOrElse(Nil).sortBy(-_.wins)
               team1_player_stats.zipWithIndex.foreach {
                 case (PlayerStats(team, number_in_team, number, wins, deaths), idx) =>
                   val info = s"боец ${number_in_team+1}.${number+1} : убил: $wins умер: $deaths"
                   print(info, 20, windowHeight-10-30*2-30*idx, WHITE, align = "top-left")
               }
-              print(s"Команда 2: ${team_stats.find(x => x.team == 2).map(_.team_points).getOrElse(0)}", 20, windowHeight-10-30*3-30*team1_player_stats.length, WHITE, align = "top-left")
+              print(s"Команда 2: ${team_stats.find(x => x.team == 2).map(_.team_points).getOrElse(0)} очков", 20, windowHeight-10-30*3-30*team1_player_stats.length, WHITE, align = "top-left")
               val team2_player_stats = team_stats.find(x => x.team == 2).map(_.players_stats).getOrElse(Nil).sortBy(-_.wins)
               team2_player_stats.zipWithIndex.foreach {
                 case (PlayerStats(team, number_in_team, number, wins, deaths), idx) =>
@@ -481,14 +481,14 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
             } else {
               val time_left = timeLeft(game_start_moment_sec + game_period_length_sec - System.currentTimeMillis()/1000)
               print(s"Осталось времени: $time_left", 20, windowHeight-10, WHITE, align = "top-left")
-              print(s"Команда 1: ${team_stats.find(x => x.team == 1).map(_.team_points).getOrElse(0)}", 20, windowHeight-10-30, WHITE, align = "top-left")
+              print(s"Команда 1: ${team_stats.find(x => x.team == 1).map(_.team_points).getOrElse(0)} очков", 20, windowHeight-10-30, WHITE, align = "top-left")
               val team1_player_stats = team_stats.find(x => x.team == 1).map(_.players_stats).getOrElse(Nil).sortBy(-_.wins)
               team1_player_stats.zipWithIndex.foreach {
                 case (PlayerStats(team, number_in_team, number, wins, deaths), idx) =>
                   val info = s"боец ${number_in_team+1}.${number+1} : убил: $wins умер: $deaths"
                   print(info, 20, windowHeight-10-30*2-30*idx, WHITE, align = "top-left")
               }
-              print(s"Команда 2: ${team_stats.find(x => x.team == 2).map(_.team_points).getOrElse(0)}", 20, windowHeight-10-30*3-30*team1_player_stats.length, WHITE, align = "top-left")
+              print(s"Команда 2: ${team_stats.find(x => x.team == 2).map(_.team_points).getOrElse(0)} очков", 20, windowHeight-10-30*3-30*team1_player_stats.length, WHITE, align = "top-left")
               val team2_player_stats = team_stats.find(x => x.team == 2).map(_.players_stats).getOrElse(Nil).sortBy(-_.wins)
               team2_player_stats.zipWithIndex.foreach {
                 case (PlayerStats(team, number_in_team, number, wins, deaths), idx) =>
