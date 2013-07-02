@@ -111,6 +111,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
               val client_players = players(client_id)
               if(message.contains("sendmap")) builder += ("map" -> map.netState)
               if(message.contains("cps_infos_received")) client_stuff.control_points_update_required = false
+              if(message.contains("gs_update_received")) client_stuff.game_stats_update_required = false
               val TacticClientData(player_num, destination, pov, fire_toggle, clear_destinations) = tacticClientData(message)
               val player = client_players(player_num)
               if(clear_destinations) player.ds.clear()
@@ -160,7 +161,10 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
     games_not_started.foreach {
       case game =>
         val all_players = game.players.values.flatten
-        if(all_players.exists(_.team == 1) && all_players.exists(_.team == 2)) game.startGame()
+        if(all_players.exists(_.team == 1) && all_players.exists(_.team == 2)) {
+          game.startGame()
+          stuffForClients(game.players.keys.toSeq).foreach(_.game_stats_update_required = true)
+        }
     }
     val nonfinished_games = all_games.filter(!_.isFinished)
     nonfinished_games.foreach {
@@ -173,7 +177,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
                 p.coord = new_coord
                 map.control_points.values.find(cp => cp.team != p.team && coordOnArea(p.coord, cp.area)).foreach(cp => {
                   cp.team = Some(p.team)
-                  cp.control_start_time = System.currentTimeMillis()
+                  cp.control_start_time_sec = System.currentTimeMillis()/1000
                   stuffForClients(players.keys.toSeq).foreach(_.control_points_update_required = true)
                 })
               } else p.ds.clear()
@@ -234,9 +238,9 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
           case cp =>
             cp.team match {
               case Some(t) =>
-                if(System.currentTimeMillis() - cp.control_start_time > control_time_length) {
+                if(System.currentTimeMillis()/1000 - cp.control_start_time_sec > control_time_length_sec) {
                   game.count(t) = game.count.getOrElse(t, 0) + 1
-                  cp.control_start_time = System.currentTimeMillis()
+                  cp.control_start_time_sec = System.currentTimeMillis()/1000
                   stuffForClients(players.keys.toSeq).foreach(_.game_stats_update_required = true)
                 }
               case None =>
@@ -265,7 +269,10 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
             if (your_bullets.nonEmpty) builder += ("your_bullets" -> your_bullets.map(_.netState).toList)
             if (other_bullets.nonEmpty) builder += ("other_bullets" -> other_bullets.map(_.netState).toList)
             if(player_data.control_points_update_required) builder += ("cps_infos" -> map.control_points.values.map(_.infoNetState).toList)
-            if(player_data.game_stats_update_required) builder += ("gs" -> game.gameStats.netState)
+            if(player_data.game_stats_update_required) {
+              //println(game.gameStats)
+              builder += ("gs" -> game.gameStats.netState)
+            }
             val data = NetState(builder.toState)
             builder.clear()
             server.sendToClient(id, data)

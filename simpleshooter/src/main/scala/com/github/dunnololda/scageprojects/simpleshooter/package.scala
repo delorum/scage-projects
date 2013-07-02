@@ -34,9 +34,8 @@ package object simpleshooter {
   val reload_time = 5000  // 5 sec to swap magazines
   val magazine = 30 // 30 rounds in AK's magazine
   val max_bullets = 90  // three magazines
-  val count_update_interval = 15000   // in msec
-  val game_period_length = 15l*60*1000  // 15 minutes
-  val control_time_length = 15l*1000  // 15 seconds to control to receive 1 point
+  val game_period_length_sec = 15l*60  // 15 minutes
+  val control_time_length_sec = 15l  // 15 seconds to control to receive 1 point
 
   val map_edges = List(Vec(-map_width/2, map_height/2), Vec(map_width/2, map_height/2), Vec(map_width/2, -map_height/2), Vec(-map_width/2, -map_height/2), Vec(-map_width/2, map_height/2))
 
@@ -215,7 +214,7 @@ package object simpleshooter {
   }
 
   case class Wall(from:Vec, to:Vec) {
-    def netState = NetState("fromx" -> from.x, "fromy" -> from.y, "tox" -> to.x, "toy" -> to.y)
+    val netState = NetState("fromx" -> from.x, "fromy" -> from.y, "tox" -> to.x, "toy" -> to.y)
   }
 
   def wall(message:NetState):Wall = {
@@ -250,7 +249,7 @@ package object simpleshooter {
   }
 
   case class PlayerStats(team:Int, number_in_team:Int, number:Int, wins:Int, deaths:Int) {
-    def netState = NetState(
+    val netState = NetState(
       "t"   -> team,
       "nit" -> number_in_team,
       "n"   -> number,
@@ -270,7 +269,7 @@ package object simpleshooter {
   }
 
   case class TeamStats(team:Int, team_points:Int, players_stats:List[PlayerStats]) {
-    def netState = NetState(
+    val netState = NetState(
       "t" -> team,
       "tp" -> team_points,
       "ps" -> players_stats.map(_.netState)
@@ -281,21 +280,21 @@ package object simpleshooter {
     TeamStats(
       team = message.value[Int]("t").get,
       team_points = message.value[Int]("tp").get,
-      players_stats = message.value[List[NetState]]("tp").getOrElse(Nil).map(x => playerStats(x))
+      players_stats = message.value[List[NetState]]("ps").getOrElse(Nil).map(x => playerStats(x))
     )
   }
 
-  case class GameStats(teams_stats:List[TeamStats], game_started:Option[Long]) {
-    def netState = NetState(
-      "ts" -> teams_stats.map(_.netState),
-      "gs" -> game_started
-    )
+  case class GameStats(teams_stats:List[TeamStats], game_start_moment_sec:Option[Long]) {
+    private val builder = NetState.newBuilder
+    builder += ("ts" -> teams_stats.map(_.netState))
+    game_start_moment_sec.foreach(gs => builder += ("gs" -> gs))
+    val netState = builder.toState
   }
 
   def gameStats(message:NetState):GameStats = {
     GameStats(
       teams_stats = message.value[List[NetState]]("ts").getOrElse(Nil).map(x => teamStats(x)),
-      game_started = message.value[Long]("gs")
+      game_start_moment_sec = message.value[Long]("gs")
     )
   }
 
@@ -309,33 +308,19 @@ package object simpleshooter {
                         bullets:ArrayBuffer[TacticServerBullet] = ArrayBuffer[TacticServerBullet](),
                         map:GameMap,
                         count:mutable.HashMap[Int, Int]) {
-    private var last_count_updated_moment = 0l
-    def updateCount() {
-      if(System.currentTimeMillis() - last_count_updated_moment > count_update_interval) {
-        map.control_points.foreach {
-          case (number, ControlPoint(_, team, _, _)) =>
-            team match {
-              case Some(t) => count(t) = count.getOrElse(t, 0) + 1
-              case None =>
-            }
-        }
-        last_count_updated_moment = System.currentTimeMillis()
-      }
-    }
-
-    private var game_start_moment = 0l
+    private var game_start_moment_sec = 0l
     private var game_started = false
     def startGame() {
       game_started = true
-      game_start_moment = System.currentTimeMillis()
+      game_start_moment_sec = System.currentTimeMillis()/1000
     }
 
     def isStarted = game_started
-    def isFinished = game_started && System.currentTimeMillis() - game_start_moment > game_period_length
+    def isFinished = game_started && System.currentTimeMillis()/1000 - game_start_moment_sec > game_period_length_sec
 
     def gameStats:GameStats = {
       if(!game_started) {
-        GameStats(Nil, game_started = None)
+        GameStats(Nil, game_start_moment_sec = None)
       } else {
         val teams_stats = count.toList.map {
           case (team, points) =>
@@ -344,13 +329,13 @@ package object simpleshooter {
             }).toList
             TeamStats(team, points, player_stats)
         }
-        GameStats(teams_stats, game_started = Some(game_start_moment))
+        GameStats(teams_stats, game_start_moment_sec = Some(game_start_moment_sec))
       }
     }
   }
 
   case class GameInfo(game_id:Int, players:Int) {
-    def netState = NetState(
+    val netState = NetState(
       "gid" -> game_id,
       "ps" -> players
     )
@@ -364,7 +349,7 @@ package object simpleshooter {
     message.value[List[NetState]]("gameslist").getOrElse(Nil).map(m => gameInfo(m))
   }
 
-  case class ControlPoint(number:Int, var team:Option[Int], var control_start_time:Long, area:List[Vec]) {
+  case class ControlPoint(number:Int, var team:Option[Int], var control_start_time_sec:Long, area:List[Vec]) {
     val area_center = Vec(area.map(_.x).sum/area.length, area.map(_.y).sum/area.length)
 
     def controlPointColor(your_team:Int):ScageColor = {
@@ -378,7 +363,7 @@ package object simpleshooter {
       val builder = NetState.newBuilder
       builder += ("n" -> number)
       if(team.nonEmpty) builder += ("t" -> team.get)
-      builder += ("cst" -> control_start_time)
+      builder += ("cst" -> control_start_time_sec)
       builder += ("a" -> area.map(p => NetState("x" -> p.x, "y" -> p.y)))
       builder.toState
     }
@@ -387,7 +372,7 @@ package object simpleshooter {
       val builder = NetState.newBuilder
       builder += ("n" -> number)
       if(team.nonEmpty) builder += ("t" -> team.get)
-      builder += ("cst" -> control_start_time)
+      builder += ("cst" -> control_start_time_sec)
       builder.toState
     }
   }
@@ -396,7 +381,7 @@ package object simpleshooter {
     ControlPoint(
       number = message.value[Int]("n").get,
       team = message.value[Int]("t"),
-      control_start_time = message.value[Long]("cst").get,
+      control_start_time_sec = message.value[Long]("cst").get,
       area = message.value[List[NetState]]("a").get.map(p => vec(p, "x", "y"))
     )
   }
@@ -500,7 +485,7 @@ package object simpleshooter {
       }
     }
 
-    def netState = NetState(
+    val netState = NetState(
       "ws" -> walls.map(w => w.netState).toList,
       "szs" -> safe_zones.map(sz => sz.map(p => NetState("x" -> p.x, "y" -> p.y))),
       "cps" -> control_points.map(cp => cp._2.netState)
