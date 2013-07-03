@@ -24,6 +24,8 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
   private var is_game_started = false
   private var is_connected = false
   private var map = GameMap()
+  private var map_display_lists:Option[List[(Int, () => ScageColor)]] = None
+
   private var current_state:Option[TacticServerData] = None
 
   private val fire_toggles = mutable.HashMap[Int, Int]()
@@ -220,7 +222,27 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
         if(message.contains("gamestarted")) is_game_started = true
         if(message.contains("fire_toggle_set")) send_fire_toggle = None
         if(message.contains("dests_cleared")) clear_destinations = false
-        message.value[NetState]("map").foreach(m => map = gameMap(m))
+        message.value[NetState]("map").foreach(m => {
+          map = gameMap(m)
+          val walls_dl = displayList {
+            map.walls.foreach(wall => {
+              drawLine(wall.from, wall.to)
+              /*drawCircle(wall.from, near_wall_area, GRAY)
+              drawCircle(wall.to, near_wall_area, GRAY)*/
+            })
+          }
+          val safe_zones_dl = displayList {
+            map.safe_zones.foreach(sz => {
+              drawSlidingLines(sz)
+            })
+          }
+          val edges_dl = displayList {
+            drawSlidingLines(map_edges)
+          }
+          map_display_lists = Some(List((walls_dl, () => checkPausedColor(WHITE)),
+                                        (safe_zones_dl, () => checkPausedColor(GREEN)),
+                                        (edges_dl, () => checkPausedColor(GRAY))))
+        })
         message.value[NetState]("gs").foreach(m => {
           game_stats = Some(gameStats(m))
           //println(game_stats.get)
@@ -308,8 +330,15 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
     if(is_connected && is_game_started) {
       current_state match {
         case Some(TacticServerData(yours, others, your_bullets, other_bullets, _)) =>
+          map_display_lists.foreach {
+            case List((w, wc), (sz, szc), (e, ec)) =>
+              drawDisplayList(list_code = w, color = wc())
+              drawDisplayList(list_code = sz, color = szc())
+              drawDisplayList(list_code = e, color = ec())
+            case _ =>
+          }
           val you = yours(selected_player)
-          val walls_color = checkPausedColor(WHITE)
+          /*val walls_color = checkPausedColor(WHITE)
           map.walls.foreach(wall => {
             drawLine(wall.from, wall.to, walls_color)
             /*drawCircle(wall.from, near_wall_area, GRAY)
@@ -318,7 +347,9 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
           val safe_zones_color = checkPausedColor(GREEN)
           map.safe_zones.foreach(sz => {
             drawSlidingLines(sz, safe_zones_color)
-          })
+          })*/
+          /*val edges_color = checkPausedColor(GRAY)
+          drawSlidingLines(map_edges, edges_color)*/
           map.control_points.foreach {
             case (number, cp @ ControlPoint(cp_number, team, control_start_time_sec, area)) =>
               val cp_color = cp.controlPointColor(you.team)
@@ -328,8 +359,6 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
                 print(time_left_sec, cp.area_center, max_font_size/globalScale, cp_color, align = "center")
               })
           }
-          val edges_color = checkPausedColor(GRAY)
-          drawSlidingLines(map_edges, edges_color)
 
           yours.foreach(you => {
             if(you.number == selected_player) {

@@ -72,8 +72,58 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
     }
   })
 
+  key(KEY_LEFT, 100, onKeyDown = {
+    mode match {
+      case 0 =>
+        if(walls.length > 0) {
+          walls_counter -= 1
+          if(walls_counter < 0) walls_counter = walls.length-1
+        }
+      case 1 =>
+        if(safe_zones.length > 0) {
+          safe_zones_counter -= 1
+          if(safe_zones_counter < 0) safe_zones_counter = safe_zones.length-1
+        }
+      case 2 =>
+        if(control_points.length > 0) {
+          control_points_counter -= 1
+          if(control_points_counter < 0) control_points_counter = control_points.length-1
+        }
+      case _ =>
+    }
+  })
+
+  key(KEY_RIGHT, 100, onKeyDown = {
+    mode match {
+      case 0 =>
+        if(walls.length > 0) {
+          walls_counter += 1
+          if(walls_counter >= walls.length) walls_counter = 0
+        }
+      case 1 =>
+        if(safe_zones.length > 0) {
+          safe_zones_counter += 1
+          if(safe_zones_counter >= safe_zones.length) safe_zones_counter = 0
+        }
+      case 2 =>
+        if(control_points.length > 0) {
+          control_points_counter += 1
+          if(control_points_counter >= control_points.length) control_points_counter = 0
+        }
+      case _ =>
+    }
+  })
+
+  private def nearestDot(x:Float, a:Float, h:Float):Float = {
+    val x1 = a + ((x - a)/h).toInt*h
+    val x2 = x1+h
+    if(x - x1 < x2 - x) x1 else x2
+  }
+
   leftMouse(onBtnDown = m => {
-    val sm = scaledCoord(m)
+    val ssm = scaledCoord(m)
+    val sm = Vec(nearestDot(ssm.x, -map_width/2, human_size*2),
+                 nearestDot(ssm.y, -map_height/2, human_size*2))
     if(isCoordInsideMapBorders(sm)) {
       mode match {
         case 0 =>
@@ -143,46 +193,16 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
     }
   })
 
-  mouseWheelDown(m => {
-    mode match {
-      case 0 =>
-        if(walls.length > 0) {
-          walls_counter -= 1
-          if(walls_counter < 0) walls_counter = walls.length-1
-        }
-      case 1 =>
-        if(safe_zones.length > 0) {
-          safe_zones_counter -= 1
-          if(safe_zones_counter < 0) safe_zones_counter = safe_zones.length-1
-        }
-      case 2 =>
-        if(control_points.length > 0) {
-          control_points_counter -= 1
-          if(control_points_counter < 0) control_points_counter = control_points.length-1
-        }
-      case _ =>
+  mouseWheelDown(onWheelDown = m => {
+    if(globalScale > 0.1f) {
+      if(globalScale > 1) globalScale -= 1
+      else globalScale -= 0.1f
     }
   })
 
-  mouseWheelUp(m => {
-    mode match {
-      case 0 =>
-        if(walls.length > 0) {
-          walls_counter += 1
-          if(walls_counter >= walls.length) walls_counter = 0
-        }
-      case 1 =>
-        if(safe_zones.length > 0) {
-          safe_zones_counter += 1
-          if(safe_zones_counter >= safe_zones.length) safe_zones_counter = 0
-        }
-      case 2 =>
-        if(control_points.length > 0) {
-          control_points_counter += 1
-          if(control_points_counter >= control_points.length) control_points_counter = 0
-        }
-      case _ =>
-    }
+  mouseWheelUp(onWheelUp = m => {
+    if(globalScale < 1) globalScale += 0.1f
+    else if(globalScale < 3) globalScale += 1
   })
 
   action {
@@ -204,8 +224,8 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
       case (w, i) =>
         if(mode == 0 && i == walls_counter) drawLine(w.from, w.to, RED)
         else drawLine(w.from, w.to, WHITE)
-        drawCircle(w.from, near_wall_area, GRAY)
-        drawCircle(w.to, near_wall_area, GRAY)
+        /*drawCircle(w.from, near_wall_area, GRAY)
+        drawCircle(w.to, near_wall_area, GRAY)*/
     }
     safe_zones.zipWithIndex.foreach {
       case (sz, idx) =>

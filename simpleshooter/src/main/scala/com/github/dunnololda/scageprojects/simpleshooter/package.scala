@@ -12,16 +12,16 @@ package object simpleshooter {
   val window_settings_title_printer = new ScageMessage(max_font_size = 30)
   val help_printer = new ScageMessage(max_font_size = 15)
 
-  val host = "localhost"
+  val host = "fzeulf.netris.ru"
   val port = 10000
   val human_speed = 0.332f  // px / 10msec = 33.2 px / sec = 3.32 m/sec = 12 km/h
   val bullet_speed = 12f  // 12 px / 10msec = 1200 px / sec = 120 m/sec
   val bullet_count = 50  // 60 meters = 600 px = 0.5 sec = 50*10msec
   val bullet_damage = 100
-  val map_width = 4000  // 400 m
-  val map_height = 4000
-  val game_window_width = 640
-  val game_window_height = 480
+  val map_width = 2000  // 200 m
+  val map_height = 2000
+  val game_window_width = 1024
+  val game_window_height = 768
   val human_size = 10  // 10px is 1 meter
   val near_wall_area = human_size*2.5f
   val bullet_size = 3
