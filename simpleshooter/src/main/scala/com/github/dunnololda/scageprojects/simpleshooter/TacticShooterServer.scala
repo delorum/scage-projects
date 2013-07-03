@@ -240,7 +240,10 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
                 if(System.currentTimeMillis()/1000 - cp.control_start_time_sec > control_time_length_sec) {
                   game.count(t) = game.count.getOrElse(t, 0) + 1
                   cp.control_start_time_sec = System.currentTimeMillis()/1000
-                  stuffForClients(players.keys.toSeq).foreach(_.game_stats_update_required = true)
+                  stuffForClients(players.keys.toSeq).foreach(x => {
+                    x.game_stats_update_required = true
+                    x.control_points_update_required = true
+                  })
                 }
               case None =>
             }

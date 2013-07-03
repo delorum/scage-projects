@@ -6,7 +6,32 @@ import scala.Some
 import scala.collection.mutable.ArrayBuffer
 
 class TutorialScreen extends ScageScreen("Tutorial Screen") {
-  private val map = loadMap("map.ss")
+  private val map = GameMap(
+    walls = List(
+      Wall(Vec(-100.0, 40.0), Vec(-100.0, 100.0)),
+      Wall(Vec(-100.0, 100.0), Vec(-20.0, 100.0)),
+      Wall(Vec(20.0, 100.0), Vec(100.0, 100.0)),
+      Wall(Vec(100.0, 100.0), Vec(100.0, 40.0)),
+      Wall(Vec(100.0, 0.0), Vec(100.0, -100.0)),
+      Wall(Vec(100.0, -100.0), Vec(20.0, -100.0)),
+      Wall(Vec(-20.0, -100.0), Vec(-100.0, -100.0)),
+      Wall(Vec(-100.0, -100.0), Vec(-100.0, -60.0)),
+      Wall(Vec(-100.0, -20.0), Vec(-100.0, 40.0)),
+      Wall(Vec(-200.0, 220.0), Vec(-200.0, 140.0)),
+      Wall(Vec(-200.0, 80.0), Vec(-200.0, -40.0)),
+      Wall(Vec(-200.0, -80.0), Vec(-200.0, -160.0)),
+      Wall(Vec(160.0, 80.0), Vec(160.0, -60.0)),
+      Wall(Vec(160.0, -100.0), Vec(160.0, -200.0)),
+      Wall(Vec(160.0, 240.0), Vec(160.0, 120.0))
+    ),
+    safe_zones = List(
+      List(Vec(-280.0, 80.0), Vec(-280.0, -60.0), Vec(-380.0, -60.0), Vec(-380.0, 80.0), Vec(-280.0, 80.0)),
+      List(Vec(220.0, 80.0), Vec(320.0, 80.0), Vec(320.0, -80.0), Vec(220.0, -80.0), Vec(220.0, 80.0))
+    ),
+    control_points = Map(
+      0 -> ControlPoint(0, None, 0l, List(Vec(-60.0, 60.0), Vec(60.0, 60.0), Vec(60.0, -60.0), Vec(-60.0, -60.0), Vec(-60.0, 60.0)))
+    )
+  )
 
   val player1 = TacticServerPlayer(
     id = 1,
