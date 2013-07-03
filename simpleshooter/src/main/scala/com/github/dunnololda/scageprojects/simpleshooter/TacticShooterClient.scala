@@ -312,8 +312,8 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
           val walls_color = checkPausedColor(WHITE)
           map.walls.foreach(wall => {
             drawLine(wall.from, wall.to, walls_color)
-            drawCircle(wall.from, near_wall_area, GRAY)
-            drawCircle(wall.to, near_wall_area, GRAY)
+            /*drawCircle(wall.from, near_wall_area, GRAY)
+            drawCircle(wall.to, near_wall_area, GRAY)*/
           })
           val safe_zones_color = checkPausedColor(GREEN)
           map.safe_zones.foreach(sz => {

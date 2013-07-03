@@ -481,7 +481,9 @@ package object simpleshooter {
         if(shooter_moving) result /= 2f
         if(target_moving) result /= 2f
         if(hitChanceModification(shooter_coord, target_coord)) result /= 2f
-        if(result > 1f) 1f else result
+        if(result > 1f) 1f
+        else if(result < 0) 0f
+        else result
       }
     }
 

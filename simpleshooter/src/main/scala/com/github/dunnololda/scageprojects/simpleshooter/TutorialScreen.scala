@@ -7,18 +7,6 @@ import scala.collection.mutable.ArrayBuffer
 
 class TutorialScreen extends ScageScreen("Tutorial Screen") {
   private val map = loadMap("map.ss")
-  private val count = mutable.HashMap(1 -> 0, 2 -> 0)
-
-  def gameStats:GameStats = {
-    val teams_stats = count.toList.map {
-      case (team, points) =>
-        val player_stats = players.values.filter(_.team == team).map(p => {
-          PlayerStats(p.team, p.number_in_team, p.number, p.wins, p.deaths)
-        }).toList
-        TeamStats(team, points, player_stats)
-    }
-    GameStats(teams_stats, game_start_moment_sec = None)
-  }
 
   val player1 = TacticServerPlayer(
     id = 1,
@@ -82,16 +70,57 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
     "Сообщения проматываются стрелками вправо/влево",
     "Перемещение поля зрения: WASD",
     "Приближение/удаление: колесико мышки",
-    "Выйти из обучения в меню: Escape",
     "Под вашим началом отряд из трех бойцов",
-    "Выбор бойца: 1, 2, 3. Нажатие еще раз: фокус на выбранном",
-    "В этом обучении также доступны враги: 4, 5, 6",
-    "Клик левой кнопкой: перемещение бойца",
-    "Можно кликать несколько раз, прокладывая траекторию",
+    "Выбор бойца: клавиши 1, 2, 3. Нажатие еще раз: фокус на\n" +
+      "выбранном бойце",
+    "В этом обучении также доступны противники: клавиши 4, 5, 6",
+    "Клик левой кнопкой: перемещение бойца. Можно кликать несколько\n" +
+      "раз, прокладывая траекторию",
+    "Боец двигается со скоростью 12 км/ч",
+    "Нажатие пробела стирает траекторию движения. Боец останавливается",
     "Клик правой кнопкой: зафиксировать направление взгляда бойца",
+    "Боец открывает огонь если противник в поле зрения, оружие снято\n" +
+      "с предохранителя и ни противник, ни боец не находятся в зоне\n" +
+      "возрождения",
     "Левый шифт и левый контрол переключают режимы стрельбы",
-    "Боец открывает огонь, если враг в поле зрения и оружие снято с предохранителя",
-    ""
+    "Одиночный огонь: пули летят с частотой 100 выстрелов/мин",
+    "Автоматический огонь: пули летят с частотой 600 выстрелов/мин",
+    "Скорость полета пули: 120 м/сек. Дальность: 50 метров на открытой\n" +
+      "местности",
+    "Противник поражен, если пуля пересекает его контур и срабатывает\n" +
+      "шанс попадания",
+    "Шанс попадания зависит от многих факторов: движется ли цель,\n" +
+      "движется ли стрелок, расстояние между ними, есть ли рядом укрытие",
+    "Укрытие - пространство радиусом 2.5 метра около края стены.\n" +
+      "Разумно используйте укрытия при перемещениях",
+    "Пораженный боец считается мертвым. Он должен самостоятельно\n" +
+      "дойти до своей зоны возрождения",
+    "Зона возрождения - область зеленого цвета, откуда вы начинаете игру",
+    "В сетевой игре зону возрождения нельзя покидать до тех пор, пока в\n" +
+      "команде противника нет хотя бы одного отряда",
+    "В зоне возрождения бойцы оживают, их боезапас пополняется",
+    "Боезапас: 90 патронов в трех обоймах. Время перезарядки: 5 секунд",
+    "Если патроны закончились - отправляйтесь в зону возрождения",
+    "Малый круг вокруг бойца - радиус слышимости противников.\n" +
+      "Противники в этом радиусе тображаются, даже если они за стенкой",
+    "Большой круг вокруг бойца - радиус слышимости пуль",
+    "Рядом с каждым бойцом отображается краткая информация о нем",
+    "Дружественные бойцы: через точку номер отряда в команде и\n" +
+      "номер бойца в отряде, оставшийся боезапас",
+    "Бойцы противника: через точку номер отряда в команде и\n" +
+      "номер бойца в отряде, его боезапас и далее вероятность\n" +
+      "попадания в процентах",
+    "В этой игре нужно захватывать и удерживать контрольные точки",
+    "Чтобы захватить контрольную точку, нужно переместить на нее одного\n" +
+      "из бойцов. В дальнейшем его нахождение на точке не обязательно",
+    "Если точка захвачена дружественными бойцами, она рисуется зеленым\n" +
+      "цветом. Если противником - красным. Если точка никем не" +
+      "захвачена, она рисуется серым цветом",
+    "После захвата точки начинается 15-секундный обратный отчет",
+    "Удержание контрольной точки в течение 15 секунд приносит команде\n" +
+      "1 очко",
+    "Игра длится 15 минут. Побеждает команда, заработавшая больше очков",
+    "На этом обучение закончено. Выход в меню: Escape"
   )
   private var tutorial_position = 0
 
@@ -272,7 +301,6 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
         cp.team match {
           case Some(t) =>
             if(System.currentTimeMillis()/1000 - cp.control_start_time_sec > control_time_length_sec) {
-              count(t) = count.getOrElse(t, 0) + 1
               cp.control_start_time_sec = System.currentTimeMillis()/1000
             }
           case None =>
@@ -294,8 +322,8 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
     val walls_color = checkPausedColor(WHITE)
     map.walls.foreach(wall => {
       drawLine(wall.from, wall.to, walls_color)
-      drawCircle(wall.from, near_wall_area, GRAY)
-      drawCircle(wall.to, near_wall_area, GRAY)
+      /*drawCircle(wall.from, near_wall_area, GRAY)
+      drawCircle(wall.to, near_wall_area, GRAY)*/
     })
     val safe_zones_color = checkPausedColor(GREEN)
     map.safe_zones.foreach(sz => {
@@ -424,41 +452,13 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
       })
   }
 
-  private def timeLeft(time_sec:Long):String = {
-    val sec  = 1l
-    val min  = sec*60
-    s"${time_sec/min} мин ${time_sec%min/sec} сек"
-  }
   interface {
-    print(fps, windowWidth-20, windowHeight-10, WHITE, align = "top-right")
     if(!on_pause) {
       print(tutorial_texts(tutorial_position), 20, windowHeight-10, GREEN, align = "top-left")
-      gameStats match {
-        case GameStats(team_stats, _) =>
-          /*val time_left = timeLeft(game_start_moment_sec + game_period_length_sec - System.currentTimeMillis()/1000)
-          print(s"Осталось времени: $time_left", 20, windowHeight-10, WHITE, align = "top-left")*/
-          print(s"Команда 1: ${team_stats.find(x => x.team == 1).map(_.team_points).getOrElse(0)} очков", 20, windowHeight-10-30, WHITE, align = "top-left")
-          print(s"Команда 2: ${team_stats.find(x => x.team == 2).map(_.team_points).getOrElse(0)} очков", 20, windowHeight-10-30*2, WHITE, align = "top-left")
-      }
     } else {
-      gameStats match {
-        case GameStats(team_stats, _) =>
-          /*val time_left = timeLeft(game_start_moment_sec + game_period_length_sec - System.currentTimeMillis()/1000)
-          print(s"Осталось времени: $time_left", 20, windowHeight-10, WHITE, align = "top-left")*/
-          print(s"Команда 1: ${team_stats.find(x => x.team == 1).map(_.team_points).getOrElse(0)} очков", 20, windowHeight-10-30, WHITE, align = "top-left")
-          val team1_player_stats = team_stats.find(x => x.team == 1).map(_.players_stats).getOrElse(Nil).sortBy(-_.wins)
-          team1_player_stats.zipWithIndex.foreach {
-            case (PlayerStats(team, number_in_team, number, wins, deaths), idx) =>
-              val info = s"боец ${number_in_team+1}.${number+1} : убил: $wins умер: $deaths"
-              print(info, 20, windowHeight-10-30*2-30*idx, WHITE, align = "top-left")
-          }
-          print(s"Команда 2: ${team_stats.find(x => x.team == 2).map(_.team_points).getOrElse(0)} очков", 20, windowHeight-10-30*3-30*team1_player_stats.length, WHITE, align = "top-left")
-          val team2_player_stats = team_stats.find(x => x.team == 2).map(_.players_stats).getOrElse(Nil).sortBy(-_.wins)
-          team2_player_stats.zipWithIndex.foreach {
-            case (PlayerStats(team, number_in_team, number, wins, deaths), idx) =>
-              val info = s"боец ${number_in_team+1}.${number+1} : убил: $wins умер: $deaths"
-              print(info, 20, windowHeight-10-30*4-30*team1_player_stats.length-30*idx, WHITE, align = "top-left")
-          }
+      menu_items.zipWithIndex.foreach {
+        case ((title, coord, _, color, _), idx) =>
+          print(title, coord(), menuItemColor(idx, color), align = "center")
       }
     }
     fireToggle match {
@@ -466,12 +466,6 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
       case 1 => print("одиночный огонь", 20, 20, checkPausedColor(WHITE))
       case 2 => print("автоматический огонь", 20, 20, checkPausedColor(WHITE))
       case _ =>
-    }
-    if(on_pause) {
-      menu_items.zipWithIndex.foreach {
-        case ((title, coord, _, color, _), idx) =>
-          print(title, coord(), menuItemColor(idx, color), align = "center")
-      }
     }
   }
 }
