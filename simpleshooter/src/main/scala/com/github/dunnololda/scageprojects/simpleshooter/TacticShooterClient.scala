@@ -35,9 +35,9 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
   private var send_fire_toggle:Option[Int] = None // Some(0), Some(1), Some(2): no fire, single fire, rapid fire
 
   private val menu_items = createMenuItems(List(
-    ("Продолжить",    () => Vec(windowWidth/2, windowHeight/2 + 30), WHITE, () => pauseOff()),
-    ("Выход в меню",  () => Vec(windowWidth/2, windowHeight/2),      WHITE, () => stop()),
-    ("Выход из игры", () => Vec(windowWidth/2, windowHeight/2-30),   WHITE, () => stopApp())
+    ("Продолжить",    () => Vec(windowWidth/2, windowHeight/2 + 30), () => if(!is_game_over) WHITE else DARK_GRAY, () => if(!is_game_over) pauseOff()),
+    ("Выход в меню",  () => Vec(windowWidth/2, windowHeight/2),      () => WHITE, () => stop()),
+    ("Выход из игры", () => Vec(windowWidth/2, windowHeight/2-30),   () => WHITE, () => stopApp())
   ))
 
   private var selected_menu_item:Option[Int] = None
@@ -53,6 +53,8 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
 
   private var _center = Vec.zero
   private var dir = Vec.zero
+
+  private var is_game_over = false
 
   private def interpolateServerState(third:TacticServerData, second:TacticServerData):TacticServerData = {
     val TacticServerData(third_yours, third_others, third_your_bullets, third_other_bullets, third_receive_moment) = third
@@ -145,7 +147,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
   key(KEY_2, onKeyDown = selectPlayer(1))
   key(KEY_3, onKeyDown = selectPlayer(2))
   key(KEY_SPACE, onKeyDown = clear_destinations = true)
-  keyIgnorePause(KEY_ESCAPE, onKeyDown = switchPause())
+  keyIgnorePause(KEY_ESCAPE, onKeyDown = if(!is_game_over) switchPause())
 
   key(KEY_LSHIFT, onKeyDown = {
     if(fireToggle > 0) {
@@ -277,11 +279,18 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
     }
   }
 
-  action(1000) {
-    game_stats match {
-      case Some(GameStats(team_stats, Some(game_start_moment_sec))) =>
-        if(System.currentTimeMillis()/1000 - game_start_moment_sec > game_period_length_sec) pause()
-      case _ =>
+
+
+  actionIgnorePause(1000) {
+    if(!is_game_over) {
+      game_stats match {
+        case Some(GameStats(team_stats, Some(game_start_moment_sec))) =>
+          if(System.currentTimeMillis()/1000 - game_start_moment_sec > game_period_length_sec) {
+            pause()
+            is_game_over = true
+          }
+        case _ =>
+      }
     }
   }
 
@@ -352,8 +361,8 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
           drawSlidingLines(map_edges, edges_color)*/
           map.control_points.foreach {
             case (number, cp @ ControlPoint(cp_number, team, control_start_time_sec, area)) =>
-              val cp_color = cp.controlPointColor(you.team)
-              drawSlidingLines(area, checkPausedColor(cp_color))
+              val cp_color = checkPausedColor(cp.controlPointColor(you.team))
+              drawSlidingLines(area, cp_color)
               team.foreach(t => {
                 val time_left_sec = control_start_time_sec + control_time_length_sec - System.currentTimeMillis()/1000
                 print(time_left_sec, cp.area_center, max_font_size/globalScale, cp_color, align = "center")
@@ -488,7 +497,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
       } else {
         game_stats match {
           case Some(GameStats(team_stats, Some(game_start_moment_sec))) =>
-            if(System.currentTimeMillis()/1000 - game_start_moment_sec > game_period_length_sec) {
+            if(is_game_over) {
               val team1_points = team_stats.find(x => x.team == 1).map(_.team_points).getOrElse(0)
               val team2_points = team_stats.find(x => x.team == 2).map(_.team_points).getOrElse(0)
               val winner = if(team1_points > team2_points) "победила команда 1" else if(team2_points > team1_points) "победила команда 2" else "ничья"
@@ -538,7 +547,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
     if(on_pause) {
       menu_items.zipWithIndex.foreach {
         case ((title, coord, _, color, _), idx) =>
-          print(title, coord(), menuItemColor(idx, color), align = "center")
+          print(title, coord(), menuItemColor(idx, color()), align = "center")
       }
     }
   }

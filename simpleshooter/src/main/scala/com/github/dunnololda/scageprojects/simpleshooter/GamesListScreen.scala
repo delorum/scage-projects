@@ -42,8 +42,8 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
   }
 
   private val menu_items = createMenuItems(List(
-    ("Создать", () => Vec(windowWidth/2, windowHeight/2 - 30), WHITE, () => new TacticShooterClient(None).run()),
-    ("Назад", () => Vec(windowWidth/2, windowHeight/2 - 30*2), WHITE, () => stop())
+    ("Создать", () => Vec(windowWidth/2, windowHeight/2 - 30), () => WHITE, () => new TacticShooterClient(None).run()),
+    ("Назад", () => Vec(windowWidth/2, windowHeight/2 - 30*2), () => WHITE, () => stop())
   ))
 
   key(KEY_1, onKeyDown = selectGame(0), onKeyUp = runSelectedGame())
@@ -133,7 +133,7 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
         }
         menu_items.zipWithIndex.foreach {
           case ((title, coord, _, color, _), idx) =>
-            print(title, coord(), menuItemColor(idx, color), align = "center")
+            print(title, coord(), menuItemColor(idx, color()), align = "center")
         }
       }
     }

@@ -648,8 +648,8 @@ package object simpleshooter {
     List(Vec(x-w/2, y+h/2), Vec(x+w/2, y+h/2), Vec(x+w/2, y-h/2), Vec(x-w/2, y-h/2))
   }
 
-  def createMenuItems(menu_items:List[(String, () => Vec,  ScageColor, () => Any)],
-                      printer:ScageMessage = ScageMessage):List[(String, () => Vec, () => List[Vec], ScageColor, () => Any)] = {
+  def createMenuItems(menu_items:List[(String, () => Vec,  () => ScageColor, () => Any)],
+                      printer:ScageMessage = ScageMessage):List[(String, () => Vec, () => List[Vec], () => ScageColor, () => Any)] = {
     menu_items.map {
       case (title, coord, color, action) => (title, coord, () => messageArea(title, coord(), printer), color, action)
     }

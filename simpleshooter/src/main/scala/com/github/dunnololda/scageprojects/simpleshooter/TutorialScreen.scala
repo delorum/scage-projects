@@ -75,9 +75,9 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
   }
 
   private val menu_items = createMenuItems(List(
-    ("Продолжить",    () => Vec(windowWidth/2, windowHeight/2 + 30), WHITE, () => pauseOff()),
-    ("Выход в меню",  () => Vec(windowWidth/2, windowHeight/2),      WHITE, () => stop()),
-    ("Выход из игры", () => Vec(windowWidth/2, windowHeight/2-30),   WHITE, () => stopApp())
+    ("Продолжить",    () => Vec(windowWidth/2, windowHeight/2 + 30), () => WHITE, () => pauseOff()),
+    ("Выход в меню",  () => Vec(windowWidth/2, windowHeight/2),      () => WHITE, () => stop()),
+    ("Выход из игры", () => Vec(windowWidth/2, windowHeight/2-30),   () => WHITE, () => stopApp())
   ))
 
   private val number_place = Vec(1, 1).n*human_size*2
@@ -356,8 +356,8 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
     })
     map.control_points.foreach {
       case (number, cp @ ControlPoint(cp_number, team, control_start_time_sec, area)) =>
-        val cp_color = cp.controlPointColor(you.team)
-        drawSlidingLines(area, checkPausedColor(cp_color))
+        val cp_color = checkPausedColor(cp.controlPointColor(you.team))
+        drawSlidingLines(area, cp_color)
         team.foreach(t => {
           val time_left_sec = control_start_time_sec + control_time_length_sec - System.currentTimeMillis()/1000
           print(time_left_sec, cp.area_center, max_font_size/globalScale, cp_color, align = "center")
@@ -483,7 +483,7 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
     } else {
       menu_items.zipWithIndex.foreach {
         case ((title, coord, _, color, _), idx) =>
-          print(title, coord(), menuItemColor(idx, color), align = "center")
+          print(title, coord(), menuItemColor(idx, color()), align = "center")
       }
     }
     fireToggle match {

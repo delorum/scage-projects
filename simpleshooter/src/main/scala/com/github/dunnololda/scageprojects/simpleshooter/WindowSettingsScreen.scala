@@ -11,11 +11,11 @@ object WindowSettingsScreen extends ScageScreen("Window Settings Screen") {
     help_printer.reloadFont()
   }
 
-  private val menu_items:List[(String, () => Vec, () => List[Vec], ScageColor, () => Any)] = createMenuItems(List(
-    ("1024x768", () => Vec(windowWidth/2, windowHeight/2),      WHITE, () => newWindowSize(1024, 768)),
-    ("800x600",  () => Vec(windowWidth/2, windowHeight/2-30),   WHITE, () => newWindowSize(800, 600)),
-    ("640x480",  () => Vec(windowWidth/2, windowHeight/2-30*2), WHITE, () => newWindowSize(640, 480)),
-    ("Назад",    () => Vec(windowWidth/2, windowHeight/2-30*3), WHITE, () => stop())
+  private val menu_items = createMenuItems(List(
+    ("1024x768", () => Vec(windowWidth/2, windowHeight/2),      () => WHITE, () => newWindowSize(1024, 768)),
+    ("800x600",  () => Vec(windowWidth/2, windowHeight/2-30),   () => WHITE, () => newWindowSize(800, 600)),
+    ("640x480",  () => Vec(windowWidth/2, windowHeight/2-30*2), () => WHITE, () => newWindowSize(640, 480)),
+    ("Назад",    () => Vec(windowWidth/2, windowHeight/2-30*3), () => WHITE, () => stop())
   ))
 
   private var selected_menu_item:Option[Int] = None
@@ -45,7 +45,7 @@ object WindowSettingsScreen extends ScageScreen("Window Settings Screen") {
     window_settings_title_printer.print("Настройки разрешения", Vec(windowWidth/2, windowHeight/2 + 30*4), WHITE, align = "center")
     menu_items.zipWithIndex.foreach {
       case ((title, coord, _, color, _), idx) =>
-        print(title, coord(), menuItemColor(idx, color), align = "center")
+        print(title, coord(), menuItemColor(idx, color()), align = "center")
     }
   }
 }

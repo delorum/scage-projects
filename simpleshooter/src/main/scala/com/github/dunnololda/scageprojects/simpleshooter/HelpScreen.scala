@@ -25,8 +25,8 @@ object HelpScreen extends ScageScreen("Help Screen") {
       |Колесико мышки - приблизить/отдалить карту
     """.stripMargin
 
-  private val menu_items:List[(String, () => Vec, () => List[Vec], ScageColor, () => Any)] = createMenuItems(List(
-    ("Назад", () => Vec(windowWidth/2, windowHeight/2-30*4), WHITE, () => stop())
+  private val menu_items = createMenuItems(List(
+    ("Назад", () => Vec(windowWidth/2, windowHeight/2-30*4), () => WHITE, () => stop())
   ))
 
   private var selected_menu_item:Option[Int] = None
@@ -56,7 +56,7 @@ object HelpScreen extends ScageScreen("Help Screen") {
     help_printer.print(help_info, 20, windowHeight-20, WHITE)
     menu_items.zipWithIndex.foreach {
       case ((title, coord, _, color, _), idx) =>
-        print(title, coord(), menuItemColor(idx, color), align = "center")
+        print(title, coord(), menuItemColor(idx, color()), align = "center")
     }
   }
 }

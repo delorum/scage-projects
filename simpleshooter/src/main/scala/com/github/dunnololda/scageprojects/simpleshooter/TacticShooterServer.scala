@@ -174,11 +174,13 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
               val new_coord = p.coord + (d - p.coord).n*human_speed
               if(map.isCoordCorrect(new_coord, human_size) && (game.isStarted || map.isInsideSafeZone(new_coord))) {
                 p.coord = new_coord
-                map.control_points.values.find(cp => (cp.team.isEmpty || cp.team.exists(cpt => cpt != p.team)) && coordOnArea(p.coord, cp.area)).foreach(cp => {
-                  cp.team = Some(p.team)
-                  cp.control_start_time_sec = System.currentTimeMillis()/1000
-                  stuffForClients(players.keys.toSeq).foreach(_.control_points_update_required = true)
-                })
+                if(p.isAlive) {
+                  map.control_points.values.find(cp => (cp.team.isEmpty || cp.team.exists(cpt => cpt != p.team)) && coordOnArea(p.coord, cp.area)).foreach(cp => {
+                    cp.team = Some(p.team)
+                    cp.control_start_time_sec = System.currentTimeMillis()/1000
+                    stuffForClients(players.keys.toSeq).foreach(_.control_points_update_required = true)
+                  })
+                }
               } else p.ds.clear()
             } else p.ds.remove(0)
           })
