@@ -266,10 +266,12 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
           val new_coord = p.coord + (d - p.coord).n*human_speed
           if(map.isCoordCorrect(new_coord, human_size)) {
             p.coord = new_coord
-            map.control_points.values.find(cp => (cp.team.isEmpty || cp.team.exists(cpt => cpt != p.team)) && coordOnArea(p.coord, cp.area)).foreach(cp => {
-              cp.team = Some(p.team)
-              cp.control_start_time_sec = System.currentTimeMillis()/1000
-            })
+            if(p.isAlive) {
+              map.control_points.values.find(cp => (cp.team.isEmpty || cp.team.exists(cpt => cpt != p.team)) && coordOnArea(p.coord, cp.area)).foreach(cp => {
+                cp.team = Some(p.team)
+                cp.control_start_time_sec = System.currentTimeMillis()/1000
+              })
+            }
           } else p.ds.clear()
         } else p.ds.remove(0)
       })
