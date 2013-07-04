@@ -225,6 +225,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
         if(message.contains("fire_toggle_set")) send_fire_toggle = None
         if(message.contains("dests_cleared")) clear_destinations = false
         message.value[NetState]("map").foreach(m => {
+          //println(m)
           map = gameMap(m)
           val walls_dl = displayList {
             map.walls.foreach(wall => {

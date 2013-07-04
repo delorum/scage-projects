@@ -4,7 +4,7 @@ import com.github.dunnololda.scage.ScageLib._
 import collection.mutable.ArrayBuffer
 import com.github.dunnololda.cli.Cli
 
-object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersion", game_window_width, game_window_height) with Cli {
+object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersion", default_window_width, default_window_height) with Cli {
   programDescription = s"Simple Shooter Map Creator $appVersion"
   commandLineArgsAndParse(("m", "map", "optional map file name to edit or the name for new map. Default: map.ss", true, false))
   private val map_name = property("map", "map.ss")
@@ -130,6 +130,7 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
           from match {
             case Some(f) =>
               walls += Wall(f, sm)
+              //bresenham(f, sm, -map_width/2, -map_height/2, human_size*2, true)
               _map_changed = true
               from = None
             case None => from = Some(sm)
@@ -226,6 +227,12 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
         else drawLine(w.from, w.to, WHITE)
         /*drawCircle(w.from, near_wall_area, GRAY)
         drawCircle(w.to, near_wall_area, GRAY)*/
+        /*val cell_size = human_size*2
+        bresenham(w.from, w.to, -map_width/2, -map_height/2, cell_size).foreach( c => {
+          val x = -map_width/2 + c._1*cell_size + cell_size/2
+          val y = -map_height/2 + c._2*cell_size+ cell_size/2
+          drawRectCentered(Vec(x, y), cell_size, cell_size, GREEN)
+        })*/
     }
     safe_zones.zipWithIndex.foreach {
       case (sz, idx) =>

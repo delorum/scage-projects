@@ -5,6 +5,7 @@ import com.github.dunnololda.simplenet.{State => NetState}
 import collection.mutable.ArrayBuffer
 import scala.collection.mutable
 import java.io.FileOutputStream
+//import java.awt.GraphicsEnvironment
 
 package object simpleshooter {
   val main_title_printer = new ScageMessage(max_font_size = 50)
@@ -20,8 +21,11 @@ package object simpleshooter {
   val bullet_damage = 100
   val map_width = 2000  // 200 m
   val map_height = 2000
-  val game_window_width = 1024
-  val game_window_height = 768
+  /*lazy val gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+  lazy val game_window_width = gd.getDisplayMode().getWidth()
+  lazy val game_window_height = gd.getDisplayMode().getHeight()*/
+  lazy val default_window_width = 1024
+  lazy val default_window_height = 768
   val human_size = 10  // 10px is 1 meter
   val near_wall_area = human_size*2.5f
   val bullet_size = 3
@@ -399,14 +403,38 @@ package object simpleshooter {
   }
 
   case class GameMap(walls:List[Wall] = Nil, safe_zones:List[List[Vec]] = Nil, control_points:Map[Int, ControlPoint] = Map()) {
+    /*private val walls_on_map = Array.fill(map_width/(human_size*2)+1, map_height/(human_size*2)+1)(ArrayBuffer[Wall]())
+    walls.foreach {
+      case w @ Wall(from ,to) =>
+        bresenham(from ,to, -map_width/2, -map_height/2, human_size*2).foreach {
+          case (x, y) =>
+            /*println(w)
+            println(x+":"+y)*/
+            walls_on_map(x)(y) += w
+        }
+    }*/
+
+    private def coordOnMap(v:Vec):(Int, Int) = {
+      val x = ((v.x + map_width/2)/human_size/2).toInt
+      val y = ((v.y + map_height/2)/human_size/2).toInt
+      (x, y)
+    }
+
     def isEmpty:Boolean = walls.isEmpty && safe_zones.isEmpty && control_points.isEmpty
 
     def isCoordCorrect(coord:Vec, body_radius:Float):Boolean = {
-      isCoordInsideMapBorders(coord) && walls.forall(w => !isCoordNearWall(coord, w, body_radius))
+      isCoordInsideMapBorders(coord) &&/* {
+        val (x,y) = coordOnMap(coord)
+        walls_on_map(x)(y).forall(w => !isCoordNearWall(coord, w, body_radius))
+      }*/
+      walls.forall(w => !isCoordNearWall(coord, w, body_radius))
     }
 
     def isPathCorrect(from:Vec, to:Vec, body_radius:Float):Boolean = {
       walls.forall(w => !areLinesIntersect(from, to, w.from, w.to)) && isCoordCorrect(to, body_radius)
+      /*bresenham(from ,to, -map_width/2, -map_height/2, human_size*2).forall {
+        case (x, y) => walls_on_map(x)(y).forall(w => !areLinesIntersect(from, to, w.from, w.to))
+      } && isCoordCorrect(to, body_radius)*/
     }
 
     def randomHumanCoord:Vec = {
@@ -447,15 +475,22 @@ package object simpleshooter {
     }
 
     def isCoordVisible(coord:Vec, from:Vec, pov:Vec):Boolean = {
-      isCoordInsidePov(coord, from, pov) && walls.forall(w => {
-        !areLinesIntersect(from, coord, w.from, w.to)
-      })
+      isCoordInsidePov(coord, from, pov) &&/* {
+        bresenham(from ,coord, -map_width/2, -map_height/2, human_size*2).forall {
+          case (x, y) => walls_on_map(x)(y).forall(w => !areLinesIntersect(from, coord, w.from, w.to))
+        }
+      }*/
+      walls.forall(w => !areLinesIntersect(from, coord, w.from, w.to))
     }
 
     def isCoordVisibleOrAudible(coord:Vec, from:Vec, pov:Vec, is_moving:Boolean, audibility_radius:Float):Boolean = {
-      is_moving && coord.dist2(from) <= audibility_radius * audibility_radius || isCoordInsidePov(coord, from, pov) && walls.forall(w => {
-        !areLinesIntersect(from, coord, w.from, w.to)
-      })
+      is_moving && coord.dist2(from) <= audibility_radius * audibility_radius ||
+      isCoordInsidePov(coord, from, pov) &&/* {
+        bresenham(from ,coord, -map_width/2, -map_height/2, human_size*2).forall {
+          case (x, y) => walls_on_map(x)(y).forall(w => !areLinesIntersect(from, coord, w.from, w.to))
+        }
+      }*/
+      walls.forall(w => !areLinesIntersect(from, coord, w.from, w.to))
     }
 
     def isInsideSafeZone(coord:Vec):Boolean = safe_zones.exists(
@@ -572,9 +607,12 @@ package object simpleshooter {
           }
         }
       }
+      //println(walls)
       GameMap(walls.toList, safe_zones.toList, control_points.toMap)
     } catch {
-      case e:Exception => GameMap(Nil, Nil)
+      case e:Exception =>
+        throw e
+        //GameMap(Nil, Nil, Map())
     }
   }
 
@@ -653,5 +691,36 @@ package object simpleshooter {
     menu_items.map {
       case (title, coord, color, action) => (title, coord, () => messageArea(title, coord(), printer), color, action)
     }
+  }
+
+  def bresenham(from:Vec, to:Vec, a:Float, b:Float, cell_size:Float, rr:Boolean = false):Stream[(Int, Int)] = {
+    val xstart = ((from.x - a)/cell_size).toInt
+    val ystart = ((from.y - b)/cell_size).toInt
+    val xend = ((to.x - a)/cell_size).toInt
+    val yend = ((to.y - b)/cell_size).toInt
+
+    val dx = xend - xstart
+    val dy = yend - ystart
+
+    val incx = if(dx > 0) 1 else -1
+    val incy = if(dy > 0) 1 else -1
+
+    val adx = math.abs(dx)
+    val ady = math.abs(dy)
+
+    val (pdx, pdy, es, el) = if (adx > ady) (incx, 0, ady, adx) else (0, incy, adx, ady)
+    //if(rr) println(s"pdx=$pdx pdy=$pdy es=$es el=$el")
+    def pointsFrom(t:Int, err:Int, x:Int, y:Int):Stream[(Int, Int)] = {
+      if (t >= el) Stream((x, y), (x-math.abs(pdy), y-math.abs(pdx)))
+      else {
+        val next_err_1 = err - es
+        if (next_err_1 < 0) {
+          Stream((x, y), ( x+incx, y)) #::: pointsFrom(t+1, next_err_1+el, x+incx, y+incy)
+        } else {
+          Stream((x, y), (x-math.abs(pdy), y-math.abs(pdx))) #::: pointsFrom(t+1, next_err_1, x+pdx, y+pdy)
+        }
+      }
+    }
+    pointsFrom(0, el/2, xstart, ystart)
   }
 }

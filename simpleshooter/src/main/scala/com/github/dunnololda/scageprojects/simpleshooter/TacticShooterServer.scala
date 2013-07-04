@@ -81,6 +81,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
             case None =>
               val new_game_id = nextId
               val new_map = loadMap(map_name) // TODO: allow to select map on creation
+              //println(new_map)
               val new_game = new TacticGame(new_game_id, map = new_map, count = mutable.HashMap(1 -> 0, 2 -> 0))
               games += (new_game_id -> new_game)
               addNewPlayerToGame(client_id, new_game)

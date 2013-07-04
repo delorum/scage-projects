@@ -2,7 +2,7 @@ package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.scage.ScageLib._
 
-object MainMenu extends ScageScreenApp("Simple Shooter", game_window_width, game_window_height) {
+object MainMenu extends ScageScreenApp("Simple Shooter", default_window_width, default_window_height) {
   private val menu_items = createMenuItems(List(
     ("Создать",      () => Vec(windowWidth/2, windowHeight/2 + 30), () => WHITE, () => new TacticShooterClient(None).run()),
     ("Подключиться", () => Vec(windowWidth/2, windowHeight/2),      () => WHITE, () => new GamesListScreen().run()),

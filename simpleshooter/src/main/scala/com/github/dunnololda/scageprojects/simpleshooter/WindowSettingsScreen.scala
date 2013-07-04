@@ -1,6 +1,7 @@
 package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.scage.ScageLib._
+import java.awt.GraphicsEnvironment
 
 object WindowSettingsScreen extends ScageScreen("Window Settings Screen") {
   private def newWindowSize(w:Int, h:Int) {
@@ -11,11 +12,15 @@ object WindowSettingsScreen extends ScageScreen("Window Settings Screen") {
     help_printer.reloadFont()
   }
 
+  private val gd = GraphicsEnvironment.getLocalGraphicsEnvironment.getDefaultScreenDevice
+  private val max_width = gd.getDisplayMode.getWidth
+  private val max_height = gd.getDisplayMode.getHeight
   private val menu_items = createMenuItems(List(
-    ("1024x768", () => Vec(windowWidth/2, windowHeight/2),      () => WHITE, () => newWindowSize(1024, 768)),
-    ("800x600",  () => Vec(windowWidth/2, windowHeight/2-30),   () => WHITE, () => newWindowSize(800, 600)),
-    ("640x480",  () => Vec(windowWidth/2, windowHeight/2-30*2), () => WHITE, () => newWindowSize(640, 480)),
-    ("Назад",    () => Vec(windowWidth/2, windowHeight/2-30*3), () => WHITE, () => stop())
+    (s"На весь экран (${max_width}x${max_height})",() => Vec(windowWidth/2, windowHeight/2), () => WHITE, () => newWindowSize(max_width, max_height)),
+    ("1024x768", () => Vec(windowWidth/2, windowHeight/2-30),   () => WHITE, () => newWindowSize(1024, 768)),
+    ("800x600",  () => Vec(windowWidth/2, windowHeight/2-30*2), () => WHITE, () => newWindowSize(800, 600)),
+    ("640x480",  () => Vec(windowWidth/2, windowHeight/2-30*3), () => WHITE, () => newWindowSize(640, 480)),
+    ("Назад",    () => Vec(windowWidth/2, windowHeight/2-30*4), () => WHITE, () => stop())
   ))
 
   private var selected_menu_item:Option[Int] = None
