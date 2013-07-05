@@ -366,11 +366,6 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
             if(you.number == selected_player) {
               val color = ourPlayerColor(you, is_selected = true)
               drawCircle(you.coord, human_size/2, color)
-              val pov = (render_mouse - you.coord).n
-              val pov_point = you.coord + pov*100f
-              if(map.hitChanceModification(pov_point, you.coord)) {
-                drawCircle(you.coord, human_size/2+3, color)
-              }
               print(s"${you.team}.${you.number_in_team+1}.${you.number+1} ${if(you.is_reloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
               you.destinations.foreach(d => drawFilledCircle(d, 3, color))
               if(you.destinations.length > 0) {
@@ -384,6 +379,11 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
                 render_mouse = scaledCoord(mouseCoord)
               }
               if(!pov_fixed && !on_pause) {
+                val pov = (render_mouse - you.coord).n
+                val pov_point = you.coord + pov*100f
+                if(map.hitChanceModification(pov_point, you.coord)) {
+                  drawCircle(you.coord, human_size/2+3, color)
+                }
                 drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), color)
                 drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), color)
                 if(pov_fixed) drawCircle(pov_point, 7, color)
@@ -393,6 +393,9 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
                 drawLine(you.coord, pov_point2, DARK_GRAY)
               } else {
                 val pov_point = you.coord + you.pov*100f
+                if(map.hitChanceModification(pov_point, you.coord)) {
+                  drawCircle(you.coord, human_size/2+3, color)
+                }
                 drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), color)
                 drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), color)
                 if(pov_fixed) drawCircle(pov_point, 7, color)
