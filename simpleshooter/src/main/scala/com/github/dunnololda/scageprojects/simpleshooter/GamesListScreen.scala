@@ -16,21 +16,9 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
     }
   }
 
-  private def selectGame(game_id:Int) {
-    if(game_id >= 0 && games_list.length > game_id) selected_game = Some(game_id)
-  }
-  private def runSelectedGame() {
-    selected_game match {
-      case Some(gid) =>
-        if(gid >= 0 && games_list.length > gid) {
-          new TacticShooterClient(Some(games_list(gid)._1.game_id)).run()
-          selected_game = None
-        }
-      case None =>
-    }
-  }
-
-  private val games_list = ArrayBuffer[(GameInfo, String, Vec, List[Vec])]()
+  case class InterfaceGameInfo(message:String, coord:Vec)
+  case class JoinOption(game_id:Int, message:String, coord:Vec, area:List[Vec], option_team:Option[Int])
+  private val games_list = ArrayBuffer[(InterfaceGameInfo, List[JoinOption])]()
   private var is_connected = false
 
   private var selected_menu_item:Option[Int] = None
@@ -42,26 +30,23 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
   }
 
   private val menu_items = createMenuItems(List(
-    ("Создать", () => Vec(windowWidth/2, windowHeight/2 - 30), () => WHITE, () => new TacticShooterClient(None).run()),
+    ("Создать", () => Vec(windowWidth/2, windowHeight/2 - 30), () => WHITE, () => {
+      new TacticShooterClient(None).run()
+      is_list_received = false
+    }),
     ("Назад", () => Vec(windowWidth/2, windowHeight/2 - 30*2), () => WHITE, () => stop())
   ))
 
-  key(KEY_1, onKeyDown = selectGame(0), onKeyUp = runSelectedGame())
-  key(KEY_2, onKeyDown = selectGame(1), onKeyUp = runSelectedGame())
-  key(KEY_3, onKeyDown = selectGame(2), onKeyUp = runSelectedGame())
-  key(KEY_4, onKeyDown = selectGame(3), onKeyUp = runSelectedGame())
-  key(KEY_5, onKeyDown = selectGame(4), onKeyUp = runSelectedGame())
-  key(KEY_6, onKeyDown = selectGame(5), onKeyUp = runSelectedGame())
-  key(KEY_7, onKeyDown = selectGame(6), onKeyUp = runSelectedGame())
-  key(KEY_8, onKeyDown = selectGame(7), onKeyUp = runSelectedGame())
-  key(KEY_9, onKeyDown = selectGame(8), onKeyUp = runSelectedGame())
   key(KEY_F5, onKeyDown = is_list_received = false)
   key(KEY_ESCAPE, onKeyDown = stop())
 
   leftMouse(
     onBtnDown = m => {
-      games_list.zipWithIndex.find(x => mouseOnArea(x._1._4)) match {
-        case Some((game, idx)) =>
+      games_list.flatMap(_._2).zipWithIndex.find {
+        case (JoinOption(game_id, join_option, coord, area, option_team), idx) =>
+          mouseOnArea(area)
+      } match {
+        case Some((JoinOption(game_id, join_option, coord, area, option_team), idx)) =>
           selected_game = Some(idx)
         case None =>
           menu_items.zipWithIndex.find(x => mouseOnArea(x._1._3())) match {
@@ -72,10 +57,13 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
     },
     onBtnUp = m => {
       selected_game match {
-        case Some(gid) =>
-          if(gid >= 0 && games_list.length > gid) {
-            new TacticShooterClient(Some(games_list(gid)._1.game_id)).run()
+        case Some(idx) =>
+          val all_join_options = games_list.flatMap(_._2)
+          if(idx >= 0 && all_join_options.length > idx) {
+            val JoinOption(game_id, _, _, _, option_team) = all_join_options(idx)
+            new TacticShooterClient(Some(JoinGame(game_id, option_team))).run()
             selected_game = None
+            is_list_received = false
           }
         case None =>
           selected_menu_item match {
@@ -93,12 +81,29 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
     client.newEvent {
       case NewUdpServerData(message) =>
         if(message.contains("gameslist")) {
-          val new_games_list = gamesList(message).zipWithIndex.map {
-            case (gi, idx) =>
-              val str = s"Игра ${idx+1} : ${gi.players} игрок(ов)"
-              val coord = Vec(10, windowHeight-30-30*idx)
-              val area = messageArea(str, coord)
-              (gi, str, coord, area)
+          val new_games_list:List[(InterfaceGameInfo, List[JoinOption])] = gamesList(message).zipWithIndex.map {
+            case (gi @ GameInfo(game_id, team1_players, team2_players), idx) =>
+              val str1 = s"Игра ${idx+1} : команда1: $team1_players, команда 2: $team2_players"
+              val coord1 = Vec(10, windowHeight-30-30*idx*2)
+              val igi = InterfaceGameInfo(str1, coord1)
+
+              val str2 = "За любую команду"
+              val coord2 = Vec(10, windowHeight-30*2-30*idx*2)
+              val area2 = messageArea(str2, coord2)
+
+              val str3 = "За Команду 1"
+              val coord3 = Vec(10+200, windowHeight-30*2-30*idx*2)
+              val area3 = messageArea(str3, coord3)
+
+              val str4 = "За команду 2"
+              val coord4 = Vec(10+200*2, windowHeight-30*2-30*idx*2)
+              val area4 = messageArea(str4, coord4)
+
+              (igi, List(
+                JoinOption(game_id, str2, coord2, area2, None),
+                JoinOption(game_id, str3, coord3, area3, Some(1)),
+                JoinOption(game_id, str4, coord4, area4, Some(2))
+              ))
           }
           games_list.clear()
           games_list ++= new_games_list
@@ -126,9 +131,13 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
         if(games_list.length == 0) {
           print("Игры не найдены", windowCenter, WHITE, align = "center")
         } else {
-          games_list.zipWithIndex.foreach {
-            case ((GameInfo(game_id, players), str, coord, area), idx) =>
-              print(str, coord, gameColor(idx))
+          games_list.map(_._1).foreach {
+            case InterfaceGameInfo(message, coord) =>
+              print(message, coord, WHITE)
+          }
+          games_list.flatMap(_._2).zipWithIndex.foreach {
+            case (JoinOption(_, message, coord, area, _), idx) =>
+              print(message, coord, gameColor(idx))
           }
         }
         menu_items.zipWithIndex.foreach {

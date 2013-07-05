@@ -21,19 +21,19 @@ package object simpleshooter {
   val bullet_speed = 120f/1000*10*human_size  // 120 m/sec in px / 10msec
   val near_wall_area = human_size*2.5f  // 2.5 m
   val pov_distance = 60*human_size
-  val human_audibility_radius = 6*human_size
+  val human_audibility_radius = 3*human_size
   val bullet_audibility_radius = 60*human_size
 
   val bullet_count = 50  // 24 px / 10msec * 50 = 1200 px = 60 m
   val bullet_damage = 100
 
-  val map_width = 2000  // 100 m
-  val map_height = 2000
+  val map_width = 100*human_size  // 100 m
+  val map_height = 100*human_size
   /*lazy val gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
   lazy val game_window_width = gd.getDisplayMode().getWidth()
   lazy val game_window_height = gd.getDisplayMode().getHeight()*/
-  lazy val default_window_width = 1024
-  lazy val default_window_height = 768
+  lazy val default_window_width = 640
+  lazy val default_window_height = 480
 
   val bullet_size = 3f
   val pov_angle = 50
@@ -342,15 +342,35 @@ package object simpleshooter {
     }
   }
 
-  case class GameInfo(game_id:Int, players:Int) {
+  case class GameInfo(game_id:Int, team1_players:Int, team2_players:Int) {
+    val players = team1_players+team2_players
     val netState = NetState(
       "gid" -> game_id,
-      "ps" -> players
+      "t1p" -> team1_players,
+      "t2p" -> team2_players
+    )
+  }
+
+  case class JoinGame(game_id:Int, team:Option[Int]) {
+    val netState = {
+      val builder = NetState.newBuilder
+      builder += ("gid" -> game_id)
+      team.foreach(t => builder += ("t" -> t))
+      builder.toState
+    }
+  }
+
+  def joinGame(message:NetState):JoinGame = {
+    JoinGame(
+      game_id = message.value[Int]("gid").get,
+      team =  message.value[Int]("t")
     )
   }
 
   def gameInfo(message:NetState):GameInfo = {
-    GameInfo(message.value[Int]("gid").get, message.value[Int]("ps").get)
+    GameInfo(message.value[Int]("gid").get,
+             message.value[Int]("t1p").get,
+             message.value[Int]("t2p").get)
   }
 
   def gamesList(message:NetState):List[GameInfo] = {
@@ -517,7 +537,7 @@ package object simpleshooter {
       else {
         val d = target_coord.dist(shooter_coord)
         var result = -0.001125f*d + 0.6125f
-        if(shooter_moving) result /= 2f
+        if(shooter_moving) result /= 3f
         if(target_moving) result /= 2f
         if(hitChanceModification(shooter_coord, target_coord)) result /= 2f
         if(result > 1f) 1f
@@ -684,16 +704,21 @@ package object simpleshooter {
     List(coord, one, two, coord)
   }*/
 
-  def messageArea(message:Any, coord:Vec, printer:ScageMessage = ScageMessage):List[Vec] = {
+  def messageAreaCentered(message:Any, coord:Vec, printer:ScageMessage = ScageMessage):List[Vec] = {
     val Vec(w, h) = messageBounds(message)
     val Vec(x, y) = coord
     List(Vec(x-w/2, y+h/2), Vec(x+w/2, y+h/2), Vec(x+w/2, y-h/2), Vec(x-w/2, y-h/2))
+  }
+  def messageArea(message:Any, coord:Vec, printer:ScageMessage = ScageMessage):List[Vec] = {
+    val Vec(w, h) = messageBounds(message)
+    val Vec(x, y) = coord
+    List(Vec(x, y), Vec(x, y+h), Vec(x+w, y+h), Vec(x+w, y))
   }
 
   def createMenuItems(menu_items:List[(String, () => Vec,  () => ScageColor, () => Any)],
                       printer:ScageMessage = ScageMessage):List[(String, () => Vec, () => List[Vec], () => ScageColor, () => Any)] = {
     menu_items.map {
-      case (title, coord, color, action) => (title, coord, () => messageArea(title, coord(), printer), color, action)
+      case (title, coord, color, action) => (title, coord, () => messageAreaCentered(title, coord(), printer), color, action)
     }
   }
 

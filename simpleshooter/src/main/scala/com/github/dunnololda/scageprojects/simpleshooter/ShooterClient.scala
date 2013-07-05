@@ -6,7 +6,7 @@ import collection.mutable
 import collection.mutable.ArrayBuffer
 import scala.Some
 
-object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", map_width, map_height) {
+object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", default_window_width, default_window_height) {
   private val client = UdpNetClient(address = "fzeulf.netris.ru", port = 10000, ping_timeout= 1000, check_timeout = 5000)
 
   private val moves = mutable.HashMap[String, Boolean]("up" -> false, "left" -> false, "down" -> false, "right" -> false)

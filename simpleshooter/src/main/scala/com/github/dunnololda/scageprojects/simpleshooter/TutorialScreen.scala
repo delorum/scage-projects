@@ -110,7 +110,7 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
     "Левый шифт и левый контрол переключают режимы стрельбы",
     "Одиночный огонь: пули летят с частотой 100 выстрелов/мин",
     "Автоматический огонь: пули летят с частотой 600 выстрелов/мин",
-    "Скорость полета пули: 120 м/сек. Дальность: 50 метров на открытой\n" +
+    "Скорость полета пули: 120 м/сек. Дальность: 60 метров на открытой\n" +
       "местности",
     "Противник поражен, если пуля пересекает его контур и срабатывает\n" +
       "шанс попадания",
@@ -118,6 +118,8 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
       "движется ли стрелок, расстояние между ними, есть ли рядом укрытие",
     "Укрытие - пространство радиусом 2.5 метра около края стены.\n" +
       "Разумно используйте укрытия при перемещениях",
+    "Если игрок находится в укрытии по отношению к направлению его\n" +
+      "взгляда, он рисуется двойным кругом, иначе одинарным",
     "Пораженный боец считается мертвым. Он должен самостоятельно\n" +
       "дойти до своей зоны возрождения",
     "Зона возрождения - область зеленого цвета, откуда вы начинаете игру",
@@ -126,21 +128,21 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
     "В зоне возрождения бойцы оживают, их боезапас пополняется",
     "Боезапас: 90 патронов в трех обоймах. Время перезарядки: 5 секунд",
     "Если патроны закончились - отправляйтесь в зону возрождения",
-    "Малый круг вокруг бойца - радиус слышимости противников.\n" +
+    "Малый круг вокруг бойца - 3 метра - радиус слышимости противников.\n" +
       "Противники в этом радиусе тображаются, даже если они за стенкой",
-    "Большой круг вокруг бойца - радиус слышимости пуль",
+    "Большой круг вокруг бойца - 60 метров - радиус слышимости пуль",
     "Рядом с каждым бойцом отображается краткая информация о нем",
-    "Дружественные бойцы: через точку номер отряда в команде и\n" +
-      "номер бойца в отряде, оставшийся боезапас",
-    "Бойцы противника: через точку номер отряда в команде и\n" +
-      "номер бойца в отряде, его боезапас и далее вероятность\n" +
+    "Дружественные бойцы: через точку номер команды, номер отряда в\n" +
+      "команде, номер бойца в отряде, оставшийся боезапас",
+    "Бойцы противника: через точку номер команды, номер отряда в\n" +
+      "команде, номер бойца в отряде, его боезапас и далее вероятность\n" +
       "попадания в процентах",
     "В этой игре нужно захватывать и удерживать контрольные точки",
     "Чтобы захватить контрольную точку, нужно переместить на нее одного\n" +
       "из бойцов. В дальнейшем его нахождение на точке не обязательно",
     "Если точка захвачена дружественными бойцами, она рисуется зеленым\n" +
-      "цветом. Если противником - красным. Если точка никем не" +
-      "захвачена, она рисуется серым цветом",
+      "цветом. Если противником - красным. Если точка никем не захвачена,\n" +
+      "она рисуется серым цветом",
     "После захвата точки начинается 15-секундный обратный отчет",
     "Удержание контрольной точки в течение 15 секунд приносит команде\n" +
       "1 очко",
@@ -148,6 +150,7 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
     "На этом обучение закончено. Выход в меню: Escape"
   )
   private var tutorial_position = 0
+  private var render_mouse = scaledCoord(mouseCoord)
 
   private def selectPlayer(number:Int) {
     if(selected_player == number) {
@@ -373,7 +376,11 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
       if(you.number == selected_player) {
         val color = ourPlayerColor(you, is_selected = true)
         drawCircle(you.coord, human_size/2, color)
-        print(s"${you.number_in_team+1}.${you.number+1} ${if(you.isReloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
+        val pov_point = you.coord + you.pov*100f
+        if(map.hitChanceModification(pov_point, you.coord)) {
+          drawCircle(you.coord, human_size/2+3, color)
+        }
+        print(s"${you.team}.${you.number_in_team+1}.${you.number+1} ${if(you.isReloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
         you.ds.foreach(d => drawFilledCircle(d, 3, color))
         if(you.ds.length > 0) {
           (you.coord :: you.ds.toList).sliding(2).foreach {
@@ -382,8 +389,10 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
               print(f"${b.dist(a)/human_size}%.2f m", a + (b - a).n * (b.dist(a) * 0.5f), max_font_size/globalScale, color)
           }
         }
+        if(!on_pause) {
+          render_mouse = scaledCoord(mouseCoord)
+        }
         if(!pov_fixed && !on_pause) {
-          val pov_point = you.coord + you.pov*100f
           drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), color)
           drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), color)
           if(pov_fixed) drawCircle(pov_point, 7, color)
@@ -403,15 +412,17 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
         }
         drawCircle(you.coord, human_audibility_radius, DARK_GRAY)
         drawCircle(you.coord, bullet_audibility_radius, DARK_GRAY)
-
-        val render_mouse = scaledCoord(mouseCoord)
         drawLine(you.coord, render_mouse, DARK_GRAY)
         val r = render_mouse.dist(you.coord)
         print(f"${r/human_size}%.2f m", render_mouse, max_font_size/globalScale, DARK_GRAY)
       } else {
         val color = ourPlayerColor(you, is_selected = false)
         drawCircle(you.coord, human_size/2, color)
-        print(s"${you.number_in_team+1}.${you.number+1}  ${if(you.isReloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
+        val pov_point = you.coord + you.pov*100f
+        if(map.hitChanceModification(pov_point, you.coord)) {
+          drawCircle(you.coord, human_size/2+3, color)
+        }
+        print(s"${you.team}.${you.number_in_team+1}.${you.number+1}  ${if(you.isReloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
         you.ds.foreach(d => drawFilledCircle(d, 3, color))
         if(you.ds.length > 0) {
           (you.coord :: you.ds.toList).sliding(2).foreach {
@@ -420,7 +431,6 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
               print(f"${b.dist(a)/10f}%.2f m", a + (b - a).n * (b.dist(a) * 0.5f), max_font_size/globalScale, color)
           }
         }
-        val pov_point = you.coord + you.pov*100f
         drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), color)
         drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), color)
         drawCircle(pov_point, 7, color)
@@ -441,17 +451,18 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
         case player =>
           val player_color = if(player.team == you.team) ourPlayerColor(player, is_selected = false) else enemyPlayerColor(player)
           drawCircle(player.coord, human_size/2, player_color)
+          val pov_point = player.coord + player.pov*100f
+          if(map.hitChanceModification(pov_point, player.coord)) {
+            drawCircle(player.coord, human_size/2+3, player_color)
+          }
           val info = if(player.team == your_players.head.team) {
-            s"${player.number_in_team+1}.${player.number+1} ${if(player.isReloading) "перезарядка" else player.bullets}"
+            s"${player.team}.${player.number_in_team+1}.${player.number+1} ${if(player.isReloading) "перезарядка" else player.bullets}"
           } else {
-            s"${player.number_in_team+1}.${player.number+1} ${if(player.isReloading) "перезарядка" else player.bullets} ${(map.chanceToHit(you.coord,
-              you.pov,
-              you.isMoving,
-              player.coord,
-              player.isMoving)*100).toInt}%"
+            s"${player.team}.${player.number_in_team+1}.${player.number+1} ${if(player.isReloading) "перезарядка" else player.bullets} ${
+              (map.chanceToHit(you.coord, you.pov, you.isMoving, player.coord, player.isMoving)*100).toInt
+            }%"
           }
           print(info, player.coord+number_place, max_font_size/globalScale, player_color, align = "center")
-          val pov_point = player.coord + player.pov*100f
           drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), player_color)
           drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), player_color)
           val pov_point1 = player.coord + player.pov.rotateDeg(pov_angle) * pov_distance

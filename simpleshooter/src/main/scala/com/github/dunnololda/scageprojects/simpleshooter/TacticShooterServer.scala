@@ -29,21 +29,26 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
   private def stuffForClients(client_ids:Seq[Long]) = client_builders.withFilter(x => client_ids.contains(x._1)).map(_._2._2)
   private def clientBuilderAndStuff(client_id:Long) = client_builders.getOrElseUpdate(client_id, (NetState.newBuilder, TacticClientStuff()))
 
-  private def addNewPlayerToGame(client_id:Long, game:TacticGame) {
-    val team = {
+  private def addNewPlayerToGame(client_id:Long, game:TacticGame, wanted_team:Option[Int]) {
+    val team = wanted_team.filter(x => x == 1 || x == 2).getOrElse({
       val team1_amount = game.players.values.flatten.count(_.team == 1)
       val team2_amount = game.players.size - team1_amount
       if(team1_amount <= team2_amount) 1
       else 2
-    }
+    })
 
+    //println(numbers_in_teams)
     val number_in_team = {
       val maybe_position = numbers_in_teams.getOrElseUpdate(team, ArrayBuffer[Boolean]()).indexWhere(x => !x)
       if(maybe_position == -1) {
         numbers_in_teams(team) += true
         numbers_in_teams(team).length-1
-      } else maybe_position
+      } else {
+        numbers_in_teams(team)(maybe_position) = true
+        maybe_position
+      }
     }
+    //println(number_in_team)
 
     val coord1 = game.map.respawnCoord(team)
     val coord2 = game.map.respawnCoord(team)
@@ -63,6 +68,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
     val player3 = player1.copy(number = 2, coord = coord3)
     game.players(client_id) = List(player1, player2, player3)
     games_by_clientid += (client_id -> game)
+    stuffForClients(game.players.keys.toSeq).foreach(_.game_stats_update_required = true)
   }
 
   // receive data
@@ -73,7 +79,10 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
         //println(message.toJsonString)
         val (builder, client_stuff) = clientBuilderAndStuff(client_id)
         if(message.contains("gameslist")) {
-          builder += ("gameslist" -> games.map(x => GameInfo(x._1, x._2.players.size).netState).toList)
+          builder += ("gameslist" -> games.filter(!_._2.isFinished).map(x => {
+            val all_players = x._2.players.values.flatten
+            GameInfo(x._1, all_players.count(_.team == 1)/3, all_players.count(_.team == 2)/3).netState
+          }).toList)
         } else if(message.contains("create")) {
           games_by_clientid.get(client_id) match {
             case Some(game) =>
@@ -84,7 +93,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
               //println(new_map)
               val new_game = new TacticGame(new_game_id, map = new_map, count = mutable.HashMap(1 -> 0, 2 -> 0))
               games += (new_game_id -> new_game)
-              addNewPlayerToGame(client_id, new_game)
+              addNewPlayerToGame(client_id, new_game, None)
               builder += ("gamestarted" -> true, "map" -> new_map.netState)
           }
         } else if(message.contains("join")) {
@@ -92,16 +101,17 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
             case Some(game) =>
               builder += ("gamestarted" -> true, "map" -> game.map.netState)
             case None =>
-              games.get(message.value[Int]("join").get) match {
+              val JoinGame(game_id, team) = joinGame(message.value[NetState]("join").get)
+              games.get(game_id) match {
                 case Some(game) =>
-                  addNewPlayerToGame(client_id, game)
+                  addNewPlayerToGame(client_id, game, team)
                   builder += ("gamestarted" -> true, "map" -> game.map.netState)
                 case None =>
                   val new_game_id = nextId
                   val new_map = loadMap(map_name) // TODO: allow to select map on creation
                   val new_game = new TacticGame(new_game_id, map = new_map, count = mutable.HashMap(1 -> 0, 2 -> 0))
                   games += (new_game_id -> new_game)
-                  addNewPlayerToGame(client_id, new_game)
+                  addNewPlayerToGame(client_id, new_game, None)
                   builder += ("gamestarted" -> true, "map" -> new_map.netState)
               }
           }
@@ -139,15 +149,11 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
             } {
               team_numbers(head_player.number_in_team) = false
             }
-            players.get(client_id).foreach(x => {
-              x.headOption.foreach(h => {
-
-              })
-              x.head.number_in_team
-            })
             players -= client_id
             if(players.size == 0) {
               games -= game_id
+            } else {
+              stuffForClients(players.keys.toSeq).foreach(_.game_stats_update_required = true)
             }
           case None =>
         }
