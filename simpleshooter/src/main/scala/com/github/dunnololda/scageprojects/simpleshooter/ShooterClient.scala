@@ -76,9 +76,9 @@ object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", map_
     } else {
       optRemoveHeadState match {
         case Some(ServerData(you, others, your_bullets, other_bullets)) =>
-          drawCircle(you.coord, 10, RED)
+          drawCircle(you.coord, human_size/2, RED)
           others.filter(_.visible).zipWithIndex.foreach(c => {
-            drawCircle(c._1.coord, 10, WHITE)
+            drawCircle(c._1.coord, human_size/2, WHITE)
             print(c._2+1, c._1.coord, WHITE, align = "center")
           })
           your_bullets.foreach(b => {

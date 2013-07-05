@@ -49,7 +49,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
   }
 
   private var render_mouse = scaledCoord(mouseCoord)
-  private val number_place = Vec(1, 1).n*human_size*2
+  private val number_place = Vec(1, 1).n*human_size
 
   private var _center = Vec.zero
   private var dir = Vec.zero
@@ -274,7 +274,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
   actionIgnorePause(10) {
     current_state = optInterpolatedState
     if(dir.notZero) {
-      val new_center = _center + dir.n*human_size/2
+      val new_center = _center + dir.n*5f
       if(isCoordInsideMapBorders(new_center)) _center = new_center
       dir = Vec.zero
     }
@@ -364,16 +364,18 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
             case (number, cp @ ControlPoint(cp_number, team, control_start_time_sec, area)) =>
               val cp_color = checkPausedColor(cp.controlPointColor(you.team))
               drawSlidingLines(area, cp_color)
-              team.foreach(t => {
-                val time_left_sec = control_start_time_sec + control_time_length_sec - System.currentTimeMillis()/1000
-                print(time_left_sec, cp.area_center, max_font_size/globalScale, cp_color, align = "center")
-              })
+              if(!is_game_over) {
+                team.foreach(t => {
+                  val time_left_sec = control_start_time_sec + control_time_length_sec - System.currentTimeMillis()/1000
+                  print(time_left_sec, cp.area_center, max_font_size/globalScale, cp_color, align = "center")
+                })
+              }
           }
 
           yours.foreach(you => {
             if(you.number == selected_player) {
               val color = ourPlayerColor(you, is_selected = true)
-              drawCircle(you.coord, 10, color)
+              drawCircle(you.coord, human_size/2, color)
               print(s"${you.number_in_team+1}.${you.number+1} ${if(you.is_reloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
               you.destinations.foreach(d => drawFilledCircle(d, 3, color))
               if(you.destinations.length > 0) {
@@ -410,17 +412,17 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
               drawCircle(you.coord, bullet_audibility_radius, DARK_GRAY)
               drawLine(you.coord, render_mouse, DARK_GRAY)
               val r = render_mouse.dist(you.coord)
-              print(f"${r/10f}%.2f m", render_mouse, max_font_size/globalScale, DARK_GRAY)
+              print(f"${r/human_size}%.2f m", render_mouse, max_font_size/globalScale, DARK_GRAY)
             } else {
               val color = ourPlayerColor(you, is_selected = false)
-              drawCircle(you.coord, 10, color)
+              drawCircle(you.coord, human_size/2, color)
               print(s"${you.number_in_team+1}.${you.number+1}  ${if(you.is_reloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
               you.destinations.foreach(d => drawFilledCircle(d, 3, color))
               if(you.destinations.length > 0) {
                 (you.coord :: you.destinations).sliding(2).foreach {
                   case List(a, b) =>
                     drawLine(a, b, color)
-                    print(f"${b.dist(a)/10f}%.2f m", a + (b - a).n * (b.dist(a) * 0.5f), max_font_size/globalScale, color)
+                    print(f"${b.dist(a)/human_size}%.2f m", a + (b - a).n * (b.dist(a) * 0.5f), max_font_size/globalScale, color)
                 }
               }
               val pov_point = you.coord + you.pov*100f
@@ -439,7 +441,7 @@ class TacticShooterClient(join_game:Option[Int]) extends ScageScreen("Simple Sho
           others.foreach {
             case player =>
               val player_color = if(player.team == you.team) ourPlayerColor(player, is_selected = false) else enemyPlayerColor(player)
-              drawCircle(player.coord, 10, player_color)
+              drawCircle(player.coord, human_size/2, player_color)
               val info = if(player.team == yours.head.team) {
                 s"${player.number_in_team+1}.${player.number+1} ${if(player.is_reloading) "перезарядка" else player.bullets}"
               } else {

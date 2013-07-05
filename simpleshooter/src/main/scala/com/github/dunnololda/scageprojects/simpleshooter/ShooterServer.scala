@@ -37,7 +37,7 @@ object ShooterServer extends ScageApp("Simple Shooter Server") with Cli {
         }
         shoots.foreach(sh => {
           val dir = (sh - new_coord).n
-          bullets += Bullet(dir, players(client_id), new_coord + dir*(human_size+1))
+          bullets += Bullet(dir, players(client_id), new_coord + dir*(human_size/2+1))
         })
         //println(players(client_id).coord)
       case UdpClientDisconnected(client_id) =>

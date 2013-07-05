@@ -13,28 +13,32 @@ package object simpleshooter {
   val window_settings_title_printer = new ScageMessage(max_font_size = 30)
   val help_printer = new ScageMessage(max_font_size = 15)
 
-  val host = "fzeulf.netris.ru"
+  val host = "localhost"
   val port = 10000
-  val human_speed = 0.332f  // px / 10msec = 33.2 px / sec = 3.32 m/sec = 12 km/h
-  val bullet_speed = 12f  // 12 px / 10msec = 1200 px / sec = 120 m/sec
-  val bullet_count = 50  // 60 meters = 600 px = 0.5 sec = 50*10msec
+
+  val human_size = 20f  // human_size is 1 meter
+  val human_speed = 12000f/60/60/1000*10*human_size  // 12 km/h in px / 10 msec
+  val bullet_speed = 120f/1000*10*human_size  // 120 m/sec in px / 10msec
+  val near_wall_area = human_size*2.5f  // 2.5 m
+  val pov_distance = 60*human_size
+  val human_audibility_radius = 6*human_size
+  val bullet_audibility_radius = 60*human_size
+
+  val bullet_count = 50  // 24 px / 10msec * 50 = 1200 px = 60 m
   val bullet_damage = 100
-  val map_width = 2000  // 200 m
+
+  val map_width = 2000  // 100 m
   val map_height = 2000
   /*lazy val gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
   lazy val game_window_width = gd.getDisplayMode().getWidth()
   lazy val game_window_height = gd.getDisplayMode().getHeight()*/
   lazy val default_window_width = 1024
   lazy val default_window_height = 768
-  val human_size = 10  // 10px is 1 meter
-  val near_wall_area = human_size*2.5f
-  val bullet_size = 3
-  val pov_distance = 600
+
+  val bullet_size = 3f
   val pov_angle = 50
   val single_fire_pace = 600 // 600 msec/bullet = 60000 msec / 100 bullet = 100 bullet/min -> AK, single mode
   val rapid_fire_pace = 100 // 100 msec/bullet = 60000 msec / 600 bullet = 600 bullet/min -> AK, rapid mode
-  val human_audibility_radius = 60
-  val bullet_audibility_radius = 600
   val reload_time = 5000  // 5 sec to swap magazines
   val magazine = 30 // 30 rounds in AK's magazine
   val max_bullets = 90  // three magazines
@@ -119,7 +123,7 @@ package object simpleshooter {
       _bullets -= 1
       if(_bullets > 0 && _bullets % magazine == 0) reload_start_time = System.currentTimeMillis()
       last_bullet_shot = System.currentTimeMillis()
-      val init_coord = coord + dir*(human_size+1)
+      val init_coord = coord + dir*(human_size/2+1)
       val bullet_id:Long = nextId
       TacticServerBullet(bullet_id, dir, this, init_coord, init_coord)
     }
@@ -414,20 +418,20 @@ package object simpleshooter {
         }
     }*/
 
-    private def coordOnMap(v:Vec):(Int, Int) = {
+    /*private def coordOnMap(v:Vec):(Int, Int) = {
       val x = ((v.x + map_width/2)/human_size/2).toInt
       val y = ((v.y + map_height/2)/human_size/2).toInt
       (x, y)
-    }
+    }*/
 
     def isEmpty:Boolean = walls.isEmpty && safe_zones.isEmpty && control_points.isEmpty
 
-    def isCoordCorrect(coord:Vec, body_radius:Float):Boolean = {
+    def isCoordCorrect(coord:Vec, body_size:Float):Boolean = {
       isCoordInsideMapBorders(coord) &&/* {
         val (x,y) = coordOnMap(coord)
         walls_on_map(x)(y).forall(w => !isCoordNearWall(coord, w, body_radius))
       }*/
-      walls.forall(w => !isCoordNearWall(coord, w, body_radius))
+      walls.forall(w => !isCoordNearWall(coord, w, body_size))
     }
 
     def isPathCorrect(from:Vec, to:Vec, body_radius:Float):Boolean = {
@@ -627,11 +631,11 @@ package object simpleshooter {
     )
   }
 
-  def isCoordNearWall(coord:Vec, wall:Wall, body_radius:Float):Boolean = {
-    val one = (wall.to - wall.from).rotateDeg(135).n*body_radius + wall.from
-    val two = (wall.to - wall.from).rotateDeg(-135).n*body_radius + wall.from
-    val three = (wall.from - wall.to).rotateDeg(135).n*body_radius + wall.to
-    val four = (wall.from - wall.to).rotateDeg(-135).n*body_radius + wall.to
+  def isCoordNearWall(coord:Vec, wall:Wall, body_size:Float):Boolean = {
+    val one = (wall.to - wall.from).rotateDeg(135).n*body_size/2 + wall.from
+    val two = (wall.to - wall.from).rotateDeg(-135).n*body_size/2 + wall.from
+    val three = (wall.from - wall.to).rotateDeg(135).n*body_size/2 + wall.to
+    val four = (wall.from - wall.to).rotateDeg(-135).n*body_size/2 + wall.to
     val area = List(one, two, three, four)
     coordOnArea(coord, area)
   }
@@ -647,7 +651,7 @@ package object simpleshooter {
   def isBodyHit(from:Vec, to:Vec, body_position:Vec):Boolean = {
     val a = body_position + (to - from).rotateDeg(90)
     val b = body_position + (to - from).rotateDeg(-90)
-    areLinesIntersect(from ,to, a, b) || body_position.dist2(to) < human_size*human_size
+    areLinesIntersect(from ,to, a, b) || body_position.dist2(to) < human_size*human_size/4
   }
 
   def isCoordVisible(coord:Vec, from:Vec, walls:Seq[Wall]):Boolean = {
@@ -693,7 +697,7 @@ package object simpleshooter {
     }
   }
 
-  def bresenham(from:Vec, to:Vec, a:Float, b:Float, cell_size:Float, rr:Boolean = false):Stream[(Int, Int)] = {
+  def bresenham(from:Vec, to:Vec, a:Float, b:Float, cell_size:Float):Stream[(Int, Int)] = {
     val xstart = ((from.x - a)/cell_size).toInt
     val ystart = ((from.y - b)/cell_size).toInt
     val xend = ((to.x - a)/cell_size).toInt
@@ -709,15 +713,14 @@ package object simpleshooter {
     val ady = math.abs(dy)
 
     val (pdx, pdy, es, el) = if (adx > ady) (incx, 0, ady, adx) else (0, incy, adx, ady)
-    //if(rr) println(s"pdx=$pdx pdy=$pdy es=$es el=$el")
     def pointsFrom(t:Int, err:Int, x:Int, y:Int):Stream[(Int, Int)] = {
-      if (t >= el) Stream((x, y), (x-math.abs(pdy), y-math.abs(pdx)))
+      if (t >= el) Stream((x, y))
       else {
         val next_err_1 = err - es
         if (next_err_1 < 0) {
           Stream((x, y), ( x+incx, y)) #::: pointsFrom(t+1, next_err_1+el, x+incx, y+incy)
         } else {
-          Stream((x, y), (x-math.abs(pdy), y-math.abs(pdx))) #::: pointsFrom(t+1, next_err_1, x+pdx, y+pdy)
+          (x, y) #:: pointsFrom(t+1, next_err_1, x+pdx, y+pdy)
         }
       }
     }

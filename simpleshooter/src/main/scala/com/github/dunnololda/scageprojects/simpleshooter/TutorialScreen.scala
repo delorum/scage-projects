@@ -80,7 +80,7 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
     ("Выход из игры", () => Vec(windowWidth/2, windowHeight/2-30),   () => WHITE, () => stopApp())
   ))
 
-  private val number_place = Vec(1, 1).n*human_size*2
+  private val number_place = Vec(1, 1).n*human_size
 
   private var selected_menu_item:Option[Int] = None
   private def menuItemColor(idx:Int, color:ScageColor):ScageColor = {
@@ -334,7 +334,7 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
         }
     }
     if(dir.notZero) {
-      val new_center = _center + dir.n*human_size/2
+      val new_center = _center + dir.n*5f
       if(isCoordInsideMapBorders(new_center)) _center = new_center
       dir = Vec.zero
     }
@@ -372,14 +372,14 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
     your_players.foreach(you => {
       if(you.number == selected_player) {
         val color = ourPlayerColor(you, is_selected = true)
-        drawCircle(you.coord, 10, color)
+        drawCircle(you.coord, human_size/2, color)
         print(s"${you.number_in_team+1}.${you.number+1} ${if(you.isReloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
         you.ds.foreach(d => drawFilledCircle(d, 3, color))
         if(you.ds.length > 0) {
           (you.coord :: you.ds.toList).sliding(2).foreach {
             case List(a, b) =>
               drawLine(a, b, color)
-              print(f"${b.dist(a)/10f}%.2f m", a + (b - a).n * (b.dist(a) * 0.5f), max_font_size/globalScale, color)
+              print(f"${b.dist(a)/human_size}%.2f m", a + (b - a).n * (b.dist(a) * 0.5f), max_font_size/globalScale, color)
           }
         }
         if(!pov_fixed && !on_pause) {
@@ -407,10 +407,10 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
         val render_mouse = scaledCoord(mouseCoord)
         drawLine(you.coord, render_mouse, DARK_GRAY)
         val r = render_mouse.dist(you.coord)
-        print(f"${r/10f}%.2f m", render_mouse, max_font_size/globalScale, DARK_GRAY)
+        print(f"${r/human_size}%.2f m", render_mouse, max_font_size/globalScale, DARK_GRAY)
       } else {
         val color = ourPlayerColor(you, is_selected = false)
-        drawCircle(you.coord, 10, color)
+        drawCircle(you.coord, human_size/2, color)
         print(s"${you.number_in_team+1}.${you.number+1}  ${if(you.isReloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
         you.ds.foreach(d => drawFilledCircle(d, 3, color))
         if(you.ds.length > 0) {
@@ -440,7 +440,7 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
       .foreach {
         case player =>
           val player_color = if(player.team == you.team) ourPlayerColor(player, is_selected = false) else enemyPlayerColor(player)
-          drawCircle(player.coord, 10, player_color)
+          drawCircle(player.coord, human_size/2, player_color)
           val info = if(player.team == your_players.head.team) {
             s"${player.number_in_team+1}.${player.number+1} ${if(player.isReloading) "перезарядка" else player.bullets}"
           } else {

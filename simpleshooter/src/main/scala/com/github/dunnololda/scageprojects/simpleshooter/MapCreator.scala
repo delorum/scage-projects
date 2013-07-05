@@ -218,8 +218,8 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
 
   render {
     drawSlidingLines(map_edges, DARK_GRAY)
-    (-map_width/2 to map_width/2 by human_size*2).foreach(x => drawLine(Vec(x, -map_height/2), Vec(x, map_height/2), DARK_GRAY))
-    (-map_height/2 to map_height/2 by human_size*2).foreach(y => drawLine(Vec(-map_width/2, y), Vec(map_width/2, y), DARK_GRAY))
+    (-map_width/2 to map_width/2 by human_size.toInt*2).foreach(x => drawLine(Vec(x, -map_height/2), Vec(x, map_height/2), DARK_GRAY))
+    (-map_height/2 to map_height/2 by human_size.toInt*2).foreach(y => drawLine(Vec(-map_width/2, y), Vec(map_width/2, y), DARK_GRAY))
     drawFilledCircle(_center, 2, GREEN)
     walls.zipWithIndex.foreach {
       case (w, i) =>
