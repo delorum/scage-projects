@@ -290,7 +290,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
         })
         message.value[NetState]("gs").foreach(m => {
           game_stats = Some(gameStats(m))
-          if(game_stats.map(_.game_start_moment_sec).getOrElse(None).nonEmpty) is_game_started = true
+          if(!is_game_started && game_stats.map(_.game_start_moment_sec).getOrElse(None).nonEmpty) is_game_started = true
           //println(game_stats.get)
           buildGameStatsPauseInterface()
           builder += ("gs_update_received" -> true)
@@ -539,8 +539,11 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
             print(s"Осталось времени: $time_left", 20, windowHeight-10, WHITE, align = "top-left")
             print(s"Команда 1: ${team_stats.find(x => x.team == 1).map(_.team_points).getOrElse(0)} очков", 20, windowHeight-10-30, WHITE, align = "top-left")
             print(s"Команда 2: ${team_stats.find(x => x.team == 2).map(_.team_points).getOrElse(0)} очков", 20, windowHeight-10-30*2, WHITE, align = "top-left")
+          case Some(GameStats(team_stats, None, your_team)) =>
+            val team1_players = team_stats.find(_.team == 1).map(_.players_stats.length).getOrElse(0)/3
+            val team2_players = team_stats.find(_.team == 2).map(_.players_stats.length).getOrElse(0)/3
+            print(s"За команду 1: $team1_players. За команду 2: $team2_players. Ждем еще игроков", 20, windowHeight-10, WHITE, align = "top-left")
           case _ =>
-            print("Ждем еще игроков", 20, windowHeight-10, WHITE, align = "top-left")
         }
       } else {
         game_stats match {

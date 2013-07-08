@@ -13,7 +13,7 @@ package object simpleshooter {
   val window_settings_title_printer = new ScageMessage(max_font_size = 30)
   val help_printer = new ScageMessage(max_font_size = 15)
 
-  val host = "localhost"
+  val host = "fzeulf.netris.ru"
   val port = 10000
 
   val human_size = 20f  // human_size is 1 meter
@@ -329,16 +329,16 @@ package object simpleshooter {
     def isFinished = game_started && System.currentTimeMillis()/1000 - game_start_moment_sec > game_period_length_sec
 
     def gameStats(your_team:Int):GameStats = {
+      val teams_stats = count.toList.map {
+        case (team, points) =>
+          val player_stats = players.values.flatten.filter(_.team == team).map(p => {
+            PlayerStats(p.team, p.number_in_team, p.number, p.wins, p.deaths)
+          }).toList
+          TeamStats(team, points, player_stats)
+      }
       if(!game_started) {
-        GameStats(Nil, game_start_moment_sec = None, your_team)
+        GameStats(teams_stats, game_start_moment_sec = None, your_team)
       } else {
-        val teams_stats = count.toList.map {
-          case (team, points) =>
-            val player_stats = players.values.flatten.filter(_.team == team).map(p => {
-              PlayerStats(p.team, p.number_in_team, p.number, p.wins, p.deaths)
-            }).toList
-            TeamStats(team, points, player_stats)
-        }
         GameStats(teams_stats, game_start_moment_sec = Some(game_start_moment_sec), your_team)
       }
     }
