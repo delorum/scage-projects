@@ -13,7 +13,7 @@ package object simpleshooter {
   val window_settings_title_printer = new ScageMessage(max_font_size = 30)
   val help_printer = new ScageMessage(max_font_size = 15)
 
-  val host = "fzeulf.netris.ru"
+  val host = "localhost"
   val port = 10000
 
   val human_size = 20f  // human_size is 1 meter

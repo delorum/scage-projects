@@ -24,7 +24,9 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
 
   private var selected_player = 0
 
+  private var is_game_entered = false
   private var is_game_started = false
+  private var want_start_game = false
   private var is_connected = false
   private var map = GameMap()
   private var map_display_lists:Option[List[(Int, () => ScageColor)]] = None
@@ -40,6 +42,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   private var is_game_over = false
 
   private val menu_items = createMenuItems(List(
+    ("Начать",        () => Vec(windowWidth/2, windowHeight/2 + 30*2), () => if(join_game.isEmpty && !is_game_started) WHITE else DARK_GRAY, () => if(join_game.isEmpty && !is_game_started) want_start_game = true),
     ("Продолжить",    () => Vec(windowWidth/2, windowHeight/2 + 30), () => if(!is_game_over) WHITE else DARK_GRAY, () => if(!is_game_over) pauseOff()),
     ("Настройки",     () => Vec(windowWidth/2, windowHeight/2),      () => WHITE, () => {
       client.ignoreEvents = true
@@ -259,7 +262,8 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
     client.newEvent {
       case NewUdpServerData(message) =>
         //println(message.toJsonString)
-        if(message.contains("gamestarted")) is_game_started = true
+        //println(game_stats)
+        if(message.contains("gameentered")) is_game_entered = true
         if(message.contains("fire_toggle_set")) send_fire_toggle = None
         if(message.contains("dests_cleared")) clear_destinations = false
         message.value[NetState]("map").foreach(m => {
@@ -286,6 +290,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
         })
         message.value[NetState]("gs").foreach(m => {
           game_stats = Some(gameStats(m))
+          if(game_stats.map(_.game_start_moment_sec).getOrElse(None).nonEmpty) is_game_started = true
           //println(game_stats.get)
           buildGameStatsPauseInterface()
           builder += ("gs_update_received" -> true)
@@ -342,7 +347,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
 
   // send data
   actionIgnorePause(50) {
-    if(!is_game_started) {
+    if(!is_game_entered) {
       join_game match {
         case Some(jg) =>
           client.send(NetState("join" -> jg.netState))
@@ -350,6 +355,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
           client.send(NetState("create" -> true))
       }
     } else {
+      if(!is_game_started && want_start_game) builder += ("startgame" -> true)
       if(inputChanged) {
         builder += ("pn" -> selected_player)
         new_destination.foreach(nd => {
@@ -377,7 +383,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   }.getOrElse(Vec.zero)*/_center
 
   render {
-    if(is_connected && is_game_started) {
+    if(is_connected && is_game_entered) {
       current_state match {
         case Some(TacticServerData(yours, others, your_bullets, other_bullets, _)) =>
           map_display_lists.foreach {
@@ -523,7 +529,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   }
   interface {
     print(fps, windowWidth-20, windowHeight-10, WHITE, align = "top-right")
-    if(!is_connected || !is_game_started) {
+    if(!is_connected || !is_game_entered) {
       print("Подключаемся к серверу...", windowCenter, DARK_GRAY, align = "center")
     } else {
       if(!on_pause) {
