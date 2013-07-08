@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects.simpleshooter
 import com.github.dunnololda.scage.ScageLib._
 import collection.mutable
 import com.github.dunnololda.simplenet.{State => NetState, _}
+import scala.collection.mutable.ArrayBuffer
 
 class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simple Shooter Client") {
   private val client = UdpNetClient(address = host, port = port, ping_timeout= 1000, check_timeout = 5000)
@@ -10,6 +11,8 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   private val states = mutable.ArrayBuffer[TacticServerData]()
 
   private var game_stats:Option[GameStats] = None
+  private var game_stats_pause_interface = ArrayBuffer[() => String]()
+  private var skip_stats_rows = 0
 
   private val builder = NetState.newBuilder
 
@@ -38,8 +41,18 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
 
   private val menu_items = createMenuItems(List(
     ("Продолжить",    () => Vec(windowWidth/2, windowHeight/2 + 30), () => if(!is_game_over) WHITE else DARK_GRAY, () => if(!is_game_over) pauseOff()),
-    ("Выход в меню",  () => Vec(windowWidth/2, windowHeight/2),      () => WHITE, () => stop()),
-    ("Выход из игры", () => Vec(windowWidth/2, windowHeight/2-30),   () => WHITE, () => stopApp())
+    ("Настройки",     () => Vec(windowWidth/2, windowHeight/2),      () => WHITE, () => {
+      client.ignoreEvents = true
+      SettingsScreen.run()
+      client.ignoreEvents = false
+    }),
+    ("Справка",       () => Vec(windowWidth/2, windowHeight/2 - 30), () => WHITE, () => {
+      client.ignoreEvents = true
+      HelpScreen.run()
+      client.ignoreEvents = false
+    }),
+    ("Выход в меню",  () => Vec(windowWidth/2, windowHeight/2 - 30*2), () => WHITE, () => stop()),
+    ("Выход из игры", () => Vec(windowWidth/2, windowHeight/2 - 30*3), () => WHITE, () => stopApp())
   ))
 
   private var selected_menu_item:Option[Int] = None
@@ -143,6 +156,29 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
     } else selected_player = number
   }
 
+  private def buildGameStatsPauseInterface() {
+    game_stats_pause_interface.clear()
+    game_stats match {
+      case Some(GameStats(team_stats, Some(game_start_moment_sec), your_team)) =>
+        game_stats_pause_interface += (() => s"Команда 1${if(your_team == 1) " (ваша)" else ""}: ${team_stats.find(x => x.team == 1).map(_.team_points).getOrElse(0)} очков")
+        val team1_player_stats = team_stats.find(x => x.team == 1).map(_.players_stats).getOrElse(Nil).sortBy(-_.wins)
+        team1_player_stats.zipWithIndex.foreach {
+          case (PlayerStats(team, number_in_team, number, wins, deaths), idx) =>
+            val info = s"боец 1.${number_in_team+1}.${number+1} : убил: $wins умер: $deaths"
+            game_stats_pause_interface += (() => info)
+        }
+        game_stats_pause_interface += (() => "")
+        game_stats_pause_interface += (() => s"Команда 2${if(your_team == 2) " (ваша)" else ""}: ${team_stats.find(x => x.team == 2).map(_.team_points).getOrElse(0)} очков")
+        val team2_player_stats = team_stats.find(x => x.team == 2).map(_.players_stats).getOrElse(Nil).sortBy(-_.wins)
+        team2_player_stats.zipWithIndex.foreach {
+          case (PlayerStats(team, number_in_team, number, wins, deaths), idx) =>
+            val info = s"боец 2.${number_in_team+1}.${number+1} : убил: $wins умер: $deaths"
+            game_stats_pause_interface += (() => info)
+        }
+      case _ =>
+    }
+  }
+
   key(KEY_1, onKeyDown = selectPlayer(0))
   key(KEY_2, onKeyDown = selectPlayer(1))
   key(KEY_3, onKeyDown = selectPlayer(2))
@@ -197,9 +233,9 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
       if(globalScale > 0.1f) {
         if(globalScale > 1) globalScale -= 1
         else globalScale -= 0.1f
-      } else {
-        // TODO: player stats scrolling
       }
+    } else {
+      if(skip_stats_rows+13 < game_stats_pause_interface.length) skip_stats_rows += 1
     }
   })
 
@@ -208,7 +244,9 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
       if(globalScale < 1) globalScale += 0.1f
       else if(globalScale < 3) globalScale += 1
     } else {
-
+      if(skip_stats_rows > 0) {
+        skip_stats_rows -= 1
+      }
     }
   })
 
@@ -249,6 +287,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
         message.value[NetState]("gs").foreach(m => {
           game_stats = Some(gameStats(m))
           //println(game_stats.get)
+          buildGameStatsPauseInterface()
           builder += ("gs_update_received" -> true)
         })
         if(message.contains("cps_infos")) {
@@ -265,8 +304,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
       case UdpServerConnected =>
         is_connected = true
       case UdpServerDisconnected =>
-        is_connected = false
-        is_game_started = false
+        stop()
     }
   }
 
@@ -285,7 +323,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   actionIgnorePause(1000) {
     if(!is_game_over) {
       game_stats match {
-        case Some(GameStats(team_stats, Some(game_start_moment_sec))) =>
+        case Some(GameStats(_, Some(game_start_moment_sec), _)) =>
           if(System.currentTimeMillis()/1000 - game_start_moment_sec > game_period_length_sec) {
             pause()
             is_game_over = true
@@ -450,7 +488,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
                 s"${player.team}.${player.number_in_team+1}.${player.number+1} ${if(player.is_reloading) "перезарядка" else player.bullets}"
               } else {
                 s"${player.team}.${player.number_in_team+1}.${player.number+1} ${if(player.is_reloading) "перезарядка" else player.bullets} ${
-                  (map.chanceToHit(you.coord, you.pov, you.isMoving, player.coord, player.isMoving)*100).toInt
+                  (map.chanceToHit(you.coord, you.pov, you.isMoving, player.coord, player.isMoving, player.pov)*100).toInt
                 }%"
               }
               print(info, player.coord+number_place, max_font_size/globalScale, player_color, align = "center")
@@ -490,7 +528,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
     } else {
       if(!on_pause) {
         game_stats match {
-          case Some(GameStats(team_stats, Some(game_start_moment_sec))) =>
+          case Some(GameStats(team_stats, Some(game_start_moment_sec), your_team)) =>
             val time_left = timeLeft(game_start_moment_sec + game_period_length_sec - System.currentTimeMillis()/1000)
             print(s"Осталось времени: $time_left", 20, windowHeight-10, WHITE, align = "top-left")
             print(s"Команда 1: ${team_stats.find(x => x.team == 1).map(_.team_points).getOrElse(0)} очков", 20, windowHeight-10-30, WHITE, align = "top-left")
@@ -500,43 +538,21 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
         }
       } else {
         game_stats match {
-          case Some(GameStats(team_stats, Some(game_start_moment_sec))) =>
+          case Some(GameStats(team_stats, Some(game_start_moment_sec), your_team)) =>
             if(is_game_over) {
               val team1_points = team_stats.find(x => x.team == 1).map(_.team_points).getOrElse(0)
               val team2_points = team_stats.find(x => x.team == 2).map(_.team_points).getOrElse(0)
-              val winner = if(team1_points > team2_points) "победила команда 1" else if(team2_points > team1_points) "победила команда 2" else "ничья"
-              print(s"Игра закончена. Результат: $winner", 20, windowHeight-10, WHITE, align = "top-left")
-              print(s"Команда 1: ${team_stats.find(x => x.team == 1).map(_.team_points).getOrElse(0)} очков", 20, windowHeight-10-30, WHITE, align = "top-left")
-              val team1_player_stats = team_stats.find(x => x.team == 1).map(_.players_stats).getOrElse(Nil).sortBy(-_.wins)
-              team1_player_stats.zipWithIndex.foreach {
-                case (PlayerStats(team, number_in_team, number, wins, deaths), idx) =>
-                  val info = s"боец 1.${number_in_team+1}.${number+1} : убил: $wins умер: $deaths"
-                  print(info, 20, windowHeight-10-30*2-30*idx, WHITE, align = "top-left")
-              }
-              print(s"Команда 2: ${team_stats.find(x => x.team == 2).map(_.team_points).getOrElse(0)} очков", 20, windowHeight-10-30*3-30*team1_player_stats.length, WHITE, align = "top-left")
-              val team2_player_stats = team_stats.find(x => x.team == 2).map(_.players_stats).getOrElse(Nil).sortBy(-_.wins)
-              team2_player_stats.zipWithIndex.foreach {
-                case (PlayerStats(team, number_in_team, number, wins, deaths), idx) =>
-                  val info = s"боец 2.${number_in_team+1}.${number+1} : убил: $wins умер: $deaths"
-                  print(info, 20, windowHeight-10-30*4-30*team1_player_stats.length-30*idx, WHITE, align = "top-left")
-              }
+              val winner =
+                if(team1_points > team2_points) s"победила команда 1${if(your_team == 1) " (ваша)" else " (не ваша)"}"
+                else if(team2_points > team1_points) s"победила команда 2${if(your_team == 2) " (ваша)" else " (не ваша)"}"
+                else "ничья"
+              print(s"Игра закончена. Результат: $winner", Vec(20, windowHeight-10), WHITE, align = "top-left")
             } else {
               val time_left = timeLeft(game_start_moment_sec + game_period_length_sec - System.currentTimeMillis()/1000)
-              print(s"Осталось времени: $time_left", 20, windowHeight-10, WHITE, align = "top-left")
-              print(s"Команда 1: ${team_stats.find(x => x.team == 1).map(_.team_points).getOrElse(0)} очков", 20, windowHeight-10-30, WHITE, align = "top-left")
-              val team1_player_stats = team_stats.find(x => x.team == 1).map(_.players_stats).getOrElse(Nil).sortBy(-_.wins)
-              team1_player_stats.zipWithIndex.foreach {
-                case (PlayerStats(team, number_in_team, number, wins, deaths), idx) =>
-                  val info = s"боец 1.${number_in_team+1}.${number+1} : убил: $wins умер: $deaths"
-                  print(info, 20, windowHeight-10-30*2-30*idx, WHITE, align = "top-left")
-              }
-              print(s"Команда 2: ${team_stats.find(x => x.team == 2).map(_.team_points).getOrElse(0)} очков", 20, windowHeight-10-30*3-30*team1_player_stats.length, WHITE, align = "top-left")
-              val team2_player_stats = team_stats.find(x => x.team == 2).map(_.players_stats).getOrElse(Nil).sortBy(-_.wins)
-              team2_player_stats.zipWithIndex.foreach {
-                case (PlayerStats(team, number_in_team, number, wins, deaths), idx) =>
-                  val info = s"боец 2.${number_in_team+1}.${number+1} : убил: $wins умер: $deaths"
-                  print(info, 20, windowHeight-10-30*4-30*team1_player_stats.length-30*idx, WHITE, align = "top-left")
-              }
+              print(s"Осталось времени: $time_left", Vec(20, windowHeight-10), WHITE, align = "top-left")
+            }
+            game_stats_pause_interface.drop(skip_stats_rows).take(13).zipWithIndex.foreach {
+              case (s, idx) => print(s(), Vec(20, windowHeight-10-30-idx*30), WHITE, align = "top-left")
             }
           case _ =>
         }

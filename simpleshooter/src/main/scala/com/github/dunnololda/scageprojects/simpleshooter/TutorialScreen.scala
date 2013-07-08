@@ -312,7 +312,7 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
             !map.isInsideSafeZone(p.coord))
         if (damaged_players.nonEmpty) {
           damaged_players.foreach(p => {
-            val chance = map.chanceToHit(b.shooter.coord, b.shooter.pov, b.shooter.isMoving, p.coord, p.isMoving)
+            val chance = map.chanceToHit(b.shooter.coord, b.shooter.pov, b.shooter.isMoving, p.coord, p.isMoving, p.pov)
             if(math.random < chance) {
               p.health -= bullet_damage
               if (p.health <= 0) {
@@ -459,7 +459,7 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
             s"${player.team}.${player.number_in_team+1}.${player.number+1} ${if(player.isReloading) "перезарядка" else player.bullets}"
           } else {
             s"${player.team}.${player.number_in_team+1}.${player.number+1} ${if(player.isReloading) "перезарядка" else player.bullets} ${
-              (map.chanceToHit(you.coord, you.pov, you.isMoving, player.coord, player.isMoving)*100).toInt
+              (map.chanceToHit(you.coord, you.pov, you.isMoving, player.coord, player.isMoving, player.pov)*100).toInt
             }%"
           }
           print(info, player.coord+number_place, max_font_size/globalScale, player_color, align = "center")

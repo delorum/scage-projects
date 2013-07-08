@@ -13,7 +13,7 @@ package object simpleshooter {
   val window_settings_title_printer = new ScageMessage(max_font_size = 30)
   val help_printer = new ScageMessage(max_font_size = 15)
 
-  val host = "localhost"
+  val host = "fzeulf.netris.ru"
   val port = 10000
 
   val human_size = 20f  // human_size is 1 meter
@@ -292,17 +292,19 @@ package object simpleshooter {
     )
   }
 
-  case class GameStats(teams_stats:List[TeamStats], game_start_moment_sec:Option[Long]) {
+  case class GameStats(teams_stats:List[TeamStats], game_start_moment_sec:Option[Long], your_team:Int) {
     private val builder = NetState.newBuilder
     builder += ("ts" -> teams_stats.map(_.netState))
     game_start_moment_sec.foreach(gs => builder += ("gs" -> gs))
+    builder += ("yt" -> your_team)
     val netState = builder.toState
   }
 
   def gameStats(message:NetState):GameStats = {
     GameStats(
       teams_stats = message.value[List[NetState]]("ts").getOrElse(Nil).map(x => teamStats(x)),
-      game_start_moment_sec = message.value[Long]("gs")
+      game_start_moment_sec = message.value[Long]("gs"),
+      your_team = message.value[Int]("yt").get
     )
   }
 
@@ -326,9 +328,9 @@ package object simpleshooter {
     def isStarted = game_started
     def isFinished = game_started && System.currentTimeMillis()/1000 - game_start_moment_sec > game_period_length_sec
 
-    def gameStats:GameStats = {
+    def gameStats(your_team:Int):GameStats = {
       if(!game_started) {
-        GameStats(Nil, game_start_moment_sec = None)
+        GameStats(Nil, game_start_moment_sec = None, your_team)
       } else {
         val teams_stats = count.toList.map {
           case (team, points) =>
@@ -337,7 +339,7 @@ package object simpleshooter {
             }).toList
             TeamStats(team, points, player_stats)
         }
-        GameStats(teams_stats, game_start_moment_sec = Some(game_start_moment_sec))
+        GameStats(teams_stats, game_start_moment_sec = Some(game_start_moment_sec), your_team)
       }
     }
   }
@@ -532,13 +534,15 @@ package object simpleshooter {
                     shooter_pov:Vec,
                     shooter_moving:Boolean,
                     target_coord:Vec,
-                    target_moving:Boolean):Float = {
+                    target_moving:Boolean,
+                    target_pov:Vec):Float = {
       if(!isCoordVisible(target_coord, shooter_coord, shooter_pov)) 0f
       else {
         val d = target_coord.dist(shooter_coord)
         var result = -0.001125f*d + 0.6125f
         if(shooter_moving) result /= 3f
         if(target_moving) result /= 2f
+        if(!isCoordVisible(shooter_coord, target_coord, target_pov)) result *= 2f
         if(hitChanceModification(shooter_coord, target_coord)) result /= 2f
         if(result > 1f) 1f
         else if(result < 0) 0f
@@ -652,10 +656,10 @@ package object simpleshooter {
   }
 
   def isCoordNearWall(coord:Vec, wall:Wall, body_size:Float):Boolean = {
-    val one = (wall.to - wall.from).rotateDeg(135).n*body_size/2 + wall.from
-    val two = (wall.to - wall.from).rotateDeg(-135).n*body_size/2 + wall.from
-    val three = (wall.from - wall.to).rotateDeg(135).n*body_size/2 + wall.to
-    val four = (wall.from - wall.to).rotateDeg(-135).n*body_size/2 + wall.to
+    val one = (wall.to - wall.from).rotateDeg(90).n*body_size/2 + wall.from
+    val two = (wall.to - wall.from).rotateDeg(-90).n*body_size/2 + wall.from
+    val three = (wall.from - wall.to).rotateDeg(90).n*body_size/2 + wall.to
+    val four = (wall.from - wall.to).rotateDeg(-90).n*body_size/2 + wall.to
     val area = List(one, two, three, four)
     coordOnArea(coord, area)
   }
