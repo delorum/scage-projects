@@ -399,7 +399,7 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
           (you.coord :: you.ds.toList).sliding(2).foreach {
             case List(a, b) =>
               drawLine(a, b, color)
-              print(f"${b.dist(a)/human_size}%.2f m", a + (b - a).n * (b.dist(a) * 0.5f), max_font_size/globalScale, color)
+              //print(f"${b.dist(a)/human_size}%.2f m", a + (b - a).n * (b.dist(a) * 0.5f), max_font_size/globalScale, color)
           }
         }
         if(!on_pause) {
@@ -441,7 +441,7 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
           (you.coord :: you.ds.toList).sliding(2).foreach {
             case List(a, b) =>
               drawLine(a, b, color)
-              print(f"${b.dist(a)/10f}%.2f m", a + (b - a).n * (b.dist(a) * 0.5f), max_font_size/globalScale, color)
+              //print(f"${b.dist(a)/10f}%.2f m", a + (b - a).n * (b.dist(a) * 0.5f), max_font_size/globalScale, color)
           }
         }
         drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), color)
