@@ -17,6 +17,8 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
   private val server = UdpNetServer(port = property("port", port), ping_timeout= 1000, check_timeout = 5000)
 
   private val map_name = property("map", "map.ss")
+  private val preloaded_map = loadMap(map_name) // TODO: allow to select map on creation
+  private val path_finder = new GameMapPathFinder(preloaded_map)
 
   private val games = mutable.HashMap[Int, TacticGame]()  // game_id -> game
 
@@ -91,10 +93,9 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
               builder += ("gameentered" -> true, "map" -> game.map.netState)
             case None =>
               val new_game_id = nextId
-              val new_map = loadMap(map_name) // TODO: allow to select map on creation
-              val new_path_finder = new GameMapPathFinder(new_map)
+              val new_map = preloaded_map.copy() // TODO: allow to select map on creation
               //println(new_map)
-              val new_game = new TacticGame(new_game_id, map = new_map, path_finder = new_path_finder, count = mutable.HashMap(1 -> 0, 2 -> 0))
+              val new_game = new TacticGame(new_game_id, map = new_map, count = mutable.HashMap(1 -> 0, 2 -> 0))
               games += (new_game_id -> new_game)
               addNewPlayerToGame(client_id, new_game, None)
               builder += ("gameentered" -> true, "map" -> new_map.netState)
@@ -112,8 +113,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
                 case None =>
                   val new_game_id = nextId
                   val new_map = loadMap(map_name) // TODO: allow to select map on creation
-                  val new_path_finder = new GameMapPathFinder(new_map)
-                  val new_game = new TacticGame(new_game_id, map = new_map, path_finder = new_path_finder, count = mutable.HashMap(1 -> 0, 2 -> 0))
+                  val new_game = new TacticGame(new_game_id, map = new_map, count = mutable.HashMap(1 -> 0, 2 -> 0))
                   games += (new_game_id -> new_game)
                   addNewPlayerToGame(client_id, new_game, None)
                   builder += ("gameentered" -> true, "map" -> new_map.netState)
@@ -121,7 +121,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
           }
         } else {
           games_by_clientid.get(client_id) match {
-            case Some(game @ TacticGame(_, players, bullets, map, path_finder, _)) =>
+            case Some(game @ TacticGame(_, players, bullets, map, _)) =>
               //println(game)
               if(!game.isStarted && message.contains("startgame")) {
                 game.startGame()
@@ -153,7 +153,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
         }
       case UdpClientDisconnected(client_id) =>
         games_by_clientid.get(client_id) match {
-          case Some(TacticGame(game_id, players, bullets, _, _, _)) =>
+          case Some(TacticGame(game_id, players, bullets, _, _)) =>
             games_by_clientid -= client_id
             for {
               client_players <- players.get(client_id)
@@ -179,7 +179,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
     val all_games = games.values
     val nonfinished_games = all_games.filter(!_.isFinished)
     nonfinished_games.foreach {
-      case game @ TacticGame(_, players, bullets, map, _, _) =>
+      case game @ TacticGame(_, players, bullets, map, _) =>
         players.values.flatten.foreach(p => {
           p.ds.headOption.foreach(d => {
             if(d.dist2(p.coord) > human_speed*human_speed) {
@@ -273,7 +273,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
   // send data
   action(50) {
     games.values.foreach {
-      case game @ TacticGame(_, players, bullets, map, _, count) =>
+      case game @ TacticGame(_, players, bullets, map, count) =>
         players.foreach {
           case (id, client) =>
             val (builder, player_data) = clientBuilderAndStuff(id)

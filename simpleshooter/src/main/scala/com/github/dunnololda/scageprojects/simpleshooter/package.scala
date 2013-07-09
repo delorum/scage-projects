@@ -318,7 +318,6 @@ package object simpleshooter {
                         players:mutable.HashMap[Long, List[TacticServerPlayer]] = mutable.HashMap[Long, List[TacticServerPlayer]](),  // client_id -> list of players
                         bullets:ArrayBuffer[TacticServerBullet] = ArrayBuffer[TacticServerBullet](),
                         map:GameMap,
-                        path_finder:GameMapPathFinder,
                         count:mutable.HashMap[Int, Int]) {
     private var game_start_moment_sec = 0l
     private var game_started = false
