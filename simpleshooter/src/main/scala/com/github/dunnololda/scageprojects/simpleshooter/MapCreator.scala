@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects.simpleshooter
 import com.github.dunnololda.scage.ScageLib._
 import collection.mutable.ArrayBuffer
 import com.github.dunnololda.cli.Cli
+import scala.Some
 
 object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersion", default_window_width, default_window_height) with Cli {
   programDescription = s"Simple Shooter Map Creator $appVersion"
@@ -220,11 +221,26 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
     drawSlidingLines(map_edges, DARK_GRAY)
     (-map_width/2 to map_width/2 by human_size.toInt*2).foreach(x => drawLine(Vec(x, -map_height/2), Vec(x, map_height/2), DARK_GRAY))
     (-map_height/2 to map_height/2 by human_size.toInt*2).foreach(y => drawLine(Vec(-map_width/2, y), Vec(map_width/2, y), DARK_GRAY))
+    /*for {
+      (vx, x) <- (-map_width/2 to map_width/2 by human_size.toInt).zipWithIndex
+      (vy, y) <- (-map_height/2 to map_height/2 by human_size.toInt).zipWithIndex
+      color = if(loaded_map.tiles_on_map(x)(y)) RED else GRAY
+    } {
+      drawFilledCircle(Vec(vx,vy),3 ,color)
+    }*/
     drawFilledCircle(_center, 2, GREEN)
     walls.zipWithIndex.foreach {
       case (w, i) =>
         if(mode == 0 && i == walls_counter) drawLine(w.from, w.to, RED)
-        else drawLine(w.from, w.to, WHITE)
+        else {
+          /*val one = (w.to - w.from).rotateDeg(135).n*human_size/2 + w.from
+          val two = (w.to - w.from).rotateDeg(-135).n*human_size/2 + w.from
+          val three = (w.from - w.to).rotateDeg(135).n*human_size/2 + w.to
+          val four = (w.from - w.to).rotateDeg(-135).n*human_size/2 + w.to
+          val area = List(one, two, three, four, one)
+          drawSlidingLines(area, WHITE)*/
+          drawLine(w.from, w.to, WHITE)
+        }
         /*drawCircle(w.from, near_wall_area, GRAY)
         drawCircle(w.to, near_wall_area, GRAY)*/
         /*val cell_size = human_size*2

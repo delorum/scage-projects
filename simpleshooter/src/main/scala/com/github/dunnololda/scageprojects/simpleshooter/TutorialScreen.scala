@@ -32,6 +32,7 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
       0 -> ControlPoint(0, None, 0l, List(Vec(-60.0, 60.0), Vec(60.0, 60.0), Vec(60.0, -60.0), Vec(-60.0, -60.0), Vec(-60.0, 60.0)))
     )
   )
+  val path_finder = new GameMapPathFinder(map)
 
   val player1 = TacticServerPlayer(
     id = 1,
@@ -101,6 +102,8 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
     "В этом обучении также доступны противники: клавиши 4, 5, 6",
     "Клик левой кнопкой: перемещение бойца. Можно кликать несколько\n" +
       "раз, прокладывая траекторию",
+    "Если следующая точка траектории дальше чем в 15 метрах от\n" +
+      "последней, будет использован алгоритм поиска пути",
     "Боец двигается со скоростью 12 км/ч",
     "Нажатие пробела стирает траекторию движения. Боец останавливается",
     "Клик правой кнопкой: зафиксировать направление взгляда бойца",
@@ -115,7 +118,8 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
     "Противник поражен, если пуля пересекает его контур и срабатывает\n" +
       "шанс попадания",
     "Шанс попадания зависит от многих факторов: движется ли цель,\n" +
-      "движется ли стрелок, расстояние между ними, есть ли рядом укрытие",
+      "движется ли стрелок, расстояние между ними, есть ли рядом укрытие,\n" +
+      "видит ли цель стрелка\n",
     "Укрытие - пространство радиусом 2.5 метра около края стены.\n" +
       "Разумно используйте укрытия при перемещениях",
     "Если игрок находится в укрытии по отношению к направлению его\n" +
@@ -123,13 +127,15 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
     "Пораженный боец считается мертвым. Он должен самостоятельно\n" +
       "дойти до своей зоны возрождения",
     "Зона возрождения - область зеленого цвета, откуда вы начинаете игру",
-    "В сетевой игре зону возрождения нельзя покидать до тех пор, пока в\n" +
-      "команде противника нет хотя бы одного отряда",
+    "В сетевой игре зону возрождения нельзя покидать до тех пор, пока\n" +
+      "создатель игры не скомандует начало",
     "В зоне возрождения бойцы оживают, их боезапас пополняется",
     "Боезапас: 90 патронов в трех обоймах. Время перезарядки: 5 секунд",
     "Если патроны закончились - отправляйтесь в зону возрождения",
-    "Малый круг вокруг бойца - 3 метра - радиус слышимости противников.\n" +
-      "Противники в этом радиусе тображаются, даже если они за стенкой",
+    "Малый круг вокруг бойца - 6 метров - радиус слышимости противников",
+    "Противники в этом радиусе отображаются, даже если они за стенкой,\n" +
+      "но только в случае, если они движутся. Неподвижные противники\n" +
+      "невидимы",
     "Большой круг вокруг бойца - 60 метров - радиус слышимости пуль",
     "Рядом с каждым бойцом отображается краткая информация о нем",
     "Дружественные бойцы: через точку номер команды, номер отряда в\n" +
@@ -216,7 +222,14 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
       if(!on_pause) {
         val sm = scaledCoord(m)
         if(isCoordInsideMapBorders(sm)) {
-          players.get(selected_player).foreach(p => p.ds += sm)
+          players.get(selected_player).foreach(p => {
+            val last_position = p.ds.lastOption.getOrElse(p.coord)
+            if(sm.dist2(last_position) > path_finding_radius*path_finding_radius) {
+              p.ds ++= path_finder.findPath(last_position, sm)
+            } else {
+              p.ds += sm
+            }
+          })
         }
       } else {
         menu_items.zipWithIndex.find(x => mouseOnArea(x._1._3())) match {
@@ -445,7 +458,7 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
 
     enemy_players
       .filter(ep => {
-        your_players.exists(y => map.isCoordVisibleOrAudible(ep.coord, y.coord, y.pov, is_moving = /*x.ds.nonEmpty*/true, human_audibility_radius))
+        your_players.exists(y => map.isCoordVisibleOrAudible(ep.coord, y.coord, y.pov, is_moving = y.ds.nonEmpty/*true*/, human_audibility_radius))
       })
       .foreach {
         case player =>

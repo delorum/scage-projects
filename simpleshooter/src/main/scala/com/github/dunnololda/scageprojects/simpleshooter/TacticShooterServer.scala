@@ -92,8 +92,9 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
             case None =>
               val new_game_id = nextId
               val new_map = loadMap(map_name) // TODO: allow to select map on creation
+              val new_path_finder = new GameMapPathFinder(new_map)
               //println(new_map)
-              val new_game = new TacticGame(new_game_id, map = new_map, count = mutable.HashMap(1 -> 0, 2 -> 0))
+              val new_game = new TacticGame(new_game_id, map = new_map, path_finder = new_path_finder, count = mutable.HashMap(1 -> 0, 2 -> 0))
               games += (new_game_id -> new_game)
               addNewPlayerToGame(client_id, new_game, None)
               builder += ("gameentered" -> true, "map" -> new_map.netState)
@@ -111,7 +112,8 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
                 case None =>
                   val new_game_id = nextId
                   val new_map = loadMap(map_name) // TODO: allow to select map on creation
-                  val new_game = new TacticGame(new_game_id, map = new_map, count = mutable.HashMap(1 -> 0, 2 -> 0))
+                  val new_path_finder = new GameMapPathFinder(new_map)
+                  val new_game = new TacticGame(new_game_id, map = new_map, path_finder = new_path_finder, count = mutable.HashMap(1 -> 0, 2 -> 0))
                   games += (new_game_id -> new_game)
                   addNewPlayerToGame(client_id, new_game, None)
                   builder += ("gameentered" -> true, "map" -> new_map.netState)
@@ -119,7 +121,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
           }
         } else {
           games_by_clientid.get(client_id) match {
-            case Some(game @ TacticGame(_, players, bullets, map, _)) =>
+            case Some(game @ TacticGame(_, players, bullets, map, path_finder, _)) =>
               //println(game)
               if(!game.isStarted && message.contains("startgame")) {
                 game.startGame()
@@ -133,7 +135,12 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
               val player = client_players(player_num)
               if(clear_destinations) player.ds.clear()
               destination.foreach(d => {
-                player.ds += d
+                val last_position = player.ds.lastOption.getOrElse(player.coord)
+                if(d.dist2(last_position) > path_finding_radius*path_finding_radius) {
+                  player.ds ++= path_finder.findPath(last_position, d)
+                } else {
+                  player.ds += d
+                }
                 builder += ("dests_cleared" -> true)
               })
               pov.foreach(p => player.pov = (p - player.coord).n)
@@ -146,7 +153,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
         }
       case UdpClientDisconnected(client_id) =>
         games_by_clientid.get(client_id) match {
-          case Some(TacticGame(game_id, players, bullets, _, _)) =>
+          case Some(TacticGame(game_id, players, bullets, _, _, _)) =>
             games_by_clientid -= client_id
             for {
               client_players <- players.get(client_id)
@@ -172,7 +179,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
     val all_games = games.values
     val nonfinished_games = all_games.filter(!_.isFinished)
     nonfinished_games.foreach {
-      case game @ TacticGame(_, players, bullets, map, _) =>
+      case game @ TacticGame(_, players, bullets, map, _, _) =>
         players.values.flatten.foreach(p => {
           p.ds.headOption.foreach(d => {
             if(d.dist2(p.coord) > human_speed*human_speed) {
@@ -266,7 +273,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
   // send data
   action(50) {
     games.values.foreach {
-      case game @ TacticGame(_, players, bullets, map, count) =>
+      case game @ TacticGame(_, players, bullets, map, _, count) =>
         players.foreach {
           case (id, client) =>
             val (builder, player_data) = clientBuilderAndStuff(id)

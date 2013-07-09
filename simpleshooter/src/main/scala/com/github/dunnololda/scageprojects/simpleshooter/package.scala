@@ -21,8 +21,9 @@ package object simpleshooter {
   val bullet_speed = 120f/1000*10*human_size  // 120 m/sec in px / 10msec
   val near_wall_area = human_size*2.5f  // 2.5 m
   val pov_distance = 60*human_size
-  val human_audibility_radius = 3*human_size
+  val human_audibility_radius = 6*human_size
   val bullet_audibility_radius = 60*human_size
+  val path_finding_radius = 15*human_size
 
   val bullet_count = 50  // 24 px / 10msec * 50 = 1200 px = 60 m
   val bullet_damage = 100
@@ -317,6 +318,7 @@ package object simpleshooter {
                         players:mutable.HashMap[Long, List[TacticServerPlayer]] = mutable.HashMap[Long, List[TacticServerPlayer]](),  // client_id -> list of players
                         bullets:ArrayBuffer[TacticServerBullet] = ArrayBuffer[TacticServerBullet](),
                         map:GameMap,
+                        path_finder:GameMapPathFinder,
                         count:mutable.HashMap[Int, Int]) {
     private var game_start_moment_sec = 0l
     private var game_started = false
@@ -428,39 +430,54 @@ package object simpleshooter {
     })
   }
 
+  class GameMapPathFinder(map:GameMap) {
+    val tiles_on_map = Array.fill((map_width/human_size).toInt+1, (map_height/human_size).toInt+1)(false)
+    for {
+      (row, y) <- tiles_on_map.zipWithIndex
+      (elem, x) <- row.zipWithIndex
+      coord = Vec(-map_width/2 + x*human_size, -map_height/2 + y*human_size)
+    } {
+      if(!map.isCoordCorrectForPathFinder(coord, human_size)) tiles_on_map(x)(y) = true
+    }
+    private val path_finder = PathFinder(
+      (map_width/human_size).toInt+1,
+      (map_height/human_size).toInt+1,
+      is_blocked = (x,y) => tiles_on_map(x)(y))
+    def findPath(from:Vec, to:Vec):List[Vec] = {
+      val fx = ((from.x + map_width/2)/human_size).toInt
+      val fy = ((from.y + map_height/2)/human_size).toInt
+      val tx = ((to.x + map_width/2)/human_size).toInt
+      val ty = ((to.y + map_height/2)/human_size).toInt
+      val path = path_finder.findPath(Vec(fx, fy), Vec(tx, ty)).map(p => Vec(-map_width/2 + p.x*human_size, -map_height/2 + p.y*human_size)).toList
+      reducePath(from :: path ::: to :: Nil)
+    }
+
+    private def reducePath(path:List[Vec]):List[Vec] = {
+      val path_buffer = path.toBuffer
+      path.sliding(3).foreach {
+        case List(a, b, c) =>
+          val dir1 = (b - a).n
+          val dir2 = (c - b).n
+          if(dir1 == dir2) path_buffer -= b
+        case _ =>
+      }
+      path_buffer.toList
+    }
+  }
+
   case class GameMap(walls:List[Wall] = Nil, safe_zones:List[List[Vec]] = Nil, control_points:Map[Int, ControlPoint] = Map()) {
-    /*private val walls_on_map = Array.fill(map_width/(human_size*2)+1, map_height/(human_size*2)+1)(ArrayBuffer[Wall]())
-    walls.foreach {
-      case w @ Wall(from ,to) =>
-        bresenham(from ,to, -map_width/2, -map_height/2, human_size*2).foreach {
-          case (x, y) =>
-            /*println(w)
-            println(x+":"+y)*/
-            walls_on_map(x)(y) += w
-        }
-    }*/
-
-    /*private def coordOnMap(v:Vec):(Int, Int) = {
-      val x = ((v.x + map_width/2)/human_size/2).toInt
-      val y = ((v.y + map_height/2)/human_size/2).toInt
-      (x, y)
-    }*/
-
     def isEmpty:Boolean = walls.isEmpty && safe_zones.isEmpty && control_points.isEmpty
 
     def isCoordCorrect(coord:Vec, body_size:Float):Boolean = {
-      isCoordInsideMapBorders(coord) &&/* {
-        val (x,y) = coordOnMap(coord)
-        walls_on_map(x)(y).forall(w => !isCoordNearWall(coord, w, body_radius))
-      }*/
-      walls.forall(w => !isCoordNearWall(coord, w, body_size))
+      isCoordInsideMapBorders(coord) && walls.forall(w => !isCoordNearWall(coord, w, body_size, 90))
+    }
+
+    def isCoordCorrectForPathFinder(coord:Vec, body_size:Float):Boolean = {
+      isCoordInsideMapBorders(coord) && walls.forall(w => !isCoordNearWall(coord, w, body_size, 135))
     }
 
     def isPathCorrect(from:Vec, to:Vec, body_radius:Float):Boolean = {
       walls.forall(w => !areLinesIntersect(from, to, w.from, w.to)) && isCoordCorrect(to, body_radius)
-      /*bresenham(from ,to, -map_width/2, -map_height/2, human_size*2).forall {
-        case (x, y) => walls_on_map(x)(y).forall(w => !areLinesIntersect(from, to, w.from, w.to))
-      } && isCoordCorrect(to, body_radius)*/
     }
 
     def randomHumanCoord:Vec = {
@@ -501,22 +518,12 @@ package object simpleshooter {
     }
 
     def isCoordVisible(coord:Vec, from:Vec, pov:Vec):Boolean = {
-      isCoordInsidePov(coord, from, pov) &&/* {
-        bresenham(from ,coord, -map_width/2, -map_height/2, human_size*2).forall {
-          case (x, y) => walls_on_map(x)(y).forall(w => !areLinesIntersect(from, coord, w.from, w.to))
-        }
-      }*/
-      walls.forall(w => !areLinesIntersect(from, coord, w.from, w.to))
+      isCoordInsidePov(coord, from, pov) && walls.forall(w => !areLinesIntersect(from, coord, w.from, w.to))
     }
 
     def isCoordVisibleOrAudible(coord:Vec, from:Vec, pov:Vec, is_moving:Boolean, audibility_radius:Float):Boolean = {
       is_moving && coord.dist2(from) <= audibility_radius * audibility_radius ||
-      isCoordInsidePov(coord, from, pov) &&/* {
-        bresenham(from ,coord, -map_width/2, -map_height/2, human_size*2).forall {
-          case (x, y) => walls_on_map(x)(y).forall(w => !areLinesIntersect(from, coord, w.from, w.to))
-        }
-      }*/
-      walls.forall(w => !areLinesIntersect(from, coord, w.from, w.to))
+      isCoordInsidePov(coord, from, pov) && walls.forall(w => !areLinesIntersect(from, coord, w.from, w.to))
     }
 
     def isInsideSafeZone(coord:Vec):Boolean = safe_zones.exists(
@@ -655,11 +662,11 @@ package object simpleshooter {
     )
   }
 
-  def isCoordNearWall(coord:Vec, wall:Wall, body_size:Float):Boolean = {
-    val one = (wall.to - wall.from).rotateDeg(90).n*body_size/2 + wall.from
-    val two = (wall.to - wall.from).rotateDeg(-90).n*body_size/2 + wall.from
-    val three = (wall.from - wall.to).rotateDeg(90).n*body_size/2 + wall.to
-    val four = (wall.from - wall.to).rotateDeg(-90).n*body_size/2 + wall.to
+  def isCoordNearWall(coord:Vec, wall:Wall, body_size:Float, angle:Float):Boolean = {
+    val one = (wall.to - wall.from).rotateDeg(angle).n*body_size/2 + wall.from
+    val two = (wall.to - wall.from).rotateDeg(-angle).n*body_size/2 + wall.from
+    val three = (wall.from - wall.to).rotateDeg(angle).n*body_size/2 + wall.to
+    val four = (wall.from - wall.to).rotateDeg(-angle).n*body_size/2 + wall.to
     val area = List(one, two, three, four)
     coordOnArea(coord, area)
   }
