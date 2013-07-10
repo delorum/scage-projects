@@ -16,7 +16,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   val ship_start_position = Vec(star.radius*1.5f, star.radius*1.5f)
   val ship = new Ship(a = 50, b = 100,
     init_coord = ship_start_position,
-    init_velocity = ship_start_position.n.rotateDeg(90)*math.sqrt(G*star.mass/(star.coord.dist(ship_start_position))),
+    init_velocity = ship_start_position.n.rotateDeg(90)*math.sqrt(G*star.mass/star.coord.dist(ship_start_position)),
     init_rotation = math.Pi.toFloat/4
   )
 
@@ -49,10 +49,10 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     else globalScale += 1
   })
 
-  keyIgnorePause(KEY_SPACE, onKeyDown = _center = ship.coord)
+  /*keyIgnorePause(KEY_SPACE, onKeyDown = _center = ship.coord)
   keyIgnorePause(KEY_F2, onKeyDown = {_center = center; center = _center})
   keyIgnorePause(KEY_F3, onKeyDown = center = ship.coord)
-  keyIgnorePause(KEY_F4, onKeyDown = center = star.coord)
+  keyIgnorePause(KEY_F4, onKeyDown = center = star.coord)*/
 
   keyIgnorePause(KEY_P, onKeyDown = switchPause())
   interface {
@@ -112,17 +112,17 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
       drawRectCentered(Vec.zero, a, b, color = WHITE)
       drawLine(Vec(-a/2, b/4 + b/8), Vec(a/2, b/4 + b/8), color = WHITE)
 
-      drawRectCentered(Vec(0, -b/2-2.5f), 10, 5, color = (if (two.is_active) RED else WHITE))
-      drawRectCentered(Vec(0, b/2+2.5f), 10, 5, color = (if (eight.is_active) RED else WHITE))
+      drawRectCentered(Vec(0, -b/2-2.5f), 10, 5, color = if (two.is_active) RED else WHITE)
+      drawRectCentered(Vec(0, b/2+2.5f), 10, 5, color = if (eight.is_active) RED else WHITE)
 
-      drawRectCentered(Vec(-a/2-2.5f, b/4), 5, 10, color = (if (seven.is_active) RED else WHITE))
-      drawRectCentered(Vec(a/2+2.5f, b/4), 5, 10, color = (if (nine.is_active) RED else WHITE))
+      drawRectCentered(Vec(-a/2-2.5f, b/4), 5, 10, color = if (seven.is_active) RED else WHITE)
+      drawRectCentered(Vec(a/2+2.5f, b/4), 5, 10, color = if (nine.is_active) RED else WHITE)
 
-      drawRectCentered(Vec(-a/2-2.5f, 0), 5, 10, color = (if (four.is_active) RED else WHITE))
-      drawRectCentered(Vec(a/2+2.5f, 0), 5, 10, color = (if (six.is_active) RED else WHITE))
+      drawRectCentered(Vec(-a/2-2.5f, 0), 5, 10, color = if (four.is_active) RED else WHITE)
+      drawRectCentered(Vec(a/2+2.5f, 0), 5, 10, color = if (six.is_active) RED else WHITE)
 
-      drawRectCentered(Vec(-a/2-2.5f, -b/4), 5, 10, color = (if (one.is_active) RED else WHITE))
-      drawRectCentered(Vec(a/2+2.5f, -b/4), 5, 10, color = (if (three.is_active) RED else WHITE))
+      drawRectCentered(Vec(-a/2-2.5f, -b/4), 5, 10, color = if (one.is_active) RED else WHITE)
+      drawRectCentered(Vec(a/2+2.5f, -b/4), 5, 10, color = if (three.is_active) RED else WHITE)
     }
 
     drawFilledCircle(coord, 2, GREEN)                   // mass center
