@@ -1,8 +1,6 @@
 package su.msk.dunno.scage.tutorials.gravitation
 
-import net.scage.support.tracer3.CoordTracer
-import net.scage.support.Vec
-import net.scage.ScageLib._
+import com.github.dunnololda.scage.ScageLib._
 import Orbita._
 import collection.mutable.ArrayBuffer
 import org.lwjgl.opengl.GL11

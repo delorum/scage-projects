@@ -1,9 +1,8 @@
 package su.msk.dunno.scage.tutorials.gravitation
 
-import net.scage.support.Vec
-import net.scage.support.tracer3.DefaultTrace
 import Orbita._
 import collection.mutable.ArrayBuffer
+import com.github.dunnololda.scage.ScageLib._
 
 class MaterialPoint(init_velocity:Vec     = Vec.zero,
                     init_acceleration:Vec = Vec.zero,
@@ -93,10 +92,5 @@ class MaterialPoint(init_velocity:Vec     = Vec.zero,
     })
   }
 
-  def copy = {
-    val this_id = id
-    new MaterialPoint(velocity, acceleration, rotation, direction, mass, radius) {
-      override val id = this_id
-    }
-  }
+  def copy = new MaterialPoint(velocity, acceleration, rotation, direction, mass, radius)
 }

@@ -1,9 +1,6 @@
 package net.scage.blases.tests
 
-import collection.mutable.{ArrayBuffer, HashMap}
-import net.scage.{ScageApp, ScageScreenApp}
-import net.scage.support.tracer3.{Trace, ScageTracer}
-import net.scage.support.State
+import net.scage.ScageLib._
 
 object EventsTest extends ScageApp("Events Test") {
   /*private val my_events = new HashMap[String, ArrayBuffer[PartialFunction[Any, Unit]]]()

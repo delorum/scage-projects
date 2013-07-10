@@ -1,10 +1,6 @@
 package net.scage.blases.tests
 
-import net.scage.support.Vec
-import net.scage.handlers.Renderer
-import net.scage.{Screen, Scage, ScreenApp}
 import net.scage.ScageLib._
-import net.scage.handlers.controller2.{SingleController, MultiController}
 
 class Button(message: String, message_coord: Vec, width: Int, screen: Screen, onBtnPressed: => Any) {
   val vertices = List(Vec(message_coord) + Vec(-5, 20),
@@ -53,7 +49,7 @@ class Button(message: String, message_coord: Vec, width: Int, screen: Screen, on
   screen.leftMouse(onBtnDown = {m => if(visible && containsCoord(m)) onBtnPressed})
 }
 
-object MultiControllerTest extends ScreenApp("MultiController Test", window_width=640, window_height = 480) with MultiController {
+object MultiControllerTest extends ScreenApp("MultiController Test", width=640, height = 480) with MultiController {
   val pressme_button = new Button("Press Me", Vec(320, 240) + Vec(-40, 40), 100, MultiControllerTest, {
     println("MultiControllerTest: Pressed")
     MultiControllerTestScreen2.run()

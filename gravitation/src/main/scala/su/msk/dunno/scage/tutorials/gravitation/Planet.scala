@@ -1,8 +1,7 @@
 package su.msk.dunno.scage.tutorials.gravitation
 
-import net.scage.ScageLib._
 import Orbita._
-import net.scage.support.{ScageColor, Vec}
+import com.github.dunnololda.scage.ScageLib._
 
 class Planet(init_velocity:Vec, mass:Float, radius:Int, val planet_color:ScageColor)
 extends MaterialPoint(init_velocity = init_velocity, mass = mass, radius = radius) {

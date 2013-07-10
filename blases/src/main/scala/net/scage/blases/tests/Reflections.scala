@@ -1,9 +1,7 @@
 package net.scage.blases.tests
 
-import net.scage.ScageScreenApp
 import net.scage.ScageLib._
 import collection.mutable.ArrayBuffer
-import net.scage.support.{Vec, DVec}
 
 object Reflections extends ScageScreenApp("Reflections", 640, 480) {
   def lineFormula(v1: DVec, v2: DVec): (Double, Double) = {

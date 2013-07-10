@@ -1,8 +1,7 @@
 package su.msk.dunno.scage.tutorials.gravitation
 
-import net.scage.support.tracer3.CoordTracer
+import com.github.dunnololda.scage.ScageLib._
 import Orbita._
-import net.scage.support.Vec
 
 object OrbitalTracer extends CoordTracer[MaterialPoint] {
   private var _time = 0L

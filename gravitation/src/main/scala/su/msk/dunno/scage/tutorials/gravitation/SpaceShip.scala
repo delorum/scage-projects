@@ -1,8 +1,7 @@
 package su.msk.dunno.scage.tutorials.gravitation
 
-import net.scage.support.Vec
 import org.lwjgl.opengl.GL11
-import net.scage.ScageLib._
+import com.github.dunnololda.scage.ScageLib._
 import Orbita._
 
 class SpaceShip(init_velocity:Vec)

@@ -1,10 +1,7 @@
 package su.msk.dunno.scage.tutorials.snake
 
-import net.scage.ScageScreenApp
 import net.scage.ScageLib._
-import net.scage.support.{State, Vec}
 import com.weiglewilczek.slf4s.Logger
-import net.scage.support.tracer3.{TraceTrait, ScageTracer}
 
 object Snake extends ScageScreenApp("Snake") {
   private val log = Logger(this.getClass.getName)

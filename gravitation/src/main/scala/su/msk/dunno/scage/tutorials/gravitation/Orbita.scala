@@ -1,10 +1,7 @@
 package su.msk.dunno.scage.tutorials.gravitation
 
-import net.scage.ScreenApp
+import com.github.dunnololda.scage.ScageLib._
 import org.lwjgl.opengl.GL11
-import net.scage.ScageLib._
-import net.scage.support.Vec
-import net.scage.handlers.controller2.MultiController
 
 object Orbita extends ScreenApp("Orbita") with MultiController {
   val G = property("G", 5)
