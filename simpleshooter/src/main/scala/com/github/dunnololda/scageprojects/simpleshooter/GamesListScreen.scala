@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.scage.ScageLib._
-import com.github.dunnololda.simplenet.{State => NetState, UdpServerDisconnected, UdpServerConnected, NewUdpServerData, UdpNetClient}
+import com.github.dunnololda.simplenet.{State => NetState, _}
 import scala.collection.mutable.ArrayBuffer
 
 class GamesListScreen extends ScageScreen("Games List Screen") {
@@ -71,7 +71,9 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
   ))*/
 
   key(KEY_F1, onKeyDown = {
+    client.ignoreEvents = true
     new TacticShooterClient(None).run()
+    client.ignoreEvents = false
     is_list_received = false
   })
   key(KEY_F5, onKeyDown = is_list_received = false)
@@ -98,7 +100,9 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
           val all_join_options = games_interface.flatMap(_._2)
           if(idx >= 0 && all_join_options.length > idx) {
             val JoinOption(game_id, _, _, _, option_team) = all_join_options(idx)
+            client.ignoreEvents = true
             new TacticShooterClient(Some(JoinGame(game_id, option_team))).run()
+            client.ignoreEvents = false
             selected_game = None
             is_list_received = false
           }
