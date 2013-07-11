@@ -93,7 +93,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
               builder += ("gameentered" -> true, "map" -> game.map.netState)
             case None =>
               val new_game_id = nextId
-              val new_map = preloaded_map.copy() // TODO: allow to select map on creation
+              val new_map = preloaded_map.copy(control_points = preloaded_map.control_points.map(x => (x._1, x._2.copy(team = None, control_start_time_sec = 0l)))) // TODO: allow to select map on creation
               //println(new_map)
               val new_game = new TacticGame(new_game_id, map = new_map, count = mutable.HashMap(1 -> 0, 2 -> 0))
               games += (new_game_id -> new_game)
