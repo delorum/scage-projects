@@ -81,7 +81,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 640, 480) {
   keyIgnorePause(KEY_NUMPAD8, onKeyDown = {ship.eight.switchActive()})
   keyIgnorePause(KEY_NUMPAD9, onKeyDown = {ship.nine.switchActive()})
 
-  keyIgnorePause(KEY_NUMPAD5, onKeyDown = {ship.engines.foreach(_.power = 1f)})
+  keyIgnorePause(KEY_NUMPAD5, onKeyDown = {ship.engines.foreach(_.active = false)})
 
   keyIgnorePause(KEY_UP,   10, onKeyDown = {ship.engines.filter(_.active).foreach(_.power += 0.1f)})
   keyIgnorePause(KEY_DOWN, 10, onKeyDown = {ship.engines.filter(_.active).foreach(_.power -= 0.1f)})
@@ -119,7 +119,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 640, 480) {
   private var _center = ship.coord
   center = _center
 
-  render {
+  render {    // TODO: display list!
     val y = windowHeight/2-20
     val x = windowWidth/2-20
     val from1 = center + Vec(0, -y/globalScale)
@@ -140,12 +140,25 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 640, 480) {
   }
 
   interface {
-    print(s"Ускорение времени: x$time_mulitplier", 20, 140, ORANGE)
     print(fps, 20, windowHeight - 20, align = "top-left", color = DARK_GRAY)
     if(onPause) print("Пауза", windowCenter, align = "center", color = WHITE)
-    print(s"Режим камеры: $viewModeStr", 20, 100, ORANGE)
-    print("F1 - Справка, F2, F3, F4 - режимы камеры", windowWidth - 20, 20, align = "bottom-right", color = GREEN)
+    print("F1 - Справка, F2, F3, F4 - режимы камеры, P - пауза", windowWidth - 20, 20, align = "bottom-right", color = GREEN)
     print(s"сборка $appVersion", windowWidth - 20, windowHeight - 20, align = "top-right", color = DARK_GRAY)
+
+    print(s"Ускорение времени: x$time_mulitplier",
+      20, 140, ORANGE)
+    print(s"Режим камеры: $viewModeStr",
+      20, 120, ORANGE)
+    print(f"Мощность: ${ship.engines.find(_.active).map(e => e.power/e.max_power*100f).getOrElse(0f)}%.2f%",
+      20, 100, ORANGE)
+    print(f"Позиция: ${ship.coord.x}%.2f : ${ship.coord.y}%.2f",
+      20, 80, ORANGE)
+    print(f"Угловая скорость: ${ship.angularVelocity/math.Pi*180*60*base_dt}%.2f град/сек",
+      20, 60, ORANGE)
+    print(f"Скорость: ${ship.linearVelocity.norma*60*base_dt}%.2f м/сек ( velx = ${ship.linearVelocity.x*60*base_dt}%.2f м/сек, vely = ${ship.linearVelocity.y*60*base_dt}%.2f м/сек)",
+      20, 40, ORANGE)
+    print(s"Угол: ${(ship.rotation/math.Pi*180).toInt} град",
+      20, 20, ORANGE)
   }
 
   pause()
@@ -359,14 +372,5 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
 
     drawSlidingLines(body_trajectory, color = GREEN)
     drawSlidingLines(future_trajectory, color = YELLOW)
-  }
-
-  interface {
-    print(f"Позиция: ${coord.x}%.2f : ${coord.y}%.2f", 20, 80, ORANGE)
-    print(f"Угловая скорость: ${angular_velocity/math.Pi*180*60*base_dt}%.2f град/сек", 20, 60, ORANGE)
-    print(f"Скорость: ${linear_velocity.norma*60*base_dt}%.2f м/сек ( velx = ${linear_velocity.x*60*base_dt}%.2f м/сек, vely = ${linear_velocity.y*60*base_dt}%.2f м/сек)", 20, 40, ORANGE)
-    print(s"Угол: ${(_rotation/math.Pi*180).toInt} град", 20, 20, ORANGE)
-    /*print("F = "+_force, 20, 40, WHITE)
-    print("M = "+_M, 20, 20, WHITE)*/
   }
 }
