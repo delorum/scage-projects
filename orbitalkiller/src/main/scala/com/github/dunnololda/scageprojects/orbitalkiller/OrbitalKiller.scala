@@ -3,7 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import com.github.dunnololda.scage.ScageLib._
 import collection.mutable.ArrayBuffer
 
-object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
+object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 1024) {
   val G:Float = 20
   val base_dt = 0.01f // 1/60 секунды
   private var _time_mulitplier = 1
@@ -185,21 +185,20 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
     print(s"сборка $appVersion", windowWidth - 20, windowHeight - 20, align = "top-right", color = DARK_GRAY)
 
     print(s"Режим камеры: $viewModeStr",
-      20, 220, ORANGE)
+      20, 240, ORANGE)
     print(s"Ускорение времени: x${_time_mulitplier}",
-      20, 200, ORANGE)
+      20, 220, ORANGE)
     print(s"Корабельное время: ${timeStr(ship.time/60)}",
-      20, 180, ORANGE)
+      20, 200, ORANGE)
     print(s"Полетный режим: ${ship.flightModeStr}",
-      20, 160, ORANGE)
+      20, 180, ORANGE)
     print(s"Время работы двигателей: ${ship.engines_worktime_tacts} тактов (${timeStr(ship.engines_worktime_tacts*timeMultiplier/60)})",
-      20, 140, ORANGE)
-    print(f"Ориентация в момент выключения двигателей: ${
-      ship.future_trajectory.dropWhile(_._1 < ship.engines_stop_moment_seconds).headOption.getOrElse((ship.time, ship.currentBodyState))._2.ang/math.Pi*180
-    }%.0f град, ${
-      ship.future_trajectory.dropWhile(_._1 < ship.engines_stop_moment_seconds).headOption.getOrElse((ship.time, ship.currentBodyState))._2.ang_vel/math.Pi*180*60*base_dt
-    }%.2f град/сек", 20, 120, ORANGE)
+      20, 160, ORANGE)
     print(f"Мощность двигателей: ${ship.engines.find(_.active).map(e => e.power/e.max_power*100f).getOrElse(0f)}%.2f%",
+      20, 140, ORANGE)
+    print(f"Расстояние от центра планеты: ${ship.coord.dist(earth.coord)}%.2f м",
+      20, 120, ORANGE)
+    print(f"Скорость относительно центра планеты: ${ship.linearVelocity.*((ship.coord - earth.coord).n)*60*base_dt}%.2f м/сек",
       20, 100, ORANGE)
     print(f"Позиция: ${ship.coord.x}%.2f : ${ship.coord.y}%.2f",
       20, 80, ORANGE)
@@ -419,15 +418,27 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
     else if(angular_velocity < ang_vel_rad) rotateLeft()
   }
 
+  private def preserveAngle(angle_deg:Float) {
+    if(rotationDeg != angle_deg) {
+      if(rotationDeg > angle_deg) {
+        if(rotationDeg - angle_deg > 10) preserveAngularVelocity(-2)
+        else if(rotationDeg - angle_deg > 1) preserveAngularVelocity(-1)
+        else if(rotationDeg - angle_deg > 0.1f) preserveAngularVelocity(-0.1f)
+        else preserveAngularVelocity(0)
+      } else if(rotationDeg < angle_deg) {
+        if(rotationDeg - angle_deg < -10) preserveAngularVelocity(2)
+        else if(rotationDeg - angle_deg < -1) preserveAngularVelocity(1)
+        else if(rotationDeg - angle_deg < -0.1f) preserveAngularVelocity(0.1f)
+        else preserveAngularVelocity(0)
+      }
+    }
+  }
+
   actionIgnorePause {
     if(future_trajectory.isEmpty) updateFutureTrajectory()
   }
 
   action {
-    val pew = linear_velocity.deg(Vec(0, 1))
-    val r = rotationDeg - pew
-    println(s"$rotationDeg $pew $r")
-
     future_trajectory.remove(0)
     if(engines_worktime_tacts > 0) engines_worktime_tacts -= 1
     else if(engines.exists(_.active)) engines.foreach(_.active = false)
@@ -456,19 +467,7 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
       case 2 => // запрет вращения
         preserveAngularVelocity(0)
       case 3 => // ориентация по осям
-        if(rotationDeg != 0) {
-          if(rotationDeg > 0) {
-            if(rotationDeg > 10) preserveAngularVelocity(-2)
-            else if(rotationDeg > 1) preserveAngularVelocity(-1)
-            else if(rotationDeg > 0.1f) preserveAngularVelocity(-0.1f)
-            else preserveAngularVelocity(0)
-          } else if(rotationDeg < 0) {
-            if(rotationDeg < -10) preserveAngularVelocity(2)
-            else if(rotationDeg < -1) preserveAngularVelocity(1)
-            else if(rotationDeg < -0.1f) preserveAngularVelocity(0.1f)
-            else preserveAngularVelocity(0)
-          }
-        }
+        preserveAngle(0)
       case 4 => // ориентация по траектории
         val r = Vec(0,1).rotateRad(_rotation).deg(linear_velocity)
         if(r != 0) {
