@@ -132,6 +132,11 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
   keyIgnorePause(KEY_F3, onKeyDown = viewMode = 1)
   keyIgnorePause(KEY_F4, onKeyDown = viewMode = 2)
 
+  keyIgnorePause(KEY_1, onKeyDown = ship.flightMode = 1)
+  keyIgnorePause(KEY_2, onKeyDown = ship.flightMode = 2)
+  keyIgnorePause(KEY_3, onKeyDown = ship.flightMode = 3)
+  keyIgnorePause(KEY_4, onKeyDown = ship.flightMode = 4)
+
   keyIgnorePause(KEY_P, onKeyDown = switchPause())
 
   keyIgnorePause(KEY_F1, onKeyDown = {pause(); HelpScreen.run()})
@@ -142,14 +147,12 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
       else if(globalScale > 0.1f) globalScale -= 0.1f
       else globalScale -= 0.01f
     }
-    println(globalScale)
   })
   mouseWheelUpIgnorePause(onWheelUp = m => {
     if(globalScale < 5) {
       if(globalScale < 1) globalScale += 0.1f
       else globalScale += 1
     }
-    println(globalScale)
   })
 
   private var _center = ship.coord
@@ -182,10 +185,12 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
     print(s"сборка $appVersion", windowWidth - 20, windowHeight - 20, align = "top-right", color = DARK_GRAY)
 
     print(s"Режим камеры: $viewModeStr",
-      20, 200, ORANGE)
+      20, 220, ORANGE)
     print(s"Ускорение времени: x${_time_mulitplier}",
-      20, 180, ORANGE)
+      20, 200, ORANGE)
     print(s"Корабельное время: ${timeStr(ship.time/60)}",
+      20, 180, ORANGE)
+    print(s"Полетный режим: ${ship.flightModeStr}",
       20, 160, ORANGE)
     print(s"Время работы двигателей: ${ship.engines_worktime_tacts} тактов (${timeStr(ship.engines_worktime_tacts*timeMultiplier/60)})",
       20, 140, ORANGE)
@@ -298,8 +303,24 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
   private var angular_velocity:Float = 0f
   def angularVelocity = angular_velocity
 
-  private var _rotation:Float = init_rotation
+  private var _rotation:Float = init_rotation // in radians
   def rotation = _rotation
+  def rotationDeg = _rotation/math.Pi.toFloat*180
+
+  private var flight_mode = 1 // 1 - free, 2 - stop rotation, 3 - axis orientation, 4 - orbit orientation
+  def flightMode = flight_mode
+  def flightMode_=(new_flight_mode:Int) {
+    if(new_flight_mode > 0 && new_flight_mode < 5) {
+      flight_mode = new_flight_mode
+    }
+  }
+  def flightModeStr = flight_mode match {
+    case 1 => "свободный"
+    case 2 => "запрет вращения"
+    case 3 => "ориентация по осям"
+    case 4 => "ориентация по траектории"
+    case _ =>
+  }
 
   val two   = Engine(position = Vec(0, -b/2), force_dir = Vec(0, 1),  max_power = 10, sin_angle = 0, this)
   val eight = Engine(position = Vec(0, b/2),  force_dir = Vec(0, -1), max_power = 10, sin_angle = 0, this)
@@ -353,6 +374,7 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
   val trajectory_capacity = 100000
 
   val future_trajectory = ArrayBuffer[(Long, BodyState)]()
+  def future_trajectory_capacity = if(flight_mode == 1) 10000 else 100
 
   def updateFutureTrajectory() {
     future_trajectory.clear()
@@ -364,7 +386,7 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
                                           torque = (time, bs, other_bodies) => {
                                             currentTorque(time, bs)
                                           })((_time, List(currentBodyState)))
-      evolution.take(10000).map(x => (x._1, x._2.find(_.index == body_index).get))
+      evolution.take(future_trajectory_capacity).map(x => (x._1, x._2.find(_.index == body_index).get))
     }
   }
 
@@ -381,11 +403,31 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
     10f*e.power/e.max_power
   }
 
+  private def rotateRight() {
+    seven.active = true
+    engines.withFilter(e => e.active && e != seven).foreach(_.active = false)
+  }
+
+  private def rotateLeft() {
+    nine.active = true
+    engines.withFilter(e => e.active && e != nine).foreach(_.active = false)
+  }
+
+  private def preserveAngularVelocity(ang_vel_deg:Float) {
+    val ang_vel_rad = ang_vel_deg/180f*math.Pi.toFloat
+    if(angular_velocity > ang_vel_rad) rotateRight()
+    else if(angular_velocity < ang_vel_rad) rotateLeft()
+  }
+
   actionIgnorePause {
     if(future_trajectory.isEmpty) updateFutureTrajectory()
   }
 
   action {
+    val pew = linear_velocity.deg(Vec(0, 1))
+    val r = rotationDeg - pew
+    println(s"$rotationDeg $pew $r")
+
     future_trajectory.remove(0)
     if(engines_worktime_tacts > 0) engines_worktime_tacts -= 1
     else if(engines.exists(_.active)) engines.foreach(_.active = false)
@@ -408,6 +450,42 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
     _angular_acceleration = next_ang_acc
     angular_velocity = next_ang_vel
     _rotation = next_ang
+
+    flight_mode match {
+      case 1 =>
+      case 2 => // запрет вращения
+        preserveAngularVelocity(0)
+      case 3 => // ориентация по осям
+        if(rotationDeg != 0) {
+          if(rotationDeg > 0) {
+            if(rotationDeg > 10) preserveAngularVelocity(-2)
+            else if(rotationDeg > 1) preserveAngularVelocity(-1)
+            else if(rotationDeg > 0.1f) preserveAngularVelocity(-0.1f)
+            else preserveAngularVelocity(0)
+          } else if(rotationDeg < 0) {
+            if(rotationDeg < -10) preserveAngularVelocity(2)
+            else if(rotationDeg < -1) preserveAngularVelocity(1)
+            else if(rotationDeg < -0.1f) preserveAngularVelocity(0.1f)
+            else preserveAngularVelocity(0)
+          }
+        }
+      case 4 => // ориентация по траектории
+        val r = Vec(0,1).rotateRad(_rotation).deg(linear_velocity)
+        if(r != 0) {
+          if(r > 0) {
+            if(r > 10) preserveAngularVelocity(-2)
+            else if(r > 1) preserveAngularVelocity(-1)
+            else if(r > 0.1f) preserveAngularVelocity(-0.1f)
+            else preserveAngularVelocity(0)
+          } else if(r < 0) {
+            if(r < -10) preserveAngularVelocity(2)
+            else if(r < -1) preserveAngularVelocity(1)
+            else if(r < -0.1f) preserveAngularVelocity(0.1f)
+            else preserveAngularVelocity(0)
+          }
+        }
+      case _ =>
+    }
   }
 
   render {
@@ -445,6 +523,7 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
     drawFilledCircle(coord, 2, GREEN)                   // mass center
     drawLine(coord, coord + _force.n*20, RED)           // current force
     drawLine(coord, coord + linear_velocity.n*20, CYAN) // current velocity
+    drawLine(coord, coord + Vec(0,1).rotateRad(_rotation).n*200, WHITE) // current velocity
 
     drawSlidingLines(body_trajectory, color = GREEN)
     drawSlidingLines(future_trajectory.map(_._2.coord), color = YELLOW)
