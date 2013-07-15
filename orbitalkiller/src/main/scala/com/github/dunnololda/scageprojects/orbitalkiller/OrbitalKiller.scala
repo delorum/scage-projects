@@ -390,7 +390,7 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
                                           torque = (time, bs, other_bodies) => {
                                             currentTorque(time, bs)
                                           })((_time, List(currentBodyState)))
-      evolution.zipWithIndex.take(future_trajectory_capacity).filter(_._2 % trajectory_accuracy == 0).map(_._1).map(x => (x._1, x._2.find(_.index == body_index).get))
+      evolution.take(future_trajectory_capacity).zipWithIndex.filter(_._2 % trajectory_accuracy == 0).map(_._1).map(x => (x._1, x._2.find(_.index == body_index).get))
     }
   }
 
@@ -404,7 +404,7 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
         torque = (time, bs, other_bodies) => {
           currentTorque(time, bs)
         })((t, List(s)))
-      evolution.zipWithIndex.take(future_trajectory_capacity).filter(_._2 % trajectory_accuracy == 0).map(_._1).map(x => (x._1, x._2.find(_.index == body_index).get))
+      evolution.take(10000).zipWithIndex.filter(_._2 % trajectory_accuracy == 0).map(_._1).map(x => (x._1, x._2.find(_.index == body_index).get))
     }
   }
 
