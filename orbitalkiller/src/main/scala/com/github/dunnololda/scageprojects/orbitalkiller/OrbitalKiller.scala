@@ -2,6 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLib._
 import collection.mutable.ArrayBuffer
+import scala.collection.mutable
 
 object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
   val G:Float = 20
@@ -81,6 +82,91 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
     pewpew #:: systemEvolutionFrom(dt, force, torque)(pewpew)
   }
 
+  def gravityForce(body1_coord:Vec, body1_mass:Float, body2_coord:Vec, body2_mass:Float):Vec = {
+    (body1_coord - body2_coord).n*G*body1_mass*body2_mass/body1_coord.dist2(body2_coord)
+  }
+
+  private var _time = 0l   // tacts
+  def time = _time
+
+  private val current_body_states = mutable.HashMap[String, BodyState]()
+  def currentBodyState(index:String):Option[BodyState] = current_body_states.get(index)
+  def currentBodyStates = current_body_states.values.toList
+
+  def futureSystemEvolutionFrom(time:Long, body_states:List[BodyState]) = systemEvolutionFrom(
+    dt,
+    force = (time, bs, other_bodies) => {
+      bs.index match {
+        case ship.index =>
+          gravityForce(earth.coord, earth.mass, bs.coord, bs.mass) +
+          gravityForce(moon.coord, moon.mass, bs.coord, bs.mass) +
+          ship.currentReactiveForce(time, bs)
+        case _ => Vec.zero
+      }
+    },
+    torque = (time, bs, other_bodies) => {
+      bs.index match {
+        case ship.index =>
+          ship.currentTorque(time, bs)
+        case _ =>
+          0f
+      }
+    })((time, body_states))
+
+  private val real_system_evolution = systemEvolutionFrom(
+    dt,
+    force = (time, bs, other_bodies) => {
+      bs.index match {
+        case ship.index =>
+          gravityForce(earth.coord, earth.mass, bs.coord, bs.mass) +
+          gravityForce(moon.coord, moon.mass, bs.coord, bs.mass) +
+          ship.currentReactiveForce(time, bs)
+        case _ => Vec.zero
+      }
+    },
+    torque = (time, bs, other_bodies) => {
+      bs.index match {
+        case ship.index =>
+          ship.currentTorque(time, bs)
+        case _ =>
+          0f
+      }
+    })((0, List(ship.currentState))).iterator
+
+  val trajectory_accuracy = 100
+  val trajectory_capacity = 100000
+
+  private val future_trajectory = ArrayBuffer[(Long, List[BodyState])]()
+  private val future_trajectory_map = mutable.HashMap[String, List[(Long, BodyState)]]()
+  private def future_trajectory_capacity = if(ship.flightMode == 1) 10000 else 100
+
+  def updateFutureTrajectory() {
+    future_trajectory.clear()
+    future_trajectory ++= {
+      futureSystemEvolutionFrom(time, currentBodyStates)
+        .take(future_trajectory_capacity)
+        .zipWithIndex
+        .filter(_._2 % trajectory_accuracy == 0)
+        .map(_._1)
+    }
+    future_trajectory_map.clear()
+    val x = future_trajectory.flatMap(x => x._2.map(y => (y.index, (x._1, y))))
+    future_trajectory_map ++= x
+  }
+
+  def continueFutureTrajectory() {
+    val (t, s) = future_trajectory.lastOption.getOrElse((time, currentBodyStates))
+    future_trajectory ++= {
+      futureSystemEvolutionFrom(t, s)
+        .take(future_trajectory_capacity)
+        .zipWithIndex
+        .filter(_._2 % trajectory_accuracy == 0)
+        .map(_._1)
+    }
+    future_trajectory_map.clear()
+    future_trajectory_map ++= future_trajectory.flatMap(x => x._2.map(y => (y.index, (x._1, y))))
+  }
+
   keyIgnorePause(KEY_NUMPAD1, onKeyDown = {ship.one.switchActive()})
   keyIgnorePause(KEY_NUMPAD2, onKeyDown = {ship.two.switchActive()})
   keyIgnorePause(KEY_NUMPAD3, onKeyDown = {ship.three.switchActive()})
@@ -96,29 +182,29 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
   keyIgnorePause(KEY_DOWN, 10, onKeyDown = {ship.engines.filter(_.active).foreach(_.power -= 0.1f)})
   keyIgnorePause(KEY_RIGHT,   10, onKeyDown = {
     ship.engines_worktime_tacts += 1
-    ship.engines_stop_moment_seconds = ship.time + ship.engines_worktime_tacts*_time_mulitplier
-    ship.updateFutureTrajectory()
+    ship.engines_stop_moment_seconds = time + ship.engines_worktime_tacts*_time_mulitplier
+    updateFutureTrajectory()
   })
   keyIgnorePause(KEY_LEFT, 10, onKeyDown = {
     if(ship.engines_worktime_tacts > 0) {
       ship.engines_worktime_tacts -= 1
-      ship.engines_stop_moment_seconds = ship.time + ship.engines_worktime_tacts*_time_mulitplier
-      ship.updateFutureTrajectory()
+      ship.engines_stop_moment_seconds = time + ship.engines_worktime_tacts*_time_mulitplier
+      updateFutureTrajectory()
     }
   })
 
   keyIgnorePause(KEY_ADD, 100, onKeyDown = {
     _time_mulitplier += 1
     _dt = _time_mulitplier*base_dt
-    ship.engines_stop_moment_seconds = ship.time + ship.engines_worktime_tacts*_time_mulitplier
-    ship.updateFutureTrajectory()
+    ship.engines_stop_moment_seconds = time + ship.engines_worktime_tacts*_time_mulitplier
+    updateFutureTrajectory()
   })
   keyIgnorePause(KEY_SUBTRACT, 100, onKeyDown = {
     if(_time_mulitplier > 1) {
       _time_mulitplier -= 1
       _dt = _time_mulitplier*base_dt
-      ship.engines_stop_moment_seconds = ship.time + ship.engines_worktime_tacts*_time_mulitplier
-      ship.updateFutureTrajectory()
+      ship.engines_stop_moment_seconds = time + ship.engines_worktime_tacts*_time_mulitplier
+      updateFutureTrajectory()
     }
   })
 
@@ -141,8 +227,8 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
 
   keyIgnorePause(KEY_F1, onKeyDown = {pause(); HelpScreen.run()})
 
-  keyIgnorePause(KEY_N, 100, onKeyDown = ship.continueFutureTrajectory())
-  keyIgnorePause(KEY_C, onKeyDown = ship.updateFutureTrajectory())
+  keyIgnorePause(KEY_N, 100, onKeyDown = continueFutureTrajectory())
+  keyIgnorePause(KEY_C, onKeyDown = updateFutureTrajectory())
 
   mouseWheelDownIgnorePause(onWheelDown = m => {
     if(globalScale > 0.01f) {
@@ -157,6 +243,19 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
       else globalScale += 1
     }
   })
+
+  actionIgnorePause {
+    if(future_trajectory.isEmpty) updateFutureTrajectory()
+  }
+
+  action {
+    future_trajectory --= future_trajectory.takeWhile(_._1 < time)
+    val (t, body_states) = real_system_evolution.next()
+    _time = t
+    body_states.foreach {
+      case bs => current_body_states(bs.index) = bs
+    }
+  }
 
   private var _center = ship.coord
   center = _center
@@ -179,6 +278,10 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
     drawLine(from2, to2, DARK_GRAY)
     drawLine(to2, arrow21, DARK_GRAY)
     drawLine(to2, arrow22, DARK_GRAY)
+
+    future_trajectory_map.foreach {
+      case (index, body_states) => drawSlidingLines(body_states.map(_._2.coord), color = YELLOW)
+    }
   }
 
   interface {
@@ -191,7 +294,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
       20, 240, ORANGE)
     print(s"Ускорение времени: x${_time_mulitplier}",
       20, 220, ORANGE)
-    print(s"Корабельное время: ${timeStr(ship.time/60)}",
+    print(s"Время: ${timeStr(time/60)}",
       20, 200, ORANGE)
     print(s"Полетный режим: ${ship.flightModeStr}",
       20, 180, ORANGE)
@@ -230,7 +333,7 @@ case class Engine(position:Vec, force_dir:Vec, max_power:Float, sin_angle:Float,
   def power_=(new_power:Float) {
     if(new_power >= 1f && new_power < max_power && new_power != _power) {
       _power = new_power
-      ship.updateFutureTrajectory()
+      updateFutureTrajectory()
     }
   }
 
@@ -245,10 +348,10 @@ case class Engine(position:Vec, force_dir:Vec, max_power:Float, sin_angle:Float,
         _power = 1f
         if(ship.engines_worktime_tacts == 0) {
           ship.engines_worktime_tacts = 10
-          ship.engines_stop_moment_seconds = ship.time + ship.engines_worktime_tacts*timeMultiplier
+          ship.engines_stop_moment_seconds = time + ship.engines_worktime_tacts*timeMultiplier
         }
       }
-      ship.updateFutureTrajectory()
+      updateFutureTrajectory()
     }
   }
   def switchActive() {
@@ -256,9 +359,9 @@ case class Engine(position:Vec, force_dir:Vec, max_power:Float, sin_angle:Float,
     if(is_active) {
       _power = 1f
       ship.engines_worktime_tacts = 10
-      ship.engines_stop_moment_seconds = ship.time + ship.engines_worktime_tacts*timeMultiplier
+      ship.engines_stop_moment_seconds = time + ship.engines_worktime_tacts*timeMultiplier
     }
-    ship.updateFutureTrajectory()
+    updateFutureTrajectory()
   }
 }
 
@@ -275,10 +378,7 @@ case class BodyState(index:String,
                      ang:Float)
 
 class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zero, init_rotation:Float = 0f) {
-  val body_index = System.currentTimeMillis()+"-"+(math.random*1000).toInt
-
-  private var _time = 0l
-  def time = _time  // seconds
+  val index = s"${System.currentTimeMillis()}-${(math.random*1000).toInt}"
 
   var engines_worktime_tacts = 0l
   var engines_stop_moment_seconds = 0l
@@ -337,30 +437,14 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
 
   val engines = List(one, two, three, four, six, seven, eight, nine)
 
-  def currentBodyState = BodyState(body_index, mass, I, _force, _linear_acceleration, linear_velocity, _coord, _M, _angular_acceleration, angular_velocity, _rotation)
-  def bodyEvolution = systemEvolutionFrom(dt,
-                                          force = (time, bs, other_bodies) => {
-                                            currentForce(time, bs)
-                                          },
-                                          torque = (time, bs, other_bodies) => {
-                                            currentTorque(time, bs)
-                                          })((0, List(currentBodyState))).map(x => (x._1, x._2.find(_.index == body_index).get))
-  private val real_body_evolution = bodyEvolution.iterator
+  def currentState = currentBodyState(index).getOrElse(BodyState(index, mass, I, _force, _linear_acceleration, linear_velocity, _coord, _M, _angular_acceleration, angular_velocity, _rotation))
 
-  def currentForce(time:Long, bs:BodyState):Vec = {
-    {
-      if(time < engines_stop_moment_seconds) {
-        engines.filter(_.active).foldLeft(Vec.zero) {
-          case (sum, e) => sum + e.force.rotateRad(bs.ang)
-        }
-      } else Vec.zero
-    } + {  // силя тяготения плюс третий закон ньютона
-      /*if(earth.coord.dist2(bs.coord) > (earth.radius + (a+b)/2)*(earth.radius + (a+b)/2)) {*/
-        (earth.coord - bs.coord).n*G*bs.mass*earth.mass/earth.coord.dist2(bs.coord)
-      /*} else Vec.zero*/
-    } + {
-      (moon.coord - bs.coord).n*G*bs.mass*moon.mass/moon.coord.dist2(bs.coord)
-    }
+  def currentReactiveForce(time:Long, bs:BodyState):Vec = {
+    if(time < engines_stop_moment_seconds) {
+      engines.filter(_.active).foldLeft(Vec.zero) {
+        case (sum, e) => sum + e.force.rotateRad(bs.ang)
+      }
+    } else Vec.zero
   }
 
   def currentTorque(time:Long, bs:BodyState):Float = {
@@ -372,41 +456,8 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
   }
 
   private var skipped_points = 0
-  val trajectory_accuracy = 100
-
   private val body_trajectory = ArrayBuffer[Vec]()
-  val trajectory_capacity = 100000
 
-  val future_trajectory = ArrayBuffer[(Long, BodyState)]()
-  def future_trajectory_capacity = if(flight_mode == 1) 10000 else 100
-
-  def updateFutureTrajectory() {
-    future_trajectory.clear()
-    future_trajectory ++= {
-      val evolution = systemEvolutionFrom(dt,
-                                          force = (time, bs, other_bodies) => {
-                                            currentForce(time, bs)
-                                          },
-                                          torque = (time, bs, other_bodies) => {
-                                            currentTorque(time, bs)
-                                          })((_time, List(currentBodyState)))
-      evolution.take(future_trajectory_capacity).zipWithIndex.filter(_._2 % trajectory_accuracy == 0).map(_._1).map(x => (x._1, x._2.find(_.index == body_index).get))
-    }
-  }
-
-  def continueFutureTrajectory() {
-    val (t, s) = future_trajectory.lastOption.getOrElse((_time, currentBodyState))
-    future_trajectory ++= {
-      val evolution = systemEvolutionFrom(dt,
-        force = (time, bs, other_bodies) => {
-          currentForce(time, bs)
-        },
-        torque = (time, bs, other_bodies) => {
-          currentTorque(time, bs)
-        })((t, List(s)))
-      evolution.take(10000).zipWithIndex.filter(_._2 % trajectory_accuracy == 0).map(_._1).map(x => (x._1, x._2.find(_.index == body_index).get))
-    }
-  }
 
   def switchEngine(e:Engine) {
     e.switchActive()
@@ -455,18 +506,13 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
     }
   }
 
-  actionIgnorePause {
-    if(future_trajectory.isEmpty) updateFutureTrajectory()
-  }
+
 
   action {
-    future_trajectory --= future_trajectory.takeWhile(_._1 < _time)
     if(engines_worktime_tacts > 0) engines_worktime_tacts -= 1
     else if(engines.exists(_.active)) engines.foreach(_.active = false)
 
-    val (t, BodyState(_, _, _, next_force, next_acc, next_vel, next_coord, next_torque, next_ang_acc, next_ang_vel, next_ang)) = real_body_evolution.next()
-
-    _time = t
+    val BodyState(_, _, _, next_force, next_acc, next_vel, next_coord, next_torque, next_ang_acc, next_ang_vel, next_ang) = currentState
 
     _force = next_force
 
@@ -545,6 +591,5 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
     drawLine(coord, coord + linear_velocity.n*20, CYAN) // current velocity
 
     drawSlidingLines(body_trajectory, color = GREEN)
-    drawSlidingLines(future_trajectory.map(_._2.coord), color = YELLOW)
   }
 }
