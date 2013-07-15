@@ -17,7 +17,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
   val ship = new Ship(a = 50, b = 100,
     init_coord = ship_start_position,
     init_velocity = ship_start_position.n.rotateDeg(90)*math.sqrt(G*earth.mass/earth.coord.dist(ship_start_position)),
-    init_rotation = math.Pi.toFloat/4
+    init_rotation = 45
   )
 
   private var view_mode = 0
@@ -70,9 +70,9 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
       val next_coord = bs.coord + next_vel*dt
 
       val next_torque = -torque(time, bs, bodies.filterNot(_ == bs))
-      val next_ang_acc = next_torque / bs.I
+      val next_ang_acc = (next_torque / bs.I)/math.Pi.toFloat*180f  // in degrees
       val next_ang_vel = bs.ang_vel + next_ang_acc*dt
-      val next_ang = (bs.ang + next_ang_vel*dt) % (2*math.Pi.toFloat)
+      val next_ang = (bs.ang + next_ang_vel*dt) % 360f
 
       bs.copy(force = next_force, acc = next_acc, vel = next_vel, coord = next_coord, torque = next_torque, ang_acc= next_ang_acc, ang_vel = next_ang_vel, ang = next_ang)
     }
@@ -205,11 +205,11 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
       20, 100, ORANGE)
     print(f"Позиция: ${ship.coord.x}%.2f : ${ship.coord.y}%.2f",
       20, 80, ORANGE)
-    print(f"Угловая скорость: ${ship.angularVelocity/math.Pi*180*60*base_dt}%.2f град/сек",
+    print(f"Угловая скорость: ${ship.angularVelocity*60*base_dt}%.2f град/сек",
       20, 60, ORANGE)
     print(f"Скорость: ${ship.linearVelocity.norma*60*base_dt}%.2f м/сек ( velx = ${ship.linearVelocity.x*60*base_dt}%.2f м/сек, vely = ${ship.linearVelocity.y*60*base_dt}%.2f м/сек)",
       20, 40, ORANGE)
-    print(s"Угол: ${(ship.rotation/math.Pi*180).toInt} град",
+    print(f"Угол: ${ship.rotation}%.2f град",
       20, 20, ORANGE)
   }
 
@@ -305,9 +305,8 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
   private var angular_velocity:Float = 0f
   def angularVelocity = angular_velocity
 
-  private var _rotation:Float = init_rotation // in radians
+  private var _rotation:Float = init_rotation // in degrees
   def rotation = _rotation
-  def rotationDeg = _rotation/math.Pi.toFloat*180
 
   private var flight_mode = 1 // 1 - free, 2 - stop rotation, 3 - axis orientation, 4 - orbit orientation
   def flightMode = flight_mode
@@ -433,24 +432,24 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
   }
 
   private def preserveAngularVelocity(ang_vel_deg:Float) {
-    val difference = angular_velocity*180/math.Pi.toFloat - ang_vel_deg
+    val difference = angular_velocity - ang_vel_deg
     if(difference > 0.01f) rotateRight()
     else if(difference < -0.01f) rotateLeft()
   }
 
   private def preserveAngle(angle_deg:Float) {
-    if(rotationDeg != angle_deg) {
-      if(rotationDeg > angle_deg) {
-        if(rotationDeg - angle_deg > 20) preserveAngularVelocity(-10)
-        if(rotationDeg - angle_deg > 10) preserveAngularVelocity(-5)
-        else if(rotationDeg - angle_deg > 1) preserveAngularVelocity(-1)
-        else if(rotationDeg - angle_deg > 0.1f) preserveAngularVelocity(-0.1f)
+    if(_rotation != angle_deg) {
+      if(_rotation > angle_deg) {
+        if(_rotation - angle_deg > 20) preserveAngularVelocity(-10)
+        if(_rotation - angle_deg > 10) preserveAngularVelocity(-5)
+        else if(_rotation - angle_deg > 1) preserveAngularVelocity(-1)
+        else if(_rotation - angle_deg > 0.1f) preserveAngularVelocity(-0.1f)
         else preserveAngularVelocity(0)
-      } else if(rotationDeg < angle_deg) {
-        if(rotationDeg - angle_deg < -20) preserveAngularVelocity(10)
-        if(rotationDeg - angle_deg < -10) preserveAngularVelocity(5)
-        else if(rotationDeg - angle_deg < -1) preserveAngularVelocity(1)
-        else if(rotationDeg - angle_deg < -0.1f) preserveAngularVelocity(0.1f)
+      } else if(_rotation < angle_deg) {
+        if(_rotation - angle_deg < -20) preserveAngularVelocity(10)
+        if(_rotation - angle_deg < -10) preserveAngularVelocity(5)
+        else if(_rotation - angle_deg < -1) preserveAngularVelocity(1)
+        else if(_rotation - angle_deg < -0.1f) preserveAngularVelocity(0.1f)
         else preserveAngularVelocity(0)
       }
     }
@@ -491,19 +490,19 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
     flight_mode match {
       case 1 =>
       case 2 => // запрет вращения
-        if(math.abs(angular_velocity*180f/math.Pi.toFloat) < 0.01f) flight_mode = 1
+        if(math.abs(angular_velocity) < 0.01f) flight_mode = 1
         else preserveAngularVelocity(0)
       case 3 => // ориентация по осям
-        if(math.abs(rotationDeg) < 0.1f) flight_mode = 2
+        if(math.abs(_rotation) < 0.1f) flight_mode = 2
         else preserveAngle(0)
       case 4 => // ориентация по траектории
         val r = Vec(0,1).deg(linear_velocity)
         val angle = if(linear_velocity.x > 0) {
           val x = 360-r
           val y = -r
-          if(math.abs(rotationDeg - x) < math.abs(rotationDeg - y)) x else y
+          if(math.abs(_rotation - x) < math.abs(_rotation - y)) x else y
         } else r
-        if(math.abs(angle - rotationDeg) < 0.1f) flight_mode = 2
+        if(math.abs(angle - _rotation) < 0.1f) flight_mode = 2
         else preserveAngle(angle)
       case _ =>
     }
@@ -512,7 +511,7 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
   render {
     openglLocalTransform {
       openglMove(_coord)
-      openglRotateRad(_rotation)
+      openglRotateDeg(_rotation)
       drawRectCentered(Vec.zero, a, b, color = WHITE)
       drawLine(Vec(-a/2, b/4 + b/8), Vec(a/2, b/4 + b/8), color = WHITE)
 
