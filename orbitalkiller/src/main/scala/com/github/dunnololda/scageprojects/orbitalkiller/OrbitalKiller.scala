@@ -13,7 +13,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
   def dt = _dt
 
   val earth = new Star(mass = 10000, coord = Vec.zero, radius = 3000)
-  val moon = new Star(mass = 5000, coord = Vec(-earth.radius*10f, earth.radius*10f), radius = 1000)
+  val moon = new Star(mass = 1000, coord = Vec(-earth.radius*10f, earth.radius*10f), radius = 1000)
   val ship_start_position = Vec(earth.radius*1.5f, earth.radius*1.5f)
   val ship = new Ship(a = 50, b = 100,
     init_coord = ship_start_position,
@@ -133,12 +133,32 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
       }
     })((0, List(ship.currentState))).iterator
 
+  private def nextStep() {
+    val (t, body_states) = real_system_evolution.next()
+    _time = t
+    body_states.foreach {
+      case bs => current_body_states(bs.index) = bs
+    }
+  }
+  nextStep()
+
   val trajectory_accuracy = 100
   val trajectory_capacity = 100000
 
   private val future_trajectory = ArrayBuffer[(Long, List[BodyState])]()
-  private val future_trajectory_map = mutable.HashMap[String, List[(Long, BodyState)]]()
+  private val future_trajectory_map = mutable.HashMap[String, ArrayBuffer[(Long, BodyState)]]()
   private def future_trajectory_capacity = if(ship.flightMode == 1) 10000 else 100
+
+  private def updateFutureTrajectoryMap() {
+    future_trajectory_map.clear()
+    future_trajectory.foreach {
+      case (time_moment, body_states) =>
+        body_states.foreach {
+          case bs =>
+            future_trajectory_map.getOrElseUpdate(bs.index, ArrayBuffer[(Long, BodyState)]()) += (time_moment -> bs)
+        }
+    }
+  }
 
   def updateFutureTrajectory() {
     future_trajectory.clear()
@@ -149,9 +169,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
         .filter(_._2 % trajectory_accuracy == 0)
         .map(_._1)
     }
-    future_trajectory_map.clear()
-    val x = future_trajectory.flatMap(x => x._2.map(y => (y.index, (x._1, y))))
-    future_trajectory_map ++= x
+    updateFutureTrajectoryMap()
   }
 
   def continueFutureTrajectory() {
@@ -163,8 +181,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
         .filter(_._2 % trajectory_accuracy == 0)
         .map(_._1)
     }
-    future_trajectory_map.clear()
-    future_trajectory_map ++= future_trajectory.flatMap(x => x._2.map(y => (y.index, (x._1, y))))
+    updateFutureTrajectoryMap()
   }
 
   keyIgnorePause(KEY_NUMPAD1, onKeyDown = {ship.one.switchActive()})
@@ -202,6 +219,26 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
   keyIgnorePause(KEY_SUBTRACT, 100, onKeyDown = {
     if(_time_mulitplier > 1) {
       _time_mulitplier -= 1
+      _dt = _time_mulitplier*base_dt
+      ship.engines_stop_moment_seconds = time + ship.engines_worktime_tacts*_time_mulitplier
+      updateFutureTrajectory()
+    }
+  })
+
+  keyIgnorePause(KEY_MULTIPLY, 100, onKeyDown = {
+    _time_mulitplier += 40
+    _dt = _time_mulitplier*base_dt
+    ship.engines_stop_moment_seconds = time + ship.engines_worktime_tacts*_time_mulitplier
+    updateFutureTrajectory()
+  })
+  keyIgnorePause(KEY_DIVIDE, 100, onKeyDown = {
+    if(_time_mulitplier > 40) {
+      _time_mulitplier -= 40
+      _dt = _time_mulitplier*base_dt
+      ship.engines_stop_moment_seconds = time + ship.engines_worktime_tacts*_time_mulitplier
+      updateFutureTrajectory()
+    } else if (_time_mulitplier != 1) {
+      _time_mulitplier = 1
       _dt = _time_mulitplier*base_dt
       ship.engines_stop_moment_seconds = time + ship.engines_worktime_tacts*_time_mulitplier
       updateFutureTrajectory()
@@ -249,12 +286,9 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
   }
 
   action {
-    future_trajectory --= future_trajectory.takeWhile(_._1 < time)
-    val (t, body_states) = real_system_evolution.next()
-    _time = t
-    body_states.foreach {
-      case bs => current_body_states(bs.index) = bs
-    }
+    future_trajectory --= future_trajectory.takeWhile(_._1 < _time)
+    future_trajectory_map.values.foreach(t => t --= t.takeWhile((_._1 < _time)))
+    nextStep()
   }
 
   private var _center = ship.coord
@@ -294,7 +328,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
       20, 240, ORANGE)
     print(s"Ускорение времени: x${_time_mulitplier}",
       20, 220, ORANGE)
-    print(s"Время: ${timeStr(time/60)}",
+    print(s"Время: ${timeStr(_time/60)}",
       20, 200, ORANGE)
     print(s"Полетный режим: ${ship.flightModeStr}",
       20, 180, ORANGE)
