@@ -33,7 +33,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 800, 600) {
       case 1 =>
         center = ship.coord
         rotationPoint = ship.coord
-        rotationAngleRad = -ship.rotation
+        rotationAngleDeg = -ship.rotation
         view_mode = 1
       case 2 =>
         center = earth.coord
