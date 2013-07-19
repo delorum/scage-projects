@@ -323,14 +323,12 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
       else globalScale -= 0.01f
       if(globalScale < 0.01f) globalScale = 0.01f
     }
-    println(globalScale)
   })
   mouseWheelUpIgnorePause(onWheelUp = m => {
     if(globalScale < 5) {
       if(globalScale < 1) globalScale += 0.1f
       else globalScale += 1
     }
-    println(globalScale)
   })
 
   actionIgnorePause {
@@ -417,6 +415,8 @@ class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velo
   private var skipped_points = 0
   private val body_trajectory = ArrayBuffer[Vec]()
 
+  private val gravitational_radius = (coord.dist(sun.coord)*math.sqrt(mass/sun.mass)/(1 + math.sqrt(mass/sun.mass))).toFloat
+
   action {
     if(skipped_points == trajectory_accuracy-1) {
       body_trajectory += coord
@@ -429,6 +429,7 @@ class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velo
   render {
     drawCircle(coord, radius, color = WHITE)
     drawCircle(coord, 3*radius, color = DARK_GRAY)
+    drawCircle(coord, gravitational_radius, color = DARK_GRAY)
     drawSlidingLines(body_trajectory, color = GREEN)
   }
 
