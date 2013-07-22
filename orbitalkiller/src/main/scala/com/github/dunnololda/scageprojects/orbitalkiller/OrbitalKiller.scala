@@ -201,15 +201,15 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   }
 
   def satelliteSpeedInPoint(coord:Vec, speed:Vec):String = {
-    if(coord.dist(earth.coord) < 3*earth.radius) {
+    if(coord.dist(earth.coord) < earth.gravitational_radius) {
       val ss = satelliteSpeed(coord - earth.coord, earth.mass)
       val d = ss - speed
       f"(velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек), разница: (velx = ${d.x*60*base_dt}%.2f м/сек, vely = ${d.y*60*base_dt}%.2f м/сек)"
-    } else if(coord.dist(sun.coord) < 3*sun.radius) {
+    } else {
       val ss = satelliteSpeed(coord - sun.coord, sun.mass)
       val d = ss - speed
       f"(velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек), разница: (velx = ${d.x*60*base_dt}%.2f м/сек, vely = ${d.y*60*base_dt}%.2f м/сек)"
-    } else "N/A"
+    }
   }
 
   def linearSpeedWhenEnginesOff:String = {
@@ -415,7 +415,7 @@ class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velo
   private var skipped_points = 0
   private val body_trajectory = ArrayBuffer[Vec]()
 
-  private val gravitational_radius = (coord.dist(sun.coord)*math.sqrt(mass/sun.mass)/(1 + math.sqrt(mass/sun.mass))).toFloat
+  val gravitational_radius = (coord.dist(sun.coord)*math.sqrt(mass/sun.mass)/(1 + math.sqrt(mass/sun.mass))).toFloat
 
   action {
     if(skipped_points == trajectory_accuracy-1) {
@@ -428,7 +428,6 @@ class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velo
 
   render {
     drawCircle(coord, radius, color = WHITE)
-    drawCircle(coord, 3*radius, color = DARK_GRAY)
     drawCircle(coord, gravitational_radius, color = DARK_GRAY)
     drawSlidingLines(body_trajectory, color = GREEN)
   }
@@ -441,7 +440,6 @@ class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velo
 class Star(val mass:Float, val coord:Vec, val radius:Float) {
   render {
     drawCircle(coord, radius, color = WHITE)
-    drawCircle(coord, 3*radius, color = DARK_GRAY)
   }
 }
 
