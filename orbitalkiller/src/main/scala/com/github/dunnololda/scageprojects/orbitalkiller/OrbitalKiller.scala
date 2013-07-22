@@ -15,7 +15,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   private var _time = 0l   // tacts
   def time = _time
 
-  private def timeStr(time_sec:Long):String = {
+  def timeStr(time_sec:Long):String = {
     val sec  = 1l
     val min  = sec*60
     val hour  = min*60
@@ -190,6 +190,10 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
         center = sun.coord
         rotationAngle = 0
         view_mode = 2
+      case 3 =>
+        center = earth.coord
+        rotationAngle = 0
+        view_mode = 3
       case _ =>
     }
   }
@@ -205,15 +209,15 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
       val ss = satelliteSpeed(coord - earth.coord, earth.mass)
       val d = ss - speed
       f"(velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек), разница: (velx = ${d.x*60*base_dt}%.2f м/сек, vely = ${d.y*60*base_dt}%.2f м/сек)"
-    } else {
+    } else "N/A"/*{
       val ss = satelliteSpeed(coord - sun.coord, sun.mass)
       val d = ss - speed
       f"(velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек), разница: (velx = ${d.x*60*base_dt}%.2f м/сек, vely = ${d.y*60*base_dt}%.2f м/сек)"
-    }
+    }*/
   }
 
   def linearSpeedWhenEnginesOff:String = {
-    future_trajectory.find(_._1 >= ship.engines_stop_moment_seconds) match {
+    future_trajectory.find(_._1 >= ship.engines.map(_.engines_stop_moment_seconds).max) match {
       case Some((t, lbs)) =>
         lbs.find(_.index == ship.index) match {
           case Some(bs) =>
@@ -226,7 +230,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   }
 
   def angularSpeedWhenEnginesOff:String = {
-    future_trajectory.find(_._1 >= ship.engines_stop_moment_seconds) match {
+    future_trajectory.find(_._1 >= ship.engines.map(_.engines_stop_moment_seconds).max) match {
       case Some((t, lbs)) =>
         lbs.find(_.index == ship.index) match {
           case Some(bs) =>
@@ -249,32 +253,40 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
 
   keyIgnorePause(KEY_NUMPAD5, onKeyDown = {ship.engines.foreach(_.active = false)})
 
-  keyIgnorePause(KEY_UP,   10, onKeyDown = {ship.engines.filter(_.active).foreach(_.power += 0.1f)})
-  keyIgnorePause(KEY_DOWN, 10, onKeyDown = {ship.engines.filter(_.active).foreach(_.power -= 0.1f)})
+  keyIgnorePause(KEY_UP,   10, onKeyDown = {ship.selected_engine.foreach(e => e.power += 0.1f)})
+  keyIgnorePause(KEY_DOWN, 10, onKeyDown = {ship.selected_engine.foreach(e => e.power -= 0.1f)})
   keyIgnorePause(KEY_RIGHT,   10, onKeyDown = {
-    ship.engines_worktime_tacts += 1
-    ship.engines_stop_moment_seconds = time + ship.engines_worktime_tacts*_time_mulitplier
-    updateFutureTrajectory()
+    ship.selected_engine.foreach(e => {
+      e.engines_worktime_tacts += 1
+      e.engines_stop_moment_seconds = time + e.engines_worktime_tacts*_time_mulitplier
+      updateFutureTrajectory()
+    })
   })
   keyIgnorePause(KEY_LEFT, 10, onKeyDown = {
-    if(ship.engines_worktime_tacts > 0) {
-      ship.engines_worktime_tacts -= 1
-      ship.engines_stop_moment_seconds = time + ship.engines_worktime_tacts*_time_mulitplier
-      updateFutureTrajectory()
-    }
+    ship.selected_engine.foreach(e => {
+      if(e.engines_worktime_tacts > 0) {
+        e.engines_worktime_tacts -= 1
+        e.engines_stop_moment_seconds = time + e.engines_worktime_tacts*_time_mulitplier
+        updateFutureTrajectory()
+      }
+    })
   })
 
   keyIgnorePause(KEY_ADD, 100, onKeyDown = {
     _time_mulitplier += 1
     _dt = _time_mulitplier*base_dt
-    ship.engines_stop_moment_seconds = time + ship.engines_worktime_tacts*_time_mulitplier
-    updateFutureTrajectory()
+    ship.selected_engine.foreach(e => {
+      e.engines_stop_moment_seconds = time + e.engines_worktime_tacts*_time_mulitplier
+      updateFutureTrajectory()
+    })
   })
   keyIgnorePause(KEY_SUBTRACT, 100, onKeyDown = {
     if(_time_mulitplier > 1) {
       _time_mulitplier -= 1
       _dt = _time_mulitplier*base_dt
-      ship.engines_stop_moment_seconds = time + ship.engines_worktime_tacts*_time_mulitplier
+      ship.engines.filter(_.active).foreach(e => {
+        e.engines_stop_moment_seconds = time + e.engines_worktime_tacts*_time_mulitplier
+      })
       updateFutureTrajectory()
     }
   })
@@ -282,14 +294,18 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   keyIgnorePause(KEY_MULTIPLY, 100, onKeyDown = {
     _time_mulitplier += 40
     _dt = _time_mulitplier*base_dt
-    ship.engines_stop_moment_seconds = time + ship.engines_worktime_tacts*_time_mulitplier
+    ship.engines.filter(_.active).foreach(e => {
+      e.engines_stop_moment_seconds = time + e.engines_worktime_tacts*_time_mulitplier
+    })
     updateFutureTrajectory()
   })
   keyIgnorePause(KEY_DIVIDE, 100, onKeyDown = {
     if (_time_mulitplier != 1) {
       _time_mulitplier = 1
       _dt = _time_mulitplier*base_dt
-      ship.engines_stop_moment_seconds = time + ship.engines_worktime_tacts*_time_mulitplier
+      ship.engines.filter(_.active).foreach(e => {
+        e.engines_stop_moment_seconds = time + e.engines_worktime_tacts*_time_mulitplier
+      })
       updateFutureTrajectory()
     }
   })
@@ -300,9 +316,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   keyIgnorePause(KEY_D, 10, onKeyDown = {viewMode = 0; _center += Vec(5/globalScale, 0)})
 
   keyIgnorePause(KEY_SPACE, onKeyDown = _center = ship.coord)
-  keyIgnorePause(KEY_F2, onKeyDown = viewMode = 0)
-  keyIgnorePause(KEY_F3, onKeyDown = viewMode = 1)
-  keyIgnorePause(KEY_F4, onKeyDown = viewMode = 2)
+
 
   keyIgnorePause(KEY_1, onKeyDown = ship.flightMode = 1)
   keyIgnorePause(KEY_2, onKeyDown = ship.flightMode = 2)
@@ -312,6 +326,10 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   keyIgnorePause(KEY_P, onKeyDown = switchPause())
 
   keyIgnorePause(KEY_F1, onKeyDown = {pause(); HelpScreen.run()})
+  keyIgnorePause(KEY_F2, onKeyDown = viewMode = 0)
+  keyIgnorePause(KEY_F3, onKeyDown = viewMode = 1)
+  keyIgnorePause(KEY_F4, onKeyDown = viewMode = 2)
+  keyIgnorePause(KEY_F5, onKeyDown = viewMode = 3)
 
   keyIgnorePause(KEY_N, 100, onKeyDown = continueFutureTrajectory())
   keyIgnorePause(KEY_C, onKeyDown = updateFutureTrajectory())
@@ -375,16 +393,12 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     print(s"сборка $appVersion", windowWidth - 20, windowHeight - 20, align = "top-right", color = DARK_GRAY)
 
     print(s"Режим камеры: $viewModeStr",
-      20, 300, ORANGE)
-    print(s"Ускорение времени: x${_time_mulitplier}",
-      20, 280, ORANGE)
-    print(s"Время: ${timeStr(_time/60)}",
       20, 260, ORANGE)
-    print(s"Полетный режим: ${ship.flightModeStr}",
+    print(s"Ускорение времени: x${_time_mulitplier}",
       20, 240, ORANGE)
-    print(s"Время работы двигателей: ${ship.engines_worktime_tacts} тактов (${timeStr(ship.engines_worktime_tacts*timeMultiplier/60)})",
+    print(s"Время: ${timeStr(_time/60)}",
       20, 220, ORANGE)
-    print(f"Мощность двигателей: ${ship.engines.find(_.active).map(e => e.power/e.max_power*100f).getOrElse(0f)}%.2f%",
+    print(s"Полетный режим: ${ship.flightModeStr}",
       20, 200, ORANGE)
     print(f"Расстояние от центра звезды: ${ship.coord.dist(sun.coord)}%.2f м",
       20, 180, ORANGE)
@@ -444,6 +458,9 @@ class Star(val mass:Float, val coord:Vec, val radius:Float) {
 }
 
 case class Engine(position:Vec, force_dir:Vec, max_power:Float, sin_angle:Float, ship:Ship) {
+  var engines_worktime_tacts = 0l
+  var engines_stop_moment_seconds = 0l
+
   private var _power:Float = 1f
   def power = _power
   def power_=(new_power:Float) {
@@ -462,10 +479,13 @@ case class Engine(position:Vec, force_dir:Vec, max_power:Float, sin_angle:Float,
       is_active = bool
       if(is_active) {
         _power = 1f
-        if(ship.engines_worktime_tacts == 0) {
-          ship.engines_worktime_tacts = 10
-          ship.engines_stop_moment_seconds = time + ship.engines_worktime_tacts*timeMultiplier
+        if(engines_worktime_tacts == 0) {
+          engines_worktime_tacts = 10
+          engines_stop_moment_seconds = time + engines_worktime_tacts*timeMultiplier
         }
+        ship.selected_engine = Some(this)
+      } else {
+        ship.selected_engine = ship.engines.filter(_.active).lastOption
       }
       updateFutureTrajectory()
     }
@@ -474,8 +494,11 @@ case class Engine(position:Vec, force_dir:Vec, max_power:Float, sin_angle:Float,
     is_active = !is_active
     if(is_active) {
       _power = 1f
-      ship.engines_worktime_tacts = 10
-      ship.engines_stop_moment_seconds = time + ship.engines_worktime_tacts*timeMultiplier
+      engines_worktime_tacts = 10
+      engines_stop_moment_seconds = time + engines_worktime_tacts*timeMultiplier
+      ship.selected_engine = Some(this)
+    } else {
+      ship.selected_engine = ship.engines.filter(_.active).lastOption
     }
     updateFutureTrajectory()
   }
@@ -496,8 +519,10 @@ case class BodyState(index:String,
 class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zero, init_rotation:Float = 0f) {
   val index = s"${System.currentTimeMillis()}-${(math.random*1000).toInt}"
 
-  var engines_worktime_tacts = 0l
-  var engines_stop_moment_seconds = 0l
+  var selected_engine:Option[Engine] = None
+  def isSelected(e:Engine):Boolean = {
+    selected_engine.exists(x => x == e)
+  }
 
   val mass:Float = 1   // mass
   val moment_of_inertia = mass*(a*a + b*b)/12
@@ -563,19 +588,15 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
   val engines = List(one, two, three, four, six, seven, eight, nine)
 
   def currentReactiveForce(time:Long, bs:BodyState):Vec = {
-    if(time < engines_stop_moment_seconds) {
-      engines.filter(_.active).foldLeft(Vec.zero) {
-        case (sum, e) => sum + e.force.rotateRad(bs.ang)
-      }
-    } else Vec.zero
+    engines.filter(e => e.active && time < e.engines_stop_moment_seconds).foldLeft(Vec.zero) {
+      case (sum, e) => sum + e.force.rotateRad(bs.ang)
+    }
   }
 
   def currentTorque(time:Long, bs:BodyState):Float = {
-    if(time < engines_stop_moment_seconds) {
-      engines.filter(_.active).foldLeft(0f) {
-        case (sum, e) => sum + e.torque
-      }
-    } else 0f
+    engines.filter(e => e.active && time < e.engines_stop_moment_seconds).foldLeft(0f) {
+      case (sum, e) => sum + e.torque
+    }
   }
 
   private var skipped_points = 0
@@ -591,7 +612,7 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
     if(e.active) RED else WHITE
   }
 
-  def engineActiveWidth(e:Engine):Float = {
+  def engineActiveSize(e:Engine):Float = {
     10f*e.power/e.max_power
   }
 
@@ -632,8 +653,10 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
 
 
   action {
-    if(engines_worktime_tacts > 0) engines_worktime_tacts -= 1
-    else if(engines.exists(_.active)) engines.foreach(_.active = false)
+    engines.filter(_.active).foreach(e => {
+      if(e.engines_worktime_tacts > 0) e.engines_worktime_tacts -= 1
+      else e.active = false
+    })
 
     if(skipped_points == trajectory_accuracy-1) {
       body_trajectory += coord
@@ -663,6 +686,19 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
     }
   }
 
+  private def drawEngine(e:Engine, center:Vec, width:Float, height:Float, is_vertical:Boolean) {
+    drawRectCentered(center, width, height, color = engineColor(e))
+    if(e.active && e.power > 0) {
+      if(is_vertical) {
+        drawFilledRectCentered(center, width, engineActiveSize(e), color = engineColor(e))
+      } else {
+        drawFilledRectCentered(center, engineActiveSize(e), height, color = engineColor(e))
+      }
+      if(globalScale > 2) print(f"${e.power/e.max_power*100f}%.0f% : ${e.engines_worktime_tacts}", center, size = max_font_size/globalScale)
+      if(isSelected(e)) drawRectCentered(center, width+2, height+2, color = engineColor(e))
+    }
+  }
+
   render {
     openglLocalTransform {
       openglMove(coord)
@@ -670,29 +706,21 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
       drawRectCentered(Vec.zero, a, b, color = WHITE)
       drawLine(Vec(-a/2, b/4 + b/8), Vec(a/2, b/4 + b/8), color = WHITE)
 
-      drawRectCentered(Vec(0, -b/2-2.5f), 10, 5, color = engineColor(two))
-      if(two.active && two.power > 0) drawFilledRectCentered(Vec(0, -b/2-2.5f), engineActiveWidth(two), 5, color = engineColor(two))
+      drawEngine(two, Vec(0, -b/2-2.5f), 10, 5, is_vertical = false)
 
-      drawRectCentered(Vec(0, b/2+2.5f),  10, 5, color = engineColor(eight))
-      if(eight.active && eight.power > 0) drawFilledRectCentered(Vec(0, b/2+2.5f),  engineActiveWidth(eight), 5, color = engineColor(eight))
+      drawEngine(eight, Vec(0, b/2+2.5f), 10, 5, is_vertical = false)
 
-      drawRectCentered(Vec(-a/2-2.5f, b/4), 5, 10, color = engineColor(seven))
-      if(seven.active && seven.power > 0) drawFilledRectCentered(Vec(-a/2-2.5f, b/4), 5, engineActiveWidth(seven), color = engineColor(seven))
+      drawEngine(seven, Vec(-a/2-2.5f, b/4), 5, 10, is_vertical = true)
 
-      drawRectCentered(Vec(a/2+2.5f, b/4),  5, 10, color = engineColor(nine))
-      if(nine.active && nine.power > 0) drawFilledRectCentered(Vec(a/2+2.5f, b/4),  5, engineActiveWidth(nine), color = engineColor(nine))
+      drawEngine(nine, Vec(a/2+2.5f, b/4), 5, 10, is_vertical = true)
 
-      drawRectCentered(Vec(-a/2-2.5f, 0), 5, 10, color = engineColor(four))
-      if(four.active && four.power > 0) drawFilledRectCentered(Vec(-a/2-2.5f, 0), 5, engineActiveWidth(four), color = engineColor(four))
+      drawEngine(four, Vec(-a/2-2.5f, 0), 5, 10, is_vertical = true)
 
-      drawRectCentered(Vec(a/2+2.5f, 0),  5, 10, color = engineColor(six))
-      if(six.active && six.power > 0) drawFilledRectCentered(Vec(a/2+2.5f, 0),  5, engineActiveWidth(six), color = engineColor(six))
+      drawEngine(six, Vec(a/2+2.5f, 0), 5, 10, is_vertical = true)
 
-      drawRectCentered(Vec(-a/2-2.5f, -b/4), 5, 10, color = engineColor(one))
-      if(one.active && one.power > 0) drawFilledRectCentered(Vec(-a/2-2.5f, -b/4), 5, engineActiveWidth(one), color = engineColor(one))
+      drawEngine(one, Vec(-a/2-2.5f, -b/4), 5, 10, is_vertical = true)
 
-      drawRectCentered(Vec(a/2+2.5f, -b/4),  5, 10, color = engineColor(three))
-      if(three.active && three.power > 0) drawFilledRectCentered(Vec(a/2+2.5f, -b/4),  5, engineActiveWidth(three), color = engineColor(three))
+      drawEngine(three, Vec(a/2+2.5f, -b/4), 5, 10, is_vertical = true)
     }
 
     drawFilledCircle(coord, 2, GREEN)                   // mass center
