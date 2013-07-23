@@ -61,7 +61,8 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     (body1_coord - body2_coord).n*G*body1_mass*body2_mass/body1_coord.dist2(body2_coord)
   }
 
-  def satelliteSpeed(from_planet_to_body:Vec, planet_mass:Float):Vec = {
+  def satelliteSpeed(body_coord:Vec, planet_coord:Vec, planet_mass:Float):Vec = {
+    val from_planet_to_body = body_coord - planet_coord
     from_planet_to_body.n.rotateDeg(90)*math.sqrt(G*planet_mass/from_planet_to_body.norma)
   }
 
@@ -146,7 +147,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
 
   val sun = new Star(mass = 10000, coord = Vec.zero, radius = 3000)
   val earth_start_position = Vec(-sun.radius*20f, sun.radius*20f)
-  val earth_init_velocity = satelliteSpeed(earth_start_position, sun.mass)
+  val earth_init_velocity = satelliteSpeed(earth_start_position, sun.coord, sun.mass)
   val earth = new Planet(
     "earth",
     mass = 1000,
@@ -155,7 +156,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     radius = 1000)
 
   val ship_start_position = sun.coord + Vec(sun.radius*1.5f, sun.radius*1.5f)
-  val ship_init_velocity = satelliteSpeed(ship_start_position - sun.coord, sun.mass)
+  val ship_init_velocity = satelliteSpeed(ship_start_position, sun.coord, sun.mass)
   val ship = new Ship(a = 50, b = 100,
     init_coord = ship_start_position,
     init_velocity = ship_init_velocity,
@@ -202,13 +203,14 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   private def viewModeStr = view_mode match {
     case 0 => "свободный"
     case 1 => "фиксация на корабле"
-    case 2 => "фиксация на планете"
+    case 2 => "фиксация на солнце"
+    case 3 => "фиксация на планете"
     case _ => ""
   }
 
   def satelliteSpeedInPoint(coord:Vec, speed:Vec):String = {
     if(coord.dist(earth.coord) < earth.gravitational_radius) {
-      val ss = earth.linearVelocity + satelliteSpeed(coord - earth.coord, earth.mass)
+      val ss = earth.linearVelocity + satelliteSpeed(coord, earth.coord, earth.mass)
       val d = ss - speed
       f"(velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек), разница: (velx = ${d.x*60*base_dt}%.2f м/сек, vely = ${d.y*60*base_dt}%.2f м/сек)"
     } else "N/A"/*{
@@ -438,7 +440,9 @@ class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velo
   private var skipped_points = 0
   private val body_trajectory = ArrayBuffer[Vec]()
 
-  val gravitational_radius = (coord.dist(sun.coord)*math.sqrt(mass/sun.mass)/(1 + math.sqrt(mass/sun.mass))).toFloat
+  val gravitational_radius = {
+    (coord.dist(sun.coord)*math.sqrt(mass/20f/sun.mass)/(1 + math.sqrt(mass/20f/sun.mass))).toFloat
+  }
 
   action {
     if(skipped_points == trajectory_accuracy-1) {
@@ -458,7 +462,19 @@ class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velo
   def coord = currentState.coord
   def linearVelocity = currentState.vel
 
-  def currentState = currentBodyState(index).getOrElse(BodyState(index, mass, 0f, Vec.zero, Vec.zero, init_velocity, init_coord, 0f, 0f, 0f, 0f))
+  def currentState:BodyState = currentBodyState(index).getOrElse(
+    BodyState(
+      index,
+      mass,
+      I = 0f,
+      force = Vec.zero,
+      acc = Vec.zero,
+      vel = init_velocity,
+      coord = init_coord,
+      torque = 0f,
+      ang_acc = 0f,
+      ang_vel = 0f,
+      ang = 0f))
 }
 
 class Star(val mass:Float, val coord:Vec, val radius:Float) {
@@ -542,19 +558,19 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
   val mass:Float = 1   // mass
   val moment_of_inertia = mass*(a*a + b*b)/12
 
-  def currentState = currentBodyState(index).getOrElse(
+  def currentState:BodyState = currentBodyState(index).getOrElse(
     BodyState(
       index,
       mass,
-      moment_of_inertia,
-      Vec.zero,
-      Vec.zero,
-      init_velocity,
-      init_coord,
-      0f,
-      0f,
-      0f,
-      init_rotation)
+      I = moment_of_inertia,
+      force = Vec.zero,
+      acc = Vec.zero,
+      vel = init_velocity,
+      coord = init_coord,
+      torque = 0f,
+      ang_acc = 0f,
+      ang_vel = 0f,
+      ang = init_rotation)
   )
 
   def force = currentState.force
