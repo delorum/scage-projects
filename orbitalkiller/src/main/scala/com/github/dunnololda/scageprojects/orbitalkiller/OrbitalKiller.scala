@@ -154,8 +154,8 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     init_velocity = earth_init_velocity,
     radius = 1000)
 
-  val ship_start_position = earth_start_position + Vec(earth.radius*1.5f, earth.radius*1.5f)
-  val ship_init_velocity = satelliteSpeed(ship_start_position - earth_start_position, earth.mass)
+  val ship_start_position = sun.coord + Vec(sun.radius*1.5f, sun.radius*1.5f)
+  val ship_init_velocity = satelliteSpeed(ship_start_position - sun.coord, sun.mass)
   val ship = new Ship(a = 50, b = 100,
     init_coord = ship_start_position,
     init_velocity = ship_init_velocity,
@@ -208,7 +208,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
 
   def satelliteSpeedInPoint(coord:Vec, speed:Vec):String = {
     if(coord.dist(earth.coord) < earth.gravitational_radius) {
-      val ss = satelliteSpeed(coord - earth.coord, earth.mass)
+      val ss = earth.linearVelocity + satelliteSpeed(coord - earth.coord, earth.mass)
       val d = ss - speed
       f"(velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек), разница: (velx = ${d.x*60*base_dt}%.2f м/сек, vely = ${d.y*60*base_dt}%.2f м/сек)"
     } else "N/A"/*{
@@ -456,6 +456,7 @@ class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velo
   }
 
   def coord = currentState.coord
+  def linearVelocity = currentState.vel
 
   def currentState = currentBodyState(index).getOrElse(BodyState(index, mass, 0f, Vec.zero, Vec.zero, init_velocity, init_coord, 0f, 0f, 0f, 0f))
 }
