@@ -5,10 +5,10 @@ import collection.mutable.ArrayBuffer
 import scala.collection.mutable
 
 object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
-  val G:Float = 20
-  val base_dt = 0.01f // 1/60 секунды
+
   private var _time_mulitplier = 1
   def timeMultiplier = _time_mulitplier
+  def timeMultiplier_=(tm:Int) {if(tm > 0) _time_mulitplier = tm}
   private var _dt:Float = base_dt
   def dt = _dt
 
@@ -25,46 +25,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
 
   private var continue_future_trajectory = false
 
-  def systemEvolutionFrom(dt: => Float,
-                          force: (Long, BodyState, List[BodyState]) => Vec,
-                          torque: (Long, BodyState, List[BodyState]) => Float)
-                         (current_state:(Long, List[BodyState])):Stream[(Long, List[BodyState])] = {
-    val (time, bodies) = current_state
 
-    val next_time = time + (dt/base_dt).toLong
-    val next_bodies = bodies.map { case bs =>
-      val next_force = force(time, bs, bodies.filterNot(_ == bs))
-      val next_acc = next_force / bs.mass
-      val next_vel = bs.vel + next_acc*dt
-      val next_coord = bs.coord + next_vel*dt
-
-      val next_torque = -torque(time, bs, bodies.filterNot(_ == bs))
-      val next_ang_acc = (next_torque / bs.I)/math.Pi.toFloat*180f  // in degrees
-      val next_ang_vel = bs.ang_vel + next_ang_acc*dt
-      val next_ang = (bs.ang + next_ang_vel*dt) % 360f
-
-      bs.copy(force = next_force,
-              acc = next_acc,
-              vel = next_vel,
-              coord = next_coord,
-              torque = next_torque,
-              ang_acc= next_ang_acc,
-              ang_vel = next_ang_vel,
-              ang = next_ang)
-    }
-
-    val pewpew = (next_time, next_bodies)
-    pewpew #:: systemEvolutionFrom(dt, force, torque)(pewpew)
-  }
-
-  def gravityForce(body1_coord:Vec, body1_mass:Float, body2_coord:Vec, body2_mass:Float):Vec = {
-    (body1_coord - body2_coord).n*G*body1_mass*body2_mass/body1_coord.dist2(body2_coord)
-  }
-
-  def satelliteSpeed(body_coord:Vec, planet_coord:Vec, planet_mass:Float):Vec = {
-    val from_planet_to_body = body_coord - planet_coord
-    from_planet_to_body.n.rotateDeg(90)*math.sqrt(G*planet_mass/from_planet_to_body.norma)
-  }
 
   private val current_body_states = mutable.HashMap[String, BodyState]()
   def currentBodyState(index:String):Option[BodyState] = current_body_states.get(index)
@@ -211,12 +172,11 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   def satelliteSpeedInPoint(coord:Vec, speed:Vec):String = {
     if(coord.dist(earth.coord) < earth.gravitational_radius) {
       val ss = earth.linearVelocity + satelliteSpeed(coord, earth.coord, earth.mass)
-      f"(velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек)"
-    } else "N/A"/*{
-      val ss = satelliteSpeed(coord - sun.coord, sun.mass)
-      val d = ss - speed
-      f"(velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек), разница: (velx = ${d.x*60*base_dt}%.2f м/сек, vely = ${d.y*60*base_dt}%.2f м/сек)"
-    }*/
+      f"${ss.norma*60*base_dt}%.2f м/сек (velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек)"
+    } else if(coord.dist(sun.coord) < sun.gravitational_radius) {
+      val ss = satelliteSpeed(coord, sun.coord, sun.mass)
+      f"${ss.norma*60*base_dt}%.2f м/сек (velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек)"
+    } else "N/A"
   }
 
   def linearSpeedWhenEnginesOff:String = {
@@ -399,36 +359,38 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   interface {
     print(fps, 20, windowHeight - 20, align = "top-left", color = DARK_GRAY)
     if(onPause) print("Пауза", windowCenter, align = "center", color = WHITE)
-    print("F1 - Справка, F2, F3, F4 - режимы камеры, P - пауза", windowWidth - 20, 20, align = "bottom-right", color = GREEN)
+    print("F1 - Справка, P - пауза", windowWidth - 20, 20, align = "bottom-right", color = GREEN)
     print(s"сборка $appVersion", windowWidth - 20, windowHeight - 20, align = "top-right", color = DARK_GRAY)
 
     print(s"Ускорение времени: x${_time_mulitplier}",
-      20, 280, ORANGE)
+      20, 300, ORANGE)
     print(s"Время: ${timeStr(_time/60)}",
-      20, 260, ORANGE)
+      20, 280, ORANGE)
     print(s"Режим камеры: $viewModeStr",
-      20, 240, ORANGE)
+      20, 260, ORANGE)
     print(s"Полетный режим: ${ship.flightModeStr}",
+      20, 240, ORANGE)
+    print(f"Расстояние и скорость относительно звезды: ${ship.coord.dist(sun.coord)}%.2f м, ${ship.linearVelocity*((ship.coord - sun.coord).n)*60*base_dt}%.2f м/сек",
       20, 220, ORANGE)
-    print(f"Расстояние от центра звезды: ${ship.coord.dist(sun.coord)}%.2f м",
+    print(f"Расстояние и скорость относительно планеты: ${ship.coord.dist(earth.coord)}%.2f м, ${ship.linearVelocity*((ship.coord - earth.coord).n)*60*base_dt}%.2f м/сек",
       20, 200, ORANGE)
-    print(f"Скорость относительно центра звезды: ${ship.linearVelocity*((ship.coord - sun.coord).n)*60*base_dt}%.2f м/сек",
-      20, 180, ORANGE)
     print(f"Скорость: ${ship.linearVelocity.norma*60*base_dt}%.2f м/сек ( velx = ${ship.linearVelocity.x*60*base_dt}%.2f м/сек, vely = ${ship.linearVelocity.y*60*base_dt}%.2f м/сек)",
-      20, 160, ORANGE)
+      20, 180, ORANGE)
     print(f"Позиция: ${ship.coord.x}%.2f : ${ship.coord.y}%.2f",
-      20, 140, ORANGE)
+      20, 160, ORANGE)
     print(f"Угловая скорость: ${ship.angularVelocity*60*base_dt}%.2f град/сек",
-      20, 120, ORANGE)
+      20, 140, ORANGE)
     print(f"Угол: ${ship.rotation}%.2f град",
-      20, 100, ORANGE)
+      20, 120, ORANGE)
     print(f"Скорость для спутника в данной точке: ${satelliteSpeedInPoint(ship.coord, ship.linearVelocity)}",
+      20, 100, ORANGE)
+    print(f"Линейная скорость в момент отключения двигателей: $linearSpeedWhenEnginesOff",
       20, 80, ORANGE)
-    print(s"Двигательная установка: ${if(ship.engines.exists(_.active)) "активирована" else "отключена"}",
+    print(f"Угловая скорость в момент отключения двигателей: $angularSpeedWhenEnginesOff",
       20, 60, ORANGE)
-    print(f"Линейная скорость в момент отключения двигателей: ${linearSpeedWhenEnginesOff}",
+    print(s"Двигательная установка: ${if(ship.engines.exists(_.active)) "активирована" else "отключена"}",
       20, 40, ORANGE)
-    print(f"Угловая скорость в момент отключения двигателей: ${angularSpeedWhenEnginesOff}",
+    print(s"Время работы двигателей: ${timeStr(maxOption(ship.engines.withFilter(_.active).map(_.engines_worktime_tacts/60)).getOrElse(0l))}",
       20, 20, ORANGE)
   }
 
@@ -441,7 +403,7 @@ class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velo
   private var skipped_points = 0
   private val body_trajectory = ArrayBuffer[Vec]()
 
-  val gravitational_radius = {
+  lazy val gravitational_radius = {
     (coord.dist(sun.coord)*math.sqrt(mass/20f/sun.mass)/(1 + math.sqrt(mass/20f/sun.mass))).toFloat
   }
 
@@ -479,8 +441,13 @@ class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velo
 }
 
 class Star(val mass:Float, val coord:Vec, val radius:Float) {
+  lazy val gravitational_radius = {
+    (coord.dist(earth.coord)*math.sqrt(mass/20f/earth.mass)/(1 + math.sqrt(mass/20f/earth.mass))).toFloat
+  }
+
   render {
     drawCircle(coord, radius, color = WHITE)
+    drawCircle(coord, gravitational_radius, color = DARK_GRAY)
   }
 }
 
@@ -536,18 +503,6 @@ case class Engine(position:Vec, force_dir:Vec, max_power:Float, sin_angle:Float,
   }
 }
 
-case class BodyState(index:String,
-                     mass:Float,
-                     I:Float,
-                     force:Vec,
-                     acc:Vec,
-                     vel:Vec,
-                     coord:Vec,
-                     torque:Float,
-                     ang_acc:Float,
-                     ang_vel:Float,
-                     ang:Float)
-
 class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zero, init_rotation:Float = 0f) {
   val index = s"${System.currentTimeMillis()}-${(math.random*1000).toInt}"
 
@@ -595,6 +550,7 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
   def flightMode_=(new_flight_mode:Int) {
     if(new_flight_mode > 0 && new_flight_mode < 5) {
       flight_mode = new_flight_mode
+      if(flight_mode != 1) timeMultiplier = 1
     }
   }
   def flightModeStr = flight_mode match {
@@ -764,6 +720,8 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
     drawFilledCircle(coord, 2, GREEN)                   // mass center
     drawLine(coord, coord + force.n*100, RED)           // current force
     drawLine(coord, coord + linearVelocity.n*100, CYAN) // current velocity
+    drawLine(coord, coord + (sun.coord - coord).n*100, YELLOW) // direction to sun
+    drawLine(coord, coord + (earth.coord - coord).n*100, GREEN) // direction to earth
 
     drawSlidingLines(body_trajectory, color = GREEN)
   }
