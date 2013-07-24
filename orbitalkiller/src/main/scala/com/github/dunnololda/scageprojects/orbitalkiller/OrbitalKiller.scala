@@ -211,8 +211,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   def satelliteSpeedInPoint(coord:Vec, speed:Vec):String = {
     if(coord.dist(earth.coord) < earth.gravitational_radius) {
       val ss = earth.linearVelocity + satelliteSpeed(coord, earth.coord, earth.mass)
-      val d = ss - speed
-      f"(velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек), разница: (velx = ${d.x*60*base_dt}%.2f м/сек, vely = ${d.y*60*base_dt}%.2f м/сек)"
+      f"(velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек)"
     } else "N/A"/*{
       val ss = satelliteSpeed(coord - sun.coord, sun.mass)
       val d = ss - speed
@@ -403,31 +402,33 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     print("F1 - Справка, F2, F3, F4 - режимы камеры, P - пауза", windowWidth - 20, 20, align = "bottom-right", color = GREEN)
     print(s"сборка $appVersion", windowWidth - 20, windowHeight - 20, align = "top-right", color = DARK_GRAY)
 
-    print(s"Режим камеры: $viewModeStr",
-      20, 260, ORANGE)
     print(s"Ускорение времени: x${_time_mulitplier}",
-      20, 240, ORANGE)
+      20, 280, ORANGE)
     print(s"Время: ${timeStr(_time/60)}",
-      20, 220, ORANGE)
+      20, 260, ORANGE)
+    print(s"Режим камеры: $viewModeStr",
+      20, 240, ORANGE)
     print(s"Полетный режим: ${ship.flightModeStr}",
-      20, 200, ORANGE)
+      20, 220, ORANGE)
     print(f"Расстояние от центра звезды: ${ship.coord.dist(sun.coord)}%.2f м",
-      20, 180, ORANGE)
+      20, 200, ORANGE)
     print(f"Скорость относительно центра звезды: ${ship.linearVelocity*((ship.coord - sun.coord).n)*60*base_dt}%.2f м/сек",
+      20, 180, ORANGE)
+    print(f"Скорость: ${ship.linearVelocity.norma*60*base_dt}%.2f м/сек ( velx = ${ship.linearVelocity.x*60*base_dt}%.2f м/сек, vely = ${ship.linearVelocity.y*60*base_dt}%.2f м/сек)",
       20, 160, ORANGE)
     print(f"Позиция: ${ship.coord.x}%.2f : ${ship.coord.y}%.2f",
       20, 140, ORANGE)
     print(f"Угловая скорость: ${ship.angularVelocity*60*base_dt}%.2f град/сек",
       20, 120, ORANGE)
-    print(f"Скорость: ${ship.linearVelocity.norma*60*base_dt}%.2f м/сек ( velx = ${ship.linearVelocity.x*60*base_dt}%.2f м/сек, vely = ${ship.linearVelocity.y*60*base_dt}%.2f м/сек)",
+    print(f"Угол: ${ship.rotation}%.2f град",
       20, 100, ORANGE)
     print(f"Скорость для спутника в данной точке: ${satelliteSpeedInPoint(ship.coord, ship.linearVelocity)}",
       20, 80, ORANGE)
-    print(f"Линейная скорость в момент отключения двигателей: ${linearSpeedWhenEnginesOff}",
+    print(s"Двигательная установка: ${if(ship.engines.exists(_.active)) "активирована" else "отключена"}",
       20, 60, ORANGE)
-    print(f"Угловая скорость в момент отключения двигателей: ${angularSpeedWhenEnginesOff}",
+    print(f"Линейная скорость в момент отключения двигателей: ${linearSpeedWhenEnginesOff}",
       20, 40, ORANGE)
-    print(f"Угол: ${ship.rotation}%.2f град",
+    print(f"Угловая скорость в момент отключения двигателей: ${angularSpeedWhenEnginesOff}",
       20, 20, ORANGE)
   }
 
@@ -761,8 +762,8 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
     }
 
     drawFilledCircle(coord, 2, GREEN)                   // mass center
-    drawLine(coord, coord + force.n*20, RED)           // current force
-    drawLine(coord, coord + linearVelocity.n*20, CYAN) // current velocity
+    drawLine(coord, coord + force.n*100, RED)           // current force
+    drawLine(coord, coord + linearVelocity.n*100, CYAN) // current velocity
 
     drawSlidingLines(body_trajectory, color = GREEN)
   }
