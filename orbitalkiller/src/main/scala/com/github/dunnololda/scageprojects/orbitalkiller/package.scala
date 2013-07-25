@@ -26,14 +26,15 @@ package object orbitalkiller {
 
     val next_time = time + (dt/base_dt).toLong
     val next_bodies = bodies.map { case bs =>
-      val next_force = force(time, bs, bodies.filterNot(_ == bs))
+      val other_bodies = bodies.filterNot(_ == bs)
+      val next_force = force(time, bs, other_bodies)
       val next_acc = next_force / bs.mass
       val next_vel = bs.vel + next_acc*dt
       val next_coord = bs.coord + next_vel*dt
 
-      val next_torque = -torque(time, bs, bodies.filterNot(_ == bs))
+      val next_torque = -torque(time, bs, other_bodies)
       val next_ang_acc = (next_torque / bs.I)/math.Pi.toFloat*180f  // in degrees
-    val next_ang_vel = bs.ang_vel + next_ang_acc*dt
+      val next_ang_vel = bs.ang_vel + next_ang_acc*dt
       val next_ang = (bs.ang + next_ang_vel*dt) % 360f
 
       bs.copy(force = next_force,
@@ -57,6 +58,22 @@ package object orbitalkiller {
   def satelliteSpeed(body_coord:Vec, planet_coord:Vec, planet_mass:Float):Vec = {
     val from_planet_to_body = body_coord - planet_coord
     from_planet_to_body.n.rotateDeg(90)*math.sqrt(G*planet_mass/from_planet_to_body.norma)
+  }
+
+  /**
+   *
+   * @param force - вектор силы
+   * @param force_position - точка приложения силы
+   * @param sin_angle - синус угла между вектором от центра масс до точки приложения силы и вектором силы
+   * @return
+   */
+  def torque(force:Vec, force_position:Vec, sin_angle:Float):Float = force.norma*force_position.norma*sin_angle
+
+  def torque(force:Vec, force_position:Vec, center:Vec):Float = {
+    val x = force_position - center
+    val xf = x*force.rotateDeg(90).n
+    val sin_angle = xf/x.norma
+    torque(force, force_position, sin_angle)
   }
 
   def maxOption[T](l:Seq[T])(implicit o:Ordering[T]):Option[T] = if(l.isEmpty) None else Some(l.max(o))
