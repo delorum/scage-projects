@@ -437,7 +437,9 @@ class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velo
       torque = 0f,
       ang_acc = 0f,
       ang_vel = 0f,
-      ang = 0f))
+      ang = 0f,
+      elasticity = 0f,
+      shape = (coord, rotation) => CircleShape(coord, radius)))
 }
 
 class Star(val mass:Float, val coord:Vec, val radius:Float) {
@@ -464,8 +466,8 @@ case class Engine(position:Vec, force_dir:Vec, max_power:Float, sin_angle:Float,
     }
   }
 
-  def force = force_dir*power
-  def torque = force.norma*position.norma*sin_angle
+  def force = -force_dir*power
+  def torque = force*/position
   private var is_active:Boolean = false
   def active = is_active
   def active_=(bool:Boolean) {
@@ -526,7 +528,9 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
       torque = 0f,
       ang_acc = 0f,
       ang_vel = 0f,
-      ang = init_rotation)
+      ang = init_rotation,
+      elasticity = 1f,
+      shape = (coord, rotation) => CircleShape(coord, math.max(a, b)))
   )
 
   def force = currentState.force
