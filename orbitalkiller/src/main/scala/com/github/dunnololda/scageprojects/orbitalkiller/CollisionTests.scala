@@ -19,11 +19,26 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 800, 600){
       0f
     })((time, body_states))
 
-  val c1 = new MyCircle("c1", Vec(windowWidth/2-300, windowHeight/2), Vec(0.5f, 0), 30)
-  val c2 = new MyCircle("c2", Vec(windowWidth/2+300, windowHeight/2), Vec(-0.5f, 0), 30)
+  val w = windowWidth/2
+  val h = windowHeight/2
+
+  def randomSpeed = Vec(math.random, math.random).n*1f
+
+  val c1 = new MyCircle("c1", Vec(w-60, h-5), Vec(0.5f, 0), 1f, 30)
+  val c2 = new MyCircle("c2", Vec(w+60, h+5), Vec(-0.5f, 0), 1f, 30)
+  val w1 = new MyWall("w1", Vec(w-100, h-100),  Vec(w-100, h+100))
+  val w2 = new MyWall("w2", Vec(w-100, h+100),  Vec(w+100, h+100))
+  val w3 = new MyWall("w3", Vec(w+100, h+100),  Vec(w+100, h-100))
+  val w4 = new MyWall("w4", Vec(w+100, h-100),  Vec(w-100, h-100))
 
   private val real_system_evolution =
-    futureSystemEvolutionFrom(0, List(c1.currentState, c2.currentState)).iterator
+    futureSystemEvolutionFrom(0, List(
+      c1.currentState,
+      c2.currentState,
+      w1.currentState,
+      w2.currentState,
+      w3.currentState,
+      w4.currentState)).iterator
 
   private def nextStep() {
     val (t, body_states) = real_system_evolution.next()
@@ -35,32 +50,38 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 800, 600){
 
   action {
     nextStep()
-    if(circleCircleCollision(c1.shape, c2.shape).nonEmpty) pause()
   }
 
-  render(10) {
-    circleCircleCollision(c1.shape, c2.shape).foreach(p => drawFilledCircle(p.contact_point, 3, RED))
+  def energy =
+    c1.mass*c1.currentState.vel*c1.currentState.vel/2f +
+    c1.currentState.I*c1.currentState.ang_vel*c1.currentState.ang_vel/2f +
+    c2.mass*c2.currentState.vel*c2.currentState.vel/2f +
+    c2.currentState.I*c2.currentState.ang_vel*c2.currentState.ang_vel/2f
+
+  interface {
+    print(energy, 20, 20, WHITE)
   }
 }
 
 import CollisionTests._
 
-class MyCircle(val index:String, init_coord:Vec, init_velocity:Vec, val radius:Float) {
+class MyCircle(val index:String, init_coord:Vec, init_velocity:Vec, val mass:Float, val radius:Float) {
   def currentState:BodyState = currentBodyState(index).getOrElse(
     BodyState(
       index,
-      mass = 1,
-      I = 0f,
+      mass = mass,
+      I = mass*radius*radius/2f,
       force = Vec.zero,
       acc = Vec.zero,
       vel = init_velocity,
       coord = init_coord,
       torque = 0f,
       ang_acc = 0f,
-      ang_vel = 0f,
+      ang_vel = 1f,
       ang = 0f,
       elasticity = 1f,
-      shape = (coord, rotation) => CircleShape(coord, radius)))
+      shape = (coord, rotation) => CircleShape(coord, radius),
+      is_static = false))
 
   def coord = currentState.coord
   def linearVelocity = currentState.vel
@@ -69,6 +90,30 @@ class MyCircle(val index:String, init_coord:Vec, init_velocity:Vec, val radius:F
 
   render(0) {
     drawCircle(coord, radius, WHITE)
+    drawLine(coord, coord + Vec(0,1).rotateDeg(currentState.ang).n*radius, WHITE)
+  }
+}
+
+class MyWall(index:String, from:Vec, to:Vec) {
+  def currentState:BodyState = currentBodyState(index).getOrElse(
+    BodyState(
+      index,
+      mass = -1,  // infinite mass
+      I = 0f,
+      force = Vec.zero,
+      acc = Vec.zero,
+      vel = Vec.zero,
+      coord = Vec.zero,
+      torque = 0f,
+      ang_acc = 0f,
+      ang_vel = 0f,
+      ang = 0f,
+      elasticity = 1f,
+      shape = (coord, rotation) => FiniteLineShape(from, to),
+      is_static = true))
+
+  render(0) {
+    drawLine(from, to, WHITE)
   }
 }
 

@@ -439,7 +439,8 @@ class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velo
       ang_vel = 0f,
       ang = 0f,
       elasticity = 0f,
-      shape = (coord, rotation) => CircleShape(coord, radius)))
+      shape = (coord, rotation) => CircleShape(coord, radius),
+      is_static = false))
 }
 
 class Star(val mass:Float, val coord:Vec, val radius:Float) {
@@ -530,7 +531,8 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
       ang_vel = 0f,
       ang = init_rotation,
       elasticity = 1f,
-      shape = (coord, rotation) => CircleShape(coord, math.max(a, b)))
+      shape = (coord, rotation) => CircleShape(coord, math.max(a, b)),
+      is_static = false)
   )
 
   def force = currentState.force
