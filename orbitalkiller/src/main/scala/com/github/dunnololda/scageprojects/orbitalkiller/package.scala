@@ -2,6 +2,9 @@ package com.github.dunnololda.scageprojects
 
 import com.github.dunnololda.scage.ScageLib._
 import com.github.dunnololda.scage.ScageLib.Vec
+import net.phys2d.raw.collide.{CircleBoxCollider, LineBoxCollider}
+import net.phys2d.raw.Body
+import net.phys2d.raw.shapes.{Circle, Box, Line}
 
 package object orbitalkiller {
   val G:Float = 20
@@ -92,19 +95,75 @@ package object orbitalkiller {
 
   case class CircleShape(center:Vec, radius:Float) extends Shape
 
-  case class FiniteLineShape(from:Vec, to:Vec) extends Shape
+  case class LineShape(from:Vec, to:Vec) extends Shape {
+    val center = from + (to - from)/2f
+
+    /**
+     * Get the closest point on the line to a given point
+     */
+    def closestPoint(point:Vec):Vec = {
+      val vec = to - from
+      val loc = point - from
+      val v = vec.n
+      val proj = loc.project(v)
+      if(proj.norma2 > vec.norma2) to
+      else {
+        val proj2 = proj + from
+        val other = proj2 - to
+        if(other.norma2 > vec.norma2) from
+        else proj2
+      }
+    }
+
+    def distanceSquared(point:Vec):Float = closestPoint(point).dist2(point)
+
+    val vec = to - from
+    def dx = vec.x
+    def dy = vec.y
+  }
+
+  case class BoxShape(center:Vec, width:Float, height:Float, rotation:Float) extends Shape {
+    val w = width
+    val h = height
+
+    val one = center + Vec(-width/2, height/2).rotateDeg(rotation)
+    val two = center + Vec(width/2, height/2).rotateDeg(rotation)
+    val three = center + Vec(width/2, -height/2).rotateDeg(rotation)
+    val four = center + Vec(-width/2, -height/2).rotateDeg(rotation)
+    val points = List(one, two, three, four)
+    val lines = List(LineShape(one, two), LineShape(two, three), LineShape(three, four), LineShape(four, one))
+
+  }
 
   case class GeometricContactData(contact_point:Vec)
   case class Contact(body1:BodyState, body2:BodyState, contact_point:Vec)
 
-  def maybeCollision(b1:BodyState, b2:BodyState):Option[Contact] = {
-    b1.currentShape match {
+  def maybeCollision(body1:BodyState, body2:BodyState):Option[Contact] = {
+    body1.currentShape match {
       case c1:CircleShape =>
-        b2.currentShape match {
+        body2.currentShape match {
           case c2:CircleShape =>
-            circleCircleCollision(c1, c2).map(gcd => Contact(b1, b2, gcd.contact_point))
-          case c2:FiniteLineShape =>
-            circleFiniteLineCollision(c1, c2).map(gcd => Contact(b1, b2, gcd.contact_point))
+            circleCircleCollision(c1, c2).map(gcd => Contact(body1, body2, gcd.contact_point))
+          case l2:LineShape =>
+            circleLineCollision(c1, l2).map(gcd => Contact(body1, body2, gcd.contact_point))
+          case b2:BoxShape =>
+            circleBoxCollision(c1, b2).map(gcd => Contact(body1, body2, gcd.contact_point))
+          case _ => None
+        }
+      case l1:LineShape =>
+        body2.currentShape match {
+          case c2:CircleShape =>
+            circleLineCollision(c2, l1).map(gcd => Contact(body2, body1, gcd.contact_point))
+          case b2:BoxShape =>
+            lineBoxCollision(l1, b2).map(gcd => Contact(body1, body2, gcd.contact_point))
+          case _ => None
+        }
+      case b1:BoxShape =>
+        body2.currentShape match {
+          case c2:CircleShape =>
+            circleBoxCollision(c2, b1).map(gcd => Contact(body1, body2, gcd.contact_point))
+          case l2:LineShape =>
+            lineBoxCollision(l2, b1).map(gcd => Contact(body1, body2, gcd.contact_point))
           case _ => None
         }
       case _ => None
@@ -122,11 +181,11 @@ package object orbitalkiller {
     }
   }
 
-  def circleFiniteLineCollision(c:CircleShape, fl:FiniteLineShape):Option[GeometricContactData] = {
+  def circleLineCollision(c:CircleShape, l:LineShape):Option[GeometricContactData] = {
     // compute intersection of the line A and a line parallel to
 		// the line A's normal passing through the origin of B
-    val startA = fl.from
-    val endA = fl.to
+    val startA = l.from
+    val endA = l.to
     val startB = c.center
     val endB = (endA - startA).perpendicular
     val d = endB.y*(endA.x - startA.x) - endB.x*(endA.y - startA.y)
@@ -149,6 +208,58 @@ package object orbitalkiller {
     } else None
   }
 
+  def circleBoxCollision(c:CircleShape, b:BoxShape):Option[GeometricContactData] = {
+    /*val r2 = c.radius*c.radius
+    val (closest_distance, maybe_line) = b.lines.foldLeft[(Float, Option[LineShape])]((Float.MaxValue, None)) {
+      case ((res_closest_distance, res_line), l) =>
+        val dis = l.distanceSquared(c.center)
+        if(dis < r2) {
+          if(res_closest_distance > dis) (dis, Some(l))
+          else (res_closest_distance, res_line)
+        } else (res_closest_distance, res_line)
+    }
+    maybe_line.map(l => GeometricContactData(l.closestPoint(c.center)))*/
+
+    val collider = CircleBoxCollider.createCircleBoxCollider()
+    val contacts = Array(new net.phys2d.raw.Contact, new net.phys2d.raw.Contact)
+    val b1 = new Body(new Circle(c. radius), 1f)
+    b1.setPosition(c.center.x, c.center.y)
+    val b2 = new Body(new Box(b.w, b.h), 1f)
+    b2.setPosition(b.center.x, b.center.y)
+    b2.setRotation(b.rotation/180f*math.Pi.toFloat)
+    val num_contacts = collider.collide(contacts, b1, b2)
+    if(num_contacts == 0) None
+    else {
+      println(num_contacts)
+      val contact_point = contacts(0).getPosition.toVec
+      Some(GeometricContactData(contact_point))
+    }
+  }
+
+  def lineBoxCollision(l:LineShape, b:BoxShape):Option[GeometricContactData] = {
+    val collider = LineBoxCollider.create()
+    val contacts = Array(new net.phys2d.raw.Contact, new net.phys2d.raw.Contact)
+    val b1 = new Body(new Line(l.vec.x, l.vec.y), 1f)
+    b1.setPosition(l.from.x, l.from.y)
+    val b2 = new Body(new Box(b.w, b.h), 1f)
+    b2.setPosition(b.center.x, b.center.y)
+    b2.setRotation(b.rotation/180f*math.Pi.toFloat)
+
+    val num_contacts = collider.collide(contacts, b1, b2)
+    if(num_contacts == 0) None
+    else {
+      num_contacts match {
+        case 1 =>
+          val contact_point = contacts(0).getPosition.toVec
+          Some(GeometricContactData(contact_point))
+        case 2 =>
+          val contact_point = (contacts(0).getPosition.toVec + contacts(1).getPosition.toVec)/2
+          Some(GeometricContactData(contact_point))
+        case _ => None
+      }
+    }
+  }
+
   case class BodyState(index:String,
                        mass:Float,
                        I:Float,
@@ -160,7 +271,7 @@ package object orbitalkiller {
                        ang_acc:Float,
                        ang_vel:Float,
                        ang:Float,
-                       elasticity:Float,
+                       elasticity:Float,  // elasticity or restitution: 0 - inelastic, 1 - perfectly elastic, (va2 - vb2) = -e*(va1 - vb1)
                        shape: (Vec, Float) => Shape,
                        is_static:Boolean) {
     def currentShape = shape(coord, ang)
@@ -182,30 +293,38 @@ package object orbitalkiller {
         }
         val (collision_velocity, colision_ang_velocity) = collisions.foldLeft((b1.vel, b1.ang_vel)) {
           case ((res_velocity, res_ang_velocity), (Contact(_ ,b2, contact_point))) =>
-            val ma = b1.mass
-            val ia = b1.I
             val rap = contact_point - b1.coord
-            val va1 = b1.vel
-            val wa1 = b1.ang_vel/180f*math.Pi.toFloat // ang_vel in degrees, wa1 must be in radians
-            val mb = b2.mass
             val n = rap.n
-            val e = b1.elasticity
-            val j = if(mb == -1) {  // infinite mass
-              val vap1 = va1 + (wa1 * rap.perpendicular)
-              -(1+e)*(vap1*n)/(1f/ma + (rap*/n)*(rap*/n)/ia)
+            val dv = b1.vel - b2.vel
+            val relative_movement = dv*n
+            if(relative_movement < 0.01f) {  // If the objects are moving away from each other we dont need to apply an impulse
+              (res_velocity, res_ang_velocity)
             } else {
-              val ib = b2.I
-              val rbp = contact_point - b2.coord
-              val vb1 = b2.vel
-              val wb1 = b2.ang_vel/180.0*math.Pi  // ang_vel in degrees, wb1 must be in radians
-              val vab1 = va1 + (wa1 * rap.perpendicular) - vb1 - (wb1 * rbp.perpendicular)
-              -(1+e) * vab1*n/(1f/ma + 1f/mb + (rap*/n)*(rap*/n)/ia + (rbp*/n)*(rbp*/n)/ib)
+              val ma = b1.mass
+              val ia = b1.I
+
+              val va1 = b1.vel
+              val wa1 = b1.ang_vel/180f*math.Pi.toFloat // ang_vel in degrees, wa1 must be in radians
+              val mb = b2.mass
+
+              val e = b1.elasticity
+              val j = if(mb == -1) {  // infinite mass
+              val vap1 = va1 + (wa1 * rap.perpendicular)
+                -(1+e)*(vap1*n)/(1f/ma + (rap*/n)*(rap*/n)/ia)
+              } else {
+                val ib = b2.I
+                val rbp = contact_point - b2.coord
+                val vb1 = b2.vel
+                val wb1 = b2.ang_vel/180.0*math.Pi  // ang_vel in degrees, wb1 must be in radians
+                val vab1 = va1 + (wa1 * rap.perpendicular) - vb1 - (wb1 * rbp.perpendicular)
+                -(1+e) * vab1*n/(1f/ma + 1f/mb + (rap*/n)*(rap*/n)/ia + (rbp*/n)*(rbp*/n)/ib)
+              }
+              val va2 = va1 + j * n/ma
+              val wa2 = (wa1 + (rap*/(j * n))/ia)/math.Pi.toFloat*180f  // must be in degrees
+              //val vb2 = vb1 - j * n/mb
+              //val wb2 = wb1 - (rbp*/(j * n))/ib
+              (va2, wa2)
             }
-            val va2 = va1 + j * n/ma
-            val wa2 = (wa1 + (rap*/(j * n))/ia)/math.Pi.toFloat*180f  // must be in degrees
-            //val vb2 = vb1 - j * n/mb
-            //val wb2 = wb1 - (rbp*/(j * n))/ib
-            (va2, wa2)
         }
 
         val next_force = force(time, b1, other_bodies)

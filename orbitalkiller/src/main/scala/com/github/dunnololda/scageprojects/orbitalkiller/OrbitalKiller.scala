@@ -469,6 +469,7 @@ case class Engine(position:Vec, force_dir:Vec, max_power:Float, sin_angle:Float,
 
   def force = -force_dir*power
   def torque = force*/position
+
   private var is_active:Boolean = false
   def active = is_active
   def active_=(bool:Boolean) {
@@ -583,7 +584,7 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
 
   def currentReactiveForce(time:Long, bs:BodyState):Vec = {
     engines.filter(e => e.active && time < e.engines_stop_moment_seconds).foldLeft(Vec.zero) {
-      case (sum, e) => sum + e.force.rotateRad(bs.ang)
+      case (sum, e) => sum + e.force.rotateDeg(bs.ang)
     }
   }
 
