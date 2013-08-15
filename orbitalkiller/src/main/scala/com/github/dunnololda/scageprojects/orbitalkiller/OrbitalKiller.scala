@@ -32,7 +32,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   def currentBodyStates = current_body_states.values.toList
 
   def futureSystemEvolutionFrom(time:Long, body_states:List[BodyState]) = systemEvolutionFrom(
-    dt,
+    dt, elasticity = 0.9f,
     force = (time, bs, other_bodies) => {
       bs.index match {
         case ship.index =>
@@ -438,7 +438,6 @@ class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velo
       ang_acc = 0f,
       ang_vel = 0f,
       ang = 0f,
-      elasticity = 0f,
       shape = (coord, rotation) => CircleShape(coord, radius),
       is_static = false))
 }
@@ -531,7 +530,6 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
       ang_acc = 0f,
       ang_vel = 0f,
       ang = init_rotation,
-      elasticity = 1f,
       shape = (coord, rotation) => CircleShape(coord, math.max(a, b)),
       is_static = false)
   )

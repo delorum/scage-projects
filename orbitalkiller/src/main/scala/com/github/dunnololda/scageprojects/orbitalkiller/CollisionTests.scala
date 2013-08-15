@@ -11,9 +11,9 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   def currentBodyStates = current_body_states.values.toList
 
   def futureSystemEvolutionFrom(time:Long, body_states:List[BodyState]) = systemEvolutionFrom(
-    1,
+    dt = 1, elasticity = 0.9f,
     force = (time, bs, other_bodies) => {
-      bs.index match {
+      Vec(0, -0.1f) + (bs.index match {
         case "b1" =>
           bs.currentShape match {
             case b:BoxShape =>
@@ -22,7 +22,7 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
             case _ => Vec.zero
           }
         case _ => Vec.zero
-      }
+      })
     },
     torque = (time, bs, other_bodies) => {
       bs.index match {
@@ -43,19 +43,21 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   val w = windowWidth/2
   val h = windowHeight/2
 
+  def randomPos = Vec(w-95+math.random*190, h-95+math.random*190)
   def randomSpeed = Vec(math.random, math.random).n*1f
 
-  val c1 = new MyCircle("c1", Vec(w-60, h), Vec(0.5f, 0), 30, 1f)
+  /*val c1 = new MyCircle("c1", Vec(w-60, h), Vec(0.0f, 0), 30, 1f)*/
   /*val c2 = new MyCircle("c2", Vec(w+60, h+5), Vec(-0.5f, 0), 1f, 30)*/
-  val b1 = new MyBox("b1", Vec(w+60, h-20), Vec(-0.5f, 0), 30, 20, 1f)
+  val circles = (1 to 10).map(i => new MyCircle(s"c$i", randomPos, randomSpeed, 5, 1f)).toList
+
+  val b1 = new MyBox("b1", Vec(w+60, h-20), Vec(-0.0f, 0), 30, 20, 1f)
   val w1 = new MyWall("w1", Vec(w-100, h-100),  Vec(w-100, h+100))
   val w2 = new MyWall("w2", Vec(w-100, h+100),  Vec(w+100, h+100))
   val w3 = new MyWall("w3", Vec(w+100, h+100),  Vec(w+100, h-100))
   val w4 = new MyWall("w4", Vec(w+100, h-100),  Vec(w-100, h-100))
 
   private val real_system_evolution =
-    futureSystemEvolutionFrom(0, List(
-      c1.currentState,
+    futureSystemEvolutionFrom(0, circles.map(_.currentState) ::: List(
       b1.currentState,
       w1.currentState,
       w2.currentState,
@@ -82,10 +84,12 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   }
 
   def energy =
-    c1.mass*c1.currentState.vel*c1.currentState.vel/2f +
-    c1.currentState.I*c1.currentState.ang_vel*c1.currentState.ang_vel/2f +
-    b1.mass*b1.currentState.vel*b1.currentState.vel/2f +
-    b1.currentState.I*b1.currentState.ang_vel*b1.currentState.ang_vel/2f
+    circles.map(c1 => {
+      c1.mass*c1.currentState.vel.norma2/2f +
+      c1.currentState.I*c1.currentState.ang_vel.toRad*c1.currentState.ang_vel.toRad/2f
+    }).sum +
+    b1.mass*b1.currentState.vel.norma2/2f +
+    b1.currentState.I*b1.currentState.ang_vel.toRad*b1.currentState.ang_vel.toRad/2f
 
   interface {
     print(energy, 20, 20, WHITE)
@@ -108,7 +112,6 @@ class MyCircle(val index:String, init_coord:Vec, init_velocity:Vec, val radius:F
       ang_acc = 0f,
       ang_vel = 0f,
       ang = 0f,
-      elasticity = 1f,
       shape = (coord, rotation) => CircleShape(coord, radius),
       is_static = false))
 
@@ -135,9 +138,8 @@ class MyBox(val index:String, init_coord:Vec, init_velocity:Vec, val w:Float, va
       coord = init_coord,
       torque = 0f,
       ang_acc = 0f,
-      ang_vel = 1f,
+      ang_vel = 0f,
       ang = 0f,
-      elasticity = 1f,
       shape = (coord, rotation) => {
         BoxShape(coord, w, h, rotation)
       },
@@ -164,7 +166,6 @@ class MyWall(index:String, from:Vec, to:Vec) {
       ang_acc = 0f,
       ang_vel = 0f,
       ang = 0f,
-      elasticity = 1f,
       shape = (coord, rotation) => LineShape(from, to),
       is_static = true))
 
