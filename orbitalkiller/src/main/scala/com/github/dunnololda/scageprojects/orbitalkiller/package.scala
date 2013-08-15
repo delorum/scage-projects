@@ -184,6 +184,8 @@ package object orbitalkiller {
             boxCircleCollision(b1, c2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
           case l2:LineShape =>
             lineBoxCollision(l2, b1).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
+          case b2:BoxShape =>
+            boxBoxCollision(b1, b2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
           case _ => None
         }
       case _ => None
@@ -196,6 +198,7 @@ package object orbitalkiller {
   private val circle_box_collider = CircleBoxCollider.createCircleBoxCollider()
   private val box_circle_collider = new BoxCircleCollider
   private val line_box_collider = new LineBoxCollider
+  private val box_box_collider = new BoxBoxCollider
 
   def circleCircleCollision(c1:CircleShape, c2:CircleShape):Option[GeometricContactData] = {
     val num_contacts = circle_circle_collider.collide(contacts, c1.phys2dBody, c2.phys2dBody)
@@ -239,6 +242,24 @@ package object orbitalkiller {
 
   def lineBoxCollision(l:LineShape, b:BoxShape):Option[GeometricContactData] = {
     val num_contacts = line_box_collider.collide(contacts, l.phys2dBody, b.phys2dBody)
+    if(num_contacts == 0) None
+    else {
+      num_contacts match {
+        case 1 =>
+          val contact_point = contacts(0).getPosition.toVec
+          val normal = contacts(0).getNormal.toVec
+          Some(GeometricContactData(contact_point, normal))
+        case 2 =>
+          val contact_point = (contacts(0).getPosition.toVec + contacts(1).getPosition.toVec)/2
+          val normal = contacts(0).getNormal.toVec
+          Some(GeometricContactData(contact_point, normal))
+        case _ => None
+      }
+    }
+  }
+
+  def boxBoxCollision(b1:BoxShape, b2:BoxShape):Option[GeometricContactData] = {
+    val num_contacts = box_box_collider.collide(contacts, b1.phys2dBody, b2.phys2dBody)
     if(num_contacts == 0) None
     else {
       num_contacts match {

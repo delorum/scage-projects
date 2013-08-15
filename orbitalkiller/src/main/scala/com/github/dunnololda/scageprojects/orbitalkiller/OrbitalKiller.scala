@@ -106,7 +106,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     continueFutureTrajectoryMap(steps)
   }
 
-  val sun = new Star(mass = 10000, coord = Vec.zero, radius = 3000)
+  val sun = new Star("sun", mass = 10000, coord = Vec.zero, radius = 3000)
   val earth_start_position = Vec(-sun.radius*20f, sun.radius*20f)
   val earth_init_velocity = satelliteSpeed(earth_start_position, sun.coord, sun.mass)
   val earth = new Planet(
@@ -125,7 +125,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   )
 
   private val real_system_evolution =
-    futureSystemEvolutionFrom(0, List(ship.currentState, earth.currentState)).iterator
+    futureSystemEvolutionFrom(0, List(ship.currentState, earth.currentState, sun.currentState)).iterator
 
   private def nextStep() {
     val (t, body_states) = real_system_evolution.next()
@@ -140,32 +140,43 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   def viewMode = view_mode
   def viewMode_=(new_view_mode:Int) {
     new_view_mode match {
-      case 0 =>
+      case 0 => // свободный
         _center = center
         center = _center
         rotationAngle = 0
         view_mode = 0
-      case 1 =>
+      case 1 => // фиксация на корабле
         center = ship.coord
         rotationPoint = ship.coord
         rotationAngleDeg = -ship.rotation
         view_mode = 1
-      case 2 =>
+      case 2 => // посадка на планету
+        center = ship.coord
+        rotationPoint = ship.coord
+        rotationAngleDeg = {
+          val nearest_body_coord = if(ship.coord.dist2(sun.coord) < ship.coord.dist2(earth.coord)) sun.coord else earth.coord
+          val vec = ship.coord - nearest_body_coord
+          if(vec.x >= 0) vec.deg(Vec(0, 1))
+          else vec.deg(Vec(0, 1)) *(-1)
+        }
+        view_mode = 2
+      case 3 => // фиксация на солнце
         center = sun.coord
         rotationAngle = 0
-        view_mode = 2
-      case 3 =>
+        view_mode = 3
+      case 4 => // фиксация на планете
         center = earth.coord
         rotationAngle = 0
-        view_mode = 3
+        view_mode = 4
       case _ =>
     }
   }
   private def viewModeStr = view_mode match {
     case 0 => "свободный"
     case 1 => "фиксация на корабле"
-    case 2 => "фиксация на солнце"
-    case 3 => "фиксация на планете"
+    case 2 => "посадка на планету"
+    case 3 => "фиксация на солнце"
+    case 4 => "фиксация на планете"
     case _ => ""
   }
 
@@ -289,10 +300,11 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   keyIgnorePause(KEY_P, onKeyDown = switchPause())
 
   keyIgnorePause(KEY_F1, onKeyDown = {pause(); HelpScreen.run()})
-  keyIgnorePause(KEY_F2, onKeyDown = viewMode = 0)
-  keyIgnorePause(KEY_F3, onKeyDown = viewMode = 1)
-  keyIgnorePause(KEY_F4, onKeyDown = viewMode = 2)
-  keyIgnorePause(KEY_F5, onKeyDown = viewMode = 3)
+  keyIgnorePause(KEY_F2, onKeyDown = viewMode = 0)  // свободный
+  keyIgnorePause(KEY_F3, onKeyDown = viewMode = 1)  // фиксация на корабле
+  keyIgnorePause(KEY_F4, onKeyDown = viewMode = 2)  // посадка на планету
+  keyIgnorePause(KEY_F5, onKeyDown = viewMode = 3)  // фиксация на солнце
+  keyIgnorePause(KEY_F6, onKeyDown = viewMode = 4)  // фиксация на планете
 
   keyIgnorePause(KEY_N, onKeyDown = continue_future_trajectory = !continue_future_trajectory)
   keyIgnorePause(KEY_C, onKeyDown = {
@@ -429,7 +441,7 @@ class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velo
     BodyState(
       index,
       mass,
-      I = 0f,
+      I = mass*radius*radius/2f,
       force = Vec.zero,
       acc = Vec.zero,
       vel = init_velocity,
@@ -442,7 +454,7 @@ class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velo
       is_static = false))
 }
 
-class Star(val mass:Float, val coord:Vec, val radius:Float) {
+class Star(val index:String, val mass:Float, val coord:Vec, val radius:Float) {
   lazy val gravitational_radius = {
     (coord.dist(earth.coord)*math.sqrt(mass/20f/earth.mass)/(1 + math.sqrt(mass/20f/earth.mass))).toFloat
   }
@@ -451,6 +463,22 @@ class Star(val mass:Float, val coord:Vec, val radius:Float) {
     drawCircle(coord, radius, color = WHITE)
     drawCircle(coord, gravitational_radius, color = DARK_GRAY)
   }
+
+  def currentState:BodyState = currentBodyState(index).getOrElse(
+    BodyState(
+      index,
+      mass,
+      I = mass*radius*radius/2f,
+      force = Vec.zero,
+      acc = Vec.zero,
+      vel = Vec.zero,
+      coord,
+      torque = 0f,
+      ang_acc = 0f,
+      ang_vel = 0f,
+      ang = 0f,
+      shape = (coord, rotation) => CircleShape(coord, radius),
+      is_static = true))
 }
 
 case class Engine(position:Vec, force_dir:Vec, max_power:Float, sin_angle:Float, ship:Ship) {
@@ -530,7 +558,7 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
       ang_acc = 0f,
       ang_vel = 0f,
       ang = init_rotation,
-      shape = (coord, rotation) => CircleShape(coord, math.max(a, b)),
+      shape = (coord, rotation) => BoxShape(coord, a, b, rotation),
       is_static = false)
   )
 
