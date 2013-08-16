@@ -4,6 +4,10 @@ import com.github.dunnololda.scage.ScageLib._
 import collection.mutable.ArrayBuffer
 import scala.collection.mutable
 
+// TODO: implement this
+sealed trait ViewMode
+sealed trait FlightMode
+
 object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
 
   private var _time_mulitplier = 1
@@ -59,6 +63,8 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   private val future_trajectory = ArrayBuffer[(Long, List[BodyState])]()
   private val future_trajectory_map = mutable.HashMap[String, ArrayBuffer[(Long, BodyState)]]()
   private def future_trajectory_capacity = if(ship.flightMode == 1) 10000 else 100
+
+  private val body_trajectories_map = mutable.HashMap[String, ArrayBuffer[(Long, BodyState)]]()
 
   private def updateFutureTrajectoryMap() {
     future_trajectory_map.clear()
@@ -116,9 +122,11 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     init_velocity = earth_init_velocity,
     radius = 1000)
 
-  val ship_start_position = sun.coord + Vec(sun.radius*1.5f, sun.radius*1.5f)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, sun.coord, sun.mass)
-  val ship = new Ship(a = 50, b = 100,
+  /*val ship_start_position = sun.coord + Vec(sun.radius*1.5f, sun.radius*1.5f)*/
+  /*val ship_init_velocity = satelliteSpeed(ship_start_position, sun.coord, sun.mass)*/
+  val ship_start_position = earth.coord + Vec(earth.radius*1.5f, earth.radius*1.5f)
+  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.mass)
+  val ship = new Ship("ship", a = 50, b = 100,
     init_coord = ship_start_position,
     init_velocity = ship_init_velocity,
     init_rotation = 45
@@ -127,11 +135,19 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   private val real_system_evolution =
     futureSystemEvolutionFrom(0, List(ship.currentState, earth.currentState, sun.currentState)).iterator
 
+  private var skipped_points = 0
   private def nextStep() {
     val (t, body_states) = real_system_evolution.next()
     _time = t
     body_states.foreach {
-      case bs => current_body_states(bs.index) = bs
+      case bs =>
+        current_body_states(bs.index) = bs
+        if(skipped_points == trajectory_accuracy-1) {
+          val body_trajectory = body_trajectories_map.getOrElseUpdate(bs.index, ArrayBuffer[(Long, BodyState)]())
+          body_trajectory += (_time -> bs)
+          if(body_trajectory.size >= trajectory_capacity) body_trajectory.remove(0, 1000)
+          skipped_points = 0
+        } else skipped_points += 1
     }
   }
   nextStep()
@@ -180,7 +196,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     case _ => ""
   }
 
-  def satelliteSpeedInPoint(coord:Vec, speed:Vec):String = {
+  def satelliteSpeedInPoint(coord:Vec):String = {
     if(coord.dist(earth.coord) < earth.gravitational_radius) {
       val ss = earth.linearVelocity + satelliteSpeed(coord, earth.coord, earth.mass)
       f"${ss.norma*60*base_dt}%.2f м/сек (velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек)"
@@ -368,7 +384,43 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     drawLine(to2, arrow22, DARK_GRAY)
 
     future_trajectory_map.foreach {
-      case (index, body_states) => drawSlidingLines(body_states.map(_._2.coord), color = YELLOW)
+      case (index, body_states) =>
+        index match {
+          case "ship" =>
+            viewMode match {
+              case 4 =>
+                drawSlidingLines(
+                  for {
+                    ((_, bs), (_, earth_bs)) <- body_states.zip(future_trajectory_map("earth"))
+                    coord = bs.coord - earth_bs.coord + earth.coord
+                  } yield coord,
+                  color = YELLOW)
+              case _ =>
+                drawSlidingLines(body_states.map(_._2.coord), color = YELLOW)
+            }
+          case _ =>
+            drawSlidingLines(body_states.map(_._2.coord), color = YELLOW)
+        }
+    }
+
+    body_trajectories_map.foreach {
+      case (index, body_states) =>
+        index match {
+          case "ship" =>
+            viewMode match {
+              case 4 =>
+                drawSlidingLines(
+                  for {
+                    ((_, bs), (_, earth_bs)) <- body_states.zip(body_trajectories_map("earth"))
+                    coord = bs.coord - earth_bs.coord + earth.coord
+                  } yield coord,
+                  color = GREEN)
+              case _ =>
+                drawSlidingLines(body_states.map(_._2.coord), color = GREEN)
+            }
+          case _ =>
+            drawSlidingLines(body_states.map(_._2.coord), color = GREEN)
+        }
     }
   }
 
@@ -386,9 +438,9 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
       20, 260, ORANGE)
     print(s"Полетный режим: ${ship.flightModeStr}",
       20, 240, ORANGE)
-    print(f"Расстояние и скорость относительно звезды: ${ship.coord.dist(sun.coord)}%.2f м, ${ship.linearVelocity*((ship.coord - sun.coord).n)*60*base_dt}%.2f м/сек",
+    print(f"Расстояние и скорость относительно звезды: ${ship.coord.dist(sun.coord)}%.2f м, ${ship.linearVelocity* (ship.coord - sun.coord).n *60*base_dt}%.2f м/сек",
       20, 220, ORANGE)
-    print(f"Расстояние и скорость относительно планеты: ${ship.coord.dist(earth.coord)}%.2f м, ${ship.linearVelocity*((ship.coord - earth.coord).n)*60*base_dt}%.2f м/сек",
+    print(f"Расстояние и скорость относительно планеты: ${ship.coord.dist(earth.coord)}%.2f м, ${ship.linearVelocity* (ship.coord - earth.coord).n *60*base_dt}%.2f м/сек",
       20, 200, ORANGE)
     print(f"Скорость: ${ship.linearVelocity.norma*60*base_dt}%.2f м/сек ( velx = ${ship.linearVelocity.x*60*base_dt}%.2f м/сек, vely = ${ship.linearVelocity.y*60*base_dt}%.2f м/сек)",
       20, 180, ORANGE)
@@ -398,7 +450,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
       20, 140, ORANGE)
     print(f"Угол: ${ship.rotation}%.2f град",
       20, 120, ORANGE)
-    print(f"Скорость для спутника в данной точке: ${satelliteSpeedInPoint(ship.coord, ship.linearVelocity)}",
+    print(f"Скорость для спутника в данной точке: ${satelliteSpeedInPoint(ship.coord)}",
       20, 100, ORANGE)
     print(f"Линейная скорость в момент отключения двигателей: $linearSpeedWhenEnginesOff",
       20, 80, ORANGE)
@@ -416,26 +468,13 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
 import OrbitalKiller._
 
 class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velocity:Vec, val radius:Float) {
-  private var skipped_points = 0
-  private val body_trajectory = ArrayBuffer[Vec]()
-
   lazy val gravitational_radius = {
     (coord.dist(sun.coord)*math.sqrt(mass/20f/sun.mass)/(1 + math.sqrt(mass/20f/sun.mass))).toFloat
-  }
-
-  action {
-    if(skipped_points == trajectory_accuracy-1) {
-      body_trajectory += coord
-      skipped_points = 0
-    } else skipped_points += 1
-
-    if(body_trajectory.size >= trajectory_capacity) body_trajectory.remove(0, 1000)
   }
 
   render {
     drawCircle(coord, radius, color = WHITE)
     drawCircle(coord, gravitational_radius, color = DARK_GRAY)
-    drawSlidingLines(body_trajectory, color = GREEN)
   }
 
   def coord = currentState.coord
@@ -506,8 +545,8 @@ case class Engine(position:Vec, force_dir:Vec, max_power:Float, sin_angle:Float,
     }
   }
 
-  def force = -force_dir*power
-  def torque = force*/position
+  def force = force_dir*power
+  def torque = -force*/position
 
   private var is_active:Boolean = false
   def active = is_active
@@ -551,9 +590,7 @@ case class Engine(position:Vec, force_dir:Vec, max_power:Float, sin_angle:Float,
   }
 }
 
-class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zero, init_rotation:Float = 0f) {
-  val index = s"${System.currentTimeMillis()}-${(math.random*1000).toInt}"
-
+class Ship(val index:String, val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zero, init_rotation:Float = 0f) {
   var selected_engine:Option[Engine] = None
   def isSelectedEngine(e:Engine):Boolean = {
     selected_engine.exists(x => x == e)
@@ -637,10 +674,6 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
     }
   }
 
-  private var skipped_points = 0
-  private val body_trajectory = ArrayBuffer[Vec]()
-
-
   def switchEngine(e:Engine) {
     e.switchActive()
     updateFutureTrajectory()
@@ -707,13 +740,6 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
   }
 
   action {
-    if(skipped_points == trajectory_accuracy-1) {
-      body_trajectory += coord
-      skipped_points = 0
-    } else skipped_points += 1
-
-    if(body_trajectory.size >= trajectory_capacity) body_trajectory.remove(0, 1000)
-
     flight_mode match {
       case 1 =>
       case 2 => // запрет вращения
@@ -774,7 +800,5 @@ class Ship(val a:Float, val b:Float, init_coord:Vec, init_velocity:Vec = Vec.zer
     drawLine(coord, coord + linearVelocity.n*100, CYAN) // current velocity
     drawLine(coord, coord + (sun.coord - coord).n*100, YELLOW) // direction to sun
     drawLine(coord, coord + (earth.coord - coord).n*100, GREEN) // direction to earth
-
-    drawSlidingLines(body_trajectory, color = GREEN)
   }
 }
