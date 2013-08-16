@@ -59,7 +59,7 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
     } else addCircleBody(i)
   }
   dynamic_bodies += b1 += b2
-  (1 to 50).map(i => addCircleBody(i))
+  (1 to 5).map(i => addCircleBody(i))
 
   /*val c1 = new MyCircle("c1", Vec(w-60, h), Vec(0.0f, 0), 30, 1f)*/
   /*val c2 = new MyCircle("c2", Vec(w+60, h+5), Vec(-0.5f, 0), 1f, 30)*/

@@ -192,7 +192,7 @@ package object orbitalkiller {
     }
   }
 
-  private val contacts = Array(new net.phys2d.raw.Contact, new net.phys2d.raw.Contact)
+  private val contacts = Array.fill(10)(new net.phys2d.raw.Contact)
   private val circle_circle_collider = new CircleCircleCollider
   private val line_circle_collider = new LineCircleCollider
   private val circle_box_collider = CircleBoxCollider.createCircleBoxCollider()
@@ -305,54 +305,50 @@ package object orbitalkiller {
     for {
       b1 <- bodies
       if !b1.is_static && !collision_data.contains(b1.index)
-    } {
-      val other_bodies = bodies.filterNot(_ == b1)
-      val collisions = other_bodies.flatMap {
+      Contact(_ ,b2, contact_point, normal) <- bodies.filterNot(_ == b1).flatMap {
         case b2 => maybeCollision(b1, b2)
       }
-      collisions.foreach {
-        case Contact(_ ,b2, contact_point, normal) =>
-          val rap = contact_point - b1.coord
-          val n = normal.n
-          val dv = b1.vel - b2.vel
-          val relative_movement = dv*n
-          if(relative_movement < 0) {  // If the objects are moving away from each other we dont need to apply an impulse
-            collision_data += (b1.index -> (b1.vel, b1.ang_vel))
-            collision_data += (b2.index -> (b2.vel, b2.ang_vel))
-          } else {
-            val ma = b1.mass
-            val ia = b1.I
+    } {
+      val rap = contact_point - b1.coord
+      val n = normal.n
+      val dv = b1.vel - b2.vel
+      val relative_movement = dv*n
+      if(relative_movement < 0) {  // If the objects are moving away from each other we dont need to apply an impulse
+        collision_data += (b1.index -> (b1.vel, b1.ang_vel))
+        collision_data += (b2.index -> (b2.vel, b2.ang_vel))
+      } else {
+        val ma = b1.mass
+        val ia = b1.I
 
-            val va1 = b1.vel
-            val wa1 = b1.ang_vel/180f*math.Pi.toFloat // ang_vel in degrees, wa1 must be in radians
-            val mb = b2.mass
+        val va1 = b1.vel
+        val wa1 = b1.ang_vel/180f*math.Pi.toFloat // ang_vel in degrees, wa1 must be in radians
+        val mb = b2.mass
 
-            val e = elasticity
-            if(mb == -1) {  // infinite mass
-              val vap1 = va1 + (wa1 * rap.perpendicular)
-              val j = -(1+e)*(vap1*n)/(1f/ma + (rap*/n)*(rap*/n)/ia)
+        val e = elasticity
+        if(mb == -1) {  // infinite mass
+        val vap1 = va1 + (wa1 * rap.perpendicular)
+          val j = -(1+e)*(vap1*n)/(1f/ma + (rap*/n)*(rap*/n)/ia)
 
-              val va2 = va1 + (j * n)/ma
-              val wa2 = (wa1 + (rap*/(j * n))/ia)/math.Pi.toFloat*180f  // must be in degrees
+          val va2 = va1 + (j * n)/ma
+          val wa2 = (wa1 + (rap*/(j * n))/ia)/math.Pi.toFloat*180f  // must be in degrees
 
-              collision_data += (b1.index -> (va2, wa2))
-            } else {
-              val ib = b2.I
-              val rbp = contact_point - b2.coord
-              val vb1 = b2.vel
-              val wb1 = b2.ang_vel/180f*math.Pi.toFloat  // ang_vel in degrees, wb1 must be in radians
-              val vab1 = va1 + (wa1 * rap.perpendicular) - vb1 - (wb1 * rbp.perpendicular)
-              val j = -(1+e) * vab1*n/(1f/ma + 1f/mb + (rap*/n)*(rap*/n)/ia + (rbp*/n)*(rbp*/n)/ib)
+          collision_data += (b1.index -> (va2, wa2))
+        } else {
+          val ib = b2.I
+          val rbp = contact_point - b2.coord
+          val vb1 = b2.vel
+          val wb1 = b2.ang_vel/180f*math.Pi.toFloat  // ang_vel in degrees, wb1 must be in radians
+          val vab1 = va1 + (wa1 * rap.perpendicular) - vb1 - (wb1 * rbp.perpendicular)
+          val j = -(1+e) * vab1*n/(1f/ma + 1f/mb + (rap*/n)*(rap*/n)/ia + (rbp*/n)*(rbp*/n)/ib)
 
-              val va2 = va1 + (j * n)/ma
-              val wa2 = (wa1 + (rap*/(j * n))/ia)/math.Pi.toFloat*180f  // must be in degrees
-              collision_data += (b1.index -> (va2, wa2))
+          val va2 = va1 + (j * n)/ma
+          val wa2 = (wa1 + (rap*/(j * n))/ia)/math.Pi.toFloat*180f  // must be in degrees
+          collision_data += (b1.index -> (va2, wa2))
 
-              val vb2 = vb1 - (j * n)/mb
-              val wb2 = (wb1 - (rbp*/(j * n))/ib)/math.Pi.toFloat*180f  // must be in degrees
-              collision_data += (b2.index -> (vb2, wb2))
-            }
-          }
+          val vb2 = vb1 - (j * n)/mb
+          val wb2 = (wb1 - (rbp*/(j * n))/ib)/math.Pi.toFloat*180f  // must be in degrees
+          collision_data += (b2.index -> (vb2, wb2))
+        }
       }
     }
 
