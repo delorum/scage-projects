@@ -41,7 +41,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
       bs.index match {
         case ship.index =>
           gravityForce(sun.coord, sun.mass, bs.coord, bs.mass) +
-          other_bodies.filter(_.index == "earth").map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass)).sum +
+          other_bodies.find(_.index == earth.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass)).getOrElse(Vec.zero) +
           ship.currentReactiveForce(time, bs)
         case earth.index =>
           gravityForce(sun.coord, sun.mass, bs.coord, bs.mass)
@@ -68,7 +68,11 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
 
   private def updateFutureTrajectoryMap() {
     future_trajectory_map.clear()
-    future_trajectory.foreach {
+    future_trajectory
+      .zipWithIndex
+      .withFilter(_._2 % trajectory_accuracy == 0)
+      .map(_._1)
+      .foreach {
       case (time_moment, body_states) =>
         body_states.foreach {
           case bs =>
@@ -82,15 +86,16 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     future_trajectory ++= {
       futureSystemEvolutionFrom(time, currentBodyStates)
         .take(future_trajectory_capacity)
-        .zipWithIndex
-        .filter(_._2 % trajectory_accuracy == 0)
-        .map(_._1)
     }
     updateFutureTrajectoryMap()
   }
 
   private def continueFutureTrajectoryMap(steps:Seq[(Long, List[BodyState])]) {
-    steps.foreach {
+    steps
+      .zipWithIndex
+      .withFilter(_._2 % trajectory_accuracy == 0)
+      .map(_._1)
+      .foreach {
       case (time_moment, body_states) =>
         body_states.foreach {
           case bs =>
@@ -104,9 +109,6 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     val steps = {
       futureSystemEvolutionFrom(t, s)
         .take(future_trajectory_capacity)
-        .zipWithIndex
-        .filter(_._2 % trajectory_accuracy == 0)
-        .map(_._1)
     }.toSeq
     future_trajectory ++= steps
     continueFutureTrajectoryMap(steps)
@@ -139,15 +141,19 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   private def nextStep() {
     val (t, body_states) = real_system_evolution.next()
     _time = t
-    body_states.foreach {
-      case bs =>
+    if(skipped_points == trajectory_accuracy-1) {
+      body_states.foreach(bs => {
         current_body_states(bs.index) = bs
-        if(skipped_points == trajectory_accuracy-1) {
-          val body_trajectory = body_trajectories_map.getOrElseUpdate(bs.index, ArrayBuffer[(Long, BodyState)]())
-          body_trajectory += (_time -> bs)
-          if(body_trajectory.size >= trajectory_capacity) body_trajectory.remove(0, 1000)
-          skipped_points = 0
-        } else skipped_points += 1
+        val body_trajectory = body_trajectories_map.getOrElseUpdate(bs.index, ArrayBuffer[(Long, BodyState)]())
+        body_trajectory += (_time -> bs)
+        if(body_trajectory.size >= trajectory_capacity) body_trajectory.remove(0, 1000)
+      })
+      skipped_points = 0
+    } else {
+      body_states.foreach(bs => {
+        current_body_states(bs.index) = bs
+      })
+      skipped_points += 1
     }
   }
   nextStep()
@@ -391,7 +397,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
               case 4 =>
                 drawSlidingLines(
                   for {
-                    ((_, bs), (_, earth_bs)) <- body_states.zip(future_trajectory_map("earth"))
+                    ((_, bs), (_, earth_bs)) <- body_states.zip(future_trajectory_map(earth.index))
                     coord = bs.coord - earth_bs.coord + earth.coord
                   } yield coord,
                   color = YELLOW)
@@ -411,7 +417,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
               case 4 =>
                 drawSlidingLines(
                   for {
-                    ((_, bs), (_, earth_bs)) <- body_states.zip(body_trajectories_map("earth"))
+                    ((_, bs), (_, earth_bs)) <- body_states.zip(body_trajectories_map(earth.index))
                     coord = bs.coord - earth_bs.coord + earth.coord
                   } yield coord,
                   color = GREEN)
