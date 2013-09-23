@@ -4,7 +4,7 @@ import com.github.dunnololda.scage.ScageLib._
 import com.github.dunnololda.scage.ScageLib.Vec
 import net.phys2d.raw.collide._
 import net.phys2d.raw.Body
-import net.phys2d.raw.shapes.{Circle, Box, Line}
+import net.phys2d.raw.shapes.{Polygon, Circle, Box, Line}
 import scala.Some
 import scala.collection.mutable
 
@@ -117,6 +117,23 @@ package object orbitalkiller {
     }
   }
 
+  case class PolygonShape(points:List[Vec]) extends Shape {
+    def aabb: AABB = {
+      val xs = points.map(p => p.x)
+      val ys = points.map(p => p.y)
+      val center = Vec(xs.sum/xs.length, ys.sum/ys.length)
+      val min_x = xs.min
+      val max_x = xs.max
+      val min_y = ys.min
+      val max_y = ys.max
+      AABB(center, max_x - min_x, max_y - min_y)
+    }
+
+    def phys2dBody: Body = {
+      new Body(new Polygon(points.map(_.toPhys2dVec).toArray), 1f)
+    }
+  }
+
   class Space(val bodies:List[BodyState], val center:Vec, val width:Float, val height:Float) {
     def this(bodies:List[BodyState], center:Vec) = {
       this(bodies, center, {
@@ -197,40 +214,6 @@ package object orbitalkiller {
   case class GeometricContactData(contact_point:Vec, normal:Vec)
   case class Contact(body1:BodyState, body2:BodyState, contact_point:Vec, normal:Vec)
 
-  def maybeCollision(body1:BodyState, body2:BodyState):Option[Contact] = {
-    body1.currentShape match {
-      case c1:CircleShape =>
-        body2.currentShape match {
-          case c2:CircleShape =>
-            circleCircleCollision(c1, c2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
-          case l2:LineShape =>
-            lineCircleCollision(l2, c1).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
-          case b2:BoxShape =>
-            circleBoxCollision(c1, b2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
-          case _ => None
-        }
-      case l1:LineShape =>
-        body2.currentShape match {
-          case c2:CircleShape =>
-            lineCircleCollision(l1, c2).map(gcd => Contact(body2, body1, gcd.contact_point, gcd.normal))
-          case b2:BoxShape =>
-            lineBoxCollision(l1, b2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
-          case _ => None
-        }
-      case b1:BoxShape =>
-        body2.currentShape match {
-          case c2:CircleShape =>
-            boxCircleCollision(b1, c2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
-          case l2:LineShape =>
-            lineBoxCollision(l2, b1).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
-          case b2:BoxShape =>
-            boxBoxCollision(b1, b2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
-          case _ => None
-        }
-      case _ => None
-    }
-  }
-
   private val contacts = Array.fill(10)(new net.phys2d.raw.Contact)
   private val circle_circle_collider = new CircleCircleCollider
   private val line_circle_collider = new LineCircleCollider
@@ -238,6 +221,11 @@ package object orbitalkiller {
   private val box_circle_collider = new BoxCircleCollider
   private val line_box_collider = new LineBoxCollider
   private val box_box_collider = new BoxBoxCollider
+  private val line_polygon_collider = new LinePolygonCollider
+  private val polygon_box_collider = new PolygonBoxCollider
+  private val polygon_circle_collider = new PolygonCircleCollider
+  private val polygon_polygon_collider = new PolygonPolygonCollider
+  private val line_line_collider = new LineLineCollider
 
   def circleCircleCollision(c1:CircleShape, c2:CircleShape):Option[GeometricContactData] = {
     val num_contacts = circle_circle_collider.collide(contacts, c1.phys2dBody, c2.phys2dBody)
@@ -312,6 +300,150 @@ package object orbitalkiller {
           Some(GeometricContactData(contact_point, normal))
         case _ => None
       }
+    }
+  }
+
+  def linePolygonCollision(l:LineShape, p:PolygonShape):Option[GeometricContactData] = {
+    val num_contacts = line_polygon_collider.collide(contacts, l.phys2dBody, p.phys2dBody)
+    if(num_contacts == 0) None
+    else {
+      num_contacts match {
+        case 1 =>
+          val contact_point = contacts(0).getPosition.toVec
+          val normal = contacts(0).getNormal.toVec
+          Some(GeometricContactData(contact_point, normal))
+        case 2 =>
+          val contact_point = (contacts(0).getPosition.toVec + contacts(1).getPosition.toVec)/2
+          val normal = contacts(0).getNormal.toVec
+          Some(GeometricContactData(contact_point, normal))
+        case _ => None
+      }
+    }
+  }
+
+  def polygonBoxCollision(p:PolygonShape, b:BoxShape):Option[GeometricContactData] = {
+    val num_contacts = polygon_box_collider.collide(contacts, p.phys2dBody, b.phys2dBody)
+    if(num_contacts == 0) None
+    else {
+      num_contacts match {
+        case 1 =>
+          val contact_point = contacts(0).getPosition.toVec
+          val normal = contacts(0).getNormal.toVec
+          Some(GeometricContactData(contact_point, normal))
+        case 2 =>
+          val contact_point = (contacts(0).getPosition.toVec + contacts(1).getPosition.toVec)/2
+          val normal = contacts(0).getNormal.toVec
+          Some(GeometricContactData(contact_point, normal))
+        case _ => None
+      }
+    }
+  }
+
+  def polygonCircleCollision(p:PolygonShape, c:CircleShape):Option[GeometricContactData] = {
+    val num_contacts = polygon_circle_collider.collide(contacts, p.phys2dBody, c.phys2dBody)
+    if(num_contacts == 0) None
+    else {
+      num_contacts match {
+        case 1 =>
+          val contact_point = contacts(0).getPosition.toVec
+          val normal = contacts(0).getNormal.toVec
+          Some(GeometricContactData(contact_point, normal))
+        case 2 =>
+          val contact_point = (contacts(0).getPosition.toVec + contacts(1).getPosition.toVec)/2
+          val normal = contacts(0).getNormal.toVec
+          Some(GeometricContactData(contact_point, normal))
+        case _ => None
+      }
+    }
+  }
+
+  def polygonPolygonCollision(p1:PolygonShape, p2:PolygonShape):Option[GeometricContactData] = {
+    val num_contacts = polygon_polygon_collider.collide(contacts, p1.phys2dBody, p2.phys2dBody)
+    if(num_contacts == 0) None
+    else {
+      num_contacts match {
+        case 1 =>
+          val contact_point = contacts(0).getPosition.toVec
+          val normal = contacts(0).getNormal.toVec
+          Some(GeometricContactData(contact_point, normal))
+        case 2 =>
+          val contact_point = (contacts(0).getPosition.toVec + contacts(1).getPosition.toVec)/2
+          val normal = contacts(0).getNormal.toVec
+          Some(GeometricContactData(contact_point, normal))
+        case _ => None
+      }
+    }
+  }
+
+  def lineLineCollision(l1:LineShape, l2:LineShape):Option[GeometricContactData] = {
+    val num_contacts = line_line_collider.collide(contacts, l1.phys2dBody, l2.phys2dBody)
+    if(num_contacts == 0) None
+    else {
+      num_contacts match {
+        case 1 =>
+          val contact_point = contacts(0).getPosition.toVec
+          val normal = contacts(0).getNormal.toVec
+          Some(GeometricContactData(contact_point, normal))
+        case 2 =>
+          val contact_point = (contacts(0).getPosition.toVec + contacts(1).getPosition.toVec)/2
+          val normal = contacts(0).getNormal.toVec
+          Some(GeometricContactData(contact_point, normal))
+        case _ => None
+      }
+    }
+  }
+
+  def maybeCollision(body1:BodyState, body2:BodyState):Option[Contact] = {
+    body1.currentShape match {
+      case c1:CircleShape =>
+        body2.currentShape match {
+          case c2:CircleShape =>
+            circleCircleCollision(c1, c2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+          case l2:LineShape =>
+            lineCircleCollision(l2, c1).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
+          case b2:BoxShape =>
+            circleBoxCollision(c1, b2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+          case p2:PolygonShape =>
+            polygonCircleCollision(p2, c1).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+          case _ => None
+        }
+      case l1:LineShape =>
+        body2.currentShape match {
+          case c2:CircleShape =>
+            lineCircleCollision(l1, c2).map(gcd => Contact(body2, body1, gcd.contact_point, gcd.normal))
+          case l2:LineShape =>
+            lineLineCollision(l1, l2).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
+          case b2:BoxShape =>
+            lineBoxCollision(l1, b2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+          case p2:PolygonShape =>
+            linePolygonCollision(l1, p2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+          case _ => None
+        }
+      case b1:BoxShape =>
+        body2.currentShape match {
+          case c2:CircleShape =>
+            boxCircleCollision(b1, c2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+          case l2:LineShape =>
+            lineBoxCollision(l2, b1).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
+          case b2:BoxShape =>
+            boxBoxCollision(b1, b2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+          case p2:PolygonShape =>
+            polygonBoxCollision(p2, b1).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+          case _ => None
+        }
+      case p1:PolygonShape =>
+        body2.currentShape match {
+          case c2:CircleShape =>
+            polygonCircleCollision(p1, c2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+          case l2:LineShape =>
+            linePolygonCollision(l2, p1).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
+          case b2:BoxShape =>
+            polygonBoxCollision(p1, b2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+          case p2:PolygonShape =>
+            polygonPolygonCollision(p1, p2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+          case _ => None
+        }
+      case _ => None
     }
   }
 
