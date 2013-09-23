@@ -12,74 +12,6 @@ package object orbitalkiller {
   val G:Float = 20
   val base_dt = 0.01f // 1/60 секунды
 
-  case class M3(row1:(Float, Float, Float), row2:(Float, Float, Float), row3:(Float, Float, Float)) {
-    val (a11, a12, a13) = row1
-    val (a21, a22, a23) = row2
-    val (a31, a32, a33) = row3
-
-    val (a, b, c) = row1
-    val (d, e, f) = row2
-    val (g, h, k) = row3
-
-    val rows = List(List(a11, a12, a13),
-                    List(a21, a22, a23),
-                    List(a31, a32, a33))
-
-    val columns = List(List(a11, a21, a31),
-                       List(a12, a22, a32),
-                       List(a13, a23, a33))
-    val det = {
-      a11*a22*a33 - a11*a23*a32 - a12*a21*a33 + a12*a23*a31 + a13*a21*a32 - a13*a22*a31
-    }
-
-    val t = M3(
-      (a11, a21, a31),
-      (a12, a22, a32),
-      (a13, a23, a33)
-    )
-
-    val inv:Option[M3] = {
-      if(det == 0) None
-      else {
-        Some(M3(
-          row1 = ((e*k - f*h)/det, -(b*k - c*h)/det, (b*f - c*e)/det),
-          row2 = (-(d*k - f*g)/det, (a*k - c*g)/det, -(a*f - c*d)/det),
-          row3 = ((d*h - e*g)/det, -(a*h - b*g)/det, (a*e - b*d)/det)
-        ))
-      }
-    }
-
-    def *(m:M3):M3 = {
-      val p = for {
-        (row, m_row) <- rows.zip(m.columns)
-      } yield {
-        for {
-          (a, b) <- row.zip(m_row)
-        } yield a*b
-      }
-      M3(
-        row1 = (p(0)(0), p(0)(1), p(0)(2)),
-        row2 = (p(1)(0), p(1)(1), p(1)(2)),
-        row3 = (p(2)(0), p(2)(1), p(2)(2))
-      )
-    }
-
-    def *(v:(Float, Float, Float)):(Float, Float, Float) = {
-      val (v1, v2, v3) = v
-      (a11*v1 + a12*v2 + a13*v3,
-       a21*v1 + a22*v2 + a23*v3,
-       a31*v1 + a32*v2 + a33*v3)
-    }
-
-    def *(x:Float):M3 = {
-      M3(
-        (a11*x, a21*x, a31*x),
-        (a12*x, a22*x, a32*x),
-        (a13*x, a23*x, a33*x)
-      )
-    }
-  }
-
   case class AABB(center:Vec, width:Float, height:Float) {
     val half_width = width/2
     val half_height = height/2
@@ -227,7 +159,7 @@ package object orbitalkiller {
     }
 
 
-    val aabb:AABB = AABB(center, width, height)
+    lazy val aabb:AABB = AABB(center, width, height)
 
     lazy val quadSpaces:List[Space] = {
       val AABB(c, w, h) = aabb
@@ -400,11 +332,13 @@ package object orbitalkiller {
   }
 
   def systemEvolutionFrom(dt: => Float,
+                          base_dt:Float = 0.01f,
                           elasticity:Float, // elasticity or restitution: 0 - inelastic, 1 - perfectly elastic, (va2 - vb2) = -e*(va1 - vb1)
-                          force: (Long, BodyState, List[BodyState]) => Vec,
-                          torque: (Long, BodyState, List[BodyState]) => Float)
+                          force: (Long, BodyState, List[BodyState]) => Vec = (time, body, other_bodies) => Vec.zero,
+                          torque: (Long, BodyState, List[BodyState]) => Float = (time, body, other_bodies) => 0f,
+                          changeFunction:(Long, List[BodyState]) => (Long, List[BodyState]) =  (time, bodies) => (time, bodies))
                          (current_state:(Long, List[BodyState])):Stream[(Long, List[BodyState])] = {
-    val (time, bodies) = current_state
+    val (time, bodies) = changeFunction(current_state._1, current_state._2)
 
     val next_time = time + (dt/base_dt).toLong
 
@@ -489,7 +423,7 @@ package object orbitalkiller {
     }
 
     val pewpew = (next_time, next_bodies)
-    pewpew #:: systemEvolutionFrom(dt, elasticity, force, torque)(pewpew)
+    pewpew #:: systemEvolutionFrom(dt, base_dt, elasticity, force, torque, changeFunction)(pewpew)
   }
 
   def gravityForce(body1_coord:Vec, body1_mass:Float, body2_coord:Vec, body2_mass:Float):Vec = {

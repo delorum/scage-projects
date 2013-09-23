@@ -11,7 +11,7 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   def currentBodyStates = current_body_states.values.toList
 
   def futureSystemEvolutionFrom(time:Long, body_states:List[BodyState]) = systemEvolutionFrom(
-    dt = 1, elasticity = 1f,
+    dt = 1, elasticity = 0.999f,
     force = (time, bs, other_bodies) => {
       /*Vec(0, -0.01f) + */Vec.zero
     },
