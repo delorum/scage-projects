@@ -13,31 +13,10 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   def futureSystemEvolutionFrom(time:Long, body_states:List[BodyState]) = systemEvolutionFrom(
     dt = 1, elasticity = 1f,
     force = (time, bs, other_bodies) => {
-      Vec(0, -0.01f) + (bs.index match {
-        case "b1" =>
-          bs.currentShape match {
-            case b:BoxShape =>
-              if(_force) Vec(1, 0).rotateDeg(bs.ang)
-              else Vec.zero
-            case _ => Vec.zero
-          }
-        case _ => Vec.zero
-      })
+      /*Vec(0, -0.01f) + */Vec.zero
     },
     torque = (time, bs, other_bodies) => {
-      bs.index match {
-        case "b1" =>
-          bs.currentShape match {
-            case b:BoxShape =>
-              if(_force) {
-                val force = Vec(1, 0)
-                val position = Vec(-b.w/2, b.h/4)
-                -force*/position
-              } else 0f
-            case _ => 0f
-          }
-        case _ => 0f
-      }
+      0f
     })((time, body_states))
 
   val w = windowWidth/2
@@ -49,6 +28,7 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   val dynamic_bodies = ArrayBuffer[MyBody]()
   val b1 = new MyBox("b1", Vec(w+60, h-20), Vec(-0.0f, 0), 30, 20, 1f*6)
   val b2 = new MyBox("b2", Vec(w-60, h-20), Vec(-0.0f, 0), 30, 20, 1f*6)
+  dynamic_bodies += b1 += b2
   def addCircleBody(i:Int) {
     val c =  new MyCircle(s"c$i", randomPos, randomSpeed, 5, 1f)
     if(dynamic_bodies.forall(b => maybeCollision(b.currentState, c.currentState).isEmpty) &&
@@ -58,7 +38,6 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
       dynamic_bodies += c
     } else addCircleBody(i)
   }
-  dynamic_bodies += b1 += b2
   (1 to 5).map(i => addCircleBody(i))
 
   /*val c1 = new MyCircle("c1", Vec(w-60, h), Vec(0.0f, 0), 30, 1f)*/
@@ -84,13 +63,6 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   }
   nextStep()
 
-  private var _force = false
-  key(KEY_7, onKeyDown = {
-    _force = true
-  }, onKeyUp = {
-    _force = false
-  })
-
   action {
     nextStep()
   }
@@ -100,6 +72,15 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
       b1.currentState.mass*b1.currentState.vel.norma2/2f +
         b1.currentState.I*b1.currentState.ang_vel.toRad*b1.currentState.ang_vel.toRad/2f
     }).sum
+
+  render {
+    val spaces = splitSpace(new Space(current_body_states.values.toList, Vec.zero), 5, 3)
+    spaces.foreach {
+      case s =>
+        drawRectCentered(s.center, s.width, s.height, WHITE)
+        print(s.bodies.length, s.center, WHITE, align = "center")
+    }
+  }
 
   interface {
     print(energy, 20, 20, WHITE)
@@ -135,8 +116,8 @@ class MyCircle(val index:String, init_coord:Vec, init_velocity:Vec, val radius:F
   def shape:CircleShape = CircleShape(coord, radius)
 
   render(0) {
-    drawCircle(coord, radius, WHITE)
-    drawLine(coord, coord + Vec(0,1).rotateDeg(currentState.ang).n*radius, WHITE)
+    drawCircle(coord, radius, GREEN)
+    drawLine(coord, coord + Vec(0,1).rotateDeg(currentState.ang).n*radius, GREEN)
   }
 }
 
@@ -162,7 +143,7 @@ class MyBox(val index:String, init_coord:Vec, init_velocity:Vec, val w:Float, va
   render(0) {
     openglMove(currentState.coord)
     openglRotateDeg(currentState.ang)
-    drawRectCentered(Vec.zero, w, h, WHITE)
+    drawRectCentered(Vec.zero, w, h, GREEN)
   }
 }
 
@@ -184,7 +165,7 @@ class MyWall(index:String, from:Vec, to:Vec) extends MyBody {
       is_static = true))
 
   render(0) {
-    drawLine(from, to, WHITE)
+    drawLine(from, to, GREEN)
   }
 }
 

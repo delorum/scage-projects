@@ -83,23 +83,38 @@ package object orbitalkiller {
   case class AABB(center:Vec, width:Float, height:Float) {
     val half_width = width/2
     val half_height = height/2
+
+    def aabbCollision(b2:AABB):Boolean = {
+      val d1 = math.abs(center.x - b2.center.x)
+      (d1 < half_width + b2.half_width) && {
+        val d2 = math.abs(center.y - b2.center.y)
+        d2 < half_height + b2.half_height
+      }
+    }
   }
 
   def aabbCollision(b1:AABB, b2:AABB):Boolean = {
     val d1 = math.abs(b1.center.x - b2.center.x)
-    d1 < b1.half_width + b2.half_width && {
+    (d1 < b1.half_width + b2.half_width) && {
       val d2 = math.abs(b1.center.y - b2.center.y)
       d2 < b1.half_height + b2.half_height
     }
   }
 
-  sealed trait Shape
+  sealed trait Shape {
+    def aabb:AABB
+    def phys2dBody:Body
+  }
 
   case class CircleShape(center:Vec, radius:Float) extends Shape {
     def phys2dBody = {
       val b1 = new Body(new Circle(radius), 1f)
       b1.setPosition(center.x, center.y)
       b1
+    }
+
+    def aabb: AABB = {
+      AABB(center, radius*2, radius*2)
     }
   }
 
@@ -134,6 +149,11 @@ package object orbitalkiller {
       b1.setPosition(from.x, from.y)
       b1
     }
+
+    def aabb: AABB = {
+
+      AABB(center, math.max(math.abs(to.x - from.x), 1f),  math.max(math.abs(to.y - from.y), 1f))
+    }
   }
 
   case class BoxShape(center:Vec, width:Float, height:Float, rotation:Float) extends Shape {
@@ -152,6 +172,93 @@ package object orbitalkiller {
       b2.setPosition(center.x, center.y)
       b2.setRotation(rotation/180f*math.Pi.toFloat)
       b2
+    }
+
+    def aabb: AABB = {
+      val xs = points.map(p => p.x)
+      val ys = points.map(p => p.y)
+      val min_x = xs.min
+      val max_x = xs.max
+      val min_y = ys.min
+      val max_y = ys.max
+      AABB(center, max_x - min_x, max_y - min_y)
+    }
+  }
+
+  class Space(val bodies:List[BodyState], val center:Vec, val width:Float, val height:Float) {
+    def this(bodies:List[BodyState], center:Vec) = {
+      this(bodies, center, {
+        val (init_min_x, init_max_x) = {
+          bodies.headOption.map(b => {
+            val AABB(c, w, _) = b.currentShape.aabb
+            (c.x - w/2, c.x+w/2)
+          }).getOrElse((0f, 0f))
+        }
+        val (min_x, max_x) = bodies.foldLeft((init_min_x, init_max_x)) {
+          case ((res_min_x, res_max_x), b) =>
+            val AABB(c, w, _) = b.currentShape.aabb
+            val new_min_x = c.x - w/2
+            val new_max_x = c.x + w/2
+            (
+              if(new_min_x < res_min_x) new_min_x else res_min_x,
+              if(new_max_x > res_max_x) new_max_x else res_max_x
+              )
+        }
+        math.max(math.abs(max_x - center.x)*2, math.abs(center.x - min_x)*2)
+      }, {
+        val (init_min_y, init_max_y) = {
+          bodies.headOption.map(b => {
+            val AABB(c, _, h) = b.currentShape.aabb
+            (c.y-h/2, c.y+h/2)
+          }).getOrElse((0f, 0f))
+        }
+        val (min_y, max_y) = bodies.foldLeft(init_min_y, init_max_y) {
+          case ((res_min_y, res_max_y), b) =>
+            val AABB(c, _, h) = b.currentShape.aabb
+            val new_min_y = c.y - h/2
+            val new_max_y = c.y + h/2
+            (
+              if(new_min_y < res_min_y) new_min_y else res_min_y,
+              if(new_max_y > res_max_y) new_max_y else res_max_y
+              )
+        }
+        math.max(math.abs(max_y - center.y)*2, math.abs(center.y - min_y)*2)
+      })
+    }
+
+
+    val aabb:AABB = AABB(center, width, height)
+
+    lazy val quadSpaces:List[Space] = {
+      val AABB(c, w, h) = aabb
+
+      val c1 = c + Vec(-w/4, -h/4)
+      val aabb1 = AABB(c1, w/2, h/2)
+      val bodies1 = bodies.filter(b => b.currentShape.aabb.aabbCollision(aabb1))
+
+      val c2 = c + Vec(-w/4, h/4)
+      val aabb2 = AABB(c2, w/2, h/2)
+      val bodies2 = bodies.filter(b => b.currentShape.aabb.aabbCollision(aabb2))
+
+      val c3 = c + Vec(w/4, h/4)
+      val aabb3 = AABB(c3, w/2, h/2)
+      val bodies3 = bodies.filter(b => b.currentShape.aabb.aabbCollision(aabb3))
+
+      val c4 = c + Vec(w/4, -h/4)
+      val aabb4 = AABB(c4, w/2, h/2)
+      val bodies4 = bodies.filter(b => b.currentShape.aabb.aabbCollision(aabb4))
+
+      List(new Space(bodies1, c1, w/2, h/2), new Space(bodies2, c2, w/2, h/2), new Space(bodies3, c3, w/2, h/2), new Space(bodies4, c4, w/2, h/2))
+    }
+  }
+
+  def splitSpace(space:Space, max_level:Int, target:Int, level:Int = 0, spaces:List[Space] = Nil):List[Space] = {
+    if(space.bodies.length <= target) space :: spaces
+    else if(level > max_level) space :: spaces
+    else {
+      space.quadSpaces.flatMap {
+        case s => splitSpace(s, max_level, target, level+1, spaces)
+      }
     }
   }
 
@@ -303,11 +410,12 @@ package object orbitalkiller {
 
     val collision_data = mutable.HashMap[String, (Vec, Float)]()
     for {
-      b1 <- bodies
+      space <- splitSpace(new Space(bodies, Vec.zero), 5, 10)
+      if space.bodies.length > 1
+      (b1, idx) <- space.bodies.zipWithIndex.init
       if !b1.is_static && !collision_data.contains(b1.index)
-      Contact(_ ,b2, contact_point, normal) <- bodies.filterNot(_ == b1).flatMap {
-        case b2 => maybeCollision(b1, b2)
-      }
+      b2 <- space.bodies.drop(idx+1)
+      Contact(_ ,_, contact_point, normal) <- maybeCollision(b1, b2)
     } {
       val rap = contact_point - b1.coord
       val n = normal.n
