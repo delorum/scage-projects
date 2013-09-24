@@ -4,9 +4,10 @@ import com.github.dunnololda.scage.ScageLib._
 import com.github.dunnololda.scage.ScageLib.Vec
 import net.phys2d.raw.collide._
 import net.phys2d.raw.Body
-import net.phys2d.raw.shapes.{Polygon, Circle, Box, Line}
+import net.phys2d.raw.shapes._
 import scala.Some
 import scala.collection.mutable
+import scala.Some
 
 package object orbitalkiller {
   val G:Float = 20
@@ -83,8 +84,7 @@ package object orbitalkiller {
     }
 
     def aabb: AABB = {
-
-      AABB(center, math.max(math.abs(to.x - from.x), 1f),  math.max(math.abs(to.y - from.y), 1f))
+      AABB(center, math.max(math.abs(to.x - from.x), 5f),  math.max(math.abs(to.y - from.y), 5f))
     }
   }
 
@@ -97,7 +97,7 @@ package object orbitalkiller {
     val three = center + Vec(width/2, -height/2).rotateDeg(rotation)
     val four = center + Vec(-width/2, -height/2).rotateDeg(rotation)
     val points = List(one, two, three, four)
-    val lines = List(LineShape(one, two), LineShape(two, three), LineShape(three, four), LineShape(four, one))
+    lazy val lines = List(LineShape(one, two), LineShape(two, three), LineShape(three, four), LineShape(four, one))
 
     def phys2dBody = {
       val b2 = new Body(new Box(w, h), 1f)
@@ -117,20 +117,22 @@ package object orbitalkiller {
     }
   }
 
-  case class PolygonShape(points:List[Vec]) extends Shape {
+  case class PolygonShape(center:Vec, rotation:Float, points:List[Vec]) extends Shape {
     def aabb: AABB = {
-      val xs = points.map(p => p.x)
-      val ys = points.map(p => p.y)
-      val center = Vec(xs.sum/xs.length, ys.sum/ys.length)
+      val xs = points.map(p => p.rotateDeg(rotation).x + center.x)
+      val ys = points.map(p => p.rotateDeg(rotation).y + center.y)
       val min_x = xs.min
       val max_x = xs.max
       val min_y = ys.min
       val max_y = ys.max
-      AABB(center, max_x - min_x, max_y - min_y)
+      AABB(Vec(xs.sum/xs.length, ys.sum/ys.length), max_x - min_x, max_y - min_y)
     }
 
     def phys2dBody: Body = {
-      new Body(new Polygon(points.map(_.toPhys2dVec).toArray), 1f)
+      val b = new Body(new Polygon(points.map(_.toPhys2dVec).toArray), 1f)
+      b.setPosition(center.x, center.y)
+      b.setRotation(rotation/180f*math.Pi.toFloat)
+      b
     }
   }
 
@@ -404,7 +406,7 @@ package object orbitalkiller {
           case b2:BoxShape =>
             circleBoxCollision(c1, b2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
           case p2:PolygonShape =>
-            polygonCircleCollision(p2, c1).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+            polygonCircleCollision(p2, c1).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
           case _ => None
         }
       case l1:LineShape =>
@@ -412,7 +414,7 @@ package object orbitalkiller {
           case c2:CircleShape =>
             lineCircleCollision(l1, c2).map(gcd => Contact(body2, body1, gcd.contact_point, gcd.normal))
           case l2:LineShape =>
-            lineLineCollision(l1, l2).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
+            lineLineCollision(l1, l2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
           case b2:BoxShape =>
             lineBoxCollision(l1, b2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
           case p2:PolygonShape =>
@@ -428,7 +430,7 @@ package object orbitalkiller {
           case b2:BoxShape =>
             boxBoxCollision(b1, b2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
           case p2:PolygonShape =>
-            polygonBoxCollision(p2, b1).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+            polygonBoxCollision(p2, b1).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
           case _ => None
         }
       case p1:PolygonShape =>
@@ -481,7 +483,7 @@ package object orbitalkiller {
       (b1, idx) <- space.bodies.zipWithIndex.init
       if !b1.is_static && !collision_data.contains(b1.index)
       b2 <- space.bodies.drop(idx+1)
-      Contact(_ ,_, contact_point, normal) <- maybeCollision(b1, b2)
+      c @ Contact(_ ,_, contact_point, normal) <- maybeCollision(b1, b2)
     } {
       val rap = contact_point - b1.coord
       val n = normal.n

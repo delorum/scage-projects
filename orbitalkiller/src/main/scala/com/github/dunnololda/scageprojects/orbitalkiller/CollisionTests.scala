@@ -26,9 +26,11 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   def randomSpeed = Vec(math.random, math.random).n*0.5f
 
   val dynamic_bodies = ArrayBuffer[MyBody]()
-  val b1 = new MyBox("b1", Vec(w+60, h-20), Vec(-0.0f, 0), 30, 20, 1f*6)
-  val b2 = new MyBox("b2", Vec(w-60, h-20), Vec(-0.0f, 0), 30, 20, 1f*6)
-  dynamic_bodies += b1 += b2
+  val b1 = new MyBox("b1", Vec(w+60, h-20), Vec(-0.3f, 0), 30, 20, 1f*6)
+  /*val b2 = new MyBox("b2", Vec(w-60, h-20), Vec(-0.0f, 0), 30, 20, 1f*6)*/
+  dynamic_bodies += b1/* += b2*/
+  val p1 = new MyPentagon("p1", Vec(w-60, h-20), Vec(0.0f, 0), 20, 1f*6)
+  dynamic_bodies += p1
   def addCircleBody(i:Int) {
     val c =  new MyCircle(s"c$i", randomPos, randomSpeed, 5, 1f)
     if(dynamic_bodies.forall(b => maybeCollision(b.currentState, c.currentState).isEmpty) &&
@@ -93,6 +95,46 @@ sealed trait MyBody {
   def currentState:BodyState
 }
 
+class MyPentagon(val index:String, init_coord:Vec, init_velocity:Vec, val len:Float, val mass:Float) extends MyBody {
+  def currentState: BodyState = currentBodyState(index).getOrElse(
+    BodyState(
+      index,
+      mass = mass,
+      I = mass*len*len/2f,
+      force = Vec.zero,
+      acc = Vec.zero,
+      vel = init_velocity,
+      coord = init_coord,
+      torque = 0f,
+      ang_acc = 0f,
+      ang_vel = 0f,
+      ang = 0f,
+      shape = (coord, rotation) => {
+        val one = Vec(0, len).rotateDeg(0)
+        val two = Vec(0, len).rotateDeg(0+72)
+        val three = Vec(0, len).rotateDeg(0+72+72)
+        val four = Vec(0, len).rotateDeg(0+72+72+72)
+        val five = Vec(0, len).rotateDeg(0+72+72+72+72)
+        PolygonShape(coord, rotation, List(one, two, three, four, five))
+      },
+      is_static = false))
+
+  render {
+    val state = currentState
+    val coord = state.coord
+    val rotation = state.ang
+    val one = coord + Vec(0, len).rotateDeg(rotation)
+    val two = coord + Vec(0, len).rotateDeg(rotation+72)
+    val three = coord + Vec(0, len).rotateDeg(rotation+72+72)
+    val four = coord + Vec(0, len).rotateDeg(rotation+72+72+72)
+    val five = coord + Vec(0, len).rotateDeg(rotation+72+72+72+72)
+    drawSlidingLines(List(one, two, three, four, five, one), GREEN)
+
+    val AABB(c, w, h) = state.currentShape.aabb
+    drawRectCentered(c, w, h, GREEN)
+  }
+}
+
 class MyCircle(val index:String, init_coord:Vec, init_velocity:Vec, val radius:Float, val mass:Float) extends MyBody {
   def currentState:BodyState = currentBodyState(index).getOrElse(
     BodyState(
@@ -118,6 +160,8 @@ class MyCircle(val index:String, init_coord:Vec, init_velocity:Vec, val radius:F
   render(0) {
     drawCircle(coord, radius, GREEN)
     drawLine(coord, coord + Vec(0,1).rotateDeg(currentState.ang).n*radius, GREEN)
+    val AABB(c, w, h) = currentState.currentShape.aabb
+    drawRectCentered(c, w, h, GREEN)
   }
 }
 
@@ -141,9 +185,14 @@ class MyBox(val index:String, init_coord:Vec, init_velocity:Vec, val w:Float, va
       is_static = false))
 
   render(0) {
-    openglMove(currentState.coord)
-    openglRotateDeg(currentState.ang)
-    drawRectCentered(Vec.zero, w, h, GREEN)
+    openglLocalTransform {
+      openglMove(currentState.coord)
+      openglRotateDeg(currentState.ang)
+      drawRectCentered(Vec.zero, w, h, GREEN)
+    }
+
+    val AABB(c, w2, h2) = currentState.currentShape.aabb
+    drawRectCentered(c, w2, h2, GREEN)
   }
 }
 
@@ -166,6 +215,8 @@ class MyWall(index:String, from:Vec, to:Vec) extends MyBody {
 
   render(0) {
     drawLine(from, to, GREEN)
+    val AABB(c, w, h) = currentState.currentShape.aabb
+    drawRectCentered(c, w, h, GREEN)
   }
 }
 
