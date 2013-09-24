@@ -532,7 +532,6 @@ package object orbitalkiller {
                           changeFunction:(Long, List[BodyState]) => (Long, List[BodyState]) =  (time, bodies) => (time, bodies))
                          (current_state:(Long, List[BodyState])):Stream[(Long, List[BodyState])] = {
     val (time, bodies) = changeFunction(current_state._1, current_state._2)
-
     val next_time = time + (dt/base_dt).toLong
 
     val collision_data = mutable.HashMap[String, (Vec, Float)]()
@@ -540,8 +539,8 @@ package object orbitalkiller {
       space <- splitSpace(new Space(bodies, Vec.zero), 5, 10)
       if space.bodies.length > 1
       (b1, idx) <- space.bodies.zipWithIndex.init
-      if !b1.is_static && !collision_data.contains(b1.index)
       b2 <- space.bodies.drop(idx+1)
+      if !b1.is_static || !b2.is_static
       c @ Contact(_ ,_, contact_point, normal) <- maybeCollision(b1, b2)
     } {
       val rap = contact_point - b1.coord

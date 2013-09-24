@@ -26,9 +26,10 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   def randomSpeed = Vec(math.random, math.random).n*0.5f
 
   val dynamic_bodies = ArrayBuffer[MyBody]()
-  val b1 = new MyBox("b1", Vec(w+60, h-20), Vec(-0.3f, 0), 30, 20, 1f*6)
-  /*val b2 = new MyBox("b2", Vec(w-60, h-20), Vec(-0.0f, 0), 30, 20, 1f*6)*/
-  dynamic_bodies += b1/* += b2*/
+  val b1 = new MyBox("b1", Vec(w+60, h), Vec(-0.0f, 0), 30, 20, 1f*6)
+  dynamic_bodies += b1
+  /*val b2 = new MyBox("b2", Vec(w-60, h), Vec(0.0f, 0), 30, 20, 1f*6)
+  dynamic_bodies += b2*/
   val p1 = new MyPentagon("p1", Vec(w-60, h-20), Vec(0.0f, 0), 20, 1f*6)
   dynamic_bodies += p1
   def addCircleBody(i:Int) {
@@ -41,6 +42,7 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
     } else addCircleBody(i)
   }
   (1 to 20).map(i => addCircleBody(i))
+  /*dynamic_bodies += new MyCircle("c1", Vec(w, h), Vec(0.0f, -0.0f), 5, 1f)*/
 
   /*val c1 = new MyCircle("c1", Vec(w-60, h), Vec(0.0f, 0), 30, 1f)*/
   /*val c2 = new MyCircle("c2", Vec(w+60, h+5), Vec(-0.5f, 0), 1f, 30)*/
@@ -58,7 +60,7 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
       w4.currentState)).iterator
 
   private def nextStep() {
-    val (t, body_states) = real_system_evolution.next()
+    val (_, body_states) = real_system_evolution.next()
     body_states.foreach {
       case bs => current_body_states(bs.index) = bs
     }
@@ -91,7 +93,7 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
     nextStep()
   }
 
-  println(s"${w-100} : ${w+100}")
+  /*println(s"${w-100} : ${w+100}")
   println(s"${h-100} : ${h+100}")
   private def outOfArea(coord:Vec):Boolean = {
     coord.x < w-100 ||
@@ -104,11 +106,39 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
     if(currentBodyStates.exists(bs => outOfArea(bs.coord))) {
       pause()
       currentBodyStates.foreach(bs => {
-        if(outOfArea(bs.coord)) println(s"!!! ${bs.index} : ${bs.coord} : ${bs.vel} : ${bs.ang} : ${bs.ang_vel}")
+        if(outOfArea(bs.coord)) println(s"!!!out!!! ${bs.index} : ${bs.coord} : ${bs.vel} : ${bs.ang} : ${bs.ang_vel}")
         else println(s"${bs.index} : ${bs.coord} : ${bs.vel} : ${bs.ang} : ${bs.ang_vel}")
       })
     }
   }
+
+  private def insideBox(index:String, coord:Vec):Boolean = {
+    index != b1.index && b1.currentState.coord.dist(coord) < math.min(b1.w, b1.h)
+  }
+
+  action {
+    if(currentBodyStates.exists(bs => insideBox(bs.index, bs.coord))) {
+      pause()
+      currentBodyStates.foreach(bs => {
+        if(insideBox(bs.index, bs.coord)) println(s"!!!box!!! ${bs.index} : ${bs.coord} : ${bs.vel} : ${bs.ang} : ${bs.ang_vel}")
+        else println(s"${bs.index} : ${bs.coord} : ${bs.vel} : ${bs.ang} : ${bs.ang_vel}")
+      })
+    }
+  }
+
+  private def insidePentagon(index:String, coord:Vec):Boolean = {
+    index != p1.index && p1.currentState.coord.dist(coord) < p1.len*0.8f
+  }
+
+  action {
+    if(currentBodyStates.exists(bs => insidePentagon(bs.index, bs.coord))) {
+      pause()
+      currentBodyStates.foreach(bs => {
+        if(insidePentagon(bs.index, bs.coord)) println(s"!!!pentagon!!! ${bs.index} : ${bs.coord} : ${bs.vel} : ${bs.ang} : ${bs.ang_vel}")
+        else println(s"${bs.index} : ${bs.coord} : ${bs.vel} : ${bs.ang} : ${bs.ang_vel}")
+      })
+    }
+  }*/
 
   def energy =
     dynamic_bodies.map(b1 => {
@@ -128,7 +158,7 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   }
 
   interface {
-    print(energy, 20, 20, WHITE)
+    print(s"$energy", 20, 20, WHITE)
   }
 }
 
@@ -169,7 +199,8 @@ class MyPentagon(val index:String, init_coord:Vec, init_velocity:Vec, val len:Fl
     val three = coord + Vec(0, len).rotateDeg(rotation+72+72)
     val four = coord + Vec(0, len).rotateDeg(rotation+72+72+72)
     val five = coord + Vec(0, len).rotateDeg(rotation+72+72+72+72)
-    drawSlidingLines(List(one, two, three, four, five, one), GREEN)
+    val color = GREEN
+    drawSlidingLines(List(one, two, three, four, five, one), color)
 
     val AABB(c, w, h) = state.currentShape.aabb
     drawRectCentered(c, w, h, GREEN)
@@ -197,10 +228,11 @@ class MyCircle(val index:String, init_coord:Vec, init_velocity:Vec, val radius:F
   def shape:CircleShape = CircleShape(coord, radius)
 
   render(0) {
-    drawCircle(coord, radius, GREEN)
-    drawLine(coord, coord + Vec(0,1).rotateDeg(currentState.ang).n*radius, GREEN)
+    val color = GREEN
+    drawCircle(coord, radius, color)
+    drawLine(coord, coord + Vec(0,1).rotateDeg(currentState.ang).n*radius, color)
     val AABB(c, w, h) = currentState.currentShape.aabb
-    drawRectCentered(c, w, h, GREEN)
+    drawRectCentered(c, w, h, color)
   }
 }
 
@@ -222,14 +254,15 @@ class MyBox(val index:String, init_coord:Vec, init_velocity:Vec, val w:Float, va
       is_static = false))
 
   render(0) {
+    val color = GREEN
     openglLocalTransform {
       openglMove(currentState.coord)
       openglRotateDeg(currentState.ang)
-      drawRectCentered(Vec.zero, w, h, GREEN)
+      drawRectCentered(Vec.zero, w, h, color)
     }
 
     val AABB(c, w2, h2) = currentState.currentShape.aabb
-    drawRectCentered(c, w2, h2, GREEN)
+    drawRectCentered(c, w2, h2, color)
   }
 }
 
@@ -249,9 +282,10 @@ class MyWall(index:String, from:Vec, to:Vec) extends MyBody {
       is_static = true))
 
   render(0) {
-    drawLine(from, to, GREEN)
+    val color = GREEN
+    drawLine(from, to, color)
     val AABB(c, w, h) = currentState.currentShape.aabb
-    drawRectCentered(c, w, h, GREEN)
+    drawRectCentered(c, w, h, color)
   }
 }
 
