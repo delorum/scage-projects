@@ -3,10 +3,11 @@ package com.github.dunnololda.scageprojects
 import com.github.dunnololda.scage.ScageLib._
 import com.github.dunnololda.scage.ScageLib.Vec
 import net.phys2d.raw.collide._
-import net.phys2d.raw.Body
-import net.phys2d.raw.shapes._
-import scala.Some
+import net.phys2d.raw.{Body => Phys2dBody, StaticBody => Phys2dStaticBody, BodyList => Phys2dBodyList, World => Phys2dWorld}
+import net.phys2d.raw.shapes.{DynamicShape => Phys2dShape, _}
 import scala.collection.mutable
+import net.phys2d.math.Vector2f
+import net.phys2d.raw.strategies.QuadSpaceStrategy
 import scala.Some
 
 package object orbitalkiller {
@@ -36,12 +37,13 @@ package object orbitalkiller {
 
   sealed trait Shape {
     def aabb:AABB
-    def phys2dBody:Body
+    def phys2dBody:Phys2dBody
+    def phys2dShape:Phys2dShape
   }
 
   case class CircleShape(center:Vec, radius:Float) extends Shape {
-    def phys2dBody = {
-      val b1 = new Body(new Circle(radius), 1f)
+    def phys2dBody:Phys2dBody = {
+      val b1 = new Phys2dBody(new Circle(radius), 1f)
       b1.setPosition(center.x, center.y)
       b1
     }
@@ -49,6 +51,8 @@ package object orbitalkiller {
     def aabb: AABB = {
       AABB(center, radius*2, radius*2)
     }
+
+    def phys2dShape: Phys2dShape = new Circle(radius)
   }
 
   case class LineShape(from:Vec, to:Vec) extends Shape {
@@ -77,8 +81,8 @@ package object orbitalkiller {
     def dx = vec.x
     def dy = vec.y
 
-    def phys2dBody = {
-      val b1 = new Body(new Line(vec.x, vec.y), 1f)
+    def phys2dBody:Phys2dBody = {
+      val b1 = new Phys2dBody(new Line(vec.x, vec.y), 1f)
       b1.setPosition(from.x, from.y)
       b1
     }
@@ -86,6 +90,8 @@ package object orbitalkiller {
     def aabb: AABB = {
       AABB(center, math.max(math.abs(to.x - from.x), 5f),  math.max(math.abs(to.y - from.y), 5f))
     }
+
+    def phys2dShape: Phys2dShape = new Line(vec.x, vec.y)
   }
 
   case class BoxShape(center:Vec, width:Float, height:Float, rotation:Float) extends Shape {
@@ -99,8 +105,8 @@ package object orbitalkiller {
     val points = List(one, two, three, four)
     lazy val lines = List(LineShape(one, two), LineShape(two, three), LineShape(three, four), LineShape(four, one))
 
-    def phys2dBody = {
-      val b2 = new Body(new Box(w, h), 1f)
+    def phys2dBody:Phys2dBody = {
+      val b2 = new Phys2dBody(new Box(w, h), 1f)
       b2.setPosition(center.x, center.y)
       b2.setRotation(rotation/180f*math.Pi.toFloat)
       b2
@@ -115,25 +121,24 @@ package object orbitalkiller {
       val max_y = ys.max
       AABB(center, max_x - min_x, max_y - min_y)
     }
+
+    def phys2dShape: Phys2dShape = new Box(w, h)
   }
 
   case class PolygonShape(center:Vec, rotation:Float, points:List[Vec]) extends Shape {
     def aabb: AABB = {
-      val xs = points.map(p => p.rotateDeg(rotation).x + center.x)
-      val ys = points.map(p => p.rotateDeg(rotation).y + center.y)
-      val min_x = xs.min
-      val max_x = xs.max
-      val min_y = ys.min
-      val max_y = ys.max
-      AABB(Vec(xs.sum/xs.length, ys.sum/ys.length), max_x - min_x, max_y - min_y)
+      val r = math.sqrt(points.map(p => p.norma2).max).toFloat*2
+      AABB(center, r, r)
     }
 
-    def phys2dBody: Body = {
-      val b = new Body(new Polygon(points.map(_.toPhys2dVec).toArray), 1f)
+    def phys2dBody:Phys2dBody = {
+      val b = new Phys2dBody(new Polygon(points.map(_.toPhys2dVec).toArray), 1f)
       b.setPosition(center.x, center.y)
       b.setRotation(rotation/180f*math.Pi.toFloat)
       b
     }
+
+    def phys2dShape: Phys2dShape = new Polygon(points.map(_.toPhys2dVec).toArray)
   }
 
   class Space(val bodies:List[BodyState], val center:Vec, val width:Float, val height:Float) {
@@ -452,17 +457,71 @@ package object orbitalkiller {
   case class BodyState(index:String,
                        mass:Float,
                        I:Float,
-                       force:Vec,
                        acc:Vec,
                        vel:Vec,
                        coord:Vec,
-                       torque:Float,
                        ang_acc:Float,
                        ang_vel:Float,
                        ang:Float,
                        shape: (Vec, Float) => Shape,
                        is_static:Boolean) {
     def currentShape = shape(coord, ang)
+    def phys2dBody:Phys2dBody = {
+      if(is_static) {
+        val b = new Phys2dStaticBody(index, currentShape.phys2dShape)
+        b.setRestitution(1f)
+        b.setUserData((index, shape))
+        b
+      } else {
+        val b = new Phys2dBody(index, currentShape.phys2dShape, mass)
+        b.setRestitution(1f)
+        b.setPosition(coord.x, coord.y)
+        b.setRotation(ang/180f*math.Pi.toFloat)
+        b.adjustVelocity(vel.toPhys2dVec)
+        b.adjustAngularVelocity(ang_vel/180f*math.Pi.toFloat)
+        b.setUserData((index, shape))
+        b
+      }
+    }
+  }
+
+  implicit class Phys2dBody2BodyState(pb:Phys2dBody) {
+    def toBodyState:Option[BodyState] = {
+      pb.getUserData match {
+        case (index:String, shape:((Vec, Float) => Shape)) =>
+          Some(BodyState(
+            index = index,
+            mass = pb.getMass,
+            I = pb.getI,
+            acc = Vec.zero,
+            vel = Vec(pb.getVelocity.getX, pb.getVelocity.getY),
+            coord =  Vec(pb.getPosition.getX, pb.getPosition.getY),
+            ang_acc = 0f,
+            ang_vel = pb.getAngularVelocity/math.Pi.toFloat*180f,
+            ang = pb.getRotation/math.Pi.toFloat*180f,
+            shape = shape,
+            is_static = pb.isStatic
+          ))
+        case _ => None
+      }
+    }
+  }
+
+  implicit class Phys2dBodyList2List(pbl:Phys2dBodyList) {
+    def toList:List[(Phys2dBody, BodyState)] = {
+      (for {
+        i <- 0 until pbl.size()
+        pb = pbl.get(i)
+        bs <- pb.toBodyState
+      } yield (pb, bs)).toList
+    }
+    def toBodyStateList:List[BodyState] = {
+      (for {
+        i <- 0 until pbl.size()
+        pb = pbl.get(i)
+        bs <- pb.toBodyState
+      } yield bs).toList
+    }
   }
 
   def systemEvolutionFrom(dt: => Float,
@@ -544,11 +603,9 @@ package object orbitalkiller {
         val next_ang = (b1.ang + next_ang_vel*dt) % 360f
 
         b1.copy(
-          force = next_force,
           acc = next_acc,
           vel = next_vel,
           coord = next_coord,
-          torque = next_torque,
           ang_acc= next_ang_acc,
           ang_vel = next_ang_vel,
           ang = next_ang
@@ -560,11 +617,11 @@ package object orbitalkiller {
     pewpew #:: systemEvolutionFrom(dt, base_dt, elasticity, force, torque, changeFunction)(pewpew)
   }
 
-  def gravityForce(body1_coord:Vec, body1_mass:Float, body2_coord:Vec, body2_mass:Float):Vec = {
+  def gravityForce(body1_coord:Vec, body1_mass:Float, body2_coord:Vec, body2_mass:Float, G:Float):Vec = {
     (body1_coord - body2_coord).n*G*body1_mass*body2_mass/body1_coord.dist2(body2_coord)
   }
 
-  def satelliteSpeed(body_coord:Vec, planet_coord:Vec, planet_mass:Float):Vec = {
+  def satelliteSpeed(body_coord:Vec, planet_coord:Vec, planet_mass:Float, G:Float):Vec = {
     val from_planet_to_body = body_coord - planet_coord
     from_planet_to_body.n.rotateDeg(90)*math.sqrt(G*planet_mass/from_planet_to_body.norma)
   }

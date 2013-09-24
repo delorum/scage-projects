@@ -40,7 +40,7 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
       dynamic_bodies += c
     } else addCircleBody(i)
   }
-  (1 to 5).map(i => addCircleBody(i))
+  (1 to 20).map(i => addCircleBody(i))
 
   /*val c1 = new MyCircle("c1", Vec(w-60, h), Vec(0.0f, 0), 30, 1f)*/
   /*val c2 = new MyCircle("c2", Vec(w+60, h+5), Vec(-0.5f, 0), 1f, 30)*/
@@ -65,8 +65,49 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   }
   nextStep()
 
+  private var _center = windowCenter
+
+  keyIgnorePause(KEY_W, 10, onKeyDown = {_center += Vec(0, 5/globalScale)})
+  keyIgnorePause(KEY_A, 10, onKeyDown = {_center += Vec(-5/globalScale, 0)})
+  keyIgnorePause(KEY_S, 10, onKeyDown = {_center += Vec(0, -5/globalScale)})
+  keyIgnorePause(KEY_D, 10, onKeyDown = {_center += Vec(5/globalScale, 0)})
+
+  mouseWheelDownIgnorePause(onWheelDown = m => {
+    if(globalScale > 0.01f) {
+      if(globalScale > 1) globalScale -= 1
+      else if(globalScale > 0.1f) globalScale -= 0.1f
+      else globalScale -= 0.01f
+      if(globalScale < 0.01f) globalScale = 0.01f
+    }
+  })
+  mouseWheelUpIgnorePause(onWheelUp = m => {
+    if(globalScale < 5) {
+      if(globalScale < 1) globalScale += 0.1f
+      else globalScale += 1
+    }
+  })
+
   action {
     nextStep()
+  }
+
+  println(s"${w-100} : ${w+100}")
+  println(s"${h-100} : ${h+100}")
+  private def outOfArea(coord:Vec):Boolean = {
+    coord.x < w-100 ||
+    coord.x > w+100 ||
+    coord.y < h-100 ||
+    coord.y > h+100
+  }
+
+  action {
+    if(currentBodyStates.exists(bs => outOfArea(bs.coord))) {
+      pause()
+      currentBodyStates.foreach(bs => {
+        if(outOfArea(bs.coord)) println(s"!!! ${bs.index} : ${bs.coord} : ${bs.vel} : ${bs.ang} : ${bs.ang_vel}")
+        else println(s"${bs.index} : ${bs.coord} : ${bs.vel} : ${bs.ang} : ${bs.ang_vel}")
+      })
+    }
   }
 
   def energy =
@@ -75,12 +116,14 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
         b1.currentState.I*b1.currentState.ang_vel.toRad*b1.currentState.ang_vel.toRad/2f
     }).sum
 
+  center = _center
+
   render {
     val spaces = splitSpace(new Space(current_body_states.values.toList, Vec.zero), 5, 3)
     spaces.foreach {
       case s =>
         drawRectCentered(s.center, s.width, s.height, WHITE)
-        print(s.bodies.length, s.center, WHITE, align = "center")
+        print(s.bodies.length, s.center, max_font_size/globalScale, WHITE, align = "center")
     }
   }
 
@@ -101,11 +144,9 @@ class MyPentagon(val index:String, init_coord:Vec, init_velocity:Vec, val len:Fl
       index,
       mass = mass,
       I = mass*len*len/2f,
-      force = Vec.zero,
       acc = Vec.zero,
       vel = init_velocity,
       coord = init_coord,
-      torque = 0f,
       ang_acc = 0f,
       ang_vel = 0f,
       ang = 0f,
@@ -141,11 +182,9 @@ class MyCircle(val index:String, init_coord:Vec, init_velocity:Vec, val radius:F
       index,
       mass = mass,
       I = mass*radius*radius/2f,
-      force = Vec.zero,
       acc = Vec.zero,
       vel = init_velocity,
       coord = init_coord,
-      torque = 0f,
       ang_acc = 0f,
       ang_vel = 0f,
       ang = 0f,
@@ -171,11 +210,9 @@ class MyBox(val index:String, init_coord:Vec, init_velocity:Vec, val w:Float, va
       index,
       mass = mass,
       I = mass*(w*w + h*h)/12f,
-      force = Vec.zero,
       acc = Vec.zero,
       vel = init_velocity,
       coord = init_coord,
-      torque = 0f,
       ang_acc = 0f,
       ang_vel = 0f,
       ang = 0f,
@@ -202,11 +239,9 @@ class MyWall(index:String, from:Vec, to:Vec) extends MyBody {
       index,
       mass = -1,  // infinite mass
       I = 0f,
-      force = Vec.zero,
       acc = Vec.zero,
       vel = Vec.zero,
-      coord = Vec.zero,
-      torque = 0f,
+      coord = from,
       ang_acc = 0f,
       ang_vel = 0f,
       ang = 0f,

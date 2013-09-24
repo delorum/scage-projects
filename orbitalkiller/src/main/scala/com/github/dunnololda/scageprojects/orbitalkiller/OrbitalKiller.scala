@@ -29,8 +29,6 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
 
   private var continue_future_trajectory = false
 
-
-
   private val current_body_states = mutable.HashMap[String, BodyState]()
   def currentBodyState(index:String):Option[BodyState] = current_body_states.get(index)
   def currentBodyStates = current_body_states.values.toList
@@ -40,11 +38,11 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     force = (time, bs, other_bodies) => {
       bs.index match {
         case ship.index =>
-          gravityForce(sun.coord, sun.mass, bs.coord, bs.mass) +
-          other_bodies.find(_.index == earth.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass)).getOrElse(Vec.zero) +
+          gravityForce(sun.coord, sun.mass, bs.coord, bs.mass, G) +
+          other_bodies.find(_.index == earth.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(Vec.zero) +
           ship.currentReactiveForce(time, bs)
         case earth.index =>
-          gravityForce(sun.coord, sun.mass, bs.coord, bs.mass)
+          gravityForce(sun.coord, sun.mass, bs.coord, bs.mass, G)
         case _ => Vec.zero
       }
     },
@@ -116,7 +114,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
 
   val sun = new Star("sun", mass = 10000, coord = Vec.zero, radius = 3000)
   val earth_start_position = Vec(-sun.radius*20f, sun.radius*20f)
-  val earth_init_velocity = satelliteSpeed(earth_start_position, sun.coord, sun.mass)
+  val earth_init_velocity = satelliteSpeed(earth_start_position, sun.coord, sun.mass, G)
   val earth = new Planet(
     "earth",
     mass = 1000,
@@ -127,7 +125,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   /*val ship_start_position = sun.coord + Vec(sun.radius*1.5f, sun.radius*1.5f)*/
   /*val ship_init_velocity = satelliteSpeed(ship_start_position, sun.coord, sun.mass)*/
   val ship_start_position = earth.coord + Vec(earth.radius*1.5f, earth.radius*1.5f)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.mass)
+  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.mass, G)
   val ship = new Ship("ship", a = 50, b = 100,
     init_coord = ship_start_position,
     init_velocity = ship_init_velocity,
@@ -204,10 +202,10 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
 
   def satelliteSpeedInPoint(coord:Vec):String = {
     if(coord.dist(earth.coord) < earth.gravitational_radius) {
-      val ss = earth.linearVelocity + satelliteSpeed(coord, earth.coord, earth.mass)
+      val ss = earth.linearVelocity + satelliteSpeed(coord, earth.coord, earth.mass, G)
       f"${ss.norma*60*base_dt}%.2f м/сек (velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек)"
     } else if(coord.dist(sun.coord) < sun.gravitational_radius) {
-      val ss = satelliteSpeed(coord, sun.coord, sun.mass)
+      val ss = satelliteSpeed(coord, sun.coord, sun.mass, G)
       f"${ss.norma*60*base_dt}%.2f м/сек (velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек)"
     } else "N/A"
   }
@@ -491,11 +489,9 @@ class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velo
       index,
       mass,
       I = mass*radius*radius/2f,
-      force = Vec.zero,
       acc = Vec.zero,
       vel = init_velocity,
       coord = init_coord,
-      torque = 0f,
       ang_acc = 0f,
       ang_vel = 0f,
       ang = 0f,
@@ -518,11 +514,9 @@ class Star(val index:String, val mass:Float, val coord:Vec, val radius:Float) {
       index,
       mass,
       I = mass*radius*radius/2f,
-      force = Vec.zero,
       acc = Vec.zero,
       vel = Vec.zero,
       coord,
-      torque = 0f,
       ang_acc = 0f,
       ang_vel = 0f,
       ang = 0f,
@@ -610,11 +604,9 @@ class Ship(val index:String, val a:Float, val b:Float, init_coord:Vec, init_velo
       index,
       mass,
       I = moment_of_inertia,
-      force = Vec.zero,
       acc = Vec.zero,
       vel = init_velocity,
       coord = init_coord,
-      torque = 0f,
       ang_acc = 0f,
       ang_vel = 0f,
       ang = init_rotation,
@@ -622,15 +614,11 @@ class Ship(val index:String, val a:Float, val b:Float, init_coord:Vec, init_velo
       is_static = false)
   )
 
-  def force = currentState.force
-
   def linearAcceleration = currentState.acc
 
   def linearVelocity = currentState.vel
 
   def coord = currentState.coord
-
-  def torque = currentState.torque
 
   def angularAcceleration = currentState.ang_acc
 
@@ -802,7 +790,6 @@ class Ship(val index:String, val a:Float, val b:Float, init_coord:Vec, init_velo
     }
 
     drawFilledCircle(coord, 2, GREEN)                   // mass center
-    drawLine(coord, coord + force.n*100, RED)           // current force
     drawLine(coord, coord + linearVelocity.n*100, CYAN) // current velocity
     drawLine(coord, coord + (sun.coord - coord).n*100, YELLOW) // direction to sun
     drawLine(coord, coord + (earth.coord - coord).n*100, GREEN) // direction to earth
