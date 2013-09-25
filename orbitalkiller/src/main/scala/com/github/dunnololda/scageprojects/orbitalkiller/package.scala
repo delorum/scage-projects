@@ -49,6 +49,9 @@ package object orbitalkiller {
     lazy val wI: Float = radius*radius/2f
   }
 
+  /*
+  * Due to lack of line colliding algorithms, bodies with line shapes may be static only. If you want dynamic, use boxes
+  * */
   case class LineShape(to:Vec) extends Shape {
     /*val center = from + (to - from)/2f
 
@@ -384,7 +387,6 @@ package object orbitalkiller {
       if !b1.is_static || !b2.is_static
       c @ Contact(_ ,_, contact_point, normal) <- maybeCollision(b1, b2)
     } {
-      println(s"collision: ${b1.index} : ${b2.index}")
       val rap = contact_point - b1.coord
       val n = normal.n
       val dv = b1.vel - b2.vel
@@ -402,7 +404,7 @@ package object orbitalkiller {
 
         val e = elasticity
         if(mb == -1) {  // infinite mass
-        val vap1 = va1 + (wa1 * rap.perpendicular)
+          val vap1 = va1 + (wa1 * rap.perpendicular)
           val j = -(1+e)*(vap1*n)/(1f/ma + (rap*/n)*(rap*/n)/ia)
 
           val va2 = va1 + (j * n)/ma

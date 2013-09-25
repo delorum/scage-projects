@@ -26,9 +26,9 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   def randomSpeed = Vec(math.random, math.random).n*0.5f
 
   val dynamic_bodies = ArrayBuffer[MyBody]()
-  val b1 = new MyBox("b1", Vec(w+60, h), Vec(-0.3f, 0), 30, 20, 1f*6)
+  val b1 = new MyBox("b1", Vec(w-60, h), Vec(0.3f, 0), 30, 20, 1f*6)
   dynamic_bodies += b1
-  val b2 = new MyBox("b2", Vec(w-60, h), Vec(0.3f, 0), 30, 20, 1f*6)
+  val b2 = new MyBox("b2", Vec(w+60, h), Vec(-0.3f, 0), 30, 20, 1f*6)
   dynamic_bodies += b2
   /*val p1 = new MyPentagon("p1", Vec(w-60, h-20), Vec(0.0f, 0), 20, 1f*6)
   dynamic_bodies += p1*/
@@ -42,10 +42,8 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
     } else addCircleBody(i)
   }
   //(1 to 20).map(i => addCircleBody(i))
-  /*val c1 = new MyCircle("c1", Vec(w, h), Vec(0.0f, -0.0f), 5, 1f)
-  dynamic_bodies += c1*/
-  val l1 = new MyLine("l1", Vec(w-30, h-30), Vec(w+30, h+30))
-  dynamic_bodies += l1
+  val c1 = new MyCircle("c1", Vec(w, h), Vec(0.0f, -0.0f), 5, 1f)
+  dynamic_bodies += c1
 
   /*val c1 = new MyCircle("c1", Vec(w-60, h), Vec(0.0f, 0), 30, 1f)*/
   /*val c2 = new MyCircle("c2", Vec(w+60, h+5), Vec(-0.5f, 0), 1f, 30)*/
@@ -279,30 +277,6 @@ class MyWall(index:String, from:Vec, to:Vec) extends MyBody {
   render(0) {
     val color = GREEN
     drawLine(from, to, color)
-    val AABB(c, w, h) = currentState.aabb
-    drawRectCentered(c, w, h, color)
-  }
-}
-
-class MyLine(index:String, from:Vec, to:Vec) extends MyBody {
-  private val vec = to - from
-  def currentState:BodyState = currentBodyState(index).getOrElse(
-    BodyState(
-      index,
-      mass = 1,  // infinite mass
-      acc = Vec.zero,
-      vel = Vec.zero,
-      coord = from,
-      ang_acc = 0f,
-      ang_vel = 0f,
-      ang = 0f,
-      shape = LineShape(to-from),
-      is_static = false))
-
-  render(0) {
-    val color = GREEN
-    val state = currentState
-    drawLine(state.coord, state.coord + vec.rotateDeg(state.ang), color)
     val AABB(c, w, h) = currentState.aabb
     drawRectCentered(c, w, h, color)
   }
