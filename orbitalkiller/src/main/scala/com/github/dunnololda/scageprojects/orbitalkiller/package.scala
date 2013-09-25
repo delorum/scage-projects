@@ -34,27 +34,23 @@ package object orbitalkiller {
   }
 
   sealed trait Shape {
-    def aabb:AABB
-    def phys2dBody:Phys2dBody
+    def aabb(center:Vec, rotation:Float):AABB
     def phys2dShape:Phys2dShape
+    def wI:Float
   }
 
-  case class CircleShape(center:Vec, radius:Float) extends Shape {
-    def phys2dBody:Phys2dBody = {
-      val b1 = new Phys2dBody(new Circle(radius), 1f)
-      b1.setPosition(center.x, center.y)
-      b1
-    }
-
-    def aabb: AABB = {
+  case class CircleShape(radius:Float) extends Shape {
+    def aabb(center:Vec, rotation:Float): AABB = {
       AABB(center, radius*2, radius*2)
     }
 
     def phys2dShape: Phys2dShape = new Circle(radius)
+
+    lazy val wI: Float = radius*radius/2f
   }
 
-  case class LineShape(from:Vec, to:Vec) extends Shape {
-    val center = from + (to - from)/2f
+  case class LineShape(to:Vec) extends Shape {
+    /*val center = from + (to - from)/2f
 
     /**
      * Get the closest point on the line to a given point
@@ -77,40 +73,26 @@ package object orbitalkiller {
 
     val vec = to - from
     def dx = vec.x
-    def dy = vec.y
+    def dy = vec.y*/
 
-    def phys2dBody:Phys2dBody = {
-      val b1 = new Phys2dBody(new Line(vec.x, vec.y), 1f)
-      b1.setPosition(from.x, from.y)
-      b1
+    def aabb(from:Vec, rotation:Float): AABB = {
+      val to2 = from + to.rotateDeg(rotation)
+      val center = from + (to2 - from)/2f
+      AABB(center, math.max(math.abs(to2.x - from.x), 5f),  math.max(math.abs(to2.y - from.y), 5f))
     }
 
-    def aabb: AABB = {
-      AABB(center, math.max(math.abs(to.x - from.x), 5f),  math.max(math.abs(to.y - from.y), 5f))
-    }
+    def phys2dShape: Phys2dShape = new Line(to.x, to.y)
 
-    def phys2dShape: Phys2dShape = new Line(vec.x, vec.y)
+    lazy val wI: Float = to.norma2/12f
   }
 
-  case class BoxShape(center:Vec, width:Float, height:Float, rotation:Float) extends Shape {
-    val w = width
-    val h = height
-
-    val one = center + Vec(-width/2, height/2).rotateDeg(rotation)
-    val two = center + Vec(width/2, height/2).rotateDeg(rotation)
-    val three = center + Vec(width/2, -height/2).rotateDeg(rotation)
-    val four = center + Vec(-width/2, -height/2).rotateDeg(rotation)
-    val points = List(one, two, three, four)
-    lazy val lines = List(LineShape(one, two), LineShape(two, three), LineShape(three, four), LineShape(four, one))
-
-    def phys2dBody:Phys2dBody = {
-      val b2 = new Phys2dBody(new Box(w, h), 1f)
-      b2.setPosition(center.x, center.y)
-      b2.setRotation(rotation/180f*math.Pi.toFloat)
-      b2
-    }
-
-    def aabb: AABB = {
+  case class BoxShape(width:Float, height:Float) extends Shape {
+    def aabb(center:Vec, rotation:Float): AABB = {
+      val one = center + Vec(-width/2, height/2).rotateDeg(rotation)
+      val two = center + Vec(width/2, height/2).rotateDeg(rotation)
+      val three = center + Vec(width/2, -height/2).rotateDeg(rotation)
+      val four = center + Vec(-width/2, -height/2).rotateDeg(rotation)
+      val points = List(one, two, three, four)
       val xs = points.map(p => p.x)
       val ys = points.map(p => p.y)
       val min_x = xs.min
@@ -120,23 +102,32 @@ package object orbitalkiller {
       AABB(center, max_x - min_x, max_y - min_y)
     }
 
-    def phys2dShape: Phys2dShape = new Box(w, h)
+    def phys2dShape: Phys2dShape = new Box(width, height)
+
+    lazy val wI: Float = (width*width + height*height)/12f
   }
 
-  case class PolygonShape(center:Vec, rotation:Float, points:List[Vec]) extends Shape {
-    def aabb: AABB = {
+  case class PolygonShape(points:List[Vec]) extends Shape {
+    def aabb(center:Vec, rotation:Float): AABB = {
       val r = math.sqrt(points.map(p => p.norma2).max).toFloat*2
       AABB(center, r, r)
     }
 
-    def phys2dBody:Phys2dBody = {
-      val b = new Phys2dBody(new Polygon(points.map(_.toPhys2dVec).toArray), 1f)
-      b.setPosition(center.x, center.y)
-      b.setRotation(rotation/180f*math.Pi.toFloat)
-      b
-    }
-
     def phys2dShape: Phys2dShape = new Polygon(points.map(_.toPhys2dVec).toArray)
+
+    lazy val wI: Float = {
+      val numerator = (for {
+        n <- 0 until points.length-2
+        p_n_plus_1 = points(n+1)
+        p_n = points(n)
+      } yield p_n_plus_1.*/(p_n) * (p_n_plus_1.norma2 + (p_n_plus_1 * p_n) + p_n.norma2)).sum
+      val denominator = (for {
+        n <- 0 until points.length-2
+        p_n_plus_1 = points(n+1)
+        p_n = points(n)
+      } yield p_n_plus_1.*/(p_n)).sum
+      numerator/denominator/6f
+    }
   }
 
   class Space(val bodies:List[BodyState], val center:Vec, val width:Float, val height:Float) {
@@ -144,13 +135,13 @@ package object orbitalkiller {
       this(bodies, center, {
         val (init_min_x, init_max_x) = {
           bodies.headOption.map(b => {
-            val AABB(c, w, _) = b.currentShape.aabb
+            val AABB(c, w, _) = b.aabb
             (c.x - w/2, c.x+w/2)
           }).getOrElse((0f, 0f))
         }
         val (min_x, max_x) = bodies.foldLeft((init_min_x, init_max_x)) {
           case ((res_min_x, res_max_x), b) =>
-            val AABB(c, w, _) = b.currentShape.aabb
+            val AABB(c, w, _) = b.aabb
             val new_min_x = c.x - w/2
             val new_max_x = c.x + w/2
             (
@@ -162,13 +153,13 @@ package object orbitalkiller {
       }, {
         val (init_min_y, init_max_y) = {
           bodies.headOption.map(b => {
-            val AABB(c, _, h) = b.currentShape.aabb
+            val AABB(c, _, h) = b.aabb
             (c.y-h/2, c.y+h/2)
           }).getOrElse((0f, 0f))
         }
         val (min_y, max_y) = bodies.foldLeft(init_min_y, init_max_y) {
           case ((res_min_y, res_max_y), b) =>
-            val AABB(c, _, h) = b.currentShape.aabb
+            val AABB(c, _, h) = b.aabb
             val new_min_y = c.y - h/2
             val new_max_y = c.y + h/2
             (
@@ -188,19 +179,19 @@ package object orbitalkiller {
 
       val c1 = c + Vec(-w/4, -h/4)
       val aabb1 = AABB(c1, w/2, h/2)
-      val bodies1 = bodies.filter(b => b.currentShape.aabb.aabbCollision(aabb1))
+      val bodies1 = bodies.filter(b => b.aabb.aabbCollision(aabb1))
 
       val c2 = c + Vec(-w/4, h/4)
       val aabb2 = AABB(c2, w/2, h/2)
-      val bodies2 = bodies.filter(b => b.currentShape.aabb.aabbCollision(aabb2))
+      val bodies2 = bodies.filter(b => b.aabb.aabbCollision(aabb2))
 
       val c3 = c + Vec(w/4, h/4)
       val aabb3 = AABB(c3, w/2, h/2)
-      val bodies3 = bodies.filter(b => b.currentShape.aabb.aabbCollision(aabb3))
+      val bodies3 = bodies.filter(b => b.aabb.aabbCollision(aabb3))
 
       val c4 = c + Vec(w/4, -h/4)
       val aabb4 = AABB(c4, w/2, h/2)
-      val bodies4 = bodies.filter(b => b.currentShape.aabb.aabbCollision(aabb4))
+      val bodies4 = bodies.filter(b => b.aabb.aabbCollision(aabb4))
 
       List(new Space(bodies1, c1, w/2, h/2), new Space(bodies2, c2, w/2, h/2), new Space(bodies3, c3, w/2, h/2), new Space(bodies4, c4, w/2, h/2))
     }
@@ -232,175 +223,9 @@ package object orbitalkiller {
   private val polygon_polygon_collider = new PolygonPolygonCollider
   private val line_line_collider = new LineLineCollider
 
-  def circleCircleCollision(c1:CircleShape, c2:CircleShape):Option[GeometricContactData] = {
-    val num_contacts = circle_circle_collider.collide(contacts, c1.phys2dBody, c2.phys2dBody)
-    if(num_contacts == 0) None
-    else {
-      val contact_point = contacts(0).getPosition.toVec
-      val normal = contacts(0).getNormal.toVec
-      Some(GeometricContactData(contact_point, normal))
-    }
-  }
-
-  def lineCircleCollision(l:LineShape, c:CircleShape):Option[GeometricContactData] = {
-    val num_contacts = line_circle_collider.collide(contacts, l.phys2dBody, c.phys2dBody)
-    if(num_contacts == 0) None
-    else {
-      val contact_point = contacts(0).getPosition.toVec
-      val normal = contacts(0).getNormal.toVec
-      Some(GeometricContactData(contact_point, normal))
-    }
-  }
-
-  def circleBoxCollision(c:CircleShape, b:BoxShape):Option[GeometricContactData] = {
-    val num_contacts = circle_box_collider.collide(contacts, c.phys2dBody, b.phys2dBody)
-    if(num_contacts == 0) None
-    else {
-      val contact_point = contacts(0).getPosition.toVec
-      val normal = contacts(0).getNormal.toVec
-      Some(GeometricContactData(contact_point, normal))
-    }
-  }
-
-  def boxCircleCollision(b:BoxShape, c:CircleShape):Option[GeometricContactData] = {
-    val num_contacts = box_circle_collider.collide(contacts, b.phys2dBody, c.phys2dBody)
-    if(num_contacts == 0) None
-    else {
-      val contact_point = contacts(0).getPosition.toVec
-      val normal = contacts(0).getNormal.toVec
-      Some(GeometricContactData(contact_point, normal))
-    }
-  }
-
-  def lineBoxCollision(l:LineShape, b:BoxShape):Option[GeometricContactData] = {
-    val num_contacts = line_box_collider.collide(contacts, l.phys2dBody, b.phys2dBody)
-    if(num_contacts == 0) None
-    else {
-      num_contacts match {
-        case 1 =>
-          val contact_point = contacts(0).getPosition.toVec
-          val normal = contacts(0).getNormal.toVec
-          Some(GeometricContactData(contact_point, normal))
-        case 2 =>
-          val contact_point = (contacts(0).getPosition.toVec + contacts(1).getPosition.toVec)/2
-          val normal = contacts(0).getNormal.toVec
-          Some(GeometricContactData(contact_point, normal))
-        case _ => None
-      }
-    }
-  }
-
-  def boxBoxCollision(b1:BoxShape, b2:BoxShape):Option[GeometricContactData] = {
-    val num_contacts = box_box_collider.collide(contacts, b1.phys2dBody, b2.phys2dBody)
-    if(num_contacts == 0) None
-    else {
-      num_contacts match {
-        case 1 =>
-          val contact_point = contacts(0).getPosition.toVec
-          val normal = contacts(0).getNormal.toVec
-          Some(GeometricContactData(contact_point, normal))
-        case 2 =>
-          val contact_point = (contacts(0).getPosition.toVec + contacts(1).getPosition.toVec)/2
-          val normal = contacts(0).getNormal.toVec
-          Some(GeometricContactData(contact_point, normal))
-        case _ => None
-      }
-    }
-  }
-
-  def linePolygonCollision(l:LineShape, p:PolygonShape):Option[GeometricContactData] = {
-    val num_contacts = line_polygon_collider.collide(contacts, l.phys2dBody, p.phys2dBody)
-    if(num_contacts == 0) None
-    else {
-      num_contacts match {
-        case 1 =>
-          val contact_point = contacts(0).getPosition.toVec
-          val normal = contacts(0).getNormal.toVec
-          Some(GeometricContactData(contact_point, normal))
-        case 2 =>
-          val contact_point = (contacts(0).getPosition.toVec + contacts(1).getPosition.toVec)/2
-          val normal = contacts(0).getNormal.toVec
-          Some(GeometricContactData(contact_point, normal))
-        case _ => None
-      }
-    }
-  }
-
-  def polygonBoxCollision(p:PolygonShape, b:BoxShape):Option[GeometricContactData] = {
-    val num_contacts = polygon_box_collider.collide(contacts, p.phys2dBody, b.phys2dBody)
-    if(num_contacts == 0) None
-    else {
-      num_contacts match {
-        case 1 =>
-          val contact_point = contacts(0).getPosition.toVec
-          val normal = contacts(0).getNormal.toVec
-          Some(GeometricContactData(contact_point, normal))
-        case 2 =>
-          val contact_point = (contacts(0).getPosition.toVec + contacts(1).getPosition.toVec)/2
-          val normal = contacts(0).getNormal.toVec
-          Some(GeometricContactData(contact_point, normal))
-        case _ => None
-      }
-    }
-  }
-
-  def polygonCircleCollision(p:PolygonShape, c:CircleShape):Option[GeometricContactData] = {
-    val num_contacts = polygon_circle_collider.collide(contacts, p.phys2dBody, c.phys2dBody)
-    if(num_contacts == 0) None
-    else {
-      num_contacts match {
-        case 1 =>
-          val contact_point = contacts(0).getPosition.toVec
-          val normal = contacts(0).getNormal.toVec
-          Some(GeometricContactData(contact_point, normal))
-        case 2 =>
-          val contact_point = (contacts(0).getPosition.toVec + contacts(1).getPosition.toVec)/2
-          val normal = contacts(0).getNormal.toVec
-          Some(GeometricContactData(contact_point, normal))
-        case _ => None
-      }
-    }
-  }
-
-  def polygonPolygonCollision(p1:PolygonShape, p2:PolygonShape):Option[GeometricContactData] = {
-    val num_contacts = polygon_polygon_collider.collide(contacts, p1.phys2dBody, p2.phys2dBody)
-    if(num_contacts == 0) None
-    else {
-      num_contacts match {
-        case 1 =>
-          val contact_point = contacts(0).getPosition.toVec
-          val normal = contacts(0).getNormal.toVec
-          Some(GeometricContactData(contact_point, normal))
-        case 2 =>
-          val contact_point = (contacts(0).getPosition.toVec + contacts(1).getPosition.toVec)/2
-          val normal = contacts(0).getNormal.toVec
-          Some(GeometricContactData(contact_point, normal))
-        case _ => None
-      }
-    }
-  }
-
-  def lineLineCollision(l1:LineShape, l2:LineShape):Option[GeometricContactData] = {
-    val num_contacts = line_line_collider.collide(contacts, l1.phys2dBody, l2.phys2dBody)
-    if(num_contacts == 0) None
-    else {
-      num_contacts match {
-        case 1 =>
-          val contact_point = contacts(0).getPosition.toVec
-          val normal = contacts(0).getNormal.toVec
-          Some(GeometricContactData(contact_point, normal))
-        case 2 =>
-          val contact_point = (contacts(0).getPosition.toVec + contacts(1).getPosition.toVec)/2
-          val normal = contacts(0).getNormal.toVec
-          Some(GeometricContactData(contact_point, normal))
-        case _ => None
-      }
-    }
-  }
-
   def maybeCollision(body1:BodyState, body2:BodyState):Option[Contact] = {
-    def collide(s1:Shape, s2:Shape, collider:Phys2dCollider):Option[GeometricContactData] = {
-      val num_contacts = collider.collide(contacts, s1.phys2dBody, s2.phys2dBody)
+    def collide(pb1:Phys2dBody, pb2:Phys2dBody, collider:Phys2dCollider):Option[GeometricContactData] = {
+      val num_contacts = collider.collide(contacts, pb1, pb2)
       if(num_contacts == 0) None
       else {
         num_contacts match {
@@ -416,53 +241,53 @@ package object orbitalkiller {
         }
       }
     }
-    body1.currentShape match {
+    body1.shape match {
       case c1:CircleShape =>
-        body2.currentShape match {
+        body2.shape match {
           case c2:CircleShape =>
-            collide(c1, c2, circle_circle_collider).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+            collide(body1.phys2dBody, body2.phys2dBody, circle_circle_collider).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
           case l2:LineShape =>
-            lineCircleCollision(l2, c1).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
+            collide(body2.phys2dBody, body1.phys2dBody, line_circle_collider).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
           case b2:BoxShape =>
-            circleBoxCollision(c1, b2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+            collide(body1.phys2dBody, body2.phys2dBody, circle_box_collider).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
           case p2:PolygonShape =>
-            polygonCircleCollision(p2, c1).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
+            collide(body2.phys2dBody, body1.phys2dBody, polygon_circle_collider).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
           case _ => None
         }
       case l1:LineShape =>
-        body2.currentShape match {
+        body2.shape match {
           case c2:CircleShape =>
-            lineCircleCollision(l1, c2).map(gcd => Contact(body2, body1, gcd.contact_point, gcd.normal))
+            collide(body1.phys2dBody, body2.phys2dBody, line_circle_collider).map(gcd => Contact(body2, body1, gcd.contact_point, gcd.normal))
           case l2:LineShape =>
-            lineLineCollision(l1, l2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+            collide(body1.phys2dBody, body2.phys2dBody, line_line_collider).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
           case b2:BoxShape =>
-            lineBoxCollision(l1, b2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+            collide(body1.phys2dBody, body2.phys2dBody, line_box_collider).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
           case p2:PolygonShape =>
-            linePolygonCollision(l1, p2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+            collide(body1.phys2dBody, body2.phys2dBody, line_polygon_collider).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
           case _ => None
         }
       case b1:BoxShape =>
-        body2.currentShape match {
+        body2.shape match {
           case c2:CircleShape =>
-            boxCircleCollision(b1, c2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+            collide(body1.phys2dBody, body2.phys2dBody, box_circle_collider).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
           case l2:LineShape =>
-            lineBoxCollision(l2, b1).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
+            collide(body2.phys2dBody, body1.phys2dBody, line_box_collider).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
           case b2:BoxShape =>
-            boxBoxCollision(b1, b2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+            collide(body1.phys2dBody, body2.phys2dBody, box_box_collider).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
           case p2:PolygonShape =>
-            polygonBoxCollision(p2, b1).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
+            collide(body2.phys2dBody, body1.phys2dBody, polygon_box_collider).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
           case _ => None
         }
       case p1:PolygonShape =>
-        body2.currentShape match {
+        body2.shape match {
           case c2:CircleShape =>
-            polygonCircleCollision(p1, c2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+            collide(body1.phys2dBody, body2.phys2dBody, polygon_circle_collider).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
           case l2:LineShape =>
-            linePolygonCollision(l2, p1).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
+            collide(body2.phys2dBody, body1.phys2dBody, line_polygon_collider).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
           case b2:BoxShape =>
-            polygonBoxCollision(p1, b2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+            collide(body1.phys2dBody, body2.phys2dBody, polygon_box_collider).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
           case p2:PolygonShape =>
-            polygonPolygonCollision(p1, p2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+            collide(body1.phys2dBody, body2.phys2dBody, polygon_polygon_collider).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
           case _ => None
         }
       case _ => None
@@ -471,25 +296,23 @@ package object orbitalkiller {
 
   case class BodyState(index:String,
                        mass:Float,
-                       I:Float,
                        acc:Vec,
                        vel:Vec,
                        coord:Vec,
                        ang_acc:Float,
                        ang_vel:Float,
                        ang:Float,
-                       shape: (Vec, Float) => Shape,
+                       shape: Shape,
                        is_static:Boolean) {
-    def currentShape = shape(coord, ang)
     def phys2dBody:Phys2dBody = {
       if(is_static) {
-        val b = new Phys2dStaticBody(index, currentShape.phys2dShape)
-        b.setRestitution(1f)
+        val b = new Phys2dStaticBody(index, shape.phys2dShape)
+        b.setPosition(coord.x, coord.y)
+        b.setRotation(ang/180f*math.Pi.toFloat)
         b.setUserData((index, shape))
         b
       } else {
-        val b = new Phys2dBody(index, currentShape.phys2dShape, mass)
-        b.setRestitution(1f)
+        val b = new Phys2dBody(index, shape.phys2dShape, mass)
         b.setPosition(coord.x, coord.y)
         b.setRotation(ang/180f*math.Pi.toFloat)
         b.adjustVelocity(vel.toPhys2dVec)
@@ -498,16 +321,19 @@ package object orbitalkiller {
         b
       }
     }
+
+    def aabb = shape.aabb(coord, ang)
+
+    def I = mass*shape.wI
   }
 
   implicit class Phys2dBody2BodyState(pb:Phys2dBody) {
     def toBodyState:Option[BodyState] = {
       pb.getUserData match {
-        case (index:String, shape:((Vec, Float) => Shape)) =>
+        case (index:String, shape:Shape) =>
           Some(BodyState(
             index = index,
             mass = pb.getMass,
-            I = pb.getI,
             acc = Vec.zero,
             vel = Vec(pb.getVelocity.getX, pb.getVelocity.getY),
             coord =  Vec(pb.getPosition.getX, pb.getPosition.getY),
@@ -558,6 +384,7 @@ package object orbitalkiller {
       if !b1.is_static || !b2.is_static
       c @ Contact(_ ,_, contact_point, normal) <- maybeCollision(b1, b2)
     } {
+      println(s"collision: ${b1.index} : ${b2.index}")
       val rap = contact_point - b1.coord
       val n = normal.n
       val dv = b1.vel - b2.vel

@@ -488,14 +488,13 @@ class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velo
     BodyState(
       index,
       mass,
-      I = mass*radius*radius/2f,
       acc = Vec.zero,
       vel = init_velocity,
       coord = init_coord,
       ang_acc = 0f,
       ang_vel = 0f,
       ang = 0f,
-      shape = (coord, rotation) => CircleShape(coord, radius),
+      shape = CircleShape(radius),
       is_static = false))
 }
 
@@ -513,14 +512,13 @@ class Star(val index:String, val mass:Float, val coord:Vec, val radius:Float) {
     BodyState(
       index,
       mass,
-      I = mass*radius*radius/2f,
       acc = Vec.zero,
       vel = Vec.zero,
       coord,
       ang_acc = 0f,
       ang_vel = 0f,
       ang = 0f,
-      shape = (coord, rotation) => CircleShape(coord, radius),
+      shape = CircleShape(radius),
       is_static = true))
 }
 
@@ -603,14 +601,13 @@ class Ship(val index:String, val a:Float, val b:Float, init_coord:Vec, init_velo
     BodyState(
       index,
       mass,
-      I = moment_of_inertia,
       acc = Vec.zero,
       vel = init_velocity,
       coord = init_coord,
       ang_acc = 0f,
       ang_vel = 0f,
       ang = init_rotation,
-      shape = (coord, rotation) => BoxShape(coord, a, b, rotation),
+      shape = BoxShape(a, b),
       is_static = false)
   )
 
