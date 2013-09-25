@@ -2,12 +2,10 @@ package com.github.dunnololda.scageprojects
 
 import com.github.dunnololda.scage.ScageLib._
 import com.github.dunnololda.scage.ScageLib.Vec
-import net.phys2d.raw.collide._
+import net.phys2d.raw.collide.{Collider => Phys2dCollider, _}
 import net.phys2d.raw.{Body => Phys2dBody, StaticBody => Phys2dStaticBody, BodyList => Phys2dBodyList, World => Phys2dWorld}
 import net.phys2d.raw.shapes.{DynamicShape => Phys2dShape, _}
 import scala.collection.mutable
-import net.phys2d.math.Vector2f
-import net.phys2d.raw.strategies.QuadSpaceStrategy
 import scala.Some
 
 package object orbitalkiller {
@@ -401,11 +399,28 @@ package object orbitalkiller {
   }
 
   def maybeCollision(body1:BodyState, body2:BodyState):Option[Contact] = {
+    def collide(s1:Shape, s2:Shape, collider:Phys2dCollider):Option[GeometricContactData] = {
+      val num_contacts = collider.collide(contacts, s1.phys2dBody, s2.phys2dBody)
+      if(num_contacts == 0) None
+      else {
+        num_contacts match {
+          case 1 =>
+            val contact_point = contacts(0).getPosition.toVec
+            val normal = contacts(0).getNormal.toVec
+            Some(GeometricContactData(contact_point, normal))
+          case 2 =>
+            val contact_point = (contacts(0).getPosition.toVec + contacts(1).getPosition.toVec)/2
+            val normal = contacts(0).getNormal.toVec
+            Some(GeometricContactData(contact_point, normal))
+          case _ => None
+        }
+      }
+    }
     body1.currentShape match {
       case c1:CircleShape =>
         body2.currentShape match {
           case c2:CircleShape =>
-            circleCircleCollision(c1, c2).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+            collide(c1, c2, circle_circle_collider).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
           case l2:LineShape =>
             lineCircleCollision(l2, c1).map(gcd => Contact(body1, body2, gcd.contact_point, -gcd.normal))
           case b2:BoxShape =>
