@@ -28,10 +28,10 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   val dynamic_bodies = ArrayBuffer[MyBody]()
   val b1 = new MyBox("b1", Vec(w-60, h), Vec(0.3f, 0), 30, 20, 1f*6)
   dynamic_bodies += b1
-  val b2 = new MyBox("b2", Vec(w+60, h), Vec(-0.3f, 0), 30, 20, 1f*6)
-  dynamic_bodies += b2
-  /*val p1 = new MyPentagon("p1", Vec(w-60, h-20), Vec(0.0f, 0), 20, 1f*6)
-  dynamic_bodies += p1*/
+  /*val b2 = new MyBox("b2", Vec(w+60, h), Vec(-0.3f, 0), 30, 20, 1f*6)
+  dynamic_bodies += b2*/
+  val p1 = new MyPentagon("p1", Vec(w-60, h-20), Vec(0.0f, 0), 20, 1f*6)
+  dynamic_bodies += p1
   def addCircleBody(i:Int) {
     val c =  new MyCircle(s"c$i", randomPos, randomSpeed, 5, 1f)
     if(dynamic_bodies.forall(b => maybeCollision(b.currentState, c.currentState).isEmpty) &&
@@ -41,9 +41,9 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
       dynamic_bodies += c
     } else addCircleBody(i)
   }
-  //(1 to 20).map(i => addCircleBody(i))
-  val c1 = new MyCircle("c1", Vec(w, h), Vec(0.0f, -0.0f), 5, 1f)
-  dynamic_bodies += c1
+  (1 to 20).map(i => addCircleBody(i))
+  /*val c1 = new MyCircle("c1", Vec(w, h), Vec(0.0f, -0.0f), 5, 1f)
+  dynamic_bodies += c1*/
 
   /*val c1 = new MyCircle("c1", Vec(w-60, h), Vec(0.0f, 0), 30, 1f)*/
   /*val c2 = new MyCircle("c2", Vec(w+60, h+5), Vec(-0.5f, 0), 1f, 30)*/
