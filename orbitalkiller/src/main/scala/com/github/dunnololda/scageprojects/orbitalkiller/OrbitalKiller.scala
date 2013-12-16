@@ -315,7 +315,6 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
 
   keyIgnorePause(KEY_SPACE, onKeyDown = _center = ship.coord)
 
-
   keyIgnorePause(KEY_1, onKeyDown = ship.flightMode = 1)
   keyIgnorePause(KEY_2, onKeyDown = ship.flightMode = 2)
   keyIgnorePause(KEY_3, onKeyDown = ship.flightMode = 3)
@@ -460,9 +459,10 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
       20, 80, ORANGE)
     print(f"Угловая скорость в момент отключения двигателей: $angularSpeedWhenEnginesOff",
       20, 60, ORANGE)
-    print(s"Двигательная установка: ${if(ship.engines.exists(_.active)) "активирована" else "отключена"}",
+    print(s"Двигательная установка: ${if(ship.engines.exists(_.active)) "[rактивирована]" else "отключена"}",
       20, 40, ORANGE)
-    print(s"Время работы двигателей: ${timeStr(maxOption(ship.engines.withFilter(_.active).map(_.worktimeTacts/60)).getOrElse(0l))}",
+    val engines_work_tacts = maxOption(ship.engines.withFilter(_.active).map(_.worktimeTacts)).getOrElse(0l)
+    print(s"Время работы двигателей: $engines_work_tacts тактов (${timeStr(maxOption(ship.engines.withFilter(_.active).map(_.worktimeTacts/60*_time_mulitplier)).getOrElse(0l))})",
       20, 20, ORANGE)
   }
 
@@ -522,7 +522,7 @@ class Star(val index:String, val mass:Float, val coord:Vec, val radius:Float) {
       is_static = true))
 }
 
-case class Engine(position:Vec, force_dir:Vec, max_power:Float, sin_angle:Float, ship:Ship) {
+case class Engine(position:Vec, force_dir:Vec, max_power:Float, ship:Ship) {
   private var worktime_tacts = 0l
   private var stop_moment_seconds = 0l
 
@@ -639,17 +639,17 @@ class Ship(val index:String, val a:Float, val b:Float, init_coord:Vec, init_velo
     case _ =>
   }
 
-  val two   = Engine(position = Vec(0, -b/2), force_dir = Vec(0, 1),  max_power = 10, sin_angle = 0, this)
-  val eight = Engine(position = Vec(0, b/2),  force_dir = Vec(0, -1), max_power = 10, sin_angle = 0, this)
+  val two   = Engine(position = Vec(0, -b/2), force_dir = Vec(0, 1),  max_power = 10, this)
+  val eight = Engine(position = Vec(0, b/2),  force_dir = Vec(0, -1), max_power = 10, this)
 
-  val seven = Engine(position = Vec(-a/2, b/4), force_dir = Vec(1, 0),  max_power = 10, sin_angle = (b/4)/math.sqrt(a*a/4 + b*b/16).toFloat,  this)
-  val nine  = Engine(position = Vec(a/2, b/4),  force_dir = Vec(-1, 0), max_power = 10, sin_angle = -(b/4)/math.sqrt(a*a/4 + b*b/16).toFloat, this)
+  val seven = Engine(position = Vec(-a/2, b/4), force_dir = Vec(1, 0),  max_power = 10, this)
+  val nine  = Engine(position = Vec(a/2, b/4),  force_dir = Vec(-1, 0), max_power = 10, this)
 
-  val four  = Engine(position = Vec(-a/2, 0), force_dir = Vec(1, 0),  max_power = 10, sin_angle = 0, this)
-  val six   = Engine(position = Vec(a/2, 0),  force_dir = Vec(-1, 0), max_power = 10, sin_angle = 0, this)
+  val four  = Engine(position = Vec(-a/2, 0), force_dir = Vec(1, 0),  max_power = 10, this)
+  val six   = Engine(position = Vec(a/2, 0),  force_dir = Vec(-1, 0), max_power = 10, this)
 
-  val one   = Engine(position = Vec(-a/2, -b/4), force_dir = Vec(1, 0),  max_power = 10, sin_angle = -(b/4)/math.sqrt(a*a/4 + b*b/16).toFloat, this)
-  val three = Engine(position = Vec(a/2, -b/4),  force_dir = Vec(-1, 0), max_power = 10, sin_angle = (b/4)/math.sqrt(a*a/4 + b*b/16).toFloat,  this)
+  val one   = Engine(position = Vec(-a/2, -b/4), force_dir = Vec(1, 0),  max_power = 10, this)
+  val three = Engine(position = Vec(a/2, -b/4),  force_dir = Vec(-1, 0), max_power = 10, this)
 
   val engines = List(one, two, three, four, six, seven, eight, nine)
 
