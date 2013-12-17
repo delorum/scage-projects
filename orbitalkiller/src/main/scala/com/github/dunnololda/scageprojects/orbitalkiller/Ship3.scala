@@ -3,42 +3,53 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import com.github.dunnololda.scage.ScageLib._
 import OrbitalKiller._
 
-class Ship2(
-  val index:String,
-  init_coord:Vec,
-  init_velocity:Vec = Vec.zero,
-  init_rotation:Float = 0f
-) extends Ship {
+class Ship3(
+             val index:String,
+             init_coord:Vec,
+             init_velocity:Vec = Vec.zero,
+             init_rotation:Float = 0f
+             ) extends Ship {
   val mass:Float = 1   // mass
 
   val points:List[Vec] = List(
-    Vec(-10.0, 70.74075),
-    Vec(10.0, 70.74075),
-    Vec(10.0, 10.740753),
-    Vec(50.0, -9.259247),
-    Vec(10.0, -9.259247),
-    Vec(10.0, -69.25925),
-    Vec(-10.0, -69.25925),
-    Vec(-10.0, -9.259247),
-    Vec(-50.0, -9.259247),
-    Vec(-10.0, 10.740753),
-    Vec(-10.0, 70.74075)
+    Vec(-10.0, 70.0),
+    Vec(10.0, 70.0),
+    Vec(10.0, 30.0),
+    Vec(50.0, 10.0),
+    Vec(10.0, 10.0),
+    Vec(10.0, -10.0),
+    Vec(50.0, -30.0),
+    Vec(10.0, -30.0),
+    Vec(10.0, -70.0),
+    Vec(-10.0, -70.0),
+    Vec(-10.0, -30.0),
+    Vec(-50.0, -30.0),
+    Vec(-10.0, -10.0),
+    Vec(-10.0, 10.0),
+    Vec(-50.0, 10.0),
+    Vec(-10.0, 30.0)
   )
 
-  val eight = Engine(Vec(0.0, 70.74075), force_dir = Vec(0.0, -1.0), max_power = 10, this)
-  val two = Engine(position = Vec(0.0, -69.25925), force_dir = Vec(0.0, 1.0), max_power = 10, this)
+  val eight = Engine(position = Vec(0.0, 70.0), force_dir = Vec(0.0, -1.0), max_power = 10, this)
+  val two = Engine(position = Vec(0.0, -70.0), force_dir = Vec(0.0, 1.0), max_power = 10, this)
+  val four = Engine(position = Vec(-10.0, 0.0), force_dir = Vec(1.0, 0.0), max_power = 10, this)
+  val six = Engine(position = Vec(10.0, 0.0), force_dir = Vec(-1.0, 0.0), max_power = 10, this)
+  val seven = Engine(position = Vec(-40.0, 10.0), force_dir = Vec(0.0, 1.0), max_power = 10, this)
+  val nine = Engine(position = Vec(40.0, 10.0), force_dir = Vec(0.0, 1.0), max_power = 10, this)
+  val one = Engine(position = Vec(-40.0, -30.0), force_dir = Vec(0.0, 1.0), max_power = 10, this)
+  val three = Engine(position = Vec(40.0, -30.0), force_dir = Vec(0.0, 1.0), max_power = 10, this)
 
-  val four = Engine(position = Vec(-40.0, -9.259247), force_dir = Vec(0.0, 1.0), max_power = 10, this)
-  val six =  Engine(position = Vec(40.0, -9.259247), force_dir = Vec(0.0, 1.0), max_power = 10, this)
-
-  val engines = List(two, four, six, eight)
+  val engines = List(eight, two, four, six, seven, nine, one, three)
 
   val engines_mapping = Map(
-    KEY_NUMPAD2 -> two,
     KEY_NUMPAD8 -> eight,
-
+    KEY_NUMPAD2 -> two,
     KEY_NUMPAD4 -> four,
-    KEY_NUMPAD6 -> six
+    KEY_NUMPAD6 -> six,
+    KEY_NUMPAD7 -> seven,
+    KEY_NUMPAD9 -> nine,
+    KEY_NUMPAD1 -> one,
+    KEY_NUMPAD3 -> three
   )
 
   def currentState:BodyState = currentBodyState(index).getOrElse(
@@ -51,24 +62,24 @@ class Ship2(
       ang_acc = 0f,
       ang_vel = 0f,
       ang = init_rotation,
-      shape = PolygonShape(points.distinct),
+      shape = PolygonShape(points),
       is_static = false)
   )
 
   def rotateRight() {
-    activateOnlyOneEngine(four)
+    activateOnlyTheseEngines(one, seven)
   }
 
   def smallRotateRight() {
-    activateOnlyOneEngine(four)
+    activateOnlyOneEngine(seven)
   }
 
   def rotateLeft() {
-    activateOnlyOneEngine(six)
+    activateOnlyTheseEngines(three, nine)
   }
 
   def smallRotateLeft() {
-    activateOnlyOneEngine(six)
+    activateOnlyOneEngine(nine)
   }
 
   private def drawEngine(e:Engine, center:Vec, width:Float, height:Float, is_vertical:Boolean) {
@@ -107,7 +118,7 @@ class Ship2(
     openglLocalTransform {
       openglMove(coord)
       openglRotateDeg(rotation)
-      drawSlidingLines(points, WHITE)
+      drawSlidingLines(points :+ points.head, WHITE)
 
       engines.foreach {
         case e =>

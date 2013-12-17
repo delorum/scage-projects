@@ -20,7 +20,6 @@ case class Engine(position:Vec, force_dir:Vec, max_power:Float, ship:Ship) {
   def power_=(new_power:Float) {
     if(new_power >= 1f && new_power < max_power && new_power != _power) {
       _power = new_power
-      updateFutureTrajectory()
     }
   }
 

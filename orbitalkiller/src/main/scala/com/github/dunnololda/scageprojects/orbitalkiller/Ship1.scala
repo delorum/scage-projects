@@ -130,7 +130,7 @@ class Ship1(
 
     drawFilledCircle(coord, 2, GREEN)                             // mass center
     drawLine(coord, coord + linearVelocity.n*100, CYAN)           // current velocity
-    drawLine(coord, coord + (sun.coord - coord).n*100, YELLOW)    // direction to sun
-    drawLine(coord, coord + (earth.coord - coord).n*100, GREEN)   // direction to earth
+    drawLine(coord, coord + (earth.coord - coord).n*100, YELLOW)    // direction to sun
+    drawLine(coord, coord + (moon.coord - coord).n*100, GREEN)   // direction to earth
   }
 }

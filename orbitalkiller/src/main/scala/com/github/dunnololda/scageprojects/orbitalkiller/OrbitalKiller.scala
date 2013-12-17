@@ -38,11 +38,15 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     force = (time, bs, other_bodies) => {
       bs.index match {
         case ship.index =>
-          gravityForce(sun.coord, sun.mass, bs.coord, bs.mass, G) +
-          other_bodies.find(_.index == earth.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(Vec.zero) +
+          gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G) +
+          other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(Vec.zero) +
           ship.currentReactiveForce(time, bs)
-        case earth.index =>
-          gravityForce(sun.coord, sun.mass, bs.coord, bs.mass, G)
+        case station.index =>
+          gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G) +
+            other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(Vec.zero) +
+            station.currentReactiveForce(time, bs)
+        case moon.index =>
+          gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G)
         case _ => Vec.zero
       }
     },
@@ -112,11 +116,11 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     continueFutureTrajectoryMap(steps)
   }
 
-  val sun = new Star("sun", mass = 10000, coord = Vec.zero, radius = 3000)
-  val earth_start_position = Vec(-sun.radius*20f, sun.radius*20f)
-  val earth_init_velocity = satelliteSpeed(earth_start_position, sun.coord, sun.mass, G)
-  val earth = new Planet(
-    "earth",
+  val earth = new Star("Earth", mass = 10000, coord = Vec.zero, radius = 3000)
+  val earth_start_position = Vec(-earth.radius*20f, earth.radius*20f)
+  val earth_init_velocity = satelliteSpeed(earth_start_position, earth.coord, earth.mass, G)
+  val moon = new Planet(
+    "Moon",
     mass = 1000,
     init_coord = earth_start_position,
     init_velocity = earth_init_velocity,
@@ -124,16 +128,24 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
 
   /*val ship_start_position = sun.coord + Vec(sun.radius*1.5f, sun.radius*1.5f)*/
   /*val ship_init_velocity = satelliteSpeed(ship_start_position, sun.coord, sun.mass)*/
-  val ship_start_position = earth.coord + Vec(earth.radius*1.5f, earth.radius*1.5f)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.mass, G)
-  val ship = new Ship2("ship",
+  val ship_start_position = moon.coord + Vec(moon.radius*1.5f, moon.radius*1.5f)
+  val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.mass, G)
+  val ship = new Ship3("ship",
     init_coord = ship_start_position,
     init_velocity = ship_init_velocity,
     init_rotation = 45
   )
 
+  val station_start_position = earth.coord + Vec(earth.radius*1.5f, earth.radius*1.5f)
+  val station_init_velocity = satelliteSpeed(station_start_position, earth.coord, earth.mass, G)
+  val station = new SpaceStation("station",
+    init_coord = station_start_position,
+    init_velocity = station_init_velocity,
+    init_rotation = 45
+  )
+
   private val real_system_evolution =
-    futureSystemEvolutionFrom(0, List(ship.currentState, earth.currentState, sun.currentState)).iterator
+    futureSystemEvolutionFrom(0, List(ship.currentState, station.currentState, moon.currentState, earth.currentState)).iterator
 
   private var skipped_points = 0
   private def nextStep() {
@@ -180,18 +192,18 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
         center = ship.coord
         rotationPoint = ship.coord
         rotationAngleDeg = {
-          val nearest_body_coord = if(ship.coord.dist2(sun.coord) < ship.coord.dist2(earth.coord)) sun.coord else earth.coord
+          val nearest_body_coord = if(ship.coord.dist2(earth.coord) < ship.coord.dist2(moon.coord)) earth.coord else moon.coord
           val vec = ship.coord - nearest_body_coord
           if(vec.x >= 0) vec.deg(Vec(0, 1))
           else vec.deg(Vec(0, 1)) *(-1)
         }
         view_mode = 2
       case 3 => // фиксация на солнце
-        center = sun.coord
+        center = earth.coord
         rotationAngle = 0
         view_mode = 3
       case 4 => // фиксация на планете
-        center = earth.coord
+        center = moon.coord
         rotationAngle = 0
         view_mode = 4
       case _ =>
@@ -200,18 +212,18 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   private def viewModeStr = view_mode match {
     case 0 => "свободный"
     case 1 => "фиксация на корабле"
-    case 2 => "посадка на планету"
-    case 3 => "фиксация на солнце"
-    case 4 => "фиксация на планете"
+    case 2 => "посадка"
+    case 3 => "фиксация на Земле"
+    case 4 => "фиксация на Луне"
     case _ => ""
   }
 
   def satelliteSpeedInPoint(coord:Vec):String = {
-    if(coord.dist(earth.coord) < earth.gravitational_radius) {
-      val ss = earth.linearVelocity + satelliteSpeed(coord, earth.coord, earth.mass, G)
+    if(coord.dist(moon.coord) < moon.gravitational_radius) {
+      val ss = moon.linearVelocity + satelliteSpeed(coord, moon.coord, moon.mass, G)
       f"${ss.norma*60*base_dt}%.2f м/сек (velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек)"
-    } else if(coord.dist(sun.coord) < sun.gravitational_radius) {
-      val ss = satelliteSpeed(coord, sun.coord, sun.mass, G)
+    } else if(coord.dist(earth.coord) < earth.gravitational_radius) {
+      val ss = satelliteSpeed(coord, earth.coord, earth.mass, G)
       f"${ss.norma*60*base_dt}%.2f м/сек (velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек)"
     } else "N/A"
   }
@@ -248,6 +260,9 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     }
   }
 
+  private var disable_trajectory_drawing = false
+  private var disable_future_trajectory_drawing = false
+
   keyIgnorePause(KEY_NUMPAD1, onKeyDown = {ship.switchEngineActive(KEY_NUMPAD1)})
   keyIgnorePause(KEY_NUMPAD2, onKeyDown = {ship.switchEngineActive(KEY_NUMPAD2)})
   keyIgnorePause(KEY_NUMPAD3, onKeyDown = {ship.switchEngineActive(KEY_NUMPAD3)})
@@ -259,22 +274,22 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
 
   keyIgnorePause(KEY_NUMPAD5, onKeyDown = {ship.engines.foreach(_.active = false)})
 
-  keyIgnorePause(KEY_UP,   10, onKeyDown = {ship.selected_engine.foreach(e => e.power += 0.1f)})
-  keyIgnorePause(KEY_DOWN, 10, onKeyDown = {ship.selected_engine.foreach(e => e.power -= 0.1f)})
+  keyIgnorePause(KEY_UP,   10, onKeyDown = {ship.selected_engine.foreach(e => e.power += 0.1f)}, onKeyUp = updateFutureTrajectory())
+  keyIgnorePause(KEY_DOWN, 10, onKeyDown = {ship.selected_engine.foreach(e => e.power -= 0.1f)}, onKeyUp = updateFutureTrajectory())
   keyIgnorePause(KEY_RIGHT,   10, onKeyDown = {
     ship.selected_engine.foreach(e => {
       e.worktimeTacts += 1
-      updateFutureTrajectory()
+      //updateFutureTrajectory()
     })
-  })
+  }, onKeyUp = updateFutureTrajectory())
   keyIgnorePause(KEY_LEFT, 10, onKeyDown = {
     ship.selected_engine.foreach(e => {
       if(e.worktimeTacts > 0) {
         e.worktimeTacts -= 1
-        updateFutureTrajectory()
+        //updateFutureTrajectory()
       }
     })
-  })
+  }, onKeyUp = updateFutureTrajectory())
 
   keyIgnorePause(KEY_ADD, 100, onKeyDown = {
     _time_mulitplier += 1
@@ -315,7 +330,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   keyIgnorePause(KEY_S, 10, onKeyDown = {freeCenter(); _center += Vec(0, -5/globalScale)})
   keyIgnorePause(KEY_D, 10, onKeyDown = {freeCenter(); _center += Vec(5/globalScale, 0)})
 
-  keyIgnorePause(KEY_SPACE, onKeyDown = _center = ship.coord)
+  keyIgnorePause(KEY_SPACE, onKeyDown = {freeCenter(); _center = ship.coord})
 
   keyIgnorePause(KEY_1, onKeyDown = ship.flightMode = 1)
   keyIgnorePause(KEY_2, onKeyDown = ship.flightMode = 2)
@@ -336,6 +351,9 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     continue_future_trajectory = false
     updateFutureTrajectory()
   })
+
+  keyIgnorePause(KEY_Z, onKeyDown = disable_trajectory_drawing = !disable_trajectory_drawing)
+  keyIgnorePause(KEY_X, onKeyDown = disable_future_trajectory_drawing = !disable_future_trajectory_drawing)
 
   mouseWheelDownIgnorePause(onWheelDown = m => {
     if(globalScale > 0.01f) {
@@ -388,44 +406,48 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     drawLine(to2, arrow21, DARK_GRAY)
     drawLine(to2, arrow22, DARK_GRAY)
 
-    future_trajectory_map.foreach {
-      case (index, body_states) =>
-        index match {
-          case "ship" =>
-            viewMode match {
-              case 4 =>
-                drawSlidingLines(
-                  for {
-                    ((_, bs), (_, earth_bs)) <- body_states.zip(future_trajectory_map(earth.index))
-                    coord = bs.coord - earth_bs.coord + earth.coord
-                  } yield coord,
-                  color = YELLOW)
-              case _ =>
-                drawSlidingLines(body_states.map(_._2.coord), color = YELLOW)
-            }
-          case _ =>
-            drawSlidingLines(body_states.map(_._2.coord), color = YELLOW)
-        }
+    if(!disable_future_trajectory_drawing) {
+      future_trajectory_map.foreach {
+        case (index, body_states) =>
+          index match {
+            case "ship" =>
+              viewMode match {
+                case 4 =>
+                  drawSlidingLines(
+                    for {
+                      ((_, bs), (_, earth_bs)) <- body_states.zip(future_trajectory_map(moon.index))
+                      coord = bs.coord - earth_bs.coord + moon.coord
+                    } yield coord,
+                    color = YELLOW)
+                case _ =>
+                  drawSlidingLines(body_states.map(_._2.coord), color = YELLOW)
+              }
+            case _ =>
+              drawSlidingLines(body_states.map(_._2.coord), color = YELLOW)
+          }
+      }
     }
 
-    body_trajectories_map.foreach {
-      case (index, body_states) =>
-        index match {
-          case "ship" =>
-            viewMode match {
-              case 4 =>
-                drawSlidingLines(
-                  for {
-                    ((_, bs), (_, earth_bs)) <- body_states.zip(body_trajectories_map(earth.index))
-                    coord = bs.coord - earth_bs.coord + earth.coord
-                  } yield coord,
-                  color = GREEN)
-              case _ =>
-                drawSlidingLines(body_states.map(_._2.coord), color = GREEN)
-            }
-          case _ =>
-            drawSlidingLines(body_states.map(_._2.coord), color = GREEN)
-        }
+    if(!disable_trajectory_drawing) {
+      body_trajectories_map.foreach {
+        case (index, body_states) =>
+          index match {
+            case "ship" =>
+              viewMode match {
+                case 4 =>
+                  drawSlidingLines(
+                    for {
+                      ((_, bs), (_, earth_bs)) <- body_states.zip(body_trajectories_map(moon.index))
+                      coord = bs.coord - earth_bs.coord + moon.coord
+                    } yield coord,
+                    color = GREEN)
+                case _ =>
+                  drawSlidingLines(body_states.map(_._2.coord), color = GREEN)
+              }
+            case _ =>
+              drawSlidingLines(body_states.map(_._2.coord), color = GREEN)
+          }
+      }
     }
   }
 
@@ -443,9 +465,9 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
       20, 280, ORANGE)
     print(s"Полетный режим: ${ship.flightModeStr}",
       20, 260, ORANGE)
-    print(f"Расстояние и скорость относительно звезды: ${ship.coord.dist(sun.coord)}%.2f м, ${ship.linearVelocity* (ship.coord - sun.coord).n *60*base_dt}%.2f м/сек",
+    print(f"Расстояние и скорость относительно Земли: ${ship.coord.dist(earth.coord)}%.2f м, ${ship.linearVelocity* (ship.coord - earth.coord).n *60*base_dt}%.2f м/сек",
       20, 240, ORANGE)
-    print(f"Расстояние и скорость относительно планеты: ${ship.coord.dist(earth.coord)}%.2f м, ${ship.linearVelocity* (ship.coord - earth.coord).n *60*base_dt}%.2f м/сек",
+    print(f"Расстояние и скорость относительно Луны: ${ship.coord.dist(moon.coord)}%.2f м, ${ship.linearVelocity* (ship.coord - moon.coord).n *60*base_dt}%.2f м/сек",
       20, 220, ORANGE)
     print(f"Скорость: ${ship.linearVelocity.norma*60*base_dt}%.2f м/сек ( velx = ${ship.linearVelocity.x*60*base_dt}%.2f м/сек, vely = ${ship.linearVelocity.y*60*base_dt}%.2f м/сек)",
       20, 200, ORANGE)
@@ -477,7 +499,7 @@ import OrbitalKiller._
 
 class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velocity:Vec, val radius:Float) {
   lazy val gravitational_radius = {
-    (coord.dist(sun.coord)*math.sqrt(mass/20f/sun.mass)/(1 + math.sqrt(mass/20f/sun.mass))).toFloat
+    (coord.dist(earth.coord)*math.sqrt(mass/20f/earth.mass)/(1 + math.sqrt(mass/20f/earth.mass))).toFloat
   }
 
   def coord = currentState.coord
@@ -505,7 +527,7 @@ class Planet(val index:String, val mass:Float, val init_coord:Vec, val init_velo
 
 class Star(val index:String, val mass:Float, val coord:Vec, val radius:Float) {
   lazy val gravitational_radius = {
-    (coord.dist(earth.coord)*math.sqrt(mass/20f/earth.mass)/(1 + math.sqrt(mass/20f/earth.mass))).toFloat
+    (coord.dist(moon.coord)*math.sqrt(mass/20f/moon.mass)/(1 + math.sqrt(mass/20f/moon.mass))).toFloat
   }
 
   def currentState:BodyState = currentBodyState(index).getOrElse(
