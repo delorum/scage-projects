@@ -82,14 +82,14 @@ trait Ship {
   def preserveAngle(angle_deg:Float) {
     if(rotation != angle_deg) {
       if(rotation > angle_deg) {
-        if(rotation - angle_deg > 20) preserveAngularVelocity(-5)
-        if(rotation - angle_deg > 10) preserveAngularVelocity(-2)
+        if(rotation - angle_deg > 20) preserveAngularVelocity(-2)
+        else if(rotation - angle_deg > 10) preserveAngularVelocity(-2)
         else if(rotation - angle_deg > 1) preserveAngularVelocity(-1)
         else if(rotation - angle_deg > 0.1f) preserveAngularVelocity(-0.1f)
         else preserveAngularVelocity(0)
       } else if(rotation < angle_deg) {
-        if(rotation - angle_deg < -20) preserveAngularVelocity(5)
-        if(rotation - angle_deg < -10) preserveAngularVelocity(2)
+        if(rotation - angle_deg < -20) preserveAngularVelocity(2)
+        else if(rotation - angle_deg < -10) preserveAngularVelocity(2)
         else if(rotation - angle_deg < -1) preserveAngularVelocity(1)
         else if(rotation - angle_deg < -0.1f) preserveAngularVelocity(0.1f)
         else preserveAngularVelocity(0)
@@ -97,7 +97,8 @@ trait Ship {
     }
   }
 
-  private var flight_mode = 1 // 1 - free, 2 - stop rotation, 3 - axis orientation, 4 - orbit orientation
+  // 1 - free, 2 - stop rotation, 3 - axis orientation, 4 - orbit orientation, 5 - enter orbit
+  private var flight_mode = 1
   def flightMode = flight_mode
   def flightMode_=(new_flight_mode:Int) {
     if(new_flight_mode > 0 && new_flight_mode < 5) {

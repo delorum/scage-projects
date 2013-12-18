@@ -33,7 +33,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   def currentBodyState(index:String):Option[BodyState] = current_body_states.get(index)
   def currentBodyStates = current_body_states.values.toList
 
-  def futureSystemEvolutionFrom(time:Long, body_states:List[BodyState]) = systemEvolutionFrom(
+  def futureSystemEvolutionFrom(time:Long, body_states:List[BodyState], enable_collisions:Boolean) = systemEvolutionFrom(
     dt, elasticity = 0.9f,
     force = (time, bs, other_bodies) => {
       bs.index match {
@@ -57,7 +57,8 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
         case _ =>
           0f
       }
-    })((time, body_states))
+    },
+    enable_collisions = enable_collisions)((time, body_states))
 
   val trajectory_accuracy = 100
   val trajectory_capacity = 100000
@@ -86,7 +87,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   def updateFutureTrajectory() {
     future_trajectory.clear()
     future_trajectory ++= {
-      futureSystemEvolutionFrom(time, currentBodyStates)
+      futureSystemEvolutionFrom(time, currentBodyStates, enable_collisions = false)
         .take(future_trajectory_capacity)
     }
     updateFutureTrajectoryMap()
@@ -109,7 +110,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   def continueFutureTrajectory() {
     val (t, s) = future_trajectory.lastOption.getOrElse((time, currentBodyStates))
     val steps = {
-      futureSystemEvolutionFrom(t, s)
+      futureSystemEvolutionFrom(t, s, enable_collisions = false)
         .take(future_trajectory_capacity)
     }.toSeq
     future_trajectory ++= steps
@@ -145,7 +146,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   )
 
   private val real_system_evolution =
-    futureSystemEvolutionFrom(0, List(ship.currentState, station.currentState, moon.currentState, earth.currentState)).iterator
+    futureSystemEvolutionFrom(0, List(ship.currentState, station.currentState, moon.currentState, earth.currentState), enable_collisions = true).iterator
 
   private var skipped_points = 0
   private def nextStep() {
@@ -228,6 +229,16 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     } else "N/A"
   }
 
+  def escapeVelocityInPoint(coord:Vec):String = {
+    if(coord.dist(moon.coord) < moon.gravitational_radius) {
+      val ss = moon.linearVelocity + escapeVelocity(coord, moon.coord, moon.mass, G)
+      f"${ss.norma*60*base_dt}%.2f м/сек (velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек)"
+    } else if(coord.dist(earth.coord) < earth.gravitational_radius) {
+      val ss = escapeVelocity(coord, earth.coord, earth.mass, G)
+      f"${ss.norma*60*base_dt}%.2f м/сек (velx = ${ss.x*60*base_dt}%.2f м/сек, vely = ${ss.y*60*base_dt}%.2f м/сек)"
+    } else "N/A"
+  }
+
   def linearSpeedWhenEnginesOff:String = {
     if(ship.flightMode != 1) "N/A"  // только в свободном режиме отображать инфу
     else {
@@ -262,6 +273,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
 
   private var disable_trajectory_drawing = false
   private var disable_future_trajectory_drawing = false
+  private var disable_interface_drawing = false
 
   keyIgnorePause(KEY_NUMPAD1, onKeyDown = {ship.switchEngineActive(KEY_NUMPAD1)})
   keyIgnorePause(KEY_NUMPAD2, onKeyDown = {ship.switchEngineActive(KEY_NUMPAD2)})
@@ -346,14 +358,16 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   keyIgnorePause(KEY_F5, onKeyDown = viewMode = 3)  // фиксация на солнце
   keyIgnorePause(KEY_F6, onKeyDown = viewMode = 4)  // фиксация на планете
 
+  keyIgnorePause(KEY_Z, onKeyDown = disable_trajectory_drawing = !disable_trajectory_drawing)
+  keyIgnorePause(KEY_X, onKeyDown = disable_future_trajectory_drawing = !disable_future_trajectory_drawing)
+  keyIgnorePause(KEY_V, onKeyDown = disable_interface_drawing = !disable_interface_drawing)
   keyIgnorePause(KEY_N, onKeyDown = continue_future_trajectory = !continue_future_trajectory)
   keyIgnorePause(KEY_C, onKeyDown = {
     continue_future_trajectory = false
     updateFutureTrajectory()
   })
 
-  keyIgnorePause(KEY_Z, onKeyDown = disable_trajectory_drawing = !disable_trajectory_drawing)
-  keyIgnorePause(KEY_X, onKeyDown = disable_future_trajectory_drawing = !disable_future_trajectory_drawing)
+
 
   mouseWheelDownIgnorePause(onWheelDown = m => {
     if(globalScale > 0.01f) {
@@ -452,44 +466,73 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   }
 
   interface {
-    print(fps, 20, windowHeight - 20, align = "top-left", color = DARK_GRAY)
     if(onPause) print("Пауза", windowCenter, align = "center", color = WHITE)
     print("F1 - Справка, P - пауза", windowWidth - 20, 20, align = "bottom-right", color = GREEN)
     print(s"сборка $appVersion", windowWidth - 20, windowHeight - 20, align = "top-right", color = DARK_GRAY)
+    print(s"FPS $fps", windowWidth - 20, windowHeight - 40, align = "top-right", color = DARK_GRAY)
 
-    print(s"Ускорение времени: x${_time_mulitplier}",
-      20, 320, ORANGE)
-    print(s"Время: ${timeStr(_time/60)}",
-      20, 300, ORANGE)
-    print(s"Режим камеры: $viewModeStr",
-      20, 280, ORANGE)
-    print(s"Полетный режим: ${ship.flightModeStr}",
-      20, 260, ORANGE)
-    print(f"Расстояние и скорость относительно Земли: ${ship.coord.dist(earth.coord)}%.2f м, ${ship.linearVelocity* (ship.coord - earth.coord).n *60*base_dt}%.2f м/сек",
-      20, 240, ORANGE)
-    print(f"Расстояние и скорость относительно Луны: ${ship.coord.dist(moon.coord)}%.2f м, ${ship.linearVelocity* (ship.coord - moon.coord).n *60*base_dt}%.2f м/сек",
-      20, 220, ORANGE)
-    print(f"Скорость: ${ship.linearVelocity.norma*60*base_dt}%.2f м/сек ( velx = ${ship.linearVelocity.x*60*base_dt}%.2f м/сек, vely = ${ship.linearVelocity.y*60*base_dt}%.2f м/сек)",
-      20, 200, ORANGE)
-    print(f"Позиция: ${ship.coord.x}%.2f : ${ship.coord.y}%.2f",
-      20, 180, ORANGE)
-    print(f"Угловая скорость: ${ship.angularVelocity*60*base_dt}%.2f град/сек",
-      20, 160, ORANGE)
-    print(f"Угол: ${ship.rotation}%.2f град",
-      20, 140, ORANGE)
-    print(f"Скорость для спутника в данной точке: ${satelliteSpeedInPoint(ship.coord)}",
-      20, 120, ORANGE)
-    print(f"Линейная скорость в момент отключения двигателей: $linearSpeedWhenEnginesOff",
-      20, 100, ORANGE)
-    print(f"Угловая скорость в момент отключения двигателей: $angularSpeedWhenEnginesOff",
-      20, 80, ORANGE)
-    print(s"Двигательная установка: ${if(ship.engines.exists(_.active)) "[rактивирована]" else "отключена"}",
-      20, 60, ORANGE)
-    val engines_work_tacts = maxOption(ship.engines.withFilter(_.active).map(_.worktimeTacts)).getOrElse(0l)
-    print(s"Время работы двигателей: $engines_work_tacts тактов (${timeStr(maxOption(ship.engines.withFilter(_.active).map(_.worktimeTacts*_time_mulitplier/60)).getOrElse(0l))})",
-      20, 40, ORANGE)
-    print(s"Расчет траектории: ${if(continue_future_trajectory) "[rактивирован]" else "отключен"}",
-      20, 20, ORANGE)
+    if(!disable_interface_drawing) {
+      val heights = (480 to 20 by -20).iterator
+
+      print(s"Время: ${timeStr(_time/60)}",
+        20, heights.next(), ORANGE)
+      print(s"Ускорение времени: x${_time_mulitplier}",
+        20, heights.next(), ORANGE)
+
+      print("", 20, heights.next(), ORANGE)
+
+      print(s"Режим камеры: $viewModeStr",
+        20, heights.next(), ORANGE)
+      print(s"Полетный режим: ${ship.flightModeStr}",
+        20, heights.next(), ORANGE)
+
+      print("", 20, heights.next(), ORANGE)
+
+      print(f"Расстояние и скорость относительно Земли: ${ship.coord.dist(earth.coord)}%.2f м, ${ship.linearVelocity* (ship.coord - earth.coord).n *60*base_dt}%.2f м/сек",
+        20, heights.next(), ORANGE)
+      print(f"Расстояние и скорость относительно Луны: ${ship.coord.dist(moon.coord)}%.2f м, ${ship.linearVelocity* (ship.coord - moon.coord).n *60*base_dt}%.2f м/сек",
+        20, heights.next(), ORANGE)
+      print(s"Расчет траектории: ${if(continue_future_trajectory) "[rактивирован]" else "отключен"}",
+        20, heights.next(), ORANGE)
+
+      print("", 20, heights.next(), ORANGE)
+
+      print(f"Позиция: ${ship.coord.x}%.2f : ${ship.coord.y}%.2f",
+        20, heights.next(), ORANGE)
+      print(f"Линейная скорость: ${ship.linearVelocity.norma*60*base_dt}%.2f м/сек ( velx = ${ship.linearVelocity.x*60*base_dt}%.2f м/сек, vely = ${ship.linearVelocity.y*60*base_dt}%.2f м/сек)",
+        20, heights.next(), ORANGE)
+      print(f"Угол: ${ship.rotation}%.2f град",
+        20, heights.next(), ORANGE)
+      print(f"Угловая скорость: ${ship.angularVelocity*60*base_dt}%.2f град/сек",
+        20, heights.next(), ORANGE)
+
+      print("", 20, heights.next(), ORANGE)
+
+      print(f"Скорость для спутника в данной точке: ${satelliteSpeedInPoint(ship.coord)}",
+        20, heights.next(), ORANGE)
+      print(f"Скорость убегания в данной точке: ${escapeVelocityInPoint(ship.coord)}",
+        20, heights.next(), ORANGE)
+
+      print("", 20, heights.next(), ORANGE)
+
+      print(s"Двигательная установка: ${if(ship.engines.exists(_.active)) "[rактивирована]" else "отключена"}",
+        20, heights.next(), ORANGE)
+      val engines_work_tacts = maxOption(ship.engines.withFilter(_.active).map(_.worktimeTacts)).getOrElse(0l)
+      print(s"Общее время работы двигателей: $engines_work_tacts тактов (${timeStr(maxOption(ship.engines.withFilter(_.active).map(_.worktimeTacts*_time_mulitplier/60)).getOrElse(0l))})",
+        20, heights.next(), ORANGE)
+      print(s"Мощность и время работы отдельных двигателей:",
+        20, heights.next(), ORANGE)
+      print(s"${ship.engines.map(e => {
+        if(ship.selected_engine.exists(x => x == e)) s"[r${(e.power/10f*100).toInt} % (${e.worktimeTacts} т.)]"
+        else s"${(e.power/10f*100).toInt} % (${e.worktimeTacts} т.)"
+      }).mkString(", ")}",
+        20, heights.next()
+        , ORANGE)
+      print(f"Линейная скорость в момент отключения двигателей: $linearSpeedWhenEnginesOff",
+        20, heights.next(), ORANGE)
+      print(f"Угловая скорость в момент отключения двигателей: $angularSpeedWhenEnginesOff",
+        20, heights.next(), ORANGE)
+    }
   }
 
   pause()

@@ -32,7 +32,7 @@ case class Engine(position:Vec, force_dir:Vec, max_power:Float, ship:Ship) {
     if(is_active != bool) {
       is_active = bool
       if(is_active) {
-        _power = 1f
+        //_power = 1f
         if(worktime_tacts == 0) {
           worktimeTacts = 10
         }
@@ -46,7 +46,7 @@ case class Engine(position:Vec, force_dir:Vec, max_power:Float, ship:Ship) {
   def switchActive() {
     if(!is_active) {
       is_active = true
-      _power = 1f
+      //_power = 1f
       worktimeTacts = 10
       ship.selected_engine = Some(this)
       updateFutureTrajectory()
