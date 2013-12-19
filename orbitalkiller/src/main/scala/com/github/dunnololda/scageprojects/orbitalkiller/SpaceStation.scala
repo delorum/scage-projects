@@ -76,4 +76,6 @@ class SpaceStation(
   def smallRotateLeft() {
     activateOnlyOneEngine(nine)
   }
+
+  def enterOrbit(): Unit = ???
 }

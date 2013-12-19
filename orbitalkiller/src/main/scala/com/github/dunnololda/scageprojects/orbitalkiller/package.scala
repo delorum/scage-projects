@@ -327,7 +327,7 @@ package object orbitalkiller {
 
     def aabb = shape.aabb(coord, ang)
 
-    val I = mass*shape.wI
+    lazy val I = mass*shape.wI
   }
 
   implicit class Phys2dBody2BodyState(pb:Phys2dBody) {
@@ -368,7 +368,7 @@ package object orbitalkiller {
     }
   }
 
-  private def correctAngle(angle:Float):Float = {
+  def correctAngle(angle:Float):Float = {
     if(angle > 360) correctAngle(angle - 360)
     else if(angle < 0) correctAngle(angle + 360)
     else angle
@@ -500,13 +500,13 @@ package object orbitalkiller {
     (body1_coord - body2_coord).n*G*body1_mass*body2_mass/body1_coord.dist2(body2_coord)
   }
 
-  def satelliteSpeed(body_coord:Vec, planet_coord:Vec, planet_mass:Float, G:Float):Vec = {
+  def satelliteSpeed(body_coord:Vec, planet_coord:Vec, planet_velocity:Vec, planet_mass:Float, G:Float):Vec = {
     val from_planet_to_body = body_coord - planet_coord
-    from_planet_to_body.n.rotateDeg(90)*math.sqrt(G*planet_mass/from_planet_to_body.norma)
+    planet_velocity + from_planet_to_body.n.rotateDeg(90)*math.sqrt(G*planet_mass/from_planet_to_body.norma)
   }
 
-  def escapeVelocity(body_coord:Vec, planet_coord:Vec, planet_mass:Float, G:Float):Vec = {
-    satelliteSpeed(body_coord, planet_coord, planet_mass, G)*math.sqrt(2)
+  def escapeVelocity(body_coord:Vec, planet_coord:Vec, planet_velocty:Vec, planet_mass:Float, G:Float):Vec = {
+    satelliteSpeed(body_coord, planet_coord, planet_velocty, planet_mass, G)*math.sqrt(2)
   }
 
   /**

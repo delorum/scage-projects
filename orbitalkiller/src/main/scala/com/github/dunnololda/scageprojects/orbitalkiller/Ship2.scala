@@ -54,4 +54,6 @@ class Ship2(
   def smallRotateLeft() {
     activateOnlyOneEngine(six)
   }
+
+  def enterOrbit(): Unit = ???
 }

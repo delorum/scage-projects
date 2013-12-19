@@ -28,6 +28,7 @@ object AngleTests extends ScageScreenApp("Angle Tests", 640, 480) {
 
   render {
     drawLine(windowCenter, windowCenter+Vec(0,100), WHITE)
+    drawLine(windowCenter, windowCenter + Vec(0, 100).perpendicular, WHITE)
     drawLine(windowCenter, windowCenter+velocity.n*100, GREEN)
     drawLine(windowCenter, windowCenter+ship.n*100, YELLOW)
   }
