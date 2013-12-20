@@ -9,7 +9,7 @@ import com.github.dunnololda.scage.ScageLib
 sealed trait ViewMode
 sealed trait FlightMode
 
-object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
+object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
   private var _time_mulitplier = 1
   def timeMultiplier = _time_mulitplier
@@ -119,17 +119,18 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
   }
 
   val earth = new Star("Earth", mass = 10000, coord = Vec.zero, radius = 3000)
-  val earth_start_position = Vec(-earth.radius*20f, earth.radius*20f)
-  val earth_init_velocity = satelliteSpeed(earth_start_position, earth.coord, earth.linearVelocity, earth.mass, G)
+
+  val moon_start_position = Vec(-earth.radius*20f, earth.radius*20f)
+  val moon_init_velocity = satelliteSpeed(moon_start_position, earth.coord, earth.linearVelocity, earth.mass, G)
   val moon = new Planet(
     "Moon",
     mass = 1000,
-    init_coord = earth_start_position,
-    init_velocity = earth_init_velocity,
+    init_coord = moon_start_position,
+    init_velocity = moon_init_velocity,
     radius = 1000)
 
-  /*val ship_start_position = sun.coord + Vec(sun.radius*1.5f, sun.radius*1.5f)*/
-  /*val ship_init_velocity = satelliteSpeed(ship_start_position, sun.coord, sun.mass)*/
+  /*val ship_start_position = earth.coord + Vec(0, earth.radius*1.5f)
+  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G)*/
   val ship_start_position = moon.coord + Vec(moon.radius*1.5f, moon.radius*1.5f)
   val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G)
   val ship = new Ship3("ship",
@@ -240,6 +241,15 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     } else "N/A"
   }
 
+  def orbitInPointWithVelocity(coord:Vec, velocity:Vec):String = {
+    insideGravitationalRadiusOfCelestialBody(coord) match {
+      case Some(planet) =>
+        val Orbit(a, b, e, c, p, r_p, r_a, t) = calculateOrbit(planet.mass, coord - planet.coord, velocity - planet.linearVelocity, G)
+        f"r_p = ${r_p - planet.radius}%.2f м, r_a = ${r_a - planet.radius}%.2f м, ${timeStr((t/60/base_dt).toLong)}"
+      case None => "N/A"
+    }
+  }
+
   def linearSpeedWhenEnginesOff:String = {
     if(ship.flightMode != 1) "N/A"  // только в свободном режиме отображать инфу
     else {
@@ -265,6 +275,21 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
             case Some(bs) =>
               val s = bs.ang_vel
               f" ${s*60*base_dt}%.2f град/сек"
+            case None => "N/A"
+          }
+        case None => "N/A"
+      }
+    }
+  }
+
+  def orbitParametersWhenEnginesOff:String = {
+    if(ship.flightMode != 1) "N/A"  // только в свободном режиме отображать инфу
+    else {
+      future_trajectory.find(_._1 >= ship.engines.map(_.stopMomentSeconds).max) match {
+        case Some((t, lbs)) =>
+          lbs.find(_.index == ship.index) match {
+            case Some(bs) =>
+              orbitInPointWithVelocity(bs.coord, bs.vel)
             case None => "N/A"
           }
         case None => "N/A"
@@ -409,6 +434,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
 
   private var _center = ship.coord
   center = _center
+  windowCenter = Vec((1280-1024)+1024/2, 768/2)
 
   render {    // TODO: display list!
     val y = windowHeight/2-20
@@ -481,7 +507,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
     print(s"FPS $fps", windowWidth - 20, windowHeight - 40, align = "top-right", color = DARK_GRAY)
 
     if(!disable_interface_drawing) {
-      val heights = (480 to 20 by -20).iterator
+      val heights = (520 to 20 by -20).iterator
 
       print(s"Время: ${timeStr(_time/60)}",
         20, heights.next(), ORANGE)
@@ -497,9 +523,9 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
 
       print("", 20, heights.next(), ORANGE)
 
-      print(f"Расстояние и скорость относительно Земли: ${ship.coord.dist(earth.coord)}%.2f м, ${ship.linearVelocity* (ship.coord - earth.coord).n *60*base_dt}%.2f м/сек",
+      print(f"Расстояние и скорость относительно Земли: ${ship.coord.dist(earth.coord) - earth.radius}%.2f м, ${ship.linearVelocity* (ship.coord - earth.coord).n *60*base_dt}%.2f м/сек",
         20, heights.next(), ORANGE)
-      print(f"Расстояние и скорость относительно Луны: ${ship.coord.dist(moon.coord)}%.2f м, ${ship.linearVelocity* (ship.coord - moon.coord).n *60*base_dt}%.2f м/сек",
+      print(f"Расстояние и скорость относительно Луны: ${ship.coord.dist(moon.coord) - moon.radius}%.2f м, ${ship.linearVelocity* (ship.coord - moon.coord).n *60*base_dt}%.2f м/сек",
         20, heights.next(), ORANGE)
       print(s"Расчет траектории: ${if(continue_future_trajectory) "[rактивирован]" else "отключен"}",
         20, heights.next(), ORANGE)
@@ -513,6 +539,8 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
       print(f"Угол: ${ship.rotation}%.2f град",
         20, heights.next(), ORANGE)
       print(f"Угловая скорость: ${ship.angularVelocity*60*base_dt}%.2f град/сек",
+        20, heights.next(), ORANGE)
+      print(s"Параметры орбиты: ${orbitInPointWithVelocity(ship.coord, ship.linearVelocity)}",
         20, heights.next(), ORANGE)
 
       print("", 20, heights.next(), ORANGE)
@@ -541,6 +569,8 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1024, 768) {
         20, heights.next(), ORANGE)
       print(f"Угловая скорость в момент отключения двигателей: $angularSpeedWhenEnginesOff",
         20, heights.next(), ORANGE)
+      print(s"Параметры орбиты в момент отключения двигателей: $orbitParametersWhenEnginesOff",
+        20, heights.next(), ORANGE)
     }
   }
 
@@ -553,6 +583,7 @@ trait CelestialBody {
   def coord:Vec
   def linearVelocity:Vec
   def mass:Float
+  def radius:Float
 }
 
 class Planet(

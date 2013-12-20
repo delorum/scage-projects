@@ -509,6 +509,32 @@ package object orbitalkiller {
     satelliteSpeed(body_coord, planet_coord, planet_velocty, planet_mass, G)*math.sqrt(2)
   }
 
+  case class Orbit(a:Float, b:Float, e:Float, c:Float, p:Float, r_p:Float, r_a:Float, t:Float)
+
+  def calculateOrbit(planet_mass:Float, body_coord:Vec, body_velocity:Vec, G:Float):Orbit = {
+    val k = planet_mass*G
+    //val a = body_coord.norma*k/(2*k*k - body_coord.norma*body_velocity.norma2)   //http://ru.wikipedia.org/wiki/Кеплеровы_элементы_орбиты
+
+    //http://ru.wikipedia.org/wiki/Большая_полуось
+    val epsilon = body_velocity.norma2/2 - k/body_coord.norma
+    val a = math.abs(k/(2*epsilon))
+
+    //http://en.wikipedia.org/wiki/Kepler_orbit
+    val r_n = body_coord.n
+    val v_t = math.abs(body_velocity*r_n.perpendicular)
+    val p = math.pow(body_coord.norma*v_t, 2).toFloat/k
+
+    //http://ru.wikipedia.org/wiki/Эллипс
+    val b = math.sqrt(math.abs(a*p)).toFloat
+    val e = math.sqrt(math.abs(1 - (b*b)/(a*a))).toFloat
+    val c = a*e
+    val r_p = a*(1 - e)
+    val r_a = a*(1 + e)
+
+    val t = (2*math.Pi*math.sqrt(math.abs(a*a*a/k))).toFloat
+    Orbit(a, b, e, c, p, r_p, r_a, t)
+  }
+
   /**
    *
    * @param force - вектор силы
