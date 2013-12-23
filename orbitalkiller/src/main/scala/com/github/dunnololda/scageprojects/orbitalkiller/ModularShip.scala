@@ -14,7 +14,7 @@ case class Engine2(position:Vec, force_dir:Vec, max_power:Float) {
   def worktimeTacts = worktime_tacts
   def worktimeTacts_=(new_worktime_tacts:Long) {
     worktime_tacts = new_worktime_tacts
-    stop_moment_seconds = time + worktime_tacts*timeMultiplier
+    stop_moment_seconds = tacts + worktime_tacts*timeMultiplier
   }
 
   def stopMomentSeconds = stop_moment_seconds

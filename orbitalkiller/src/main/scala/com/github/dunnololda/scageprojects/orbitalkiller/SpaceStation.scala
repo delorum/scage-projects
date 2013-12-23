@@ -8,6 +8,8 @@ class SpaceStation(
              init_velocity:Vec = Vec.zero,
              init_rotation:Float = 0f
              ) extends PolygonShip(index, init_coord, init_velocity, init_rotation) {
+  val mass: Float = 1000f
+
   val points:List[Vec] = List(
     Vec(-50.0, 50.0),
     Vec(-30.0, 50.0),
@@ -61,21 +63,11 @@ class SpaceStation(
     KEY_NUMPAD3 -> three
   )
 
-  def rotateRight() {
-    activateOnlyTheseEngines(one, seven)
+  def enterOrbit() {
+
   }
 
-  def smallRotateRight() {
-    activateOnlyOneEngine(seven)
-  }
+  def preserveAngularVelocity(ang_vel_deg: Float) {
 
-  def rotateLeft() {
-    activateOnlyTheseEngines(three, nine)
   }
-
-  def smallRotateLeft() {
-    activateOnlyOneEngine(nine)
-  }
-
-  def enterOrbit(): Unit = ???
 }
