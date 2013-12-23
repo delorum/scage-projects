@@ -9,8 +9,11 @@ import scala.collection.mutable
 import scala.Some
 
 package object orbitalkiller {
-  val G:Float = 20
-  val base_dt = 0.01f // 1/60 секунды
+  val k = 0.0000001f
+  // доля времени, которая обсчитывается каждый такт расчетов. Каждая секунда реального времени это примерно 60 тактов (поддерживается частота 60 фпс)
+  val base_dt = 1f/60*k
+
+  val G:Float = (6.6742867E-11/(k*k)).toFloat
 
   case class AABB(center:Vec, width:Float, height:Float) {
     val half_width = width/2
@@ -502,7 +505,7 @@ package object orbitalkiller {
 
   def satelliteSpeed(body_coord:Vec, planet_coord:Vec, planet_velocity:Vec, planet_mass:Float, G:Float):Vec = {
     val from_planet_to_body = body_coord - planet_coord
-    planet_velocity + from_planet_to_body.n.rotateDeg(90)*math.sqrt(G*planet_mass/from_planet_to_body.norma)
+    planet_velocity + from_planet_to_body.p*math.sqrt(G*planet_mass/from_planet_to_body.norma)
   }
 
   def escapeVelocity(body_coord:Vec, planet_coord:Vec, planet_velocty:Vec, planet_mass:Float, G:Float):Vec = {

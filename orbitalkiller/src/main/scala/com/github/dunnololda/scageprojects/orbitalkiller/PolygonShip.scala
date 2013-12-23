@@ -12,7 +12,7 @@ abstract class PolygonShip(
   def engines:List[Engine]
   def engines_mapping:Map[Int, Engine]
 
-  val mass:Float = 1   // mass
+  val mass:Float = 1000   // mass
 
   def currentState:BodyState = currentBodyState(index).getOrElse(
     BodyState(
@@ -97,6 +97,6 @@ abstract class PolygonShip(
     drawFilledCircle(coord, 2, GREEN)                             // mass center
     drawLine(coord, coord + linearVelocity.n*100, CYAN)           // current velocity
     drawLine(coord, coord + (earth.coord - coord).n*100, YELLOW)    // direction to sun
-    drawLine(coord, coord + (moon.coord - coord).n*100, GREEN)   // direction to earth
+    //drawLine(coord, coord + (moon.coord - coord).n*100, GREEN)   // direction to earth
   }
 }
