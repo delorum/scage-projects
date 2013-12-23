@@ -11,7 +11,7 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   def currentBodyStates = current_body_states.values.toList
 
   def futureSystemEvolutionFrom(time:Long, body_states:List[BodyState]) = systemEvolutionFrom(
-    dt = 1, elasticity = 0.999f,
+    dt = 1, base_dt = 1, elasticity = 0.999,
     force = (time, bs, other_bodies) => {
       /*Vec(0, -0.01f) + */Vec.zero
     },
@@ -150,11 +150,11 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   center = _center
 
   render {
-    val spaces = splitSpace(new Space(current_body_states.values.toList, Vec.zero), 5, 3)
+    val spaces = splitSpace(new Space(current_body_states.values.toList, DVec.dzero), 5, 3)
     spaces.foreach {
       case s =>
-        drawRectCentered(s.center, s.width, s.height, WHITE)
-        print(s.bodies.length, s.center, max_font_size/globalScale, WHITE, align = "center")
+        drawRectCentered(s.center.toVec, s.width.toFloat, s.height.toFloat, WHITE)
+        print(s.bodies.length, s.center.toVec, max_font_size/globalScale, WHITE, align = "center")
     }
   }
 
@@ -169,23 +169,23 @@ sealed trait MyBody {
   def currentState:BodyState
 }
 
-class MyPentagon(val index:String, init_coord:Vec, init_velocity:Vec, val len:Float, val mass:Float) extends MyBody {
+class MyPentagon(val index:String, init_coord:Vec, init_velocity:Vec, val len:Double, val mass:Double) extends MyBody {
   def currentState: BodyState = currentBodyState(index).getOrElse(
     BodyState(
       index,
       mass = mass,
-      acc = Vec.zero,
+      acc = DVec.dzero,
       vel = init_velocity,
       coord = init_coord,
       ang_acc = 0f,
       ang_vel = 0f,
       ang = 0f,
       shape = {
-        val one = Vec(0, len).rotateDeg(0)
-        val two = Vec(0, len).rotateDeg(0+72)
-        val three = Vec(0, len).rotateDeg(0+72+72)
-        val four = Vec(0, len).rotateDeg(0+72+72+72)
-        val five = Vec(0, len).rotateDeg(0+72+72+72+72)
+        val one = DVec(0, len).rotateDeg(0)
+        val two = DVec(0, len).rotateDeg(0+72)
+        val three = DVec(0, len).rotateDeg(0+72+72)
+        val four = DVec(0, len).rotateDeg(0+72+72+72)
+        val five = DVec(0, len).rotateDeg(0+72+72+72+72)
         PolygonShape(List(one, two, three, four, five))
       },
       is_static = false))
@@ -194,25 +194,25 @@ class MyPentagon(val index:String, init_coord:Vec, init_velocity:Vec, val len:Fl
     val state = currentState
     val coord = state.coord
     val rotation = state.ang
-    val one = coord + Vec(0, len).rotateDeg(rotation)
-    val two = coord + Vec(0, len).rotateDeg(rotation+72)
-    val three = coord + Vec(0, len).rotateDeg(rotation+72+72)
-    val four = coord + Vec(0, len).rotateDeg(rotation+72+72+72)
-    val five = coord + Vec(0, len).rotateDeg(rotation+72+72+72+72)
+    val one = coord + DVec(0, len).rotateDeg(rotation)
+    val two = coord + DVec(0, len).rotateDeg(rotation+72)
+    val three = coord + DVec(0, len).rotateDeg(rotation+72+72)
+    val four = coord + DVec(0, len).rotateDeg(rotation+72+72+72)
+    val five = coord + DVec(0, len).rotateDeg(rotation+72+72+72+72)
     val color = GREEN
-    drawSlidingLines(List(one, two, three, four, five, one), color)
+    drawSlidingLines(List(one, two, three, four, five, one).map(_.toVec), color)
 
     val AABB(c, w, h) = state.aabb
-    drawRectCentered(c, w, h, GREEN)
+    drawRectCentered(c.toVec, w.toFloat, h.toFloat, GREEN)
   }
 }
 
-class MyCircle(val index:String, init_coord:Vec, init_velocity:Vec, val radius:Float, val mass:Float) extends MyBody {
+class MyCircle(val index:String, init_coord:DVec, init_velocity:DVec, val radius:Double, val mass:Double) extends MyBody {
   def currentState:BodyState = currentBodyState(index).getOrElse(
     BodyState(
       index,
       mass = mass,
-      acc = Vec.zero,
+      acc = DVec.dzero,
       vel = init_velocity,
       coord = init_coord,
       ang_acc = 0f,
@@ -226,47 +226,47 @@ class MyCircle(val index:String, init_coord:Vec, init_velocity:Vec, val radius:F
 
   render(0) {
     val color = GREEN
-    drawCircle(coord, radius, color)
-    drawLine(coord, coord + Vec(0,1).rotateDeg(currentState.ang).n*radius, color)
+    drawCircle(coord.toVec, radius.toFloat, color)
+    drawLine(coord.toVec, (coord + DVec(0,1).rotateDeg(currentState.ang).n*radius).toVec, color)
     val AABB(c, w, h) = currentState.aabb
-    drawRectCentered(c, w, h, color)
+    drawRectCentered(c.toVec, w.toFloat, h.toFloat, color)
   }
 }
 
-class MyBox(val index:String, init_coord:Vec, init_velocity:Vec, val w:Float, val h:Float, val mass:Float) extends MyBody {
+class MyBox(val index:String, init_coord:DVec, init_velocity:DVec, val w:Double, val h:Double, val mass:Double) extends MyBody {
   def currentState:BodyState = currentBodyState(index).getOrElse(
     BodyState(
       index,
       mass = mass,
-      acc = Vec.zero,
+      acc = DVec.dzero,
       vel = init_velocity,
       coord = init_coord,
-      ang_acc = 0f,
-      ang_vel = 0f,
-      ang = 0f,
+      ang_acc = 0.0,
+      ang_vel = 0.0,
+      ang = 0.0,
       shape = BoxShape(w, h),
       is_static = false))
 
   render(0) {
     val color = GREEN
     openglLocalTransform {
-      openglMove(currentState.coord)
-      openglRotateDeg(currentState.ang)
-      drawRectCentered(Vec.zero, w, h, color)
+      openglMove(currentState.coord.toVec)
+      openglRotateDeg(currentState.ang.toFloat)
+      drawRectCentered(Vec.zero, w.toFloat, h.toFloat, color)
     }
 
     val AABB(c, w2, h2) = currentState.aabb
-    drawRectCentered(c, w2, h2, color)
+    drawRectCentered(c.toVec, w2.toFloat, h2.toFloat, color)
   }
 }
 
-class MyWall(index:String, from:Vec, to:Vec) extends MyBody {
+class MyWall(index:String, from:DVec, to:DVec) extends MyBody {
   def currentState:BodyState = currentBodyState(index).getOrElse(
     BodyState(
       index,
       mass = -1,  // infinite mass
-      acc = Vec.zero,
-      vel = Vec.zero,
+      acc = DVec.dzero,
+      vel = DVec.dzero,
       coord = from,
       ang_acc = 0f,
       ang_vel = 0f,
@@ -276,9 +276,9 @@ class MyWall(index:String, from:Vec, to:Vec) extends MyBody {
 
   render(0) {
     val color = GREEN
-    drawLine(from, to, color)
+    drawLine(from.toVec, to.toVec, color)
     val AABB(c, w, h) = currentState.aabb
-    drawRectCentered(c, w, h, color)
+    drawRectCentered(c.toVec, w.toFloat, h.toFloat, color)
   }
 }
 

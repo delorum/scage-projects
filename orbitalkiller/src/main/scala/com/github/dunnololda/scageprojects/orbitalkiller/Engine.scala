@@ -3,7 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import OrbitalKiller._
 import com.github.dunnololda.scage.ScageLib._
 
-case class Engine(position:Vec, force_dir:Vec, max_power:Float, ship:Ship) {
+case class Engine(position:DVec, force_dir:DVec, max_power:Double, ship:Ship) {
   private var worktime_tacts = 0l
   private var stop_moment_tacts = 0l
 
@@ -15,16 +15,16 @@ case class Engine(position:Vec, force_dir:Vec, max_power:Float, ship:Ship) {
 
   def stopMomentSeconds = stop_moment_tacts
 
-  private var _power:Float = 0f
+  private var _power:Double = 0.0
   def power = _power
-  def power_=(new_power:Float) {
-    if(new_power >= 0f && new_power <= max_power && new_power != _power) {
+  def power_=(new_power:Double) {
+    if(new_power >= 0 && new_power <= max_power && new_power != _power) {
       _power = new_power
     }
   }
 
-  def powerPercent:Int = math.round(_power/max_power*100)
-  def powerPercent_=(new_power_percent:Int) {
+  def powerPercent:Long = math.round(_power/max_power*100)
+  def powerPercent_=(new_power_percent:Long) {
     if(new_power_percent >= 0 && new_power_percent <= 100) {
       val new_power = max_power*new_power_percent/100f
       //println(s"$new_power_percent : $new_power")

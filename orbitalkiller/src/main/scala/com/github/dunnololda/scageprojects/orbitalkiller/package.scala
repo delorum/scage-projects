@@ -75,29 +75,29 @@ package object orbitalkiller {
       }
     }
 
-    def distanceSquared(point:Vec):Float = closestPoint(point).dist2(point)
+    def distanceSquared(point:Vec):Double = closestPoint(point).dist2(point)
 
     val vec = to - from
     def dx = vec.x
     def dy = vec.y*/
 
-    def aabb(from:Vec, rotation:Float): AABB = {
+    def aabb(from:DVec, rotation:Double): AABB = {
       val to2 = from + to.rotateDeg(rotation)
       val center = from + (to2 - from)/2f
       AABB(center, math.max(math.abs(to2.x - from.x), 5f),  math.max(math.abs(to2.y - from.y), 5f))
     }
 
-    def phys2dShape: Phys2dShape = new Line(to.x, to.y)
+    def phys2dShape: Phys2dShape = new Line(to.x.toFloat, to.y.toFloat)
 
-    lazy val wI: Float = to.norma2/12f
+    lazy val wI: Double = to.norma2/12.0
   }
 
-  case class BoxShape(width:Float, height:Float) extends Shape {
-    def aabb(center:Vec, rotation:Float): AABB = {
-      val one = center + Vec(-width/2, height/2).rotateDeg(rotation)
-      val two = center + Vec(width/2, height/2).rotateDeg(rotation)
-      val three = center + Vec(width/2, -height/2).rotateDeg(rotation)
-      val four = center + Vec(-width/2, -height/2).rotateDeg(rotation)
+  case class BoxShape(width:Double, height:Double) extends Shape {
+    def aabb(center:DVec, rotation:Double): AABB = {
+      val one = center + DVec(-width/2, height/2).rotateDeg(rotation)
+      val two = center + DVec(width/2, height/2).rotateDeg(rotation)
+      val three = center + DVec(width/2, -height/2).rotateDeg(rotation)
+      val four = center + DVec(-width/2, -height/2).rotateDeg(rotation)
       val points = List(one, two, three, four)
       val xs = points.map(p => p.x)
       val ys = points.map(p => p.y)
@@ -108,20 +108,20 @@ package object orbitalkiller {
       AABB(center, max_x - min_x, max_y - min_y)
     }
 
-    def phys2dShape: Phys2dShape = new Box(width, height)
+    def phys2dShape: Phys2dShape = new Box(width.toFloat, height.toFloat)
 
-    lazy val wI: Float = (width*width + height*height)/12f
+    lazy val wI: Double = (width*width + height*height)/12.0
   }
 
-  case class PolygonShape(points:List[Vec]) extends Shape {
-    def aabb(center:Vec, rotation:Float): AABB = {
-      val r = math.sqrt(points.map(p => p.norma2).max).toFloat*2
+  case class PolygonShape(points:List[DVec]) extends Shape {
+    def aabb(center:DVec, rotation:Double): AABB = {
+      val r = math.sqrt(points.map(p => p.norma2).max)*2
       AABB(center, r, r)
     }
 
     def phys2dShape: Phys2dShape = new Polygon(points.map(_.toPhys2dVec).toArray)
 
-    lazy val wI: Float = {
+    lazy val wI: Double = {
       val numerator = (for {
         n <- 0 until points.length-2
         p_n_plus_1 = points(n+1)
@@ -132,18 +132,18 @@ package object orbitalkiller {
         p_n_plus_1 = points(n+1)
         p_n = points(n)
       } yield p_n_plus_1.*/(p_n)).sum
-      numerator/denominator/6f
+      numerator/denominator/6.0
     }
   }
 
-  class Space(val bodies:List[BodyState], val center:Vec, val width:Float, val height:Float) {
-    def this(bodies:List[BodyState], center:Vec) = {
+  class Space(val bodies:List[BodyState], val center:DVec, val width:Double, val height:Double) {
+    def this(bodies:List[BodyState], center:DVec) = {
       this(bodies, center, {
         val (init_min_x, init_max_x) = {
           bodies.headOption.map(b => {
             val AABB(c, w, _) = b.aabb
             (c.x - w/2, c.x+w/2)
-          }).getOrElse((0f, 0f))
+          }).getOrElse((0.0, 0.0))
         }
         val (min_x, max_x) = bodies.foldLeft((init_min_x, init_max_x)) {
           case ((res_min_x, res_max_x), b) =>
@@ -161,7 +161,7 @@ package object orbitalkiller {
           bodies.headOption.map(b => {
             val AABB(c, _, h) = b.aabb
             (c.y-h/2, c.y+h/2)
-          }).getOrElse((0f, 0f))
+          }).getOrElse((0.0, 0.0))
         }
         val (min_y, max_y) = bodies.foldLeft(init_min_y, init_max_y) {
           case ((res_min_y, res_max_y), b) =>
@@ -183,19 +183,19 @@ package object orbitalkiller {
     lazy val quadSpaces:List[Space] = {
       val AABB(c, w, h) = aabb
 
-      val c1 = c + Vec(-w/4, -h/4)
+      val c1 = c + DVec(-w/4, -h/4)
       val aabb1 = AABB(c1, w/2, h/2)
       val bodies1 = bodies.filter(b => b.aabb.aabbCollision(aabb1))
 
-      val c2 = c + Vec(-w/4, h/4)
+      val c2 = c + DVec(-w/4, h/4)
       val aabb2 = AABB(c2, w/2, h/2)
       val bodies2 = bodies.filter(b => b.aabb.aabbCollision(aabb2))
 
-      val c3 = c + Vec(w/4, h/4)
+      val c3 = c + DVec(w/4, h/4)
       val aabb3 = AABB(c3, w/2, h/2)
       val bodies3 = bodies.filter(b => b.aabb.aabbCollision(aabb3))
 
-      val c4 = c + Vec(w/4, -h/4)
+      val c4 = c + DVec(w/4, -h/4)
       val aabb4 = AABB(c4, w/2, h/2)
       val bodies4 = bodies.filter(b => b.aabb.aabbCollision(aabb4))
 
@@ -213,8 +213,8 @@ package object orbitalkiller {
     }
   }
 
-  case class GeometricContactData(contact_point:Vec, normal:Vec)
-  case class Contact(body1:BodyState, body2:BodyState, contact_point:Vec, normal:Vec)
+  case class GeometricContactData(contact_point:DVec, normal:DVec)
+  case class Contact(body1:BodyState, body2:BodyState, contact_point:DVec, normal:DVec)
 
   private val contacts = Array.fill(10)(new net.phys2d.raw.Contact)
   private val circle_circle_collider = new CircleCircleCollider
@@ -236,12 +236,12 @@ package object orbitalkiller {
       else {
         num_contacts match {
           case 1 =>
-            val contact_point = contacts(0).getPosition.toVec
-            val normal = contacts(0).getNormal.toVec
+            val contact_point = contacts(0).getPosition.toDVec
+            val normal = contacts(0).getNormal.toDVec
             Some(GeometricContactData(contact_point, normal))
           case 2 =>
-            val contact_point = (contacts(0).getPosition.toVec + contacts(1).getPosition.toVec)/2
-            val normal = contacts(0).getNormal.toVec
+            val contact_point = (contacts(0).getPosition.toDVec + contacts(1).getPosition.toDVec)/2
+            val normal = contacts(0).getNormal.toDVec
             Some(GeometricContactData(contact_point, normal))
           case _ => None
         }
@@ -301,28 +301,28 @@ package object orbitalkiller {
   }
 
   case class BodyState(index:String,
-                       mass:Float,
-                       acc:Vec,
-                       vel:Vec,
-                       coord:Vec,
-                       ang_acc:Float,
-                       ang_vel:Float,
-                       ang:Float,
+                       mass:Double,
+                       acc:DVec,
+                       vel:DVec,
+                       coord:DVec,
+                       ang_acc:Double,
+                       ang_vel:Double,
+                       ang:Double,
                        shape: Shape,
                        is_static:Boolean) {
     def phys2dBody:Phys2dBody = {
       if(is_static) {
         val b = new Phys2dStaticBody(index, shape.phys2dShape)
-        b.setPosition(coord.x, coord.y)
-        b.setRotation(ang.toRad)
+        b.setPosition(coord.x.toFloat, coord.y.toFloat)
+        b.setRotation(ang.toRad.toFloat)
         b.setUserData((index, shape))
         b
       } else {
-        val b = new Phys2dBody(index, shape.phys2dShape, mass)
-        b.setPosition(coord.x, coord.y)
-        b.setRotation(ang.toRad)
+        val b = new Phys2dBody(index, shape.phys2dShape, mass.toFloat)
+        b.setPosition(coord.x.toFloat, coord.y.toFloat)
+        b.setRotation(ang.toRad.toFloat)
         b.adjustVelocity(vel.toPhys2dVec)
-        b.adjustAngularVelocity(ang_vel.toRad)
+        b.adjustAngularVelocity(ang_vel.toRad.toFloat)
         b.setUserData((index, shape))
         b
       }
@@ -340,12 +340,12 @@ package object orbitalkiller {
           Some(BodyState(
             index = index,
             mass = pb.getMass,
-            acc = Vec.zero,
-            vel = Vec(pb.getVelocity.getX, pb.getVelocity.getY),
-            coord =  Vec(pb.getPosition.getX, pb.getPosition.getY),
-            ang_acc = 0f,
-            ang_vel = pb.getAngularVelocity.toDeg,
-            ang = pb.getRotation.toDeg,
+            acc = DVec.dzero,
+            vel = DVec(pb.getVelocity.getX, pb.getVelocity.getY),
+            coord =  DVec(pb.getPosition.getX, pb.getPosition.getY),
+            ang_acc = 0.0,
+            ang_vel = pb.getAngularVelocity.toDeg.toDouble,
+            ang = pb.getRotation.toDeg.toDouble,
             shape = shape,
             is_static = pb.isStatic
           ))
@@ -371,17 +371,17 @@ package object orbitalkiller {
     }
   }
 
-  def correctAngle(angle:Float):Float = {
+  def correctAngle(angle:Double):Double = {
     if(angle > 360) correctAngle(angle - 360)
     else if(angle < 0) correctAngle(angle + 360)
     else angle
   }
 
-  def systemEvolutionFrom(dt: => Float,           // в секундах, может быть больше либо равно base_dt - обеспечивается ускорение времени
-                          base_dt:Float,          // в секундах
-                          elasticity:Float, // elasticity or restitution: 0 - inelastic, 1 - perfectly elastic, (va2 - vb2) = -e*(va1 - vb1)
-                          force: (Long, BodyState, List[BodyState]) => Vec = (time, body, other_bodies) => Vec.zero,
-                          torque: (Long, BodyState, List[BodyState]) => Float = (time, body, other_bodies) => 0f,
+  def systemEvolutionFrom(dt: => Double,           // в секундах, может быть больше либо равно base_dt - обеспечивается ускорение времени
+                          base_dt:Double,          // в секундах
+                          elasticity:Double, // elasticity or restitution: 0 - inelastic, 1 - perfectly elastic, (va2 - vb2) = -e*(va1 - vb1)
+                          force: (Long, BodyState, List[BodyState]) => DVec = (time, body, other_bodies) => DVec.dzero,
+                          torque: (Long, BodyState, List[BodyState]) => Double = (time, body, other_bodies) => 0.0,
                           changeFunction:(Long, List[BodyState]) => (Long, List[BodyState]) =  (time, bodies) => (time, bodies),
                           enable_collisions:Boolean = true)
                          (current_state:(Long, List[BodyState])):Stream[(Long, List[BodyState])] = {
@@ -389,7 +389,7 @@ package object orbitalkiller {
     val next_tacts = tacts + (dt/base_dt).toLong
 
     val next_bodies = if(enable_collisions) {
-      val collision_data = mutable.HashMap[String, (Vec, Float)]()
+      val collision_data = mutable.HashMap[String, (DVec, Double)]()
       for {
         space <- splitSpace(new Space(bodies, Vec.zero), 5, 10)
         if space.bodies.length > 1
@@ -454,7 +454,7 @@ package object orbitalkiller {
           val next_torque = torque(tacts, b1, other_bodies)
           val next_ang_acc = (next_torque / b1.I).toDeg  // in degrees
           val next_ang_vel = collision_data.get(b1.index).map(_._2).getOrElse(b1.ang_vel + next_ang_acc*dt)
-          val next_ang = correctAngle((b1.ang + next_ang_vel*dt) % 360f)
+          val next_ang = correctAngle((b1.ang + next_ang_vel*dt) % 360)
 
           b1.copy(
             acc = next_acc,
@@ -480,7 +480,7 @@ package object orbitalkiller {
           val next_torque = torque(tacts, b1, other_bodies)
           val next_ang_acc = (next_torque / b1.I).toDeg  // in degrees
           val next_ang_vel = b1.ang_vel + next_ang_acc*dt
-          val next_ang = correctAngle((b1.ang + next_ang_vel*dt) % 360f)
+          val next_ang = correctAngle((b1.ang + next_ang_vel*dt) % 360)
 
           b1.copy(
             acc = next_acc,
@@ -499,22 +499,22 @@ package object orbitalkiller {
     pewpew #:: systemEvolutionFrom(dt, base_dt, elasticity, force, torque, changeFunction, enable_collisions)(pewpew)
   }
 
-  def gravityForce(body1_coord:Vec, body1_mass:Float, body2_coord:Vec, body2_mass:Float, G:Float):Vec = {
+  def gravityForce(body1_coord:DVec, body1_mass:Double, body2_coord:DVec, body2_mass:Double, G:Double):DVec = {
     (body1_coord - body2_coord).n*G*body1_mass*body2_mass/body1_coord.dist2(body2_coord)
   }
 
-  def satelliteSpeed(body_coord:Vec, planet_coord:Vec, planet_velocity:Vec, planet_mass:Float, G:Float):Vec = {
+  def satelliteSpeed(body_coord:DVec, planet_coord:DVec, planet_velocity:DVec, planet_mass:Double, G:Double):DVec = {
     val from_planet_to_body = body_coord - planet_coord
     planet_velocity + from_planet_to_body.p*math.sqrt(G*planet_mass/from_planet_to_body.norma)
   }
 
-  def escapeVelocity(body_coord:Vec, planet_coord:Vec, planet_velocty:Vec, planet_mass:Float, G:Float):Vec = {
+  def escapeVelocity(body_coord:DVec, planet_coord:DVec, planet_velocty:DVec, planet_mass:Double, G:Double):DVec = {
     satelliteSpeed(body_coord, planet_coord, planet_velocty, planet_mass, G)*math.sqrt(2)
   }
 
-  case class Orbit(a:Float, b:Float, e:Float, c:Float, p:Float, r_p:Float, r_a:Float, t:Float)
+  case class Orbit(a:Double, b:Double, e:Double, c:Double, p:Double, r_p:Double, r_a:Double, t:Double)
 
-  def calculateOrbit(planet_mass:Float, body_coord:Vec, body_velocity:Vec, G:Float):Orbit = {
+  def calculateOrbit(planet_mass:Double, body_coord:DVec, body_velocity:DVec, G:Double):Orbit = {
     val k = planet_mass*G
     //val a = body_coord.norma*k/(2*k*k - body_coord.norma*body_velocity.norma2)   //http://ru.wikipedia.org/wiki/Кеплеровы_элементы_орбиты
 
@@ -525,16 +525,16 @@ package object orbitalkiller {
     //http://en.wikipedia.org/wiki/Kepler_orbit
     val r_n = body_coord.n
     val v_t = math.abs(body_velocity*r_n.perpendicular)
-    val p = math.pow(body_coord.norma*v_t, 2).toFloat/k
+    val p = math.pow(body_coord.norma*v_t, 2)/k
 
     //http://ru.wikipedia.org/wiki/Эллипс
-    val b = math.sqrt(math.abs(a*p)).toFloat
-    val e = math.sqrt(math.abs(1 - (b*b)/(a*a))).toFloat
+    val b = math.sqrt(math.abs(a*p))
+    val e = math.sqrt(math.abs(1 - (b*b)/(a*a)))
     val c = a*e
     val r_p = a*(1 - e)
     val r_a = a*(1 + e)
 
-    val t = (2*math.Pi*math.sqrt(math.abs(a*a*a/k))).toFloat
+    val t = 2 * math.Pi * math.sqrt(math.abs(a * a * a / k))
     Orbit(a, b, e, c, p, r_p, r_a, t)
   }
 
@@ -545,27 +545,27 @@ package object orbitalkiller {
    * @param sin_angle - синус угла между вектором от центра масс до точки приложения силы и вектором силы
    * @return
    */
-  def torque(force:Vec, force_position_from_mass_center:Vec, sin_angle:Float):Float = {
+  def torque(force:DVec, force_position_from_mass_center:DVec, sin_angle:Double):Double = {
     force.norma*force_position_from_mass_center.norma*sin_angle
   }
 
-  def torque(force:Vec, force_position_from_mass_center:Vec):Float = {
-    val xf        = force_position_from_mass_center*force.rotateDeg(90).n
+  def torque(force:DVec, force_position_from_mass_center:DVec):Double = {
+    val xf        = force_position_from_mass_center*force.p
     val sin_angle = xf/force_position_from_mass_center.norma
     torque(force, force_position_from_mass_center, sin_angle)
   }
 
-  def torque(force:Vec, force_position:Vec, center:Vec):Float = {
+  def torque(force:DVec, force_position:DVec, center:DVec):Double = {
     val force_position_from_mass_center = force_position - center
-    val xf                              = force_position_from_mass_center*force.rotateDeg(90).n
+    val xf                              = force_position_from_mass_center*force.p
     val sin_angle                       = xf/force_position_from_mass_center.norma
     torque(force, force_position_from_mass_center, sin_angle)
   }
 
   def maxOption[T](l:Seq[T])(implicit o:Ordering[T]):Option[T] = if(l.isEmpty) None else Some(l.max(o))
 
-  implicit class MyVec(v1:Vec) {
-    def mydeg(v2:Vec):Float = {
+  implicit class MyVec(v1:DVec) {
+    def mydeg(v2:DVec):Double = {
       val scalar = v1*v2.perpendicular
       if(scalar >= 0) v1.deg(v2) else 360 - v1.deg(v2)
     }

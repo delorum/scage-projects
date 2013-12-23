@@ -15,7 +15,7 @@ trait Ship {
     engines_mapping.get(engine_code).foreach(e => e.switchActive())
   }
 
-  def mass:Float
+  def mass:Double
 
   def currentState:BodyState
 
@@ -31,14 +31,14 @@ trait Ship {
 
   def rotation = currentState.ang
 
-  def currentReactiveForce(time:Long, bs:BodyState):Vec = {
-    engines.filter(e => e.active && time < e.stopMomentSeconds).foldLeft(Vec.zero) {
+  def currentReactiveForce(time:Long, bs:BodyState):DVec = {
+    engines.filter(e => e.active && time < e.stopMomentSeconds).foldLeft(DVec.dzero) {
       case (sum, e) => sum + e.force.rotateDeg(bs.ang)
     }
   }
 
-  def currentTorque(time:Long, bs:BodyState):Float = {
-    engines.filter(e => e.active && time < e.stopMomentSeconds).foldLeft(0f) {
+  def currentTorque(time:Long, bs:BodyState):Double = {
+    engines.filter(e => e.active && time < e.stopMomentSeconds).foldLeft(0.0) {
       case (sum, e) => sum + e.torque
     }
   }
@@ -65,27 +65,27 @@ trait Ship {
     if(e.active) RED else WHITE
   }
 
-  def engineActiveSize(e:Engine):Float = {
-    10f*e.power/e.max_power
+  def engineActiveSize(e:Engine):Double = {
+    10.0*e.power/e.max_power
   }
 
-  def drawEngine(e:Engine, center:Vec, width:Float, height:Float, is_vertical:Boolean) {
-    drawRectCentered(center, width, height, color = engineColor(e))
+  def drawEngine(e:Engine, center:DVec, width:Double, height:Double, is_vertical:Boolean) {
+    drawRectCentered(center.toVec, width.toFloat, height.toFloat, color = engineColor(e))
     if(e.active && e.power > 0) {
       if(is_vertical) {
-        drawFilledRectCentered(center, width, engineActiveSize(e), color = engineColor(e))
+        drawFilledRectCentered(center.toVec, width.toFloat, engineActiveSize(e).toFloat, color = engineColor(e))
       } else {
-        drawFilledRectCentered(center, engineActiveSize(e), height, color = engineColor(e))
+        drawFilledRectCentered(center.toVec, engineActiveSize(e).toFloat, height.toFloat, color = engineColor(e))
       }
-      if(globalScale > 2) print(f"${e.power/e.max_power*100f}%.0f% : ${e.worktimeTacts}", center, size = max_font_size/globalScale)
-      if(isSelectedEngine(e)) drawRectCentered(center, width+2, height+2, color = engineColor(e))
+      if(globalScale > 2) print(f"${e.power/e.max_power*100.0}%.0f% : ${e.worktimeTacts}", center.toVec, size = max_font_size/globalScale)
+      if(isSelectedEngine(e)) drawRectCentered(center.toVec, width.toFloat+2, height.toFloat+2, color = engineColor(e))
     }
   }
 
-  def preserveAngularVelocity(ang_vel_deg:Float)
+  def preserveAngularVelocity(ang_vel_deg:Double)
   def enterOrbit()
 
-  def preserveAngle(angle_deg:Float) {
+  def preserveAngle(angle_deg:Double) {
     if(rotation != angle_deg) {
       if(rotation > angle_deg) {
         if(rotation - angle_deg > 50) preserveAngularVelocity(-5)

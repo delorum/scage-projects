@@ -5,10 +5,10 @@ import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
 abstract class PolygonShip(
   val index:String,
-  init_coord:Vec,
-  init_velocity:Vec = Vec.zero,
-  init_rotation:Float = 0f) extends Ship {
-  def points:List[Vec]
+  init_coord:DVec,
+  init_velocity:DVec = DVec.dzero,
+  init_rotation:Double = 0) extends Ship {
+  def points:List[DVec]
   def engines:List[Engine]
   def engines_mapping:Map[Int, Engine]
 
@@ -16,11 +16,11 @@ abstract class PolygonShip(
     BodyState(
       index,
       mass,
-      acc = Vec.zero,
+      acc = DVec.dzero,
       vel = init_velocity,
       coord = init_coord,
-      ang_acc = 0f,
-      ang_vel = 1f,
+      ang_acc = 0,
+      ang_vel = 1,
       ang = init_rotation,
       shape = PolygonShape(points),
       is_static = false)
