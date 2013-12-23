@@ -5,15 +5,15 @@ import com.github.dunnololda.scage.ScageLib._
 
 case class Engine(position:Vec, force_dir:Vec, max_power:Float, ship:Ship) {
   private var worktime_tacts = 0l
-  private var stop_moment_seconds = 0l
+  private var stop_moment_tacts = 0l
 
   def worktimeTacts = worktime_tacts
   def worktimeTacts_=(new_worktime_tacts:Long) {
     worktime_tacts = new_worktime_tacts
-    stop_moment_seconds = time + worktime_tacts*timeMultiplier
+    stop_moment_tacts = tacts + worktime_tacts*timeMultiplier
   }
 
-  def stopMomentSeconds = stop_moment_seconds
+  def stopMomentTacts = stop_moment_tacts
 
   private var _power:Float = 1f
   def power = _power
@@ -35,7 +35,7 @@ case class Engine(position:Vec, force_dir:Vec, max_power:Float, ship:Ship) {
         //_power = 1f
         if(worktime_tacts == 0) {
           worktimeTacts = 10
-        }
+        } else worktimeTacts = worktimeTacts
         ship.selected_engine = Some(this)
       } else {
         ship.selected_engine = ship.engines.filter(_.active).lastOption
@@ -47,7 +47,9 @@ case class Engine(position:Vec, force_dir:Vec, max_power:Float, ship:Ship) {
     if(!is_active) {
       is_active = true
       //_power = 1f
-      worktimeTacts = 10
+      if(worktime_tacts == 0) {
+        worktimeTacts = 10
+      } else worktimeTacts = worktimeTacts
       ship.selected_engine = Some(this)
       updateFutureTrajectory()
     } else {

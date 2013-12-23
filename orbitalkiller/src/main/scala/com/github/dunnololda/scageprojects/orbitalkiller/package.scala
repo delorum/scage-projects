@@ -9,8 +9,9 @@ import scala.collection.mutable
 import scala.Some
 
 package object orbitalkiller {
+  val k = 1f  // коэффициент соответствия между реальной секундой и одной секундой в программе
   val G:Float = 20
-  val base_dt = 0.01f // 1/60 секунды
+  val base_dt = 1f/60f*k // 1/60 секунды
 
   case class AABB(center:Vec, width:Float, height:Float) {
     val half_width = width/2
@@ -311,15 +312,15 @@ package object orbitalkiller {
       if(is_static) {
         val b = new Phys2dStaticBody(index, shape.phys2dShape)
         b.setPosition(coord.x, coord.y)
-        b.setRotation(ang/180f*math.Pi.toFloat)
+        b.setRotation(ang.toRad)
         b.setUserData((index, shape))
         b
       } else {
         val b = new Phys2dBody(index, shape.phys2dShape, mass)
         b.setPosition(coord.x, coord.y)
-        b.setRotation(ang/180f*math.Pi.toFloat)
+        b.setRotation(ang.toRad)
         b.adjustVelocity(vel.toPhys2dVec)
-        b.adjustAngularVelocity(ang_vel/180f*math.Pi.toFloat)
+        b.adjustAngularVelocity(ang_vel.toRad)
         b.setUserData((index, shape))
         b
       }
@@ -341,8 +342,8 @@ package object orbitalkiller {
             vel = Vec(pb.getVelocity.getX, pb.getVelocity.getY),
             coord =  Vec(pb.getPosition.getX, pb.getPosition.getY),
             ang_acc = 0f,
-            ang_vel = pb.getAngularVelocity/math.Pi.toFloat*180f,
-            ang = pb.getRotation/math.Pi.toFloat*180f,
+            ang_vel = pb.getAngularVelocity.toDeg,
+            ang = pb.getRotation.toDeg,
             shape = shape,
             is_static = pb.isStatic
           ))
@@ -375,15 +376,15 @@ package object orbitalkiller {
   }
 
   def systemEvolutionFrom(dt: => Float,
-                          base_dt:Float = 0.01f,
+                          base_dt:Float,
                           elasticity:Float, // elasticity or restitution: 0 - inelastic, 1 - perfectly elastic, (va2 - vb2) = -e*(va1 - vb1)
                           force: (Long, BodyState, List[BodyState]) => Vec = (time, body, other_bodies) => Vec.zero,
                           torque: (Long, BodyState, List[BodyState]) => Float = (time, body, other_bodies) => 0f,
                           changeFunction:(Long, List[BodyState]) => (Long, List[BodyState]) =  (time, bodies) => (time, bodies),
                           enable_collisions:Boolean = true)
                          (current_state:(Long, List[BodyState])):Stream[(Long, List[BodyState])] = {
-    val (time, bodies) = changeFunction(current_state._1, current_state._2)
-    val next_time = time + (dt/base_dt).toLong
+    val (tacts, bodies) = changeFunction(current_state._1, current_state._2)
+    val next_tacts = tacts + (dt/base_dt).toLong
 
     val next_bodies = if(enable_collisions) {
       val collision_data = mutable.HashMap[String, (Vec, Float)]()
@@ -407,7 +408,7 @@ package object orbitalkiller {
           val ia = b1.I
 
           val va1 = b1.vel
-          val wa1 = b1.ang_vel/180f*math.Pi.toFloat // ang_vel in degrees, wa1 must be in radians
+          val wa1 = b1.ang_vel.toRad // ang_vel in degrees, wa1 must be in radians
           val mb = b2.mass
 
           val e = elasticity
@@ -416,23 +417,23 @@ package object orbitalkiller {
             val j = -(1+e)*(vap1*n)/(1f/ma + (rap*/n)*(rap*/n)/ia)
 
             val va2 = va1 + (j * n)/ma
-            val wa2 = (wa1 + (rap*/(j * n))/ia)/math.Pi.toFloat*180f  // must be in degrees
+            val wa2 = (wa1 + (rap*/(j * n))/ia).toDeg  // must be in degrees
 
             collision_data += (b1.index -> (va2, wa2))
           } else {
             val ib = b2.I
             val rbp = contact_point - b2.coord
             val vb1 = b2.vel
-            val wb1 = b2.ang_vel/180f*math.Pi.toFloat  // ang_vel in degrees, wb1 must be in radians
+            val wb1 = b2.ang_vel.toRad  // ang_vel in degrees, wb1 must be in radians
             val vab1 = va1 + (wa1 * rap.perpendicular) - vb1 - (wb1 * rbp.perpendicular)
             val j = -(1+e) * vab1*n/(1f/ma + 1f/mb + (rap*/n)*(rap*/n)/ia + (rbp*/n)*(rbp*/n)/ib)
 
             val va2 = va1 + (j * n)/ma
-            val wa2 = (wa1 + (rap*/(j * n))/ia)/math.Pi.toFloat*180f  // must be in degrees
+            val wa2 = (wa1 + (rap*/(j * n))/ia).toDeg  // must be in degrees
             collision_data += (b1.index -> (va2, wa2))
 
             val vb2 = vb1 - (j * n)/mb
-            val wb2 = (wb1 - (rbp*/(j * n))/ib)/math.Pi.toFloat*180f  // must be in degrees
+            val wb2 = (wb1 - (rbp*/(j * n))/ib).toDeg  // must be in degrees
             collision_data += (b2.index -> (vb2, wb2))
           }
         }
@@ -443,13 +444,13 @@ package object orbitalkiller {
         else {
           val other_bodies = bodies.filterNot(_ == b1)
 
-          val next_force = force(time, b1, other_bodies)
+          val next_force = force(tacts, b1, other_bodies)
           val next_acc = next_force / b1.mass
           val next_vel = collision_data.get(b1.index).map(_._1).getOrElse(b1.vel + next_acc*dt)
           val next_coord = b1.coord + next_vel*dt
 
-          val next_torque = torque(time, b1, other_bodies)
-          val next_ang_acc = (next_torque / b1.I)/math.Pi.toFloat*180f  // in degrees
+          val next_torque = torque(tacts, b1, other_bodies)
+          val next_ang_acc = (next_torque / b1.I).toDeg  // in degrees
           val next_ang_vel = collision_data.get(b1.index).map(_._2).getOrElse(b1.ang_vel + next_ang_acc*dt)
           val next_ang = correctAngle((b1.ang + next_ang_vel*dt) % 360f)
 
@@ -469,13 +470,13 @@ package object orbitalkiller {
         else {
           val other_bodies = bodies.filterNot(_ == b1)
 
-          val next_force = force(time, b1, other_bodies)
+          val next_force = force(tacts, b1, other_bodies)
           val next_acc = next_force / b1.mass
           val next_vel = b1.vel + next_acc*dt
           val next_coord = b1.coord + next_vel*dt
 
-          val next_torque = torque(time, b1, other_bodies)
-          val next_ang_acc = (next_torque / b1.I)/math.Pi.toFloat*180f  // in degrees
+          val next_torque = torque(tacts, b1, other_bodies)
+          val next_ang_acc = (next_torque / b1.I).toDeg  // in degrees
           val next_ang_vel = b1.ang_vel + next_ang_acc*dt
           val next_ang = correctAngle((b1.ang + next_ang_vel*dt) % 360f)
 
@@ -492,7 +493,7 @@ package object orbitalkiller {
     }
 
 
-    val pewpew = (next_time, next_bodies)
+    val pewpew = (next_tacts, next_bodies)
     pewpew #:: systemEvolutionFrom(dt, base_dt, elasticity, force, torque, changeFunction, enable_collisions)(pewpew)
   }
 

@@ -30,13 +30,13 @@ trait Ship {
   def rotation = currentState.ang
 
   def currentReactiveForce(time:Long, bs:BodyState):Vec = {
-    engines.filter(e => e.active && time < e.stopMomentSeconds).foldLeft(Vec.zero) {
+    engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(Vec.zero) {
       case (sum, e) => sum + e.force.rotateDeg(bs.ang)
     }
   }
 
   def currentTorque(time:Long, bs:BodyState):Float = {
-    engines.filter(e => e.active && time < e.stopMomentSeconds).foldLeft(0f) {
+    engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0f) {
       case (sum, e) => sum + e.torque
     }
   }
@@ -76,7 +76,7 @@ trait Ship {
   def smallRotateLeft()
 
   def preserveAngularVelocity(ang_vel_deg:Float) {
-    val difference = angularVelocity*60f*base_dt - ang_vel_deg
+    val difference = angularVelocity - ang_vel_deg
     if(difference > 1f) rotateRight()
     else if(difference > 0.01f) smallRotateRight()
     else if(difference < -1f) rotateLeft()
@@ -105,7 +105,7 @@ trait Ship {
   def flightMode = flight_mode
   def flightMode_=(new_flight_mode:Int) {
     flight_mode = new_flight_mode
-    if(flight_mode != 1) timeMultiplier = 1
+    //if(flight_mode != 1) timeMultiplier = 1
   }
   def flightModeStr:String = flight_mode match {
     case 1 => "свободный"

@@ -48,21 +48,21 @@ abstract class PolygonShip(
       flightMode match {
         case 1 => // свободный режим
         case 2 => // запрет вращения
-          if(math.abs(angularVelocity*60*base_dt) < 0.01f) flightMode = 1
+          if(math.abs(angularVelocity) < 0.01f) flightMode = 1
           else preserveAngularVelocity(0)
         case 3 => // ориентация по осям
-          if(math.abs(rotation*60*base_dt) < 0.1f) flightMode = 2
+          if(math.abs(rotation) < 0.1f) flightMode = 2
           else preserveAngle(0)
         case 4 => // ориентация по траектории
           val angle = linearVelocity.mydeg(Vec(0,1))
-          if(math.abs((rotation - angle)*60*base_dt) < 0.1f) flightMode = 2
+          if(math.abs(rotation - angle) < 0.1f) flightMode = 2
           else preserveAngle(angle)
         case 5 => // ориентация против траектории
           val angle = correctAngle(linearVelocity.mydeg(Vec(0,1)) + 180)
-          if(math.abs((rotation - angle)*60*base_dt) < 0.1f) flightMode = 2
+          if(math.abs(rotation - angle) < 0.1f) flightMode = 2
           else preserveAngle(angle)
         case 6 => // выход на орбиту
-          if(math.abs(angularVelocity*60*base_dt) < 0.01f) {
+          if(math.abs(angularVelocity) < 0.01f) {
             insideGravitationalRadiusOfCelestialBody(coord).foreach {
               case body =>
                 val ss = satelliteSpeed(coord, body.coord, body.linearVelocity, body.mass, G)

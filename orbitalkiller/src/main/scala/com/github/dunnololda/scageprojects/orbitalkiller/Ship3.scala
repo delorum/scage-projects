@@ -94,29 +94,29 @@ class Ship3(
     (9.9f to 1f by -0.1f).find {
       case pp =>
         val torque = (-force_dir*pp)*/position
-        val ang_acc = (torque / I)/math.Pi.toFloat*180f
+        val ang_acc = (torque / I).toDeg
         val (_, result_to) = howManyTacts(to, from, ang_acc, dt)
         math.abs(to - result_to) < max_diff
     }.getOrElse(1f)
   }
 
   override def preserveAngularVelocity(ang_vel_deg:Float) {
-    val difference = angularVelocity*60f*base_dt - ang_vel_deg
+    val difference = angularVelocity - ang_vel_deg
     if(difference > 0.01f) {
-      val power = maxPossiblePowerForRotation(seven.force_dir, seven.position, currentState.I, ang_vel_deg/60f/base_dt, angularVelocity, 0.01f)
+      val power = maxPossiblePowerForRotation(seven.force_dir, seven.position, currentState.I, ang_vel_deg, angularVelocity, 0.01f)
       seven.power = power
       eight.power = power
-      val ang_acc = (seven.torque / currentState.I)/math.Pi.toFloat*180f
-      val (tacts, _) = howManyTacts(ang_vel_deg/60f/base_dt, angularVelocity, ang_acc, dt)
+      val ang_acc = (seven.torque / currentState.I).toDeg
+      val (tacts, _) = howManyTacts(ang_vel_deg, angularVelocity, ang_acc, dt)
       activateOnlyTheseEngines(seven, eight)
       seven.worktimeTacts = tacts
       eight.worktimeTacts = tacts
     } else if(difference < -0.01f) {
-      val power = maxPossiblePowerForRotation(nine.force_dir, nine.position, currentState.I, ang_vel_deg/60f/base_dt, angularVelocity, 0.01f)
+      val power = maxPossiblePowerForRotation(nine.force_dir, nine.position, currentState.I, ang_vel_deg, angularVelocity, 0.01f)
       nine.power = power
       eight.power = power
-      val ang_acc = (nine.torque / currentState.I)/math.Pi.toFloat*180f
-      val (tacts, _) = howManyTacts(ang_vel_deg/60f/base_dt, angularVelocity, ang_acc, dt)
+      val ang_acc = (nine.torque / currentState.I).toDeg
+      val (tacts, _) = howManyTacts(ang_vel_deg, angularVelocity, ang_acc, dt)
       activateOnlyTheseEngines(nine, eight)
       nine.worktimeTacts = tacts
       eight.worktimeTacts = tacts
