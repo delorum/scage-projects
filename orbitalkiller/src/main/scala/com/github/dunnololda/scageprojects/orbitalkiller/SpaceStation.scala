@@ -1,6 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLib._
+import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
 class SpaceStation(
              index:String,
@@ -43,12 +44,12 @@ class SpaceStation(
     Vec(-50.0, 110.0)
   )
 
-  val four = Engine(position = Vec(-10.0, 0.0), force_dir = Vec(1.0, 0.0), max_power = 10, this)
-  val six = Engine(position = Vec(10.0, 0.0), force_dir = Vec(-1.0, 0.0), max_power = 10, this)
-  val seven = Engine(position = Vec(-40.0, 110.0), force_dir = Vec(0.0, -1.0), max_power = 10, this)
-  val nine = Engine(position = Vec(40.0, 110.0), force_dir = Vec(0.0, -1.0), max_power = 10, this)
-  val one = Engine(position = Vec(-40.0, -110.0), force_dir = Vec(0.0, 1.0), max_power = 10, this)
-  val three = Engine(position = Vec(40.0, -110.0), force_dir = Vec(0.0, 1.0), max_power = 10, this)
+  val four  = Engine(position = Vec(-10.0, 0.0),    force_dir = Vec(1.0, 0.0),  max_power = 10, power_step = 1, this)
+  val six   = Engine(position = Vec(10.0, 0.0),     force_dir = Vec(-1.0, 0.0), max_power = 10, power_step = 1, this)
+  val seven = Engine(position = Vec(-40.0, 110.0),  force_dir = Vec(0.0, -1.0), max_power = 10, power_step = 1, this)
+  val nine  = Engine(position = Vec(40.0, 110.0),   force_dir = Vec(0.0, -1.0), max_power = 10, power_step = 1, this)
+  val one   = Engine(position = Vec(-40.0, -110.0), force_dir = Vec(0.0, 1.0),  max_power = 10, power_step = 1, this)
+  val three = Engine(position = Vec(40.0, -110.0),  force_dir = Vec(0.0, 1.0),  max_power = 10, power_step = 1, this)
 
   val engines = List(four, six, seven, nine, one, three)
 
@@ -61,21 +62,38 @@ class SpaceStation(
     KEY_NUMPAD3 -> three
   )
 
-  def rotateRight() {
-    activateOnlyTheseEngines(one, seven)
+  def enterOrbit() {
+
   }
 
-  def smallRotateRight() {
-    activateOnlyOneEngine(seven)
+  def mass: Float = 1
+
+
+  def preserveAngularVelocity(ang_vel_deg: Float) {
+
   }
 
-  def rotateLeft() {
-    activateOnlyTheseEngines(three, nine)
-  }
+  render {
+    openglLocalTransform {
+      openglMove(coord)
+      openglRotateDeg(rotation)
+      drawSlidingLines(points :+ points.head, WHITE)
 
-  def smallRotateLeft() {
-    activateOnlyOneEngine(nine)
-  }
+      engines.foreach {
+        case e =>
+          e.force_dir match {
+            case Vec(0, -1) => drawEngine(e, e.position + Vec(0, 2.5f),  10, 5,  is_vertical = false)
+            case Vec(0, 1)  => drawEngine(e, e.position + Vec(0, -2.5f), 10, 5,  is_vertical = false)
+            case Vec(-1, 0) => drawEngine(e, e.position + Vec(2.5f, 0),  5,  10, is_vertical = true)
+            case Vec(1, 0)  => drawEngine(e, e.position + Vec(-2.5f, 0), 5,  10, is_vertical = true)
+            case _ =>
+          }
+      }
+    }
 
-  def enterOrbit(): Unit = ???
+    drawFilledCircle(coord, 2, GREEN)                             // mass center
+    drawLine(coord, coord + linearVelocity.n*100, CYAN)           // current velocity
+    drawLine(coord, coord + (earth.coord - coord).n*100, YELLOW)    // direction to sun
+    drawLine(coord, coord + (moon.coord - coord).n*100, GREEN)   // direction to earth
+  }
 }

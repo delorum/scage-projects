@@ -17,7 +17,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     if(tm > 0) {
       _time_mulitplier = tm
       _dt = _time_mulitplier*base_dt
-      ship.engines.foreach(e => {
+      ship.engines.filter(_.active).foreach(e => {
         e.worktimeTacts = e.worktimeTacts
       })
     }
@@ -253,7 +253,11 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     insideGravitationalRadiusOfCelestialBody(coord) match {
       case Some(planet) =>
         val Orbit(a, b, e, c, p, r_p, r_a, t) = calculateOrbit(planet.mass, coord - planet.coord, velocity - planet.linearVelocity, G)
-        f"r_p = ${r_p - planet.radius}%.2f м, r_a = ${r_a - planet.radius}%.2f м, ${timeStr(t.toLong)}"
+        if(e < 1) {
+          f"e = $e%.2f, r_p = ${r_p - planet.radius}%.2f м, r_a = ${r_a - planet.radius}%.2f м, t = ${timeStr(t.toLong)}"
+        } else {
+          f"e = $e%.2f, r_p = N/A, r_a = N/A, t = N/A"
+        }
       case None => "N/A"
     }
   }
@@ -326,8 +330,8 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
   keyIgnorePause(KEY_NUMPAD5, onKeyDown = {ship.engines.foreach(_.active = false)})
 
-  keyIgnorePause(KEY_UP,   10, onKeyDown = {ship.selected_engine.foreach(e => e.power += 0.1f)}, onKeyUp = updateFutureTrajectory())
-  keyIgnorePause(KEY_DOWN, 10, onKeyDown = {ship.selected_engine.foreach(e => e.power -= 0.1f)}, onKeyUp = updateFutureTrajectory())
+  keyIgnorePause(KEY_UP,   10, onKeyDown = {ship.selected_engine.foreach(e => e.power += e.power_step)}, onKeyUp = updateFutureTrajectory())
+  keyIgnorePause(KEY_DOWN, 10, onKeyDown = {ship.selected_engine.foreach(e => e.power -= e.power_step)}, onKeyUp = updateFutureTrajectory())
   keyIgnorePause(KEY_RIGHT,   10, onKeyDown = {
     ship.selected_engine.foreach(e => {
       e.worktimeTacts += 1
@@ -552,8 +556,8 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
       print(s"Мощность и время работы отдельных двигателей:",
         20, heights.next(), ORANGE)
       print(s"${ship.engines.map(e => {
-        if(ship.selected_engine.exists(x => x == e)) s"[r${(e.power/10f*100).toInt} % (${e.worktimeTacts} т.)]"
-        else s"${(e.power/10f*100).toInt} % (${e.worktimeTacts} т.)"
+        if(ship.selected_engine.exists(x => x == e)) s"[r${(e.power/e.max_power*100).toInt} % (${e.worktimeTacts} т.)]"
+        else s"${(e.power/e.max_power*100).toInt} % (${e.worktimeTacts} т.)"
       }).mkString(", ")}",
         20, heights.next()
         , ORANGE)

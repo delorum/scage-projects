@@ -503,7 +503,7 @@ package object orbitalkiller {
 
   def satelliteSpeed(body_coord:Vec, planet_coord:Vec, planet_velocity:Vec, planet_mass:Float, G:Float):Vec = {
     val from_planet_to_body = body_coord - planet_coord
-    planet_velocity + from_planet_to_body.n.rotateDeg(90)*math.sqrt(G*planet_mass/from_planet_to_body.norma)
+    planet_velocity + from_planet_to_body.p*math.sqrt(G*planet_mass/from_planet_to_body.norma)
   }
 
   def escapeVelocity(body_coord:Vec, planet_coord:Vec, planet_velocty:Vec, planet_mass:Float, G:Float):Vec = {
@@ -548,14 +548,14 @@ package object orbitalkiller {
   }
 
   def torque(force:Vec, force_position_from_mass_center:Vec):Float = {
-    val xf        = force_position_from_mass_center*force.rotateDeg(90).n
+    val xf        = force_position_from_mass_center*force.p
     val sin_angle = xf/force_position_from_mass_center.norma
     torque(force, force_position_from_mass_center, sin_angle)
   }
 
   def torque(force:Vec, force_position:Vec, center:Vec):Float = {
     val force_position_from_mass_center = force_position - center
-    val xf                              = force_position_from_mass_center*force.rotateDeg(90).n
+    val xf                              = force_position_from_mass_center*force.p
     val sin_angle                       = xf/force_position_from_mass_center.norma
     torque(force, force_position_from_mass_center, sin_angle)
   }

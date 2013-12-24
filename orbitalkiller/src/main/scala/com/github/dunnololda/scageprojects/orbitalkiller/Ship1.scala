@@ -28,17 +28,17 @@ class Ship1(
       is_static = false)
   )
 
-  val two   = Engine(position = Vec(0, -b/2), force_dir = Vec(0, 1),  max_power = 10, this)
-  val eight = Engine(position = Vec(0, b/2),  force_dir = Vec(0, -1), max_power = 10, this)
+  val two   = Engine(position = Vec(0, -b/2), force_dir = Vec(0, 1),  max_power = 10, power_step = 1, this)
+  val eight = Engine(position = Vec(0, b/2),  force_dir = Vec(0, -1), max_power = 10, power_step = 1, this)
 
-  val seven = Engine(position = Vec(-a/2, b/4), force_dir = Vec(1, 0),  max_power = 10, this)
-  val nine  = Engine(position = Vec(a/2, b/4),  force_dir = Vec(-1, 0), max_power = 10, this)
+  val seven = Engine(position = Vec(-a/2, b/4), force_dir = Vec(1, 0),  max_power = 10, power_step = 1, this)
+  val nine  = Engine(position = Vec(a/2, b/4),  force_dir = Vec(-1, 0), max_power = 10, power_step = 1, this)
 
-  val four  = Engine(position = Vec(-a/2, 0), force_dir = Vec(1, 0),  max_power = 10, this)
-  val six   = Engine(position = Vec(a/2, 0),  force_dir = Vec(-1, 0), max_power = 10, this)
+  val four  = Engine(position = Vec(-a/2, 0), force_dir = Vec(1, 0),  max_power = 10, power_step = 1, this)
+  val six   = Engine(position = Vec(a/2, 0),  force_dir = Vec(-1, 0), max_power = 10, power_step = 1, this)
 
-  val one   = Engine(position = Vec(-a/2, -b/4), force_dir = Vec(1, 0),  max_power = 10, this)
-  val three = Engine(position = Vec(a/2, -b/4),  force_dir = Vec(-1, 0), max_power = 10, this)
+  val one   = Engine(position = Vec(-a/2, -b/4), force_dir = Vec(1, 0),  max_power = 10, power_step = 1, this)
+  val three = Engine(position = Vec(a/2, -b/4),  force_dir = Vec(-1, 0), max_power = 10, power_step = 1, this)
 
   val engines = List(one, two, three, four, six, seven, eight, nine)
 
@@ -91,19 +91,6 @@ class Ship1(
     }
   }
 
-  private def drawEngine(e:Engine, center:Vec, width:Float, height:Float, is_vertical:Boolean) {
-    drawRectCentered(center, width, height, color = engineColor(e))
-    if(e.active && e.power > 0) {
-      if(is_vertical) {
-        drawFilledRectCentered(center, width, engineActiveSize(e), color = engineColor(e))
-      } else {
-        drawFilledRectCentered(center, engineActiveSize(e), height, color = engineColor(e))
-      }
-      if(globalScale > 2) print(f"${e.power/e.max_power*100f}%.0f% : ${e.worktimeTacts}", center, size = max_font_size/globalScale)
-      if(isSelectedEngine(e)) drawRectCentered(center, width+2, height+2, color = engineColor(e))
-    }
-  }
-
   render {
     openglLocalTransform {
       openglMove(coord)
@@ -132,5 +119,13 @@ class Ship1(
     drawLine(coord, coord + linearVelocity.n*100, CYAN)           // current velocity
     drawLine(coord, coord + (earth.coord - coord).n*100, YELLOW)    // direction to sun
     drawLine(coord, coord + (moon.coord - coord).n*100, GREEN)   // direction to earth
+  }
+
+  def preserveAngularVelocity(ang_vel_deg: Float) {
+
+  }
+
+  def enterOrbit() {
+
   }
 }

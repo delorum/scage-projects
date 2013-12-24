@@ -3,7 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import OrbitalKiller._
 import com.github.dunnololda.scage.ScageLib._
 
-case class Engine(position:Vec, force_dir:Vec, max_power:Float, ship:Ship) {
+case class Engine(position:Vec, force_dir:Vec, max_power:Float, power_step:Float, ship:Ship) {
   private var worktime_tacts = 0l
   private var stop_moment_tacts = 0l
 
@@ -18,7 +18,7 @@ case class Engine(position:Vec, force_dir:Vec, max_power:Float, ship:Ship) {
   private var _power:Float = 1f
   def power = _power
   def power_=(new_power:Float) {
-    if(new_power >= 1f && new_power < max_power && new_power != _power) {
+    if(new_power >= 0 && new_power < max_power) {
       _power = new_power
     }
   }

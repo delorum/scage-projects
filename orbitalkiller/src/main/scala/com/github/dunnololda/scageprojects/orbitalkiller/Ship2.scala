@@ -23,11 +23,11 @@ class Ship2(
     Vec(-10.0, 70.74075)
   )
 
-  val eight = Engine(Vec(0.0, 70.74075), force_dir = Vec(0.0, -1.0), max_power = 10, this)
-  val two = Engine(position = Vec(0.0, -69.25925), force_dir = Vec(0.0, 1.0), max_power = 10, this)
+  val eight = Engine(Vec(0.0, 70.74075), force_dir = Vec(0.0, -1.0), max_power = 10, power_step = 1, this)
+  val two = Engine(position = Vec(0.0, -69.25925), force_dir = Vec(0.0, 1.0), max_power = 10, power_step = 1, this)
 
-  val four = Engine(position = Vec(-40.0, -9.259247), force_dir = Vec(0.0, 1.0), max_power = 10, this)
-  val six =  Engine(position = Vec(40.0, -9.259247), force_dir = Vec(0.0, 1.0), max_power = 10, this)
+  val four = Engine(position = Vec(-40.0, -9.259247), force_dir = Vec(0.0, 1.0), max_power = 10, power_step = 1, this)
+  val six =  Engine(position = Vec(40.0, -9.259247), force_dir = Vec(0.0, 1.0), max_power = 10, power_step = 1, this)
 
   val engines = List(two, four, six, eight)
 
@@ -56,4 +56,8 @@ class Ship2(
   }
 
   def enterOrbit(): Unit = ???
+
+  def mass: Float = ???
+
+  def preserveAngularVelocity(ang_vel_deg: Float): Unit = ???
 }
