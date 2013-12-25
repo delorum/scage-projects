@@ -26,7 +26,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   def dt = _dt
 
   private var _tacts = 0l  
-  def tacts:Long = _tacts   // in milliseconds
+  def tacts:Long = _tacts
 
   def timeStr(time_msec:Long):String = {
     val msec  = 1l
@@ -230,11 +230,19 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     case _ => ""
   }
 
+  def mOrKm(meters:Number):String = {
+    if(math.abs(meters.floatValue()) < 1000) f"${meters.floatValue()}%.2f м" else f"${meters.floatValue()/1000f}%.2f км"
+  }
+
+  def msecOrKmsec(meters:Number):String = {
+    if(math.abs(meters.floatValue()) < 1000) f"${meters.floatValue()}%.2f м/сек" else f"${meters.floatValue()/1000f}%.2f км/сек"
+  }
+
   def satelliteSpeedInPoint(coord:DVec):String = {
     insideGravitationalRadiusOfCelestialBody(coord) match {
       case Some(planet) =>
         val ss = satelliteSpeed(coord, planet.coord, planet.linearVelocity, planet.mass, G)
-        f"${ss.norma}%.2f м/сек (velx = ${ss.x}%.2f м/сек, vely = ${ss.y}%.2f м/сек)"
+        f"${msecOrKmsec(ss.norma)} (velx = ${msecOrKmsec(ss.x)}, vely = ${msecOrKmsec(ss.y)})"
       case None =>
         "N/A"
     }
@@ -244,7 +252,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     insideGravitationalRadiusOfCelestialBody(coord) match {
       case Some(planet) =>
         val ss = escapeVelocity(coord, planet.coord, planet.linearVelocity, planet.mass, G)
-        f"${ss.norma}%.2f м/сек (velx = ${ss.x}%.2f м/сек, vely = ${ss.y}%.2f м/сек)"
+        f"${msecOrKmsec(ss.norma)} (velx = ${msecOrKmsec(ss.x)}, vely = ${msecOrKmsec(ss.y)})"
       case None =>
         "N/A"
     }
@@ -254,7 +262,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     insideGravitationalRadiusOfCelestialBody(coord) match {
       case Some(planet) =>
         val Orbit(a, b, e, c, p, r_p, r_a, t) = calculateOrbit(planet.mass, coord - planet.coord, velocity - planet.linearVelocity, G)
-        f"r_p = ${r_p - planet.radius}%.2f м, r_a = ${r_a - planet.radius}%.2f м, ${timeStr((t*1000l).toLong)}"
+        f"e = $e%.2f, r_p = ${mOrKm(r_p - planet.radius)}, r_a = ${mOrKm(r_a - planet.radius)}, t = ${timeStr((t*1000l).toLong)}"
       case None => "N/A"
     }
   }
@@ -267,7 +275,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
           lbs.find(_.index == ship.index) match {
             case Some(bs) =>
               val s = bs.vel
-              f"${s.norma}%.2f м/сек ( velx = ${s.x}%.2f м/сек, vely = ${s.y}%.2f м/сек)"
+              f"${msecOrKmsec(s.norma)} (velx = ${msecOrKmsec(s.x)}, vely = ${msecOrKmsec(s.y)})"
             case None => "N/A"
           }
         case None => "N/A"
@@ -516,7 +524,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
       print("", 20, heights.next(), ORANGE)
 
-      print(f"Расстояние и скорость относительно Земли: ${ship.coord.dist(earth.coord) - earth.radius}%.2f м, ${ship.linearVelocity* (ship.coord - earth.coord).n}%.2f м/сек",
+      print(f"Расстояние и скорость относительно Земли: ${mOrKm(ship.coord.dist(earth.coord) - earth.radius)}, ${msecOrKmsec(ship.linearVelocity*(ship.coord - earth.coord).n)}",
         20, heights.next(), ORANGE)
       /*print(f"Расстояние и скорость относительно Луны: ${ship.coord.dist(moon.coord) - moon.radius}%.2f м, ${ship.linearVelocity* (ship.coord - moon.coord).n *60*base_dt}%.2f м/сек",
         20, heights.next(), ORANGE)*/
@@ -527,7 +535,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
       print(f"Позиция: ${ship.coord.x}%.2f : ${ship.coord.y}%.2f",
         20, heights.next(), ORANGE)
-      print(f"Линейная скорость: ${ship.linearVelocity.norma}%.2f м/сек ( velx = ${ship.linearVelocity.x}%.2f м/сек, vely = ${ship.linearVelocity.y}%.2f м/сек)",
+      print(f"Линейная скорость: ${msecOrKmsec(ship.linearVelocity.norma)} (velx = ${msecOrKmsec(ship.linearVelocity.x)}, vely = ${msecOrKmsec(ship.linearVelocity.y)})",
         20, heights.next(), ORANGE)
       print(f"Угол: ${ship.rotation}%.2f град",
         20, heights.next(), ORANGE)
@@ -547,12 +555,11 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
       print(s"Двигательная установка: ${if(ship.engines.exists(_.active)) "[rактивирована]" else "отключена"}",
         20, heights.next(), ORANGE)
-      val engines_work_tacts = maxOption(ship.engines.withFilter(_.active).map(_.worktimeTacts)).getOrElse(0l)
       print(s"Мощность и время работы отдельных двигателей:",
         20, heights.next(), ORANGE)
       print(s"${ship.engines.map(e => {
-        if(ship.selected_engine.exists(x => x == e)) s"[r${(e.power/e.max_power*100).toInt} % (${e.worktimeTacts} т.)]"
-        else s"${(e.power/e.max_power*100).toInt} % (${e.worktimeTacts} т.)"
+        if(ship.selected_engine.exists(x => x == e)) s"[r${e.powerPercent} % (${e.worktimeTacts} т.)]"
+        else s"${e.powerPercent} % (${e.worktimeTacts} т.)"
       }).mkString(", ")}",
         20, heights.next()
         , ORANGE)
@@ -584,7 +591,7 @@ class Planet(
   val init_velocity:DVec,
   val radius:Double) extends CelestialBody {
   lazy val gravitational_radius = {
-    (coord.dist(earth.coord)*math.sqrt(mass/20.0/earth.mass)/(1.0 + math.sqrt(mass/20.0/earth.mass)))
+    coord.dist(earth.coord) * math.sqrt(mass / 20.0 / earth.mass) / (1.0 + math.sqrt(mass / 20.0 / earth.mass))
   }
 
   def coord = currentState.coord
@@ -604,9 +611,18 @@ class Planet(
       is_static = false))
 
   render {
-    drawCircle(coord.toVec, radius.toFloat, color = WHITE)
-    drawCircle(coord.toVec, gravitational_radius.toFloat, color = DARK_GRAY)
-    print(index, coord.toVec, size = max_font_size/globalScale*2f, WHITE, align = "center")
+    val viewpoint_dist = math.abs(center.dist(coord) - radius)
+    if(viewpoint_dist < 50000) {
+      val to_viewpoint = center - coord
+      val points = for {
+        ang <- -1f to 1f by 0.01f
+        point = (coord + to_viewpoint.rotateDeg(ang).n * radius).toVec
+      } yield point
+      drawSlidingLines(points, WHITE)
+    }
+    //drawCircle(coord.toVec, radius.toFloat, color = WHITE)
+    //drawCircle(coord.toVec, gravitational_radius.toFloat, color = DARK_GRAY)
+    //print(index, coord.toVec, size = max_font_size/globalScale*2f, WHITE, align = "center")
   }
 }
 
@@ -630,10 +646,20 @@ class Star(val index:String, val mass:Double, val coord:DVec, val radius:Double)
       is_static = true))
 
   render {
-    drawCircle(coord.toVec, radius.toFloat, color = WHITE)
+    val viewpoint_dist = math.abs(center.dist(coord) - radius)
+    if(viewpoint_dist < 50000) {
+      val to_viewpoint = center - coord
+      val points = for {
+        ang <- -1f to 1f by 0.01f
+        point = (coord + to_viewpoint.rotateDeg(ang).n * radius).toVec
+      } yield point
+      drawSlidingLines(points, WHITE)
+    }
+    /*drawCircle(coord.toVec, radius.toFloat, color = WHITE)
     drawCircle(coord.toVec, gravitational_radius.toFloat, color = DARK_GRAY)
-    print(index, coord.toVec, size = max_font_size/globalScale*2f, WHITE, align = "center")
+    print(index, coord.toVec, size = max_font_size/globalScale*2f, WHITE, align = "center")*/
   }
+
 
   def linearVelocity: ScageLib.DVec = DVec.dzero
 }

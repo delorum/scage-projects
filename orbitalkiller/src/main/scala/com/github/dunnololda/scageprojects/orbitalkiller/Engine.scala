@@ -42,9 +42,7 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, ship:Ship) {
       is_active = bool
       if(is_active) {
         //_power = 1f
-        if(worktime_tacts == 0) {
-          worktimeTacts = 10
-        } else worktimeTacts = worktime_tacts
+        worktimeTacts = 10
         ship.selected_engine = Some(this)
       } else {
         ship.selected_engine = ship.engines.filter(_.active).lastOption
@@ -56,9 +54,7 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, ship:Ship) {
     if(!is_active) {
       is_active = true
       //_power = 1f
-      if(worktime_tacts == 0) {
-        worktimeTacts = 10
-      } else worktimeTacts = worktime_tacts
+      worktimeTacts = 10
       ship.selected_engine = Some(this)
       updateFutureTrajectory()
     } else {

@@ -71,7 +71,7 @@ class Ship3(
   private def howManyTacts(to:Double, from:Double, a:Double, dt:Double):(Int, Double) = {
     val tacts = ((to - from)/(a*dt)).toInt + 1
     val result_to = from + tacts*a*dt
-    println(s"$from -> $to : $result_to : $tacts")
+    //println(s"$from -> $to : $result_to : $tacts")
     (tacts, result_to)
     /*if(a == 0) tacts
     else if(a > 0) {
@@ -105,6 +105,8 @@ class Ship3(
     }.map(percent => max_power*0.01f*percent).getOrElse(max_power*0.01f)
   }
 
+  private var last_correction_or_check_moment:Long = 0l
+
   def preserveAngularVelocity(ang_vel_deg:Double) {
     val difference = angularVelocity - ang_vel_deg
     if(difference > 0.01f) {
@@ -126,6 +128,7 @@ class Ship3(
       nine.worktimeTacts = tacts
       eight.worktimeTacts = tacts
     }
+    last_correction_or_check_moment = OrbitalKiller.tacts
   }
 
   def enterOrbit() {
@@ -138,7 +141,7 @@ class Ship3(
         val ship_velocity_n = linearVelocity*n  // from
         val ss_n = ss*n                         // to
 
-        if(ship_velocity_n > ss_n) {
+        if(ship_velocity_n - ss_n > 0.1f) {
           val power = maxPossiblePowerForLinearMovement(eight.max_power, eight.force_dir.y, mass, ss_n, ship_velocity_n, 0.1f)
 
           eight.power = power
@@ -148,7 +151,7 @@ class Ship3(
           println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
           eight.active = true
           eight.worktimeTacts = tacts
-        } else if(ship_velocity_n < ss_n) {
+        } else if(ship_velocity_n - ss_n < -0.1f) {
           val power = maxPossiblePowerForLinearMovement(two.max_power, two.force_dir.y, mass, ss_n, ship_velocity_n, 0.1f)
           two.power = power
           val acc = (two.force / mass).y
@@ -162,7 +165,7 @@ class Ship3(
         val ship_velocity_p = p*linearVelocity
         val ss_p = p*ss
 
-        if(ship_velocity_p > ss_p) {
+        if(ship_velocity_p - ss_p > 0.1f) {
           val power = maxPossiblePowerForLinearMovement(six.max_power, six.force_dir.x, mass, ss_p, ship_velocity_p, 0.1f)
           six.power = power
           val acc = (six.force / mass).x
@@ -171,7 +174,7 @@ class Ship3(
           println("===========================")*/
           six.active = true
           six.worktimeTacts = tacts
-        } else if(ship_velocity_p < ss_p) {
+        } else if(ship_velocity_p - ss_p < -0.1f) {
           val power = maxPossiblePowerForLinearMovement(four.max_power, four.force_dir.x, mass, ss_p, ship_velocity_p, 0.1f)
           four.power = power
           val acc = (four.force / mass).x
@@ -183,10 +186,11 @@ class Ship3(
         }
       case None =>
     }
+    last_correction_or_check_moment = OrbitalKiller.tacts
   }
 
   action {
-    if(allEnginesInactive) {
+    if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
       flightMode match {
         case 1 => // свободный режим
         case 2 => // запрет вращения
