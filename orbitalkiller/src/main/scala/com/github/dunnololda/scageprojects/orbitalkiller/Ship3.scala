@@ -52,22 +52,6 @@ class Ship3(
     KEY_NUMPAD3 -> three
   )
 
-  def rotateRight() {
-    activateOnlyTheseEngines(one, eight)
-  }
-
-  def smallRotateRight() {
-    activateOnlyTheseEngines(seven, eight)
-  }
-
-  def rotateLeft() {
-    activateOnlyTheseEngines(three, eight)
-  }
-
-  def smallRotateLeft() {
-    activateOnlyTheseEngines(nine, eight)
-  }
-
   private def howManyTacts(to:Double, from:Double, a:Double, dt:Double):(Int, Double) = {
     val tacts = ((to - from)/(a*dt)).toInt + 1
     val result_to = from + tacts*a*dt
