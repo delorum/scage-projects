@@ -77,7 +77,7 @@ trait Ship {
       } else {
         drawFilledRectCentered(center.toVec, engineActiveSize(e).toFloat, height.toFloat, color = engineColor(e))
       }
-      if(globalScale > 2) print(f"${e.powerPercent}% : ${e.worktimeTacts}", center.toVec, size = max_font_size/globalScale)
+      if(globalScale > 2) print(s"${e.powerPercent}% : ${e.worktimeTacts}", center.toVec, size = max_font_size/globalScale)
       if(isSelectedEngine(e)) drawRectCentered(center.toVec, width.toFloat+2, height.toFloat+2, color = engineColor(e))
     }
   }

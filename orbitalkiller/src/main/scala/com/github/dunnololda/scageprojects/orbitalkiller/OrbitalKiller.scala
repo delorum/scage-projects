@@ -49,14 +49,14 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
       bs.index match {
         case ship.index =>
           gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G) +
-          /*other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(DVec.dzero) +*/
+          other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(DVec.dzero) +
           ship.currentReactiveForce(tacts, bs)
-        /*case station.index =>
+        case station.index =>
           gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G) +
             other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(DVec.dzero) +
-            station.currentReactiveForce(ticks, bs)
+            station.currentReactiveForce(tacts, bs)
         case moon.index =>
-          gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G)*/
+          gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G)
         case _ => DVec.dzero
       }
     },
@@ -129,14 +129,14 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
   val earth = new Star("Earth", mass = 5.9746E24.toFloat, coord = DVec.dzero, radius = 6400000)
 
-  /*val moon_start_position = Vec(-190000000, 190000000)
+  val moon_start_position = DVec(-190000000, 190000000)
   val moon_init_velocity = satelliteSpeed(moon_start_position, earth.coord, earth.linearVelocity, earth.mass, G)
   val moon = new Planet(
     "Moon",
     mass = 7.3477E22.toFloat,
     init_coord = moon_start_position,
     init_velocity = moon_init_velocity,
-    radius = 1737000)*/
+    radius = 1737000)
 
   val ship_start_position = earth.coord + DVec(0, earth.radius + 100000)
   val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G)
@@ -148,16 +148,16 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     init_rotation = 45
   )
 
-  /*val station_start_position = earth.coord + Vec(earth.radius*1.5f, earth.radius*1.5f)
+  val station_start_position = earth.coord + DVec(300, earth.radius + 100000)
   val station_init_velocity = satelliteSpeed(station_start_position, earth.coord, earth.linearVelocity, earth.mass, G)
   val station = new SpaceStation("station",
     init_coord = station_start_position,
     init_velocity = station_init_velocity,
     init_rotation = 45
-  )*/
+  )
 
   private val real_system_evolution =
-    futureSystemEvolutionFrom(0, List(ship.currentState, /*station.currentState, moon.currentState, */earth.currentState), enable_collisions = true).iterator
+    futureSystemEvolutionFrom(0, List(ship.currentState, station.currentState, moon.currentState, earth.currentState), enable_collisions = true).iterator
 
   private var skipped_points = 0
   private def nextStep() {
@@ -200,24 +200,24 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
         rotationPoint = ship.coord.toVec
         rotationAngleDeg = -ship.rotation.toFloat
         view_mode = 1
-      /*case 2 => // посадка на планету
-        center = ship.coord
-        rotationPoint = ship.coord
+      case 2 => // посадка на планету
+        center = ship.coord.toVec
+        rotationPoint = ship.coord.toVec
         rotationAngleDeg = {
           val nearest_body_coord = if(ship.coord.dist2(earth.coord) < ship.coord.dist2(moon.coord)) earth.coord else moon.coord
           val vec = ship.coord - nearest_body_coord
-          if(vec.x >= 0) vec.deg(Vec(0, 1))
-          else vec.deg(Vec(0, 1)) *(-1)
+          if(vec.x >= 0) vec.deg(DVec(0, 1)).toFloat
+          else vec.deg(DVec(0, 1)).toFloat*(-1)
         }
-        view_mode = 2*/
+        view_mode = 2
       case 3 => // фиксация на солнце
         center = earth.coord.toVec
         rotationAngle = 0
         view_mode = 3
-      /*case 4 => // фиксация на планете
-        center = moon.coord
+      case 4 => // фиксация на планете
+        center = moon.coord.toVec
         rotationAngle = 0
-        view_mode = 4*/
+        view_mode = 4
       case _ =>
     }
   }
@@ -319,8 +319,8 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   private var disable_interface_drawing = false
 
   def insideGravitationalRadiusOfCelestialBody(coord:DVec):Option[CelestialBody] = {
-    /*if(coord.dist(moon.coord) < moon.gravitational_radius) Some(moon)
-    else */if(coord.dist(earth.coord) < earth.gravitational_radius) Some(earth)
+    if(coord.dist(moon.coord) < moon.gravitational_radius) Some(moon)
+    else if(coord.dist(earth.coord) < earth.gravitational_radius) Some(earth)
     else None
   }
 
@@ -462,13 +462,13 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
           index match {
             case "ship" =>
               viewMode match {
-                /*case 4 =>
+                case 4 =>
                   drawSlidingLines(
                     for {
                       ((_, bs), (_, earth_bs)) <- body_states.zip(future_trajectory_map(moon.index))
                       coord = bs.coord - earth_bs.coord + moon.coord
-                    } yield coord,
-                    color = YELLOW)*/
+                    } yield coord.toVec,
+                    color = YELLOW)
                 case _ =>
                   drawSlidingLines(body_states.map(_._2.coord.toVec), color = YELLOW)
               }
@@ -484,13 +484,13 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
           index match {
             case "ship" =>
               viewMode match {
-                /*case 4 =>
+                case 4 =>
                   drawSlidingLines(
                     for {
                       ((_, bs), (_, earth_bs)) <- body_states.zip(body_trajectories_map(moon.index))
                       coord = bs.coord - earth_bs.coord + moon.coord
-                    } yield coord,
-                    color = GREEN)*/
+                    } yield coord.toVec,
+                    color = GREEN)
                 case _ =>
                   drawSlidingLines(body_states.map(_._2.coord.toVec), color = GREEN)
               }
@@ -508,7 +508,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     print(s"FPS $fps", windowWidth - 20, windowHeight - 40, align = "top-right", color = DARK_GRAY)
 
     if(!disable_interface_drawing) {
-      val heights = (500 to 20 by -20).iterator
+      val heights = (520 to 20 by -20).iterator
 
       print(s"Время: ${timeStr((_tacts*base_dt*1000f).toLong)}",
         20, heights.next(), ORANGE)
@@ -526,8 +526,8 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
       print(f"Расстояние и скорость относительно Земли: ${mOrKm(ship.coord.dist(earth.coord) - earth.radius)}, ${msecOrKmsec(ship.linearVelocity*(ship.coord - earth.coord).n)}",
         20, heights.next(), ORANGE)
-      /*print(f"Расстояние и скорость относительно Луны: ${ship.coord.dist(moon.coord) - moon.radius}%.2f м, ${ship.linearVelocity* (ship.coord - moon.coord).n *60*base_dt}%.2f м/сек",
-        20, heights.next(), ORANGE)*/
+      print(f"Расстояние и скорость относительно Луны: ${ship.coord.dist(moon.coord) - moon.radius}%.2f м, ${ship.linearVelocity* (ship.coord - moon.coord).n *60*base_dt}%.2f м/сек",
+        20, heights.next(), ORANGE)
       print(s"Расчет траектории: ${if(continue_future_trajectory) "[rактивирован]" else "отключен"}",
         20, heights.next(), ORANGE)
 
@@ -628,8 +628,8 @@ class Planet(
 
 class Star(val index:String, val mass:Double, val coord:DVec, val radius:Double) extends CelestialBody {
   lazy val gravitational_radius = {
-    /*(coord.dist(moon.coord)*math.sqrt(mass/20f/moon.mass)/(1 + math.sqrt(mass/20f/moon.mass))).toFloat*/
-    radius + 10000000
+    (coord.dist(moon.coord)*math.sqrt(mass/20f/moon.mass)/(1 + math.sqrt(mass/20f/moon.mass))).toFloat
+    /*radius + 10000000*/
   }
 
   def currentState:BodyState = currentBodyState(index).getOrElse(
