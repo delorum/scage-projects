@@ -71,6 +71,27 @@ class RubicCube(side1_center:Vec, elem_size:Int) {
     drawSide(side4, side4_center)
     drawSide(side5, side5_center)
     drawSide(side6, side6_center)
+
+    print("Q", side1_center + Vec(-elem_size, -elem_size*2), WHITE, align = "center")
+    print("A", side1_center + Vec(-elem_size, -elem_size*3), WHITE, align = "center")
+    print("W", side1_center + Vec(0, -elem_size*2), WHITE, align = "center")
+    print("S", side1_center + Vec(0, -elem_size*3), WHITE, align = "center")
+    print("E", side1_center + Vec(elem_size, -elem_size*2), WHITE, align = "center")
+    print("D", side1_center + Vec(elem_size, -elem_size*3), WHITE, align = "center")
+
+    print("R", side5_center + Vec(-elem_size*2, elem_size), WHITE, align = "center")
+    print("F", side5_center + Vec(-elem_size*3, elem_size), WHITE, align = "center")
+    print("T", side5_center + Vec(-elem_size*2, 0), WHITE, align = "center")
+    print("G", side5_center + Vec(-elem_size*3, 0), WHITE, align = "center")
+    print("Y", side5_center + Vec(-elem_size*2, -elem_size), WHITE, align = "center")
+    print("H", side5_center + Vec(-elem_size*3, -elem_size), WHITE, align = "center")
+
+    print("U", side5_center + Vec(-elem_size, elem_size*2), WHITE, align = "center")
+    print("J", side5_center + Vec(-elem_size, elem_size*3), WHITE, align = "center")
+    print("I", side5_center + Vec(0, elem_size*2), WHITE, align = "center")
+    print("K", side5_center + Vec(0, elem_size*3), WHITE, align = "center")
+    print("O", side5_center + Vec(elem_size, elem_size*2), WHITE, align = "center")
+    print("L", side5_center + Vec(elem_size, elem_size*3), WHITE, align = "center")
   }
 
   private case class SideElem(i:Int, j:Int)
@@ -180,6 +201,29 @@ class RubicCube(side1_center:Vec, elem_size:Int) {
 
     rotatePlane(side1, clockwise = false)
     rotatePlane(side3, clockwise = true)
+  }
+
+  def command(command:Char) {
+    command match {
+      case 'q' | 'Q' => q()
+      case 'a' | 'A' => a()
+      case 'w' | 'W' => w()
+      case 's' | 'S' => s()
+      case 'e' | 'E' => e()
+      case 'd' | 'D' => d()
+      case 'r' | 'R' => r()
+      case 'f' | 'F' => f()
+      case 't' | 'T' => t()
+      case 'g' | 'G' => g()
+      case 'y' | 'Y' => y()
+      case 'h' | 'H' => h()
+      case 'u' | 'U' => u()
+      case 'j' | 'J' => j()
+      case 'i' | 'I' => i()
+      case 'k' | 'K' => k()
+      case 'o' | 'O' => o()
+      case 'l' | 'L' => l()
+    }
   }
 
   // ==============================================================
@@ -386,36 +430,54 @@ class RubicCube(side1_center:Vec, elem_size:Int) {
 }
 
 object TestApp extends ScageScreenApp("Test", 800, 600) {
-  val rubic = new RubicCube(center + Vec(0, -30*4), 30)
+  private val rubic = new RubicCube(center + Vec(0, -30*4), 30)
+  private val commands = collection.mutable.ArrayBuffer[Char]()
 
-  keyIgnorePause(KEY_Q, onKeyDown = rubic.q())
-  keyIgnorePause(KEY_A, onKeyDown = rubic.a())
-  keyIgnorePause(KEY_W, onKeyDown = rubic.w())
-  keyIgnorePause(KEY_S, onKeyDown = rubic.s())
-  keyIgnorePause(KEY_E, onKeyDown = rubic.e())
-  keyIgnorePause(KEY_D, onKeyDown = rubic.d())
-  keyIgnorePause(KEY_R, onKeyDown = rubic.r())
-  keyIgnorePause(KEY_F, onKeyDown = rubic.f())
-  keyIgnorePause(KEY_T, onKeyDown = rubic.t())
-  keyIgnorePause(KEY_G, onKeyDown = rubic.g())
-  keyIgnorePause(KEY_Y, onKeyDown = rubic.y())
-  keyIgnorePause(KEY_H, onKeyDown = rubic.h())
-  keyIgnorePause(KEY_U, onKeyDown = rubic.u())
-  keyIgnorePause(KEY_J, onKeyDown = rubic.j())
-  keyIgnorePause(KEY_I, onKeyDown = rubic.i())
-  keyIgnorePause(KEY_K, onKeyDown = rubic.k())
-  keyIgnorePause(KEY_O, onKeyDown = rubic.o())
-  keyIgnorePause(KEY_L, onKeyDown = rubic.l())
+  keyIgnorePause(KEY_Q, onKeyDown = {Predef.print("Q"); rubic.q()})
+  keyIgnorePause(KEY_A, onKeyDown = {Predef.print("A"); rubic.a()})
+  keyIgnorePause(KEY_W, onKeyDown = {Predef.print("W"); rubic.w()})
+  keyIgnorePause(KEY_S, onKeyDown = {Predef.print("S"); rubic.s()})
+  keyIgnorePause(KEY_E, onKeyDown = {Predef.print("E"); rubic.e()})
+  keyIgnorePause(KEY_D, onKeyDown = {Predef.print("D"); rubic.d()})
+  keyIgnorePause(KEY_R, onKeyDown = {Predef.print("R"); rubic.r()})
+  keyIgnorePause(KEY_F, onKeyDown = {Predef.print("F"); rubic.f()})
+  keyIgnorePause(KEY_T, onKeyDown = {Predef.print("T"); rubic.t()})
+  keyIgnorePause(KEY_G, onKeyDown = {Predef.print("G"); rubic.g()})
+  keyIgnorePause(KEY_Y, onKeyDown = {Predef.print("Y"); rubic.y()})
+  keyIgnorePause(KEY_H, onKeyDown = {Predef.print("H"); rubic.h()})
+  keyIgnorePause(KEY_U, onKeyDown = {Predef.print("U"); rubic.u()})
+  keyIgnorePause(KEY_J, onKeyDown = {Predef.print("J"); rubic.j()})
+  keyIgnorePause(KEY_I, onKeyDown = {Predef.print("I"); rubic.i()})
+  keyIgnorePause(KEY_K, onKeyDown = {Predef.print("K"); rubic.k()})
+  keyIgnorePause(KEY_O, onKeyDown = {Predef.print("O"); rubic.o()})
+  keyIgnorePause(KEY_L, onKeyDown = {Predef.print("L"); rubic.l()})
 
-  keyIgnorePause(KEY_SPACE, onKeyDown = rubic.reset())
+  keyIgnorePause(KEY_SPACE, onKeyDown = {Predef.println(); rubic.reset()})
 
   keyIgnorePause(KEY_UP, onKeyDown = rubic.rotateUp())
   keyIgnorePause(KEY_DOWN, onKeyDown = rubic.rotateDown())
   keyIgnorePause(KEY_RIGHT, onKeyDown = rubic.rotateRight())
   keyIgnorePause(KEY_LEFT, onKeyDown = rubic.rotateLeft())
 
+  keyIgnorePause(KEY_1, onKeyDown = commands ++= "WLWLWLWWLWLWLWLL")
+  keyIgnorePause(KEY_2, onKeyDown = commands ++= "WLWLWLWOWLWLWLWO")
+  keyIgnorePause(KEY_3, onKeyDown = commands ++= "YYLWLLSLYY")
+  keyIgnorePause(KEY_4, onKeyDown = commands ++= "YYOWLLSOYY")
+  keyIgnorePause(KEY_5, onKeyDown = commands ++= "WWLLWWLL")
+  keyIgnorePause(KEY_6, onKeyDown = commands ++= "EELLQQJJEELLQQJJEELLQQJJ")
+  keyIgnorePause(KEY_7, onKeyDown = commands ++= "EHDYEHDYLEHDYEHDYEHDYEHDYO")
+  keyIgnorePause(KEY_8, onKeyDown = commands ++= "EHDYEHDYOEHDYEHDYEHDYEHDYL")
+  keyIgnorePause(KEY_9, onKeyDown = commands ++= "EIEIEIEIOEIEIEIEIL")
+  keyIgnorePause(KEY_0, onKeyDown = commands ++= "EIEIEIEILEIEIEIEIO")
+
+  actionIgnorePause(100) {
+    if(commands.nonEmpty) {
+      val command = commands.remove(0)
+      rubic.command(command)
+    }
+  }
+
   render {
     rubic.draw()
   }
-
 }
