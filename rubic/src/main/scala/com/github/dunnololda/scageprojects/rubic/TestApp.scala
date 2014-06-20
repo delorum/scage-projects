@@ -10,6 +10,8 @@ case object RubicGreen extends RubicElementColor
 case object RubicWhite extends RubicElementColor
 case object RubicYellow extends RubicElementColor
 
+case class RubicElement(color:ScageColor, position:Int)
+
 class RubicCube(val side1_center:Vec, elem_size:Int) {
   val side2_center = side1_center + Vec(0, elem_size*3)
   val side3_center = side1_center + Vec(0, elem_size*6)
@@ -17,36 +19,29 @@ class RubicCube(val side1_center:Vec, elem_size:Int) {
   val side5_center = side1_center + Vec(-elem_size*3, elem_size*3)
   val side6_center = side1_center + Vec(elem_size*3, elem_size*3)
 
-  val side1 = Array.ofDim[RubicElementColor](3, 3)
-  val side2 = Array.ofDim[RubicElementColor](3, 3)
-  val side3 = Array.ofDim[RubicElementColor](3, 3)
-  val side4 = Array.ofDim[RubicElementColor](3, 3)
-  val side5 = Array.ofDim[RubicElementColor](3, 3)
-  val side6 = Array.ofDim[RubicElementColor](3, 3)
-  for {
-    i <- 0 to 2
-    j <- 0 to 2
-  } {
-    side1(i)(j) = RubicRed
-    side2(i)(j) = RubicBlue
-    side3(i)(j) = RubicOrange
-    side4(i)(j) = RubicGreen
-    side5(i)(j) = RubicWhite
-    side6(i)(j) = RubicYellow
-  }
+  val side1 = Array.ofDim[RubicElement](3, 3)
+  val side2 = Array.ofDim[RubicElement](3, 3)
+  val side3 = Array.ofDim[RubicElement](3, 3)
+  val side4 = Array.ofDim[RubicElement](3, 3)
+  val side5 = Array.ofDim[RubicElement](3, 3)
+  val side6 = Array.ofDim[RubicElement](3, 3)
 
-  private def rubicColor2ScageColor(rubic_color:RubicElementColor):ScageColor = {
-    rubic_color match {
-      case RubicRed    => RED
-      case RubicBlue   => BLUE
-      case RubicOrange => ORANGE
-      case RubicGreen  => GREEN
-      case RubicWhite  => LIGHT_GRAY
-      case RubicYellow => YELLOW
+  def reset() {
+    for {
+      i <- 0 to 2
+      j <- 0 to 2
+    } {
+      side1(i)(j) = RubicElement(RED, i*3 + j)
+      side2(i)(j) = RubicElement(BLUE, i*3 + j)
+      side3(i)(j) = RubicElement(ORANGE, i*3 + j)
+      side4(i)(j) = RubicElement(GREEN, i*3 + j)
+      side5(i)(j) = RubicElement(YELLOW, i*3 + j)
+      side6(i)(j) = RubicElement(DARK_GRAY, i*3 + j)
     }
   }
+  reset()
 
-  private def drawSide(side:Array[Array[RubicElementColor]], side_center:Vec) {
+  private def drawSide(side:Array[Array[RubicElement]], side_center:Vec) {
     val upper_left = side_center + Vec(-elem_size*1.5f, elem_size*1.5f)
     for {
       i <- 0 to 3
@@ -63,7 +58,9 @@ class RubicCube(val side1_center:Vec, elem_size:Int) {
       drawFilledRectCentered(
         Vec(upper_left_elem.x + elem_size*i, upper_left_elem.y - elem_size*j),
         elem_size-1, elem_size-1,
-        rubicColor2ScageColor(side(j)(i)))
+        side(j)(i).color
+      )
+      print(side(j)(i).position, Vec(upper_left_elem.x + elem_size*i, upper_left_elem.y - elem_size*j), BLACK, align = "center")
     }
   }
 
@@ -76,18 +73,10 @@ class RubicCube(val side1_center:Vec, elem_size:Int) {
     drawSide(side6, side6_center)
   }
 
-  private def lineSwap(elems:List[RubicElementColor]):List[RubicElementColor] = {
-    elems match {
-      case List(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12) =>
-        List(l10, l11, l12, l1, l2, l3, l4, l5, l6, l7, l8, l9)
-      case _ => elems
-    }
-  }
-
   private case class SideElem(i:Int, j:Int)
-  private case class SideLine(side:Array[Array[RubicElementColor]], elem1:SideElem, elem2:SideElem, elem3:SideElem)
+  private case class SideLine(side:Array[Array[RubicElement]], elem1:SideElem, elem2:SideElem, elem3:SideElem)
 
-  private def swapper(line1: SideLine, line2:SideLine, line3:SideLine, line4:SideLine) {
+  private def moveLine(line1: SideLine, line2:SideLine, line3:SideLine, line4:SideLine) {
     val tmp1 = line1.side(line1.elem1.i)(line1.elem1.j)
     val tmp2 = line1.side(line1.elem2.i)(line1.elem2.j)
     val tmp3 = line1.side(line1.elem3.i)(line1.elem3.j)
@@ -109,30 +98,62 @@ class RubicCube(val side1_center:Vec, elem_size:Int) {
     line2.side(line2.elem3.i)(line2.elem3.j) = tmp3
   }
 
+  private def rotatePlane(side:Array[Array[RubicElement]], clockwise:Boolean) {
+    if(clockwise) {
+      val tmp1 = side(0)(0)
+      side(0)(0) = side(2)(0)
+      side(2)(0) = side(2)(2)
+      side(2)(2) = side(0)(2)
+      side(0)(2) = tmp1
+
+      val tmp2 = side(0)(1)
+      side(0)(1) = side(1)(0)
+      side(1)(0) = side(2)(1)
+      side(2)(1) = side(1)(2)
+      side(1)(2) = tmp2
+    } else {
+      val tmp1 = side(0)(0)
+      side(0)(0) = side(0)(2)
+      side(0)(2) = side(2)(2)
+      side(2)(2) = side(2)(0)
+      side(2)(0) = tmp1
+
+      val tmp2 = side(0)(1)
+      side(0)(1) = side(1)(2)
+      side(1)(2) = side(2)(1)
+      side(2)(1) = side(1)(0)
+      side(1)(0) = tmp2
+    }
+  }
+
   // ==============================================================
 
   def q() {
-    swapper(
+    moveLine(
       SideLine(side1, SideElem(2,0), SideElem(1,0), SideElem(0,0)),
       SideLine(side2, SideElem(2,0), SideElem(1,0), SideElem(0,0)),
       SideLine(side3, SideElem(2,0), SideElem(1,0), SideElem(0,0)),
       SideLine(side4, SideElem(2,0), SideElem(1,0), SideElem(0,0))
     )
+
+    rotatePlane(side5, clockwise = false)
   }
 
   def a() {
-    swapper(
+    moveLine(
       SideLine(side1, SideElem(2,0), SideElem(1,0), SideElem(0,0)),
       SideLine(side4, SideElem(2,0), SideElem(1,0), SideElem(0,0)),
       SideLine(side3, SideElem(2,0), SideElem(1,0), SideElem(0,0)),
       SideLine(side2, SideElem(2,0), SideElem(1,0), SideElem(0,0))
     )
+
+    rotatePlane(side5, clockwise = true)
   }
 
   // ==============================================================
 
   def w() {
-    swapper(
+    moveLine(
       SideLine(side1, SideElem(2,1), SideElem(1,1), SideElem(0,1)),
       SideLine(side2, SideElem(2,1), SideElem(1,1), SideElem(0,1)),
       SideLine(side3, SideElem(2,1), SideElem(1,1), SideElem(0,1)),
@@ -141,7 +162,7 @@ class RubicCube(val side1_center:Vec, elem_size:Int) {
   }
 
   def s() {
-    swapper(
+    moveLine(
       SideLine(side1, SideElem(2,1), SideElem(1,1), SideElem(0,1)),
       SideLine(side4, SideElem(2,1), SideElem(1,1), SideElem(0,1)),
       SideLine(side3, SideElem(2,1), SideElem(1,1), SideElem(0,1)),
@@ -152,47 +173,55 @@ class RubicCube(val side1_center:Vec, elem_size:Int) {
   // ==============================================================
 
   def e() {
-    swapper(
+    moveLine(
       SideLine(side1, SideElem(2,2), SideElem(1,2), SideElem(0,2)),
       SideLine(side2, SideElem(2,2), SideElem(1,2), SideElem(0,2)),
       SideLine(side3, SideElem(2,2), SideElem(1,2), SideElem(0,2)),
       SideLine(side4, SideElem(2,2), SideElem(1,2), SideElem(0,2))
     )
+
+    rotatePlane(side6, clockwise = true)
   }
 
   def d() {
-    swapper(
+    moveLine(
       SideLine(side1, SideElem(2,2), SideElem(1,2), SideElem(0,2)),
       SideLine(side4, SideElem(2,2), SideElem(1,2), SideElem(0,2)),
       SideLine(side3, SideElem(2,2), SideElem(1,2), SideElem(0,2)),
       SideLine(side2, SideElem(2,2), SideElem(1,2), SideElem(0,2))
     )
+
+    rotatePlane(side6, clockwise = false)
   }
 
   // ==============================================================
 
   def r() {
-    swapper(
+    moveLine(
       SideLine(side5, SideElem(0,0), SideElem(0,1), SideElem(0,2)),
       SideLine(side2, SideElem(0,0), SideElem(0,1), SideElem(0,2)),
       SideLine(side6, SideElem(0,0), SideElem(0,1), SideElem(0,2)),
       SideLine(side4, SideElem(2,2), SideElem(2,1), SideElem(2,0))
     )
+
+    rotatePlane(side3, clockwise = false)
   }
 
   def f() {
-    swapper(
+    moveLine(
       SideLine(side5, SideElem(0,0), SideElem(0,1), SideElem(0,2)),
       SideLine(side4, SideElem(2,2), SideElem(2,1), SideElem(2,0)),
       SideLine(side6, SideElem(0,0), SideElem(0,1), SideElem(0,2)),
       SideLine(side2, SideElem(0,0), SideElem(0,1), SideElem(0,2))
     )
+
+    rotatePlane(side3, clockwise = true)
   }
 
   // ==============================================================
 
   def t() {
-    swapper(
+    moveLine(
       SideLine(side5, SideElem(1,0), SideElem(1,1), SideElem(1,2)),
       SideLine(side2, SideElem(1,0), SideElem(1,1), SideElem(1,2)),
       SideLine(side6, SideElem(1,0), SideElem(1,1), SideElem(1,2)),
@@ -201,7 +230,7 @@ class RubicCube(val side1_center:Vec, elem_size:Int) {
   }
 
   def g() {
-    swapper(
+    moveLine(
       SideLine(side5, SideElem(1,0), SideElem(1,1), SideElem(1,2)),
       SideLine(side4, SideElem(1,2), SideElem(1,1), SideElem(1,0)),
       SideLine(side6, SideElem(1,0), SideElem(1,1), SideElem(1,2)),
@@ -212,47 +241,55 @@ class RubicCube(val side1_center:Vec, elem_size:Int) {
   // ==============================================================
 
   def y() {
-    swapper(
+    moveLine(
       SideLine(side5, SideElem(2,0), SideElem(2,1), SideElem(2,2)),
       SideLine(side2, SideElem(2,0), SideElem(2,1), SideElem(2,2)),
       SideLine(side6, SideElem(2,0), SideElem(2,1), SideElem(2,2)),
       SideLine(side4, SideElem(0,2), SideElem(0,1), SideElem(0,0))
     )
+
+    rotatePlane(side1, clockwise = true)
   }
 
   def h() {
-    swapper(
+    moveLine(
       SideLine(side5, SideElem(2,0), SideElem(2,1), SideElem(2,2)),
       SideLine(side4, SideElem(0,2), SideElem(0,1), SideElem(0,0)),
       SideLine(side6, SideElem(2,0), SideElem(2,1), SideElem(2,2)),
       SideLine(side2, SideElem(2,0), SideElem(2,1), SideElem(2,2))
     )
+
+    rotatePlane(side1, clockwise = false)
   }
 
   // ==============================================================
 
   def u() {
-    swapper(
+    moveLine(
       SideLine(side5, SideElem(0,0), SideElem(1,0), SideElem(2,0)),
       SideLine(side1, SideElem(2,0), SideElem(2,1), SideElem(2,2)),
       SideLine(side6, SideElem(2,2), SideElem(1,2), SideElem(0,2)),
       SideLine(side3, SideElem(0,2), SideElem(0,1), SideElem(0,0))
     )
+
+    rotatePlane(side4, clockwise = false)
   }
 
   def j() {
-    swapper(
+    moveLine(
       SideLine(side5, SideElem(0,0), SideElem(1,0), SideElem(2,0)),
       SideLine(side3, SideElem(0,2), SideElem(0,1), SideElem(0,0)),
       SideLine(side6, SideElem(2,2), SideElem(1,2), SideElem(0,2)),
       SideLine(side1, SideElem(2,0), SideElem(2,1), SideElem(2,2))
     )
+
+    rotatePlane(side4, clockwise = true)
   }
 
   // ==============================================================
 
   def i() {
-    swapper(
+    moveLine(
       SideLine(side5, SideElem(0,1), SideElem(1,1), SideElem(2,1)),
       SideLine(side1, SideElem(1,0), SideElem(1,1), SideElem(1,2)),
       SideLine(side6, SideElem(2,1), SideElem(1,1), SideElem(0,1)),
@@ -261,7 +298,7 @@ class RubicCube(val side1_center:Vec, elem_size:Int) {
   }
 
   def k() {
-    swapper(
+    moveLine(
       SideLine(side5, SideElem(0,1), SideElem(1,1), SideElem(2,1)),
       SideLine(side3, SideElem(1,2), SideElem(1,1), SideElem(1,0)),
       SideLine(side6, SideElem(2,1), SideElem(1,1), SideElem(0,1)),
@@ -272,21 +309,23 @@ class RubicCube(val side1_center:Vec, elem_size:Int) {
   // ==============================================================
 
   def o() {
-    swapper(
+    moveLine(
       SideLine(side5, SideElem(0,2), SideElem(1,2), SideElem(2,2)),
       SideLine(side1, SideElem(0,0), SideElem(0,1), SideElem(0,2)),
       SideLine(side6, SideElem(2,0), SideElem(1,0), SideElem(0,0)),
       SideLine(side3, SideElem(2,2), SideElem(2,1), SideElem(2,0))
     )
+    rotatePlane(side2, clockwise = false)
   }
 
   def l() {
-    swapper(
+    moveLine(
       SideLine(side5, SideElem(0,2), SideElem(1,2), SideElem(2,2)),
       SideLine(side3, SideElem(2,2), SideElem(2,1), SideElem(2,0)),
       SideLine(side6, SideElem(2,0), SideElem(1,0), SideElem(0,0)),
       SideLine(side1, SideElem(0,0), SideElem(0,1), SideElem(0,2))
     )
+    rotatePlane(side2, clockwise = true)
   }
 }
 
@@ -311,6 +350,8 @@ object TestApp extends ScageScreenApp("Test", 800, 600) {
   keyIgnorePause(KEY_K, onKeyDown = rubic.k())
   keyIgnorePause(KEY_O, onKeyDown = rubic.o())
   keyIgnorePause(KEY_L, onKeyDown = rubic.l())
+
+  keyIgnorePause(KEY_SPACE, onKeyDown = rubic.reset())
 
   render {
     rubic.draw()
