@@ -12,19 +12,19 @@ case object RubicYellow extends RubicElementColor
 
 case class RubicElement(color:ScageColor, position:Int)
 
-class RubicCube(val side1_center:Vec, elem_size:Int) {
-  val side2_center = side1_center + Vec(0, elem_size*3)
-  val side3_center = side1_center + Vec(0, elem_size*6)
-  val side4_center = side1_center + Vec(0, elem_size*9)
-  val side5_center = side1_center + Vec(-elem_size*3, elem_size*3)
-  val side6_center = side1_center + Vec(elem_size*3, elem_size*3)
+class RubicCube(side1_center:Vec, elem_size:Int) {
+  private val side2_center = side1_center + Vec(0, elem_size*3)
+  private val side3_center = side1_center + Vec(0, elem_size*6)
+  private val side4_center = side1_center + Vec(0, elem_size*9)
+  private val side5_center = side1_center + Vec(-elem_size*3, elem_size*3)
+  private val side6_center = side1_center + Vec(elem_size*3, elem_size*3)
 
-  val side1 = Array.ofDim[RubicElement](3, 3)
-  val side2 = Array.ofDim[RubicElement](3, 3)
-  val side3 = Array.ofDim[RubicElement](3, 3)
-  val side4 = Array.ofDim[RubicElement](3, 3)
-  val side5 = Array.ofDim[RubicElement](3, 3)
-  val side6 = Array.ofDim[RubicElement](3, 3)
+  private var side1 = Array.ofDim[RubicElement](3, 3)
+  private var side2 = Array.ofDim[RubicElement](3, 3)
+  private var side3 = Array.ofDim[RubicElement](3, 3)
+  private var side4 = Array.ofDim[RubicElement](3, 3)
+  private var side5 = Array.ofDim[RubicElement](3, 3)
+  private var side6 = Array.ofDim[RubicElement](3, 3)
 
   def reset() {
     for {
@@ -124,6 +124,62 @@ class RubicCube(val side1_center:Vec, elem_size:Int) {
       side(2)(1) = side(1)(0)
       side(1)(0) = tmp2
     }
+  }
+
+  def rotateUp() {
+    val tmp = side1
+    side1 = side4
+    side4 = side3
+    side3 = side2
+    side2 = tmp
+
+    rotatePlane(side5, clockwise = false)
+    rotatePlane(side6, clockwise = true)
+  }
+
+  def rotateDown() {
+    val tmp = side1
+    side1 = side2
+    side2 = side3
+    side3 = side4
+    side4 = tmp
+
+    rotatePlane(side5, clockwise = true)
+    rotatePlane(side6, clockwise = false)
+  }
+
+  def rotateRight() {
+    rotatePlane(side4, clockwise = true)
+    rotatePlane(side4, clockwise = true)
+
+    rotatePlane(side6, clockwise = true)
+    rotatePlane(side6, clockwise = true)
+
+    val tmp = side2
+    side2 = side5
+    side5 = side4
+    side4 = side6
+    side6 = tmp
+
+    rotatePlane(side1, clockwise = true)
+    rotatePlane(side3, clockwise = false)
+  }
+
+  def rotateLeft() {
+    rotatePlane(side4, clockwise = true)
+    rotatePlane(side4, clockwise = true)
+
+    rotatePlane(side5, clockwise = true)
+    rotatePlane(side5, clockwise = true)
+
+    val tmp = side2
+    side2 = side6
+    side6 = side4
+    side4 = side5
+    side5 = tmp
+
+    rotatePlane(side1, clockwise = false)
+    rotatePlane(side3, clockwise = true)
   }
 
   // ==============================================================
@@ -352,6 +408,11 @@ object TestApp extends ScageScreenApp("Test", 800, 600) {
   keyIgnorePause(KEY_L, onKeyDown = rubic.l())
 
   keyIgnorePause(KEY_SPACE, onKeyDown = rubic.reset())
+
+  keyIgnorePause(KEY_UP, onKeyDown = rubic.rotateUp())
+  keyIgnorePause(KEY_DOWN, onKeyDown = rubic.rotateDown())
+  keyIgnorePause(KEY_RIGHT, onKeyDown = rubic.rotateRight())
+  keyIgnorePause(KEY_LEFT, onKeyDown = rubic.rotateLeft())
 
   render {
     rubic.draw()
