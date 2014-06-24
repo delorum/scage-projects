@@ -2,16 +2,6 @@ package com.github.dunnololda.scageprojects.rubic
 
 import com.github.dunnololda.scage.ScageLib._
 
-sealed trait RubicElementColor
-case object RubicRed extends RubicElementColor
-case object RubicBlue extends RubicElementColor
-case object RubicOrange extends RubicElementColor
-case object RubicGreen extends RubicElementColor
-case object RubicWhite extends RubicElementColor
-case object RubicYellow extends RubicElementColor
-
-case class RubicElement(color:ScageColor, position:Int)
-
 class RubicCube(side1_center:Vec, elem_size:Int) {
   private val side2_center = side1_center + Vec(0, elem_size*3)
   private val side3_center = side1_center + Vec(0, elem_size*6)
@@ -147,7 +137,7 @@ class RubicCube(side1_center:Vec, elem_size:Int) {
     }
   }
 
-  def rotateUp() {
+  def rotateRightAroundSide6() {
     val tmp = side1
     side1 = side4
     side4 = side3
@@ -158,7 +148,7 @@ class RubicCube(side1_center:Vec, elem_size:Int) {
     rotatePlane(side6, clockwise = true)
   }
 
-  def rotateDown() {
+  def rotateLeftAroundSide6() {
     val tmp = side1
     side1 = side2
     side2 = side3
@@ -169,7 +159,7 @@ class RubicCube(side1_center:Vec, elem_size:Int) {
     rotatePlane(side6, clockwise = false)
   }
 
-  def rotateRight() {
+  def rotateRightAroundSide1() {
     rotatePlane(side4, clockwise = true)
     rotatePlane(side4, clockwise = true)
 
@@ -186,7 +176,7 @@ class RubicCube(side1_center:Vec, elem_size:Int) {
     rotatePlane(side3, clockwise = false)
   }
 
-  def rotateLeft() {
+  def rotateLeftAroundSide1() {
     rotatePlane(side4, clockwise = true)
     rotatePlane(side4, clockwise = true)
 
@@ -201,6 +191,38 @@ class RubicCube(side1_center:Vec, elem_size:Int) {
 
     rotatePlane(side1, clockwise = false)
     rotatePlane(side3, clockwise = true)
+  }
+
+  def rotateRightAroundSide2() {
+    rotatePlane(side2, clockwise = true)
+    rotatePlane(side4, clockwise = false)
+
+    rotatePlane(side5, clockwise = true)
+    rotatePlane(side3, clockwise = true)
+    rotatePlane(side6, clockwise = true)
+    rotatePlane(side1, clockwise = true)
+
+    val tmp = side5
+    side5 = side1
+    side1 = side6
+    side6 = side3
+    side3 = tmp
+  }
+
+  def rotateLeftAroundSide2() {
+    rotatePlane(side2, clockwise = false)
+    rotatePlane(side4, clockwise = true)
+
+    rotatePlane(side5, clockwise = false)
+    rotatePlane(side3, clockwise = false)
+    rotatePlane(side6, clockwise = false)
+    rotatePlane(side1, clockwise = false)
+
+    val tmp = side5
+    side5 = side3
+    side3 = side6
+    side6 = side1
+    side1 = tmp
   }
 
   def command(command:Char) {
@@ -426,58 +448,5 @@ class RubicCube(side1_center:Vec, elem_size:Int) {
       SideLine(side1, SideElem(0,0), SideElem(0,1), SideElem(0,2))
     )
     rotatePlane(side2, clockwise = true)
-  }
-}
-
-object TestApp extends ScageScreenApp("Test", 800, 600) {
-  private val rubic = new RubicCube(center + Vec(0, -30*4), 30)
-  private val commands = collection.mutable.ArrayBuffer[Char]()
-
-  keyIgnorePause(KEY_Q, onKeyDown = {Predef.print("Q"); rubic.q()})
-  keyIgnorePause(KEY_A, onKeyDown = {Predef.print("A"); rubic.a()})
-  keyIgnorePause(KEY_W, onKeyDown = {Predef.print("W"); rubic.w()})
-  keyIgnorePause(KEY_S, onKeyDown = {Predef.print("S"); rubic.s()})
-  keyIgnorePause(KEY_E, onKeyDown = {Predef.print("E"); rubic.e()})
-  keyIgnorePause(KEY_D, onKeyDown = {Predef.print("D"); rubic.d()})
-  keyIgnorePause(KEY_R, onKeyDown = {Predef.print("R"); rubic.r()})
-  keyIgnorePause(KEY_F, onKeyDown = {Predef.print("F"); rubic.f()})
-  keyIgnorePause(KEY_T, onKeyDown = {Predef.print("T"); rubic.t()})
-  keyIgnorePause(KEY_G, onKeyDown = {Predef.print("G"); rubic.g()})
-  keyIgnorePause(KEY_Y, onKeyDown = {Predef.print("Y"); rubic.y()})
-  keyIgnorePause(KEY_H, onKeyDown = {Predef.print("H"); rubic.h()})
-  keyIgnorePause(KEY_U, onKeyDown = {Predef.print("U"); rubic.u()})
-  keyIgnorePause(KEY_J, onKeyDown = {Predef.print("J"); rubic.j()})
-  keyIgnorePause(KEY_I, onKeyDown = {Predef.print("I"); rubic.i()})
-  keyIgnorePause(KEY_K, onKeyDown = {Predef.print("K"); rubic.k()})
-  keyIgnorePause(KEY_O, onKeyDown = {Predef.print("O"); rubic.o()})
-  keyIgnorePause(KEY_L, onKeyDown = {Predef.print("L"); rubic.l()})
-
-  keyIgnorePause(KEY_SPACE, onKeyDown = {Predef.println(); rubic.reset()})
-
-  keyIgnorePause(KEY_UP, onKeyDown = rubic.rotateUp())
-  keyIgnorePause(KEY_DOWN, onKeyDown = rubic.rotateDown())
-  keyIgnorePause(KEY_RIGHT, onKeyDown = rubic.rotateRight())
-  keyIgnorePause(KEY_LEFT, onKeyDown = rubic.rotateLeft())
-
-  keyIgnorePause(KEY_1, onKeyDown = commands ++= "WLWLWLWWLWLWLWLL")
-  keyIgnorePause(KEY_2, onKeyDown = commands ++= "WLWLWLWOWLWLWLWO")
-  keyIgnorePause(KEY_3, onKeyDown = commands ++= "YYLWLLSLYY")
-  keyIgnorePause(KEY_4, onKeyDown = commands ++= "YYOWLLSOYY")
-  keyIgnorePause(KEY_5, onKeyDown = commands ++= "WWLLWWLL")
-  keyIgnorePause(KEY_6, onKeyDown = commands ++= "EELLQQJJEELLQQJJEELLQQJJ")
-  keyIgnorePause(KEY_7, onKeyDown = commands ++= "EHDYEHDYLEHDYEHDYEHDYEHDYO")
-  keyIgnorePause(KEY_8, onKeyDown = commands ++= "EHDYEHDYOEHDYEHDYEHDYEHDYL")
-  keyIgnorePause(KEY_9, onKeyDown = commands ++= "EIEIEIEIOEIEIEIEIL")
-  keyIgnorePause(KEY_0, onKeyDown = commands ++= "EIEIEIEILEIEIEIEIO")
-
-  actionIgnorePause(100) {
-    if(commands.nonEmpty) {
-      val command = commands.remove(0)
-      rubic.command(command)
-    }
-  }
-
-  render {
-    rubic.draw()
   }
 }
