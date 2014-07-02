@@ -354,21 +354,21 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
   keyIgnorePause(KEY_ADD, 100, onKeyDown = {
     timeMultiplier += 1
-  })
+  }, onKeyUp = updateFutureTrajectory())
   keyIgnorePause(KEY_SUBTRACT, 100, onKeyDown = {
     if(_time_mulitplier > 1) {
       timeMultiplier -= 1
     }
-  })
+  }, onKeyUp = updateFutureTrajectory())
 
   keyIgnorePause(KEY_MULTIPLY, 100, onKeyDown = {
     timeMultiplier += 40
-  })
+  }, onKeyUp = updateFutureTrajectory())
   keyIgnorePause(KEY_DIVIDE, 100, onKeyDown = {
     if (_time_mulitplier != 1) {
       timeMultiplier = 1
     }
-  })
+  }, onKeyUp = updateFutureTrajectory())
 
   keyIgnorePause(KEY_W, 10, onKeyDown = {freeCenter(); _center += Vec(0, 5/globalScale)})
   keyIgnorePause(KEY_A, 10, onKeyDown = {freeCenter(); _center += Vec(-5/globalScale, 0)})
@@ -512,7 +512,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
       print(s"Время: ${timeStr((_tacts*base_dt*1000f).toLong)}",
         20, heights.next(), ORANGE)
-      print(s"Ускорение времени: x${_time_mulitplier}",
+      print(f"Ускорение времени: x${_time_mulitplier/100f}%.2f",
         20, heights.next(), ORANGE)
 
       print("", 20, heights.next(), ORANGE)
