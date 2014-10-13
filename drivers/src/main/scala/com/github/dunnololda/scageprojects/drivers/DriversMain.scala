@@ -4,7 +4,7 @@ import com.github.dunnololda.scage.ScageLib._
 
 // 5px = 1m
 
-object DriversMain extends ScageScreenApp("Drivers", 1280, 1024) {
+object DriversMain extends ScageScreenApp("Drivers", 800, 600) {
   val car = new Car(Vec(400+7, 300), this)
 
   key(KEY_UP,     50, onKeyDown = car.speed += 0.5f)
@@ -27,7 +27,7 @@ object DriversMain extends ScageScreenApp("Drivers", 1280, 1024) {
 
   key(KEY_Q, onKeyDown = {if(keyPressed(KEY_LCONTROL)) stopApp()})
 
-  center = car.carCenter+Vec(0,100)
+  center = car.carCenter/*+Vec(0,100)*/
   globalScale = 3
   rotationPoint = car.carCenter
   rotationAngleDeg = -car.rotation
@@ -141,14 +141,6 @@ object DriversMain extends ScageScreenApp("Drivers", 1280, 1024) {
     //print(f"wheels rotation: ${car.frontWheelsRotation}%.0f deg", 20, 60, WHITE)
     print(f"rotation: ${car.rotation}%.0f deg", 20, 40, WHITE)
     print(f"speed: ${car.speed/5}%.0f m/s; ${car.speed/5*3.6}%.0f km/h", 20, 20, WHITE)
-  }
-
-  def drawDashedLine(from:Vec, to:Vec, dash_len:Float, color:ScageColor): Unit = {
-    val line_len = (to - from).norma
-    val normal = (to - from).n
-    (0f to line_len-dash_len by dash_len*2).foreach {
-      case dash_from => drawLine(from + normal*dash_from, from+normal*(dash_from + dash_len), color)
-    }
   }
 }
 
