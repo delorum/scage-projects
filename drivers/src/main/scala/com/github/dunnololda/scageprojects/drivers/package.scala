@@ -19,23 +19,21 @@ package object drivers {
     Возвращает мапу: узел графа -> (кратчайший путь до него, стоимость пути)
   */
   def dijkstra(from:Int, network:Map[Int, List[(Int, Int)]]):Map[Int, (List[Int], Int)] = {
-    val checked = collection.mutable.HashSet[Int]()
-    val result  = collection.mutable.HashMap[Int, (collection.mutable.ListBuffer[Int], Int)](from -> (collection.mutable.ListBuffer[Int](from), 0))
+    val result  = collection.mutable.HashMap[Int, (List[Int], Int)](from -> (List(from), 0))
 
-    def _nextNode(node:Int, path_here:collection.mutable.ListBuffer[Int]) {
+    def _nextNode(node:Int, path_here:List[Int], checked:Set[Int]) {
       val neighbours = network(node).filterNot(x => checked.contains(x._1))
       for {
         neighbour <- neighbours
-        path_to_neighbour = path_here += neighbour._1
+        path_to_neighbour = path_here ::: List(neighbour._1)
         neighbour_w = result(node)._2 + neighbour._2
         (cur_neighbour_path, cur_neighbour_w) = result.getOrElseUpdate(neighbour._1, (path_to_neighbour, neighbour_w))
       } {
         if(neighbour_w < cur_neighbour_w) result(neighbour._1) = (path_to_neighbour, neighbour_w)
-        checked += node
       }
-      neighbours.foreach(x => _nextNode(x._1, path_here += x._1))
+      neighbours.foreach(x => _nextNode(x._1, path_here ::: List(x._1), checked + node))
     }
-    _nextNode(from, collection.mutable.ListBuffer[Int](from))
+    _nextNode(from, List(from), Set())
 
     result.map(kv => (kv._1, (kv._2._1.toList, kv._2._2))).toMap
   }
@@ -47,23 +45,21 @@ package object drivers {
     Параметр network описывает граф: мапа узел графа -> список возможных переходов из данного узла
     Возвращает мапу: узел графа -> кратчайший путь до него
   */
-  def dijkstra1(from:Int, network:Map[Int, List[Int]]):Map[Int, List[Int]] = {
-    val checked = collection.mutable.HashSet[Int]()
-    val result  = collection.mutable.HashMap[Int, collection.mutable.ListBuffer[Int]](from -> collection.mutable.ListBuffer[Int](from))
+  def dijkstra1(from:Vec, network:Map[Vec, List[Vec]]):Map[Vec, List[Vec]] = {
+    val result  = collection.mutable.HashMap[Vec, List[Vec]](from -> List(from))
 
-    def _nextNode(node:Int, path_here:collection.mutable.ListBuffer[Int]) {
+    def _nextNode(node:Vec, path_here:List[Vec], checked:Set[Vec]) {
       val neighbours = network(node).filterNot(x => checked.contains(x))
       for {
         neighbour <- neighbours
-        path_to_neighbour = path_here += neighbour
+        path_to_neighbour = path_here ::: List(neighbour)
         cur_neighbour_path= result.getOrElseUpdate(neighbour, path_to_neighbour)
       } {
         if(path_to_neighbour.length < cur_neighbour_path.length) result(neighbour) = path_to_neighbour
-        checked += node
       }
-      neighbours.foreach(x => _nextNode(x, path_here += x))
+      neighbours.foreach(x => _nextNode(x, path_here ::: List(x), checked + node))
     }
-    _nextNode(from, collection.mutable.ListBuffer[Int](from))
+    _nextNode(from, List(from), Set())
 
     result.map(kv => (kv._1, kv._2.toList)).toMap
   }

@@ -1,31 +1,35 @@
 package com.github.dunnololda.scageprojects.drivers
 
-import java.io.FileOutputStream
-
 import com.github.dunnololda.scage.ScageLib._
-
-import scala.collection.mutable
+import com.github.dunnololda.scageprojects.drivers.RoadMap._
 import scala.collection.mutable.ArrayBuffer
 
 object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
-  val ROADS_MODE = 1
-  val CROSSROADS_MODE = 2
-  val NETWORK_MODE = 3
+  private val map_name = "map.txt"
+
+  private val ROADS_MODE = 1
+  private val CROSSROADS_MODE = 2
+  private val NETWORK_MODE = 3
+  private val PATH_FINDING = 4
   
   private var mode = ROADS_MODE
   
   private var _center = windowCenter
   private var _road_start:Option[Vec] = None
 
-  private val road_elements = ArrayBuffer[RoadElement]()
-  private var selected_road_element = -1
+  private var selected_map_element = -1
 
-  private val road_network = mutable.HashMap[Vec, ArrayBuffer[Vec]]()
   private var selected_network_element:Option[Vec] = None
+
+  private var find_path_from:Option[Vec] = None
+  private var found_path:List[Vec] = Nil
+
+  loadMap(map_name)
 
   key(KEY_1, onKeyDown = mode = ROADS_MODE)
   key(KEY_2, onKeyDown = mode = CROSSROADS_MODE)
   key(KEY_3, onKeyDown = mode = NETWORK_MODE)
+  key(KEY_4, onKeyDown = mode = PATH_FINDING)
 
   key(KEY_W, 100, onKeyDown = _center += Vec(0, 5))
   key(KEY_A, 100, onKeyDown = _center -= Vec(5, 0))
@@ -33,16 +37,16 @@ object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
   key(KEY_D, 100, onKeyDown = _center += Vec(5, 0))
 
   key(KEY_LEFT, onKeyDown = {
-    if(road_elements.nonEmpty) {
-      selected_road_element += 1
-      if(selected_road_element >= road_elements.length) selected_road_element = -1
-    } else selected_road_element = -1
+    if(map_elements.nonEmpty) {
+      selected_map_element += 1
+      if(selected_map_element >= map_elements.length) selected_map_element = -1
+    } else selected_map_element = -1
   })
   key(KEY_RIGHT, onKeyDown = {
-    if(road_elements.nonEmpty) {
-      selected_road_element -= 1
-      if(selected_road_element <= -2) selected_road_element = road_elements.length-1
-    } else selected_road_element = -1
+    if(map_elements.nonEmpty) {
+      selected_map_element -= 1
+      if(selected_map_element <= -2) selected_map_element = map_elements.length-1
+    } else selected_map_element = -1
   })
 
   key(KEY_ESCAPE, onKeyDown = {
@@ -53,17 +57,7 @@ object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
   })
 
   key(KEY_F5, onKeyDown = {
-    val fos = new FileOutputStream("map.txt")
-    road_elements.foreach {
-      case TwoLinesEachSide(from, to) => fos.write(s"TwoLinesEachSide ${from.x}:${from.y} ${to.x}:${to.y}\n".getBytes)
-      case CrossRoad(pos, roads) => fos.write(s"CrossRoad ${pos.x}:${pos.y}\n".getBytes)
-    }
-    road_network.foreach {
-      case (network_point, connections) =>
-        fos.write(s"NetworkPoint ${network_point.x}:${network_point.y} -> ${connections.map(p => s"${p.x}:${p.y}").mkString(" ")}\n".getBytes)
-    }
-    fos.close()
-    println("map saved")
+    RoadMap.saveMap(map_name)
   })
 
   key(KEY_Q, onKeyDown = {if(keyPressed(KEY_LCONTROL)) stopApp()})
@@ -73,7 +67,7 @@ object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
       case ROADS_MODE =>
         _road_start match {
           case Some(from) =>
-            road_elements += TwoLinesEachSide(from, nearestPoint(scaledCoord(m)))
+            map_elements += FourLaneRoad(from, nearestPoint(scaledCoord(m)))
             _road_start = None
           case None =>
             _road_start = Some(nearestPoint(scaledCoord(m)))
@@ -86,11 +80,11 @@ object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
           pos + Vec(  0,  30),
           pos + Vec(  0, -30)
         )
-        val roads = road_elements.filter {
+        /*val roads = road_elements.filter {
           case TwoLinesEachSide(from, to) => four_ends.contains(from) || four_ends.contains(to)
           case _ => false
-        }.toList
-        road_elements += CrossRoad(pos, roads)
+        }.toList*/
+        map_elements += CrossRoad(pos/*, roads*/)
       case NETWORK_MODE =>
         val pos = nearestPoint(scaledCoord(m))
         if(!road_network.contains(pos)) {
@@ -102,6 +96,18 @@ object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
           case _ =>
         }
         selected_network_element = Some(pos)
+      case PATH_FINDING =>
+        val pos = scaledCoord(m)
+        if(find_path_from.isEmpty) {
+          find_path_from = road_network.keys.toList.sortBy(_.dist2(pos)).headOption
+          found_path = Nil
+        } else {
+          val find_path_to = road_network.keys.toList.sortBy(_.dist2(pos)).headOption
+          if(find_path_to.nonEmpty) {
+            found_path = dijkstra1(find_path_from.get, road_network.map(kv => (kv._1, kv._2.toList)).toMap).getOrElse(find_path_to.get, Nil)
+          }
+          find_path_from = None
+        }
       case _ =>
     }
   })
@@ -112,9 +118,9 @@ object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
       case None =>
         mode match {
           case ROADS_MODE | CROSSROADS_MODE =>
-            if(selected_road_element != -1 && road_elements.nonEmpty && selected_road_element >= 0 && selected_road_element < road_elements.length) {
-              road_elements.remove(selected_road_element)
-              if(selected_road_element >= road_elements.length) selected_road_element = -1
+            if(selected_map_element != -1 && map_elements.nonEmpty && selected_map_element >= 0 && selected_map_element < map_elements.length) {
+              map_elements.remove(selected_map_element)
+              if(selected_map_element >= map_elements.length) selected_map_element = -1
             }
           case NETWORK_MODE =>
             selected_network_element match {
@@ -124,6 +130,8 @@ object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
                 selected_network_element = None
               case None =>
             }
+          case PATH_FINDING =>
+            find_path_from = None
           case _ =>
         }
     }
@@ -143,14 +151,12 @@ object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
   render {
     (-5000 to 5000 by 15).foreach(x => drawLine(Vec(x, -5000), Vec(x, 5000), DARK_GRAY))
     (-5000 to 5000 by 15).foreach(y => drawLine(Vec(-5000, y), Vec(5000, y), DARK_GRAY))
-    road_elements.zipWithIndex.foreach {
+    map_elements.zipWithIndex.foreach {
       case (road, idx) =>
-        openglLocalTransform {
-          if(idx == selected_road_element) {
-            road.drawSelf(RED)
-          } else {
-            road.drawSelf(WHITE)
-          }
+        if(idx == selected_map_element) {
+          road.drawSelf(RED)
+        } else {
+          road.drawSelf(WHITE)
         }
     }
     road_network.foreach {
@@ -165,6 +171,15 @@ object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
             drawLine(to, to+v1, color)
             drawLine(to, to+v2, color)
         }
+    }
+    find_path_from.foreach(p => drawCircle(p, 4, RED))
+    found_path.sliding(2).foreach {
+      case List(from ,to) =>
+        drawCircle(from, 4, RED)
+        drawCircle(to, 4, RED)
+        drawLine(from ,to, RED)
+      case List(from) =>
+        drawCircle(from, 4, RED)
     }
     mode match {
       case ROADS_MODE =>
@@ -236,19 +251,23 @@ object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
         print("Mode: Crossroads", 20, 20, WHITE)
       case NETWORK_MODE =>
         print("Mode: Network", 20, 20, WHITE)
+      case PATH_FINDING =>
+        print("Mode: Path Finding", 20, 20, WHITE)
       case _ =>
     }
   }
 
-  def nearestPoint(v:Vec):Vec = {
+  private def nearestPoint(v:Vec):Vec = {
     Vec(v.ix/15*15-5, v.iy/15*15-5)
   }
 }
 
-sealed trait RoadElement {
+sealed trait MapElement
+
+trait DrawableElement {
   def drawSelf(color:ScageColor)
 }
-case class TwoLinesEachSide(from:Vec, to:Vec) extends RoadElement {
+case class FourLaneRoad(from:Vec, to:Vec) extends MapElement with DrawableElement {
   val road_length_meters = (to - from).norma/5f
   val n = (to - from).n
   val n_turn_1 = n.rotateDeg(90)
@@ -288,9 +307,11 @@ case class TwoLinesEachSide(from:Vec, to:Vec) extends RoadElement {
     drawArrow(to+meters_legend_n_turn*35, from+meters_legend_n_turn*35)
 
     // надпись
-    openglMove(from+meters_legend_n_turn*40 + (to - from)/2f)
-    openglRotate(meters_legend_rotation)
-    print(f"$road_length_meters%.1f m", Vec.zero, max_font_size/RoadsCreator.globalScale, WHITE, "center")
+    openglLocalTransform {
+      openglMove(from + meters_legend_n_turn * 40 + (to - from) / 2f)
+      openglRotate(meters_legend_rotation)
+      print(f"$road_length_meters%.1f m", Vec.zero, max_font_size / RoadsCreator.globalScale, WHITE, "center")
+    }
   }
 
   private def drawArrow(x:Vec, y:Vec): Unit = {
@@ -301,12 +322,12 @@ case class TwoLinesEachSide(from:Vec, to:Vec) extends RoadElement {
   }
 }
 
-case class CrossRoad(pos:Vec, roads:List[RoadElement]) extends RoadElement {
+case class CrossRoad(pos:Vec/*, roads:List[RoadElement]*/) extends MapElement with DrawableElement {
   val up_end    = pos+Vec(  0,  30)
   val down_end  = pos+Vec(  0, -30)
   val right_end = pos+Vec( 30,   0)
   val left_end  = pos+Vec(-30,   0)
-  override def drawSelf(color: ScageColor): Unit = {
+  override def drawSelf(color: ScageColor) {
     /*roads.length match {
       case 2 =>
       case 3 =>
@@ -316,3 +337,8 @@ case class CrossRoad(pos:Vec, roads:List[RoadElement]) extends RoadElement {
     drawRectCentered(pos, 60, 60, color)
   }
 }
+
+case class NetworkPoint(point:Vec, other_points:List[Vec]) extends MapElement {
+  
+}
+

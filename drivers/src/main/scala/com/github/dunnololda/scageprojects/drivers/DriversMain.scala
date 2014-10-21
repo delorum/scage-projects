@@ -1,11 +1,15 @@
 package com.github.dunnololda.scageprojects.drivers
 
 import com.github.dunnololda.scage.ScageLib._
+import com.github.dunnololda.scageprojects.drivers.RoadMap._
 
 // 5px = 1m
 
 object DriversMain extends ScageScreenApp("Drivers", 800, 600) {
-  val car = new Car(Vec(400+7, 300), this)
+  val map_name = "map.txt"
+  loadMap(map_name)
+
+  private val car = new Car(road_network.keys.head, 0, this)
 
   key(KEY_UP,     50, onKeyDown = car.speed += 0.5f)
   key(KEY_DOWN,   50, onKeyDown = car.speed -= 0.5f)
@@ -32,108 +36,33 @@ object DriversMain extends ScageScreenApp("Drivers", 800, 600) {
   rotationPoint = car.carCenter
   rotationAngleDeg = -car.rotation
 
-  mouseWheelUp(onWheelUp = m => if(globalScale < 4) globalScale += 1)
-  mouseWheelDown(onWheelDown = m => if(globalScale > 1) globalScale -= 1)
-
-  /*render {
-    // границы дороги
-    drawLine(Vec(0, 300+30), Vec(800, 300+30), WHITE)
-    drawLine(Vec(0, 300-30), Vec(800, 300-30), WHITE)
-
-    // двойная сплошная посередине
-    drawLine(Vec(0, 300+1), Vec(800, 300+1), WHITE)
-    drawLine(Vec(0, 300-1), Vec(800, 300-1), WHITE)
-
-
-    // пунктирные линии, разделяющие полосы
-    drawDashedLine(Vec(0, 300+15), Vec(800, 300+15), 5, WHITE)
-    drawDashedLine(Vec(0, 300-15), Vec(800, 300-15), 5, WHITE)
-  }*/
+  mouseWheelUp(onWheelUp = m => {
+    if(globalScale < 1) globalScale += 0.1f
+    else if(globalScale < 4) globalScale += 1
+  })
+  mouseWheelDown(onWheelDown = m => {
+    if(globalScale > 1) globalScale -= 1
+    else if(globalScale > 0.1f) globalScale -= 0.1f
+  })
 
   render {
-    // границы дороги
-    drawLine(Vec(0, 150+30), Vec(370, 150+30), WHITE)
-    drawLine(Vec(0, 150-30), Vec(430, 150-30), WHITE)
-
-    // двойная сплошная посередине
-    drawLine(Vec(0, 150+1), Vec(400-1, 150+1), WHITE)
-    drawLine(Vec(0, 150-1), Vec(400+1, 150-1), WHITE)
-
-    // пунктирные линии, разделяющие полосы
-    drawDashedLine(Vec(0, 150+15), Vec(385, 150+15), 5, WHITE)
-    drawDashedLine(Vec(0, 150-15), Vec(415, 150-15), 5, WHITE)
-
-
-    // границы дороги
-    drawLine(Vec(370, 150+30), Vec(370, 600), WHITE)
-    drawLine(Vec(430, 150-30), Vec(430, 300-30), WHITE)
-    drawLine(Vec(430, 300+30), Vec(430, 600), WHITE)
-
-    // двойная сплошная посередине
-    drawLine(Vec(400-1, 150+1), Vec(400-1, 300-30), WHITE)
-    drawLine(Vec(400+1, 150-1), Vec(400+1, 300-30), WHITE)
-    drawLine(Vec(400-1, 300+30), Vec(400-1, 600), WHITE)
-    drawLine(Vec(400+1, 300+30), Vec(400+1, 600), WHITE)
-
-    // перекресток
-    drawDashedLine(Vec(400, 300-30), Vec(400, 300+30), 5, WHITE)
-
-    // пунктирные линии, разделяющие полосы
-    drawDashedLine(Vec(385, 150+15), Vec(385, 600), 5, WHITE)
-    drawDashedLine(Vec(415, 150-15), Vec(415, 600), 5, WHITE)
-
-
-    // границы дороги
-    drawLine(Vec(430, 300+30), Vec(800, 300+30), WHITE)
-    drawLine(Vec(430, 300-30), Vec(800, 300-30), WHITE)
-
-    // двойная сплошная посередине
-    drawLine(Vec(430, 300+1), Vec(800, 300+1), WHITE)
-    drawLine(Vec(430, 300-1), Vec(800, 300-1), WHITE)
-
-    // пунктирные линии, разделяющие полосы
-    drawDashedLine(Vec(430, 300+15), Vec(800, 300+15), 5, WHITE)
-    drawDashedLine(Vec(430, 300-15), Vec(800, 300-15), 5, WHITE)
-
-
-    // границы дороги
-    drawLine(Vec(0-60, -600-60), Vec(0-60, 600+60), WHITE)
-    drawLine(Vec(0, 150+30), Vec(0, 600), WHITE)
-    drawLine(Vec(0, 150-30), Vec(0, -600), WHITE)
-
-    // двойная сплошная посередине
-    drawLine(Vec(0-30-1, -600-30-1), Vec(0-30-1, 600+30+1), WHITE)
-    drawLine(Vec(0-30+1, -600-30+1), Vec(0-30+1, 600+30-1), WHITE)
-
-    // пунктирные линии, разделяющие полосы
-
-    // границы дороги
-    drawLine(Vec(0-60, 600+60), Vec(800+60, 600+60), WHITE)
-    drawLine(Vec(0, 600), Vec(370, 600), WHITE)
-    drawLine(Vec(430, 600), Vec(800, 600), WHITE)
-
-    // двойная сплошная посередине
-    drawLine(Vec(0-30-1, 600+30+1), Vec(800+30+1, 600+30+1), WHITE)
-    drawLine(Vec(0-30+1, 600+30-1), Vec(800+30-1, 600+30-1), WHITE)
-
-    // пунктирные линии, разделяющие полосы
-
-    // границы дороги
-    drawLine(Vec(800+60, 600+60), Vec(800+60, -600-60), WHITE)
-    drawLine(Vec(800, 600), Vec(800, 300+30), WHITE)
-    drawLine(Vec(800, 300-30), Vec(800, -600), WHITE)
-
-    // двойная сплошная посередине
-
-    // пунктирные линии, разделяющие полосы
-
-    // границы дороги
-    drawLine(Vec(0, -600), Vec(800, -600), WHITE)
-    drawLine(Vec(0-60, -600-60), Vec(800+60, -600-60), WHITE)
-
-    // двойная сплошная посередине
-
-    // пунктирные линии, разделяющие полосы
+    map_elements.zipWithIndex.foreach {
+      case (road, idx) =>
+        road.drawSelf(WHITE)
+    }
+    road_network.foreach {
+      case (elem, connected_to) =>
+        val color = GREEN
+        drawRectCentered(elem, 5, 5, color)
+        connected_to.foreach {
+          case to =>
+            drawLine(elem, to, color)
+            val v1 = (elem - to).n.rotateDeg(15)*3
+            val v2 = (elem - to).n.rotateDeg(-15)*3
+            drawLine(to, to+v1, color)
+            drawLine(to, to+v2, color)
+        }
+    }
   }
 
   interface {
@@ -144,72 +73,3 @@ object DriversMain extends ScageScreenApp("Drivers", 800, 600) {
   }
 }
 
-class Car(start_pos:Vec, screen:Screen) {
-  var speed = 0f
-
-  private var _rotation = 0f        // угол в градусах между вектором Vec(0,1) и текущим направлением машины
-  private lazy val def_vector = Vec(0,1)  // просто чтобы не пересоздавать постоянно
-  def rotation_=(new_rotation:Float) {
-    _rotation = new_rotation % 360
-    car_direction = def_vector.rotateDeg(_rotation).n
-  }
-  def rotation:Float = _rotation
-
-  private var _front_wheels_rotation = 0f        // угол в градусах между вектором Vec(0,1) и текущим направлением машины
-  def frontWheelsRotation_=(new_rotation:Float) {
-    _front_wheels_rotation = new_rotation  }
-  def frontWheelsRotation:Float = _front_wheels_rotation
-
-  var is_wheel_rotating = false
-
-  private var car_center:Vec = start_pos
-  def carCenter = car_center
-
-  private var car_direction = Vec(0,1)
-
-  screen.action {
-    if(speed != 0) {
-      if(math.abs(_front_wheels_rotation) < 1f) _front_wheels_rotation = 0
-      if(_front_wheels_rotation != 0) {
-        // радиус поворота. 18.03 - типа расстояние между осями. Подобрал такой коэффициент, чтобы минимальный радиус разворота была 5.1 метра (при отклонении
-        // колес на 45 градусов), как у шкоды октавии :)
-        val r = 18.03f/math.sin(_front_wheels_rotation/180f*math.Pi)
-
-        // радиус поворота r известен, линейная скорость speed известна, посчитаем угловую по формуле w = v/r
-        val w = speed/r/math.Pi*180f
-
-        // speed у нас в пикселях в 1/60 секунды. r в пикселях. w получилась в градусах в 1/60 секунды
-        rotation += (w/60f).toFloat
-
-        // возвращаем руль на место, если водитель не удерживает его
-        if(!is_wheel_rotating) {
-          if(speed > 0) _front_wheels_rotation -= (w/60f*2).toFloat
-          else if(speed < 0) _front_wheels_rotation += (w/60f*2).toFloat
-        }
-      }
-      car_center += car_direction*speed/60f
-    }
-  }
-
-  screen.render {
-    openglMove(car_center)
-    openglRotateDeg(_rotation)
-    drawRectCentered(Vec.zero, 10, 26, WHITE)
-
-    // передние колеса
-    openglLocalTransform {
-      openglMove(Vec(-5,  26/2-4))
-      openglRotateDeg(_front_wheels_rotation)
-      drawFilledRectCentered(Vec.zero, 1,4, WHITE)
-    }
-    openglLocalTransform {
-      openglMove(Vec(5,  26/2-4))
-      openglRotateDeg(_front_wheels_rotation)
-      drawFilledRectCentered(Vec.zero, 1,4, WHITE)
-    }
-
-    // задние колеса
-    drawFilledRectCentered(Vec(-5, -26/2+4), 1,4, WHITE)
-    drawFilledRectCentered(Vec( 5, -26/2+4), 1,4, WHITE)
-  }
-}
