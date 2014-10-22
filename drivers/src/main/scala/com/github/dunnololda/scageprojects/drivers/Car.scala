@@ -9,6 +9,8 @@ class Car(start_pos:Vec, start_rotation:Float, screen:Screen) {
   private lazy val def_vector = Vec(0,1)  // просто чтобы не пересоздавать постоянно
   def rotation_=(new_rotation:Float) {
     _rotation = new_rotation % 360
+    if(_rotation > 180)       _rotation = _rotation - 360
+    else if(_rotation < -180) _rotation = _rotation + 360
     car_direction = def_vector.rotateDeg(_rotation).n
   }
   def rotation:Float = _rotation
@@ -42,8 +44,8 @@ class Car(start_pos:Vec, start_rotation:Float, screen:Screen) {
 
         // возвращаем руль на место, если водитель не удерживает его
         if(!is_wheel_rotating) {
-          if(speed > 0) _front_wheels_rotation -= (w/60f*2).toFloat
-          else if(speed < 0) _front_wheels_rotation += (w/60f*2).toFloat
+          if(speed > 0) _front_wheels_rotation -= (w/60f).toFloat
+          else if(speed < 0) _front_wheels_rotation += (w/60f).toFloat
         }
       }
       car_center += car_direction*speed/60f

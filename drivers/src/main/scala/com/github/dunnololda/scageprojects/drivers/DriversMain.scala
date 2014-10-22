@@ -3,13 +3,21 @@ package com.github.dunnololda.scageprojects.drivers
 import com.github.dunnololda.scage.ScageLib._
 import com.github.dunnololda.scageprojects.drivers.RoadMap._
 
+import scala.collection.mutable.ArrayBuffer
+
 // 5px = 1m
 
 object DriversMain extends ScageScreenApp("Drivers", 800, 600) {
   val map_name = "map.txt"
   loadMap(map_name)
 
+  private val road_points = RoadMap.road_network.keys.toList
   private val car = new Car(road_network.keys.head, 0, this)
+
+  private val path = ArrayBuffer[Vec]()
+
+  private var need_wheel_rotation = 0f
+  private val def_vector = Vec(0,1)
 
   key(KEY_UP,     50, onKeyDown = car.speed += 0.5f)
   key(KEY_DOWN,   50, onKeyDown = car.speed -= 0.5f)
@@ -45,12 +53,47 @@ object DriversMain extends ScageScreenApp("Drivers", 800, 600) {
     else if(globalScale > 0.1f) globalScale -= 0.1f
   })
 
+  action {
+    if(path.nonEmpty) {
+      val dist = path.head.dist(car.carCenter) / 5f // дистанция в метрах
+      if(dist < 3) path.remove(0)
+    }
+
+    if(path.isEmpty) {
+      val p1 = road_points.sortBy(v => v.dist(car.carCenter)).head
+      val p2 = road_points((math.random*road_points.length).toInt)
+      val new_path = dijkstra1(p1, RoadMap.road_network.map(kv => (kv._1, kv._2.toList)).toMap).getOrElse(p2, Nil)
+      /*val reduced_path = if(path.length > 2) {
+        path.tail.sliding(2).foldLeft((List(path.head), (path.tail.head - path.head).n)) {
+          case ((res, cur_dir), List(from, to)) =>
+            val dir = (to - from).n
+            if(dir == cur_dir) (res, cur_dir) else (res ::: List(from), dir)
+        }
+      } else (path, Vec.zero)
+      reduced_path._1.foreach(ai_car.addWayPoint)*/
+      path ++= new_path
+    } else if(path.length < 20) {
+      val p1 = path.last
+      val p2 = road_points((math.random*road_points.length).toInt)
+      val new_path = dijkstra1(p1, RoadMap.road_network.map(kv => (kv._1, kv._2.toList)).toMap).getOrElse(p2, Nil)
+      path ++= new_path
+    }
+
+    need_wheel_rotation = if(path.nonEmpty) {
+      val need_rotation = (path.head - car.carCenter).mydeg(def_vector)
+      val tmp1 = need_rotation - car.rotation
+      val tmp = if(math.abs(tmp1) < 180) tmp1 else (360 - math.abs(tmp1))*math.signum(tmp1)*(-1)
+      val dist = path.head.dist(car.carCenter) / 5f      // дистанция в метрах
+      if(tmp < 0) math.max(tmp, -45) else math.min(tmp, 45)
+    } else 0
+  }
+
   render {
     map_elements.zipWithIndex.foreach {
       case (road, idx) =>
         road.drawSelf(WHITE)
     }
-    road_network.foreach {
+    /*road_network.foreach {
       case (elem, connected_to) =>
         val color = GREEN
         drawRectCentered(elem, 5, 5, color)
@@ -62,13 +105,25 @@ object DriversMain extends ScageScreenApp("Drivers", 800, 600) {
             drawLine(to, to+v1, color)
             drawLine(to, to+v2, color)
         }
+    }*/
+    path.foreach(pos => drawFilledCircle(pos, 3, WHITE))
+    path.sliding(2).foreach {
+      case Seq(from, to) =>
+        drawLine(from, to, WHITE)
+      case _ =>
     }
   }
 
   interface {
     //print(f"rotation radius: ${18.03f/math.sin(car.frontWheelsRotation/180f*math.Pi)/5f}%.1f m", 20, 80, WHITE)
-    //print(f"wheels rotation: ${car.frontWheelsRotation}%.0f deg", 20, 60, WHITE)
-    print(f"rotation: ${car.rotation}%.0f deg", 20, 40, WHITE)
+
+    print(f"wheels rotation: ${car.frontWheelsRotation}%.0f deg", 20, 100, WHITE)
+    print(f"need wheel rotation is $need_wheel_rotation%.1f deg", 20, 80, WHITE)
+    print(f"rotation: ${car.rotation}%.0f deg", 20, 60, WHITE)
+    if(path.nonEmpty) {
+      val need_rotation = (path.head - car.carCenter).mydeg(def_vector)
+      print(f"need rotation is $need_rotation%.1f deg", 20, 40, WHITE)
+    }
     print(f"speed: ${car.speed/5}%.0f m/s; ${car.speed/5*3.6}%.0f km/h", 20, 20, WHITE)
   }
 }
