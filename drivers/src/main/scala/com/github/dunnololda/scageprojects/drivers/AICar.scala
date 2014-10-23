@@ -126,6 +126,8 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
 
   // AI машины, корректирующий траекторию. Вызывается каждые 100 мсек
   screen.action(100) {
+    val other_cars = AICarTestArea.cars.filterNot(_.index == index)
+
     if(_path.nonEmpty) {
       val need_rotation = (_path.head - car_center).mydeg(def_vector)
       val tmp1 = need_rotation - _rotation
@@ -146,7 +148,7 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
         need_wheels_rotation = if(tmp < 0) math.max(tmp, -45) else math.min(tmp, 45)
       }
 
-      val is_in_collision = {val bs = bodyState(); AICarTestArea.cars.filterNot(_.index == index).exists(car => maybeCollision(bs, car.bodyState()).nonEmpty)}
+      val is_in_collision = {val bs = bodyState(); other_cars.exists(car => maybeCollision(bs, car.bodyState()).nonEmpty)}
       need_speed = if(is_in_collision) {
         5f
       } else {
@@ -170,19 +172,26 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
     // просчитываем позицию машины через 5 секунд при данной скорости
     // если намечается столкновение, сбрасываем скорость до нуля
     val state_after = bodyState(AICarTestArea.seconds)
-    val state_after2 = bodyState(AICarTestArea.seconds, need_speed, need_wheels_rotation)
-    if(AICarTestArea.cars.filterNot(_.index == index).exists(car => {
+    if(other_cars.exists(car => {
       val car_state = car.bodyState(AICarTestArea.seconds)
       maybeCollision(state_after, car_state).nonEmpty
     })) {
       need_speed = 0
     }
-    if(AICarTestArea.cars.filterNot(_.index == index).exists(car => {
+
+    val state_after2 = bodyState(AICarTestArea.seconds, need_speed, need_wheels_rotation)
+    if(other_cars.exists(car => {
       val car_state = car.bodyState(AICarTestArea.seconds)
       maybeCollision(state_after2, car_state).nonEmpty
     })) {
-      need_speed = -5
-      need_wheels_rotation = 0
+      val state_after3 = bodyState(AICarTestArea.seconds, -5, 0)
+      if(!other_cars.exists(car => {
+        val car_state = car.bodyState(AICarTestArea.seconds)
+        maybeCollision(state_after3, car_state).nonEmpty
+      })) {
+        need_speed = -5
+        need_wheels_rotation = 0
+      } else need_speed = 0
     }
 
     if(_path.nonEmpty) {

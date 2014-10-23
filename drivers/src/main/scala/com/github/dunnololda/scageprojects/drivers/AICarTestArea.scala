@@ -26,7 +26,7 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
       cars += new AICar(index, x+rot*(-20), rot.mydeg(def_vector), this)
     }
   }
-  (1 to 20).foreach(i => addAICar(s"ai_car$i"))
+  (1 to 10).foreach(i => addAICar(s"ai_car$i"))
 
   private val ai_car  = cars.head
 
