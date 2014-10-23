@@ -1,8 +1,12 @@
 package com.github.dunnololda.scageprojects
 
 import com.github.dunnololda.scage.ScageLib._
+import net.phys2d.raw.shapes.{DynamicShape => Phys2dShape, _}
+import net.phys2d.raw.collide.{Collider => Phys2dCollider, _}
+import net.phys2d.raw.{Body => Phys2dBody, StaticBody => Phys2dStaticBody, BodyList => Phys2dBodyList, World => Phys2dWorld}
 
 package object drivers {
+  val def_vector = Vec(0,1)
   def drawDashedLine(from:Vec, to:Vec, dash_len:Float, color:ScageColor): Unit = {
     val line_len = (to - from).norma
     val normal = (to - from).n
@@ -69,5 +73,113 @@ package object drivers {
       val scalar = v1*v2.perpendicular
       if(scalar >= 0) v1.deg(v2) else -v1.deg(v2)
     }
+  }
+
+  case class AABB(center:Vec, width:Double, height:Double) {
+    val half_width = width/2
+    val half_height = height/2
+
+    def aabbCollision(b2:AABB):Boolean = {
+      val d1 = math.abs(center.x - b2.center.x)
+      (d1 < half_width + b2.half_width) && {
+        val d2 = math.abs(center.y - b2.center.y)
+        d2 < half_height + b2.half_height
+      }
+    }
+  }
+
+  def aabbCollision(b1:AABB, b2:AABB):Boolean = {
+    val d1 = math.abs(b1.center.x - b2.center.x)
+    (d1 < b1.half_width + b2.half_width) && {
+      val d2 = math.abs(b1.center.y - b2.center.y)
+      d2 < b1.half_height + b2.half_height
+    }
+  }
+
+  sealed trait Shape {
+    def aabb(center:Vec, rotation:Double):AABB
+    def phys2dShape:Phys2dShape
+    def wI:Double
+  }
+
+  case class BoxShape(width:Double, height:Double) extends Shape {
+    def aabb(center:Vec, rotation:Double): AABB = {
+      val one = center + Vec(-width/2, height/2).rotateDeg(rotation)
+      val two = center + Vec(width/2, height/2).rotateDeg(rotation)
+      val three = center + Vec(width/2, -height/2).rotateDeg(rotation)
+      val four = center + Vec(-width/2, -height/2).rotateDeg(rotation)
+      val points = List(one, two, three, four)
+      val xs = points.map(p => p.x)
+      val ys = points.map(p => p.y)
+      val min_x = xs.min
+      val max_x = xs.max
+      val min_y = ys.min
+      val max_y = ys.max
+      AABB(center, max_x - min_x, max_y - min_y)
+    }
+
+    def phys2dShape: Phys2dShape = new Box(width.toFloat, height.toFloat)
+
+    lazy val wI: Double = (width*width + height*height)/12.0
+  }
+
+  private val contacts = Array.fill(10)(new net.phys2d.raw.Contact)
+  private val box_box_collider = new BoxBoxCollider
+
+  case class GeometricContactData(contact_point:Vec, normal:Vec)
+  case class Contact(body1:BodyState, body2:BodyState, contact_point:Vec, normal:Vec)
+
+  case class BodyState(index:String,
+                       mass:Double,
+                       acc:Vec,
+                       vel:Vec,
+                       coord:Vec,
+                       ang_acc:Double,
+                       ang_vel:Double,
+                       ang:Double,
+                       shape: Shape,
+                       is_static:Boolean) {
+    def phys2dBody:Phys2dBody = {
+      if(is_static) {
+        val b = new Phys2dStaticBody(index, shape.phys2dShape)
+        b.setPosition(coord.x.toFloat, coord.y.toFloat)
+        b.setRotation(ang.toRad.toFloat)
+        b.setUserData((index, shape))
+        b
+      } else {
+        val b = new Phys2dBody(index, shape.phys2dShape, mass.toFloat)
+        b.setPosition(coord.x.toFloat, coord.y.toFloat)
+        b.setRotation(ang.toRad.toFloat)
+        b.adjustVelocity(vel.toPhys2dVec)
+        b.adjustAngularVelocity(ang_vel.toRad.toFloat)
+        b.setUserData((index, shape))
+        b
+      }
+    }
+
+    def aabb = shape.aabb(coord, ang)
+
+    lazy val I = mass*shape.wI
+  }
+
+  def maybeCollision(body1:BodyState, body2:BodyState):Option[Contact] = {
+     def collide(pb1:Phys2dBody, pb2:Phys2dBody, collider:Phys2dCollider):Option[GeometricContactData] = {
+      val num_contacts = collider.collide(contacts, pb1, pb2)
+      if(num_contacts == 0) None
+      else {
+        num_contacts match {
+          case 1 =>
+            val contact_point = contacts(0).getPosition.toVec
+            val normal = contacts(0).getNormal.toVec
+            Some(GeometricContactData(contact_point, normal))
+          case 2 =>
+            val contact_point = (contacts(0).getPosition.toVec + contacts(1).getPosition.toVec)/2
+            val normal = contacts(0).getNormal.toVec
+            Some(GeometricContactData(contact_point, normal))
+          case _ => None
+        }
+      }
+    }
+    collide(body1.phys2dBody, body2.phys2dBody, box_box_collider).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
   }
 }

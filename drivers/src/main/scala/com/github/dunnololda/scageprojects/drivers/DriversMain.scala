@@ -12,7 +12,7 @@ object DriversMain extends ScageScreenApp("Drivers", 800, 600) {
   loadMap(map_name)
 
   private val road_points = RoadMap.road_network.keys.toList
-  private val car = new Car(road_network.keys.head, 0, this)
+  private val car = new Car("car", road_network.keys.head, 0, this)
 
   private val path = ArrayBuffer[Vec]()
 
@@ -88,6 +88,9 @@ object DriversMain extends ScageScreenApp("Drivers", 800, 600) {
     } else 0
   }
 
+  private val car_points = ArrayBuffer[Vec]()
+  private val future_car_points = ArrayBuffer[Vec]()
+
   render {
     map_elements.zipWithIndex.foreach {
       case (road, idx) =>
@@ -106,12 +109,29 @@ object DriversMain extends ScageScreenApp("Drivers", 800, 600) {
             drawLine(to, to+v2, color)
         }
     }*/
-    path.foreach(pos => drawFilledCircle(pos, 3, WHITE))
+    path.zipWithIndex.foreach(pos => {
+      if(pos._2 == 0) drawFilledCircle(pos._1, 5, RED)
+      else drawFilledCircle(pos._1, 3, WHITE)
+    })
     path.sliding(2).foreach {
       case Seq(from, to) =>
         drawLine(from, to, WHITE)
       case _ =>
     }
+
+    val bs = car.bodyState(1)
+    openglLocalTransform {
+      openglMove(bs.coord)
+      openglRotateDeg(bs.ang.toFloat)
+      drawRectCentered(Vec.zero, 9, 23.3f, GRAY)
+    }
+    car_points += car.carCenter
+    if(car_points.length > 5000) car_points.remove(0, 1000)
+    if(car_points.length > 1) car_points.sliding(2).foreach {case Seq(f, t) => drawLine(f, t, WHITE)}
+
+    future_car_points += bs.coord
+    if(future_car_points.length > 5000) future_car_points.remove(0, 1000)
+    if(future_car_points.length > 1) future_car_points.sliding(2).foreach {case Seq(f, t) => drawLine(f, t, GRAY)}
   }
 
   interface {

@@ -2,11 +2,10 @@ package com.github.dunnololda.scageprojects.drivers
 
 import com.github.dunnololda.scage.ScageLib._
 
-class Car(start_pos:Vec, start_rotation:Float, screen:Screen) {
+class Car(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen) {
   var speed = 0f
 
   private var _rotation = 0f        // угол в градусах между вектором Vec(0,1) и текущим направлением машины
-  private lazy val def_vector = Vec(0,1)  // просто чтобы не пересоздавать постоянно
   def rotation_=(new_rotation:Float) {
     _rotation = new_rotation % 360
     if(_rotation > 180)       _rotation = _rotation - 360
@@ -28,13 +27,122 @@ class Car(start_pos:Vec, start_rotation:Float, screen:Screen) {
 
   private var car_direction = Vec(0,1)
 
+  def bodyState(seconds_from_now:Int):BodyState = BodyState(
+    index,
+    mass = 1800,
+    acc = Vec.zero,
+    vel = Vec.zero,
+    coord = {
+      if(speed == 0) car_center
+      else {
+        if(_front_wheels_rotation == 0) {
+          car_center + car_direction*speed*seconds_from_now
+        } else {
+          // радиус поворота. 13.4 - расстояние между осями колес
+          val r = 13.4f/math.sin(_front_wheels_rotation/180f*math.Pi)
+
+          // радиус поворота r известен, линейная скорость speed известна, посчитаем угловую по формуле w = v/r
+          val w = speed/r/math.Pi*180f
+
+          // speed у нас в пикселях в секунду. r в пикселях. w получилась в градусах в секунду
+          // за время seconds_from_now будет сделан угол w*seconds_from_now. Нас интересует половина этого угла
+          val a = w*seconds_from_now
+
+          // a в градусах! При подстановке его в следующие формулы под синус не забываем переводить в радианы!
+
+          // машина за это время переместится на такое расстояние, описывая дугу окружности радиуса r:
+          val len = 2f*r*math.sin(a/180f*math.Pi/2f)
+
+          car_center + car_direction.rotateDeg(a/2f).n*len
+        }
+      }
+    },
+    ang_acc = 0.0,
+    ang_vel = 0.0,
+    ang = {
+      if(_front_wheels_rotation == 0) _rotation
+      else {
+        // радиус поворота. 13.4 - расстояние между осями колес
+        val r = 13.4f/math.sin(_front_wheels_rotation/180f*math.Pi)
+
+        // радиус поворота r известен, линейная скорость speed известна, посчитаем угловую по формуле w = v/r
+        val w = speed/r/math.Pi*180f
+
+        // speed у нас в пикселях в секунду. r в пикселях. w получилась в градусах в секунду
+        // за время seconds_from_now будет сделан угол w*seconds_from_now.
+
+        (_rotation + w*seconds_from_now) % 360
+      }
+    },
+    shape = BoxShape(9, 23.3),
+    is_static = false
+  )
+
+  def bodyState2(seconds_from_now:Int):BodyState = BodyState(
+    index,
+    mass = 1800,
+    acc = Vec.zero,
+    vel = Vec.zero,
+    coord = {
+      if(speed == 0) car_center
+      else {
+        if(_front_wheels_rotation == 0) {
+          car_center + car_direction*speed*seconds_from_now
+        } else {
+          val radius = 13.4f/math.sin(_front_wheels_rotation/180f*math.Pi)
+          val w = speed/radius/math.Pi*180f
+          val a = w*seconds_from_now
+          val len = 2f*radius*math.sin(a/2f)
+          val (rcc, rcd, rr) = (0 to seconds_from_now*60).foldLeft((car_center, car_direction, _rotation)) {
+            case ((cc, cd, r), tact) =>
+              val nr = {
+                var tmp = (r + w.toFloat/60f) % 360
+                if(tmp > 180)       tmp = tmp - 360
+                else if(tmp < -180) tmp = tmp + 360
+                tmp
+              }
+              val ncd = def_vector.rotateDeg(nr).n
+              val ncc = cc + ncd*speed/60f
+              (ncc, ncd, nr)
+          }
+          val aa = rr - _rotation
+          val lenlen = rcc.dist(car_center)
+          rcc
+        }
+      }
+    },
+    ang_acc = 0.0,
+    ang_vel = 0.0,
+    ang = {
+      if(_front_wheels_rotation == 0) _rotation
+      else {
+        val radius = 13.4f/math.sin(_front_wheels_rotation/180f*math.Pi)
+        val w = speed/radius/math.Pi*180f
+        val (rcc, rcd, rr) = (0 to seconds_from_now*60).foldLeft((car_center, car_direction, _rotation)) {
+          case ((cc, cd, r), sec) =>
+            val nr = {
+              var tmp = (r + w.toFloat/60f) % 360
+              if(tmp > 180)       tmp = tmp - 360
+              else if(tmp < -180) tmp = tmp + 360
+              tmp
+            }
+            val ncd = def_vector.rotateDeg(nr).n
+            val ncc = cc + ncd*speed/60f
+            (ncc, ncd, nr)
+        }
+        rr
+      }
+    },
+    shape = BoxShape(9, 23.3),
+    is_static = false
+  )
+
   screen.action {
     if(speed != 0) {
       if(math.abs(_front_wheels_rotation) < 1f) _front_wheels_rotation = 0
       if(_front_wheels_rotation != 0) {
-        // радиус поворота. 18.03 - типа расстояние между осями. Подобрал такой коэффициент, чтобы минимальный радиус разворота была 5.1 метра (при отклонении
-        // колес на 45 градусов), как у шкоды октавии :)
-        val r = 18.03f/math.sin(_front_wheels_rotation/180f*math.Pi)
+        // радиус поворота. 13.4 - расстояние между осями колес
+        val r = 13.4f/math.sin(_front_wheels_rotation/180f*math.Pi)
 
         // радиус поворота r известен, линейная скорость speed известна, посчитаем угловую по формуле w = v/r
         val w = speed/r/math.Pi*180f
@@ -55,22 +163,22 @@ class Car(start_pos:Vec, start_rotation:Float, screen:Screen) {
   screen.render {
     openglMove(car_center)
     openglRotateDeg(_rotation)
-    drawRectCentered(Vec.zero, 10, 26, WHITE)
+    drawRectCentered(Vec.zero, 9, 23.3f, WHITE)
 
     // передние колеса
     openglLocalTransform {
-      openglMove(Vec(-5,  26/2-4))
+      openglMove(Vec(-4.5f,  6.7f))
       openglRotateDeg(_front_wheels_rotation)
       drawFilledRectCentered(Vec.zero, 1,4, WHITE)
     }
     openglLocalTransform {
-      openglMove(Vec(5,  26/2-4))
+      openglMove(Vec(4.5f,  6.7f))
       openglRotateDeg(_front_wheels_rotation)
       drawFilledRectCentered(Vec.zero, 1,4, WHITE)
     }
 
     // задние колеса
-    drawFilledRectCentered(Vec(-5, -26/2+4), 1,4, WHITE)
-    drawFilledRectCentered(Vec( 5, -26/2+4), 1,4, WHITE)
+    drawFilledRectCentered(Vec(-4.5f, -6.7f), 1,4, WHITE)
+    drawFilledRectCentered(Vec( 4.5f, -6.7f), 1,4, WHITE)
   }
 }
