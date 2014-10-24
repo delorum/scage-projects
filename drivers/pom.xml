@@ -30,11 +30,11 @@
       <url>https://oss.sonatype.org/content/groups/scala-tools</url>
     </repository>
 
-    <repository>
+    <!--<repository>
       <id>slick.cokeandcode.com</id>
       <name>Slick Maven Repository</name>
       <url>http://slick.cokeandcode.com/mavenrepo</url>
-    </repository>
+    </repository>-->
 
     <!--<repository>
       <id>lwjgl</id>
