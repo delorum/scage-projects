@@ -125,6 +125,20 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
     shape = BoxShape(9, 23.3),
     is_static = false
   )
+  
+  def collisionIfSuchSpeedAndRotation(speed:Float, rotation:Float, other_cars_states_after:Seq[BodyState]):Boolean = {
+    val our_state = bodyState(AICarTestArea.seconds, speed, rotation)
+    other_cars_states_after.exists(other_car_state => maybeCollision(our_state, other_car_state).nonEmpty)
+  }
+
+  def distanceBecomeIfSuchSpeedAndRotation(distance:Float, speed:Float, rotation:Float, other_cars_states_now_and_after:Seq[(BodyState, BodyState)]):Boolean = {
+    val our_state = bodyState(AICarTestArea.seconds, speed, rotation)
+    other_cars_states_now_and_after.exists{case (other_car_state_now, other_car_state_after) => {
+      val d1 = car_center.dist(other_car_state_now.coord)
+      val d2 = our_state.coord.dist(other_car_state_after.coord)
+      d1 > distance && d2 < distance
+    }}
+  }
 
   // AI машины, корректирующий траекторию. Вызывается каждые 100 мсек
   screen.action(100) {
@@ -135,9 +149,6 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
       val tmp1 = need_rotation - _rotation
       val tmp = if(math.abs(tmp1) < 180) tmp1 else (360 - math.abs(tmp1))*math.signum(tmp1)*(-1)
       val dist_to_next_point = _path.head.dist(car_center) / 5f      // дистанция в метрах до следующей точки
-      if(dist_to_next_point > 100) {
-        println("gotcha!")
-      }
       val dist_to_next_turn = if(_path.length == 1) dist_to_next_point else {
         val turn_point = _path.sliding(2).find {
           case Seq(from, to) => (_path.head - car_center).deg(to - from) > 5
@@ -168,44 +179,63 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
     }
 
     // алгоритм избежания столкновений
-    val is_in_collision_now = {val bs = bodyState(); other_cars.exists(car => maybeCollision(bs, car.bodyState()).nonEmpty)}
     val other_cars_states_after = other_cars.map(car =>  car.bodyState(AICarTestArea.seconds))
+    val is_in_collision_now = {val bs = bodyState(); other_cars.exists(car => maybeCollision(bs, car.bodyState()).nonEmpty)}
     if(is_in_collision_now) {
-      val state_after4 = bodyState(AICarTestArea.seconds, 5f / 3.6f * 5f, need_wheels_rotation)
-      if(!other_cars_states_after.exists(other_car_state => {
-        maybeCollision(state_after4, other_car_state).nonEmpty
-      })) {
+      // если уже столкнулись - пытаемся разъехаться
+      if(!collisionIfSuchSpeedAndRotation(5f / 3.6f * 5f, need_wheels_rotation, other_cars_states_after)) {
         need_speed = 5f / 3.6f * 5f
       } else {
-        val state_after5 = bodyState(AICarTestArea.seconds, -5f / 3.6f * 5f, need_wheels_rotation)
-        if(!other_cars_states_after.exists(other_car_state => {
-          maybeCollision(state_after5, other_car_state).nonEmpty
-        })) {
+        if(!collisionIfSuchSpeedAndRotation(-5f / 3.6f * 5f, need_wheels_rotation, other_cars_states_after)) {
           need_speed = -5f / 3.6f * 5f
         } else {
           need_speed = 0
         }
       }
     } else {
-      val state_after = bodyState(AICarTestArea.seconds)
+      // если при сохранении текущих параметров скорости/направления мы столкнемся через столько-то секунд - 
+      // сдаем назад или вперед или стоим ждем
 
-      if(other_cars_states_after.exists(other_car_state => {
-        maybeCollision(state_after, other_car_state).nonEmpty
-      })) {
-        need_speed = -5f / 3.6f * 5f
+      if(collisionIfSuchSpeedAndRotation(_speed, _front_wheels_rotation, other_cars_states_after)) {
+        if(!collisionIfSuchSpeedAndRotation(5f / 3.6f * 5f, need_wheels_rotation, other_cars_states_after)) {
+          need_speed = 5f / 3.6f * 5f
+        } else {
+          if(!collisionIfSuchSpeedAndRotation(-5f / 3.6f * 5f, need_wheels_rotation, other_cars_states_after)) {
+            need_speed = -5f / 3.6f * 5f
+          } else {
+            need_speed = 0
+          }
+        }
       }
 
-      val state_after2 = bodyState(AICarTestArea.seconds, need_speed, need_wheels_rotation)
-      if(other_cars_states_after.exists(other_car_state => {
-        maybeCollision(state_after2, other_car_state).nonEmpty
-      })) {
-        val state_after3 = bodyState(AICarTestArea.seconds, -5f / 3.6f * 5f, 0)
-        if(!other_cars_states_after.exists(other_car_state => {
-          maybeCollision(state_after3, other_car_state).nonEmpty
-        })) {
+      if(collisionIfSuchSpeedAndRotation(need_speed, need_wheels_rotation, other_cars_states_after)) {
+        if(!collisionIfSuchSpeedAndRotation(5f / 3.6f * 5f, 0, other_cars_states_after)) {
+          need_speed = 5f / 3.6f * 5f
+          need_wheels_rotation = 0
+        } else {
+          if(!collisionIfSuchSpeedAndRotation(-5f / 3.6f * 5f, 0, other_cars_states_after)) {
+            need_speed = -5f / 3.6f * 5f
+            need_wheels_rotation = 0
+          } else {
+            need_speed = 0
+          }
+        }
+      }
+    }
+    
+    // попытаемся еще соблюдать дистанцию 3 метра
+    val other_cars_states_now_and_after = other_cars.map(car => (car.bodyState(), car.bodyState(AICarTestArea.seconds)))
+    if(distanceBecomeIfSuchSpeedAndRotation(3f*5f, need_speed, need_wheels_rotation, other_cars_states_now_and_after)) {
+      if(!collisionIfSuchSpeedAndRotation(5f / 3.6f * 5f, 0, other_cars_states_after)) {
+        need_speed = 5f / 3.6f * 5f
+        need_wheels_rotation = 0
+      } else {
+        if(!collisionIfSuchSpeedAndRotation(-5f / 3.6f * 5f, 0, other_cars_states_after)) {
           need_speed = -5f / 3.6f * 5f
           need_wheels_rotation = 0
-        } else need_speed = 0
+        } else {
+          need_speed = 0
+        }
       }
     }
 
