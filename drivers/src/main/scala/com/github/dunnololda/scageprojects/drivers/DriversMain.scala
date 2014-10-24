@@ -1,11 +1,23 @@
 package com.github.dunnololda.scageprojects.drivers
 
 import com.github.dunnololda.scage.ScageLib._
+import com.github.dunnololda.scageprojects.drivers.RoadMap._
+
+import scala.collection.mutable.ArrayBuffer
 
 // 5px = 1m
 
-object DriversMain extends ScageScreenApp("Drivers", 1280, 1024) {
-  val car = new Car(Vec(400+7, 300), this)
+object DriversMain extends ScageScreenApp("Drivers", 800, 600) {
+  val map_name = "map.txt"
+  loadMap(map_name)
+
+  private val road_points = RoadMap.road_network.keys.toList
+  private val car = new Car("car", road_network.keys.head, 0, this)
+
+  private val path = ArrayBuffer[Vec]()
+
+  private var need_wheel_rotation = 0f
+  private val def_vector = Vec(0,1)
 
   key(KEY_UP,     50, onKeyDown = car.speed += 0.5f)
   key(KEY_DOWN,   50, onKeyDown = car.speed -= 0.5f)
@@ -27,197 +39,112 @@ object DriversMain extends ScageScreenApp("Drivers", 1280, 1024) {
 
   key(KEY_Q, onKeyDown = {if(keyPressed(KEY_LCONTROL)) stopApp()})
 
-  center = car.carCenter+Vec(0,100)
+  center = car.carCenter/*+Vec(0,100)*/
   globalScale = 3
   rotationPoint = car.carCenter
   rotationAngleDeg = -car.rotation
 
-  mouseWheelUp(onWheelUp = m => if(globalScale < 4) globalScale += 1)
-  mouseWheelDown(onWheelDown = m => if(globalScale > 1) globalScale -= 1)
+  mouseWheelUp(onWheelUp = m => {
+    if(globalScale < 1) globalScale += 0.1f
+    else if(globalScale < 4) globalScale += 1
+  })
+  mouseWheelDown(onWheelDown = m => {
+    if(globalScale > 1) globalScale -= 1
+    else if(globalScale > 0.1f) globalScale -= 0.1f
+  })
 
-  /*render {
-    // границы дороги
-    drawLine(Vec(0, 300+30), Vec(800, 300+30), WHITE)
-    drawLine(Vec(0, 300-30), Vec(800, 300-30), WHITE)
+  action {
+    if(path.nonEmpty) {
+      val dist = path.head.dist(car.carCenter) / 5f // дистанция в метрах
+      if(dist < 3) path.remove(0)
+    }
 
-    // двойная сплошная посередине
-    drawLine(Vec(0, 300+1), Vec(800, 300+1), WHITE)
-    drawLine(Vec(0, 300-1), Vec(800, 300-1), WHITE)
+    if(path.isEmpty) {
+      val p1 = road_points.sortBy(v => v.dist(car.carCenter)).head
+      val p2 = road_points((math.random*road_points.length).toInt)
+      val new_path = dijkstra1(p1, RoadMap.road_network.map(kv => (kv._1, kv._2.toList)).toMap).getOrElse(p2, Nil)
+      /*val reduced_path = if(path.length > 2) {
+        path.tail.sliding(2).foldLeft((List(path.head), (path.tail.head - path.head).n)) {
+          case ((res, cur_dir), List(from, to)) =>
+            val dir = (to - from).n
+            if(dir == cur_dir) (res, cur_dir) else (res ::: List(from), dir)
+        }
+      } else (path, Vec.zero)
+      reduced_path._1.foreach(ai_car.addWayPoint)*/
+      path ++= new_path
+    } else if(path.length < 20) {
+      val p1 = path.last
+      val p2 = road_points((math.random*road_points.length).toInt)
+      val new_path = dijkstra1(p1, RoadMap.road_network.map(kv => (kv._1, kv._2.toList)).toMap).getOrElse(p2, Nil)
+      path ++= new_path
+    }
 
+    need_wheel_rotation = if(path.nonEmpty) {
+      val need_rotation = def_vector.signedDeg(path.head - car.carCenter)
+      val tmp1 = need_rotation - car.rotation
+      val tmp = if(math.abs(tmp1) < 180) tmp1 else (360 - math.abs(tmp1))*math.signum(tmp1)*(-1)
+      val dist = path.head.dist(car.carCenter) / 5f      // дистанция в метрах
+      if(tmp < 0) math.max(tmp, -45) else math.min(tmp, 45)
+    } else 0
+  }
 
-    // пунктирные линии, разделяющие полосы
-    drawDashedLine(Vec(0, 300+15), Vec(800, 300+15), 5, WHITE)
-    drawDashedLine(Vec(0, 300-15), Vec(800, 300-15), 5, WHITE)
-  }*/
+  private val car_points = ArrayBuffer[Vec]()
+  private val future_car_points = ArrayBuffer[Vec]()
 
   render {
-    // границы дороги
-    drawLine(Vec(0, 150+30), Vec(370, 150+30), WHITE)
-    drawLine(Vec(0, 150-30), Vec(430, 150-30), WHITE)
+    map_elements.zipWithIndex.foreach {
+      case (road, idx) =>
+        road.drawSelf(WHITE)
+    }
+    /*road_network.foreach {
+      case (elem, connected_to) =>
+        val color = GREEN
+        drawRectCentered(elem, 5, 5, color)
+        connected_to.foreach {
+          case to =>
+            drawLine(elem, to, color)
+            val v1 = (elem - to).n.rotateDeg(15)*3
+            val v2 = (elem - to).n.rotateDeg(-15)*3
+            drawLine(to, to+v1, color)
+            drawLine(to, to+v2, color)
+        }
+    }*/
+    path.zipWithIndex.foreach(pos => {
+      if(pos._2 == 0) drawFilledCircle(pos._1, 5, RED)
+      else drawFilledCircle(pos._1, 3, WHITE)
+    })
+    path.sliding(2).foreach {
+      case Seq(from, to) =>
+        drawLine(from, to, WHITE)
+      case _ =>
+    }
 
-    // двойная сплошная посередине
-    drawLine(Vec(0, 150+1), Vec(400-1, 150+1), WHITE)
-    drawLine(Vec(0, 150-1), Vec(400+1, 150-1), WHITE)
+    val bs = car.bodyState(1)
+    openglLocalTransform {
+      openglMove(bs.coord)
+      openglRotateDeg(bs.ang.toFloat)
+      drawRectCentered(Vec.zero, 9, 23.3f, GRAY)
+    }
+    car_points += car.carCenter
+    if(car_points.length > 5000) car_points.remove(0, 1000)
+    if(car_points.length > 1) car_points.sliding(2).foreach {case Seq(f, t) => drawLine(f, t, WHITE)}
 
-    // пунктирные линии, разделяющие полосы
-    drawDashedLine(Vec(0, 150+15), Vec(385, 150+15), 5, WHITE)
-    drawDashedLine(Vec(0, 150-15), Vec(415, 150-15), 5, WHITE)
-
-
-    // границы дороги
-    drawLine(Vec(370, 150+30), Vec(370, 600), WHITE)
-    drawLine(Vec(430, 150-30), Vec(430, 300-30), WHITE)
-    drawLine(Vec(430, 300+30), Vec(430, 600), WHITE)
-
-    // двойная сплошная посередине
-    drawLine(Vec(400-1, 150+1), Vec(400-1, 300-30), WHITE)
-    drawLine(Vec(400+1, 150-1), Vec(400+1, 300-30), WHITE)
-    drawLine(Vec(400-1, 300+30), Vec(400-1, 600), WHITE)
-    drawLine(Vec(400+1, 300+30), Vec(400+1, 600), WHITE)
-
-    // перекресток
-    drawDashedLine(Vec(400, 300-30), Vec(400, 300+30), 5, WHITE)
-
-    // пунктирные линии, разделяющие полосы
-    drawDashedLine(Vec(385, 150+15), Vec(385, 600), 5, WHITE)
-    drawDashedLine(Vec(415, 150-15), Vec(415, 600), 5, WHITE)
-
-
-    // границы дороги
-    drawLine(Vec(430, 300+30), Vec(800, 300+30), WHITE)
-    drawLine(Vec(430, 300-30), Vec(800, 300-30), WHITE)
-
-    // двойная сплошная посередине
-    drawLine(Vec(430, 300+1), Vec(800, 300+1), WHITE)
-    drawLine(Vec(430, 300-1), Vec(800, 300-1), WHITE)
-
-    // пунктирные линии, разделяющие полосы
-    drawDashedLine(Vec(430, 300+15), Vec(800, 300+15), 5, WHITE)
-    drawDashedLine(Vec(430, 300-15), Vec(800, 300-15), 5, WHITE)
-
-
-    // границы дороги
-    drawLine(Vec(0-60, -600-60), Vec(0-60, 600+60), WHITE)
-    drawLine(Vec(0, 150+30), Vec(0, 600), WHITE)
-    drawLine(Vec(0, 150-30), Vec(0, -600), WHITE)
-
-    // двойная сплошная посередине
-    drawLine(Vec(0-30-1, -600-30-1), Vec(0-30-1, 600+30+1), WHITE)
-    drawLine(Vec(0-30+1, -600-30+1), Vec(0-30+1, 600+30-1), WHITE)
-
-    // пунктирные линии, разделяющие полосы
-
-    // границы дороги
-    drawLine(Vec(0-60, 600+60), Vec(800+60, 600+60), WHITE)
-    drawLine(Vec(0, 600), Vec(370, 600), WHITE)
-    drawLine(Vec(430, 600), Vec(800, 600), WHITE)
-
-    // двойная сплошная посередине
-    drawLine(Vec(0-30-1, 600+30+1), Vec(800+30+1, 600+30+1), WHITE)
-    drawLine(Vec(0-30+1, 600+30-1), Vec(800+30-1, 600+30-1), WHITE)
-
-    // пунктирные линии, разделяющие полосы
-
-    // границы дороги
-    drawLine(Vec(800+60, 600+60), Vec(800+60, -600-60), WHITE)
-    drawLine(Vec(800, 600), Vec(800, 300+30), WHITE)
-    drawLine(Vec(800, 300-30), Vec(800, -600), WHITE)
-
-    // двойная сплошная посередине
-
-    // пунктирные линии, разделяющие полосы
-
-    // границы дороги
-    drawLine(Vec(0, -600), Vec(800, -600), WHITE)
-    drawLine(Vec(0-60, -600-60), Vec(800+60, -600-60), WHITE)
-
-    // двойная сплошная посередине
-
-    // пунктирные линии, разделяющие полосы
+    future_car_points += bs.coord
+    if(future_car_points.length > 5000) future_car_points.remove(0, 1000)
+    if(future_car_points.length > 1) future_car_points.sliding(2).foreach {case Seq(f, t) => drawLine(f, t, GRAY)}
   }
 
   interface {
-    //print(f"rotation radius: ${18.03f/math.sin(car.frontWheelsRotation/180f*math.Pi)/5f}%.1f m", 20, 80, WHITE)
-    //print(f"wheels rotation: ${car.frontWheelsRotation}%.0f deg", 20, 60, WHITE)
-    print(f"rotation: ${car.rotation}%.0f deg", 20, 40, WHITE)
+    //print(f"rotation radius: ${18.03f/math.sin(car.frontWheelsRotation.toRad)/5f}%.1f m", 20, 80, WHITE)
+
+    print(f"wheels rotation: ${car.frontWheelsRotation}%.0f deg", 20, 100, WHITE)
+    print(f"need wheel rotation is $need_wheel_rotation%.1f deg", 20, 80, WHITE)
+    print(f"rotation: ${car.rotation}%.0f deg", 20, 60, WHITE)
+    if(path.nonEmpty) {
+      val need_rotation = def_vector.signedDeg(path.head - car.carCenter)
+      print(f"need rotation is $need_rotation%.1f deg", 20, 40, WHITE)
+    }
     print(f"speed: ${car.speed/5}%.0f m/s; ${car.speed/5*3.6}%.0f km/h", 20, 20, WHITE)
   }
-
-  def drawDashedLine(from:Vec, to:Vec, dash_len:Float, color:ScageColor): Unit = {
-    val line_len = (to - from).norma
-    val normal = (to - from).n
-    (0f to line_len-dash_len by dash_len*2).foreach {
-      case dash_from => drawLine(from + normal*dash_from, from+normal*(dash_from + dash_len), color)
-    }
-  }
 }
 
-class Car(start_pos:Vec, screen:Screen) {
-  var speed = 0f
-
-  private var _rotation = 0f        // угол в градусах между вектором Vec(0,1) и текущим направлением машины
-  private lazy val def_vector = Vec(0,1)  // просто чтобы не пересоздавать постоянно
-  def rotation_=(new_rotation:Float) {
-    _rotation = new_rotation % 360
-    car_direction = def_vector.rotateDeg(_rotation).n
-  }
-  def rotation:Float = _rotation
-
-  private var _front_wheels_rotation = 0f        // угол в градусах между вектором Vec(0,1) и текущим направлением машины
-  def frontWheelsRotation_=(new_rotation:Float) {
-    _front_wheels_rotation = new_rotation  }
-  def frontWheelsRotation:Float = _front_wheels_rotation
-
-  var is_wheel_rotating = false
-
-  private var car_center:Vec = start_pos
-  def carCenter = car_center
-
-  private var car_direction = Vec(0,1)
-
-  screen.action {
-    if(speed != 0) {
-      if(math.abs(_front_wheels_rotation) < 1f) _front_wheels_rotation = 0
-      if(_front_wheels_rotation != 0) {
-        // радиус поворота. 18.03 - типа расстояние между осями. Подобрал такой коэффициент, чтобы минимальный радиус разворота была 5.1 метра (при отклонении
-        // колес на 45 градусов), как у шкоды октавии :)
-        val r = 18.03f/math.sin(_front_wheels_rotation/180f*math.Pi)
-
-        // радиус поворота r известен, линейная скорость speed известна, посчитаем угловую по формуле w = v/r
-        val w = speed/r/math.Pi*180f
-
-        // speed у нас в пикселях в 1/60 секунды. r в пикселях. w получилась в градусах в 1/60 секунды
-        rotation += (w/60f).toFloat
-
-        // возвращаем руль на место, если водитель не удерживает его
-        if(!is_wheel_rotating) {
-          if(speed > 0) _front_wheels_rotation -= (w/60f*2).toFloat
-          else if(speed < 0) _front_wheels_rotation += (w/60f*2).toFloat
-        }
-      }
-      car_center += car_direction*speed/60f
-    }
-  }
-
-  screen.render {
-    openglMove(car_center)
-    openglRotateDeg(_rotation)
-    drawRectCentered(Vec.zero, 10, 26, WHITE)
-
-    // передние колеса
-    openglLocalTransform {
-      openglMove(Vec(-5,  26/2-4))
-      openglRotateDeg(_front_wheels_rotation)
-      drawFilledRectCentered(Vec.zero, 1,4, WHITE)
-    }
-    openglLocalTransform {
-      openglMove(Vec(5,  26/2-4))
-      openglRotateDeg(_front_wheels_rotation)
-      drawFilledRectCentered(Vec.zero, 1,4, WHITE)
-    }
-
-    // задние колеса
-    drawFilledRectCentered(Vec(-5, -26/2+4), 1,4, WHITE)
-    drawFilledRectCentered(Vec( 5, -26/2+4), 1,4, WHITE)
-  }
-}

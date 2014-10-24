@@ -14,7 +14,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <scala.version>2.10.1</scala.version>
     <lwjgl.version>2.8.2</lwjgl.version>
-    <scage.version>0.9.3-SNAPSHOT</scage.version>
+    <scage.scala.version>2.10</scage.scala.version>
+    <scage.version>1.0</scage.version>
     <src.dir>src</src.dir>
   </properties>
 
@@ -76,8 +77,8 @@
     </dependency>
 
     <dependency>
-        <groupId>com.github.dunnololda.scage</groupId>
-        <artifactId>scage</artifactId>
+        <groupId>com.github.dunnololda</groupId>
+        <artifactId>scage_${scage.scala.version}</artifactId>
         <version>${scage.version}</version>
         <scope>compile</scope>
     </dependency>
