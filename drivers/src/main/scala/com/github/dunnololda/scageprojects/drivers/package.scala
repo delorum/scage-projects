@@ -68,13 +68,6 @@ package object drivers {
     result.map(kv => (kv._1, kv._2.toList)).toMap
   }
 
-  implicit class MyVec(v1:Vec) {
-    def mydeg(v2:Vec):Float = {
-      val scalar = v1*v2.perpendicular
-      if(scalar >= 0) v1.deg(v2) else -v1.deg(v2)
-    }
-  }
-
   case class AABB(center:Vec, width:Double, height:Double) {
     val half_width = width/2
     val half_height = height/2

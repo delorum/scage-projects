@@ -80,7 +80,7 @@ object DriversMain extends ScageScreenApp("Drivers", 800, 600) {
     }
 
     need_wheel_rotation = if(path.nonEmpty) {
-      val need_rotation = (path.head - car.carCenter).mydeg(def_vector)
+      val need_rotation = def_vector.signedDeg(path.head - car.carCenter)
       val tmp1 = need_rotation - car.rotation
       val tmp = if(math.abs(tmp1) < 180) tmp1 else (360 - math.abs(tmp1))*math.signum(tmp1)*(-1)
       val dist = path.head.dist(car.carCenter) / 5f      // дистанция в метрах
@@ -135,13 +135,13 @@ object DriversMain extends ScageScreenApp("Drivers", 800, 600) {
   }
 
   interface {
-    //print(f"rotation radius: ${18.03f/math.sin(car.frontWheelsRotation/180f*math.Pi)/5f}%.1f m", 20, 80, WHITE)
+    //print(f"rotation radius: ${18.03f/math.sin(car.frontWheelsRotation.toRad)/5f}%.1f m", 20, 80, WHITE)
 
     print(f"wheels rotation: ${car.frontWheelsRotation}%.0f deg", 20, 100, WHITE)
     print(f"need wheel rotation is $need_wheel_rotation%.1f deg", 20, 80, WHITE)
     print(f"rotation: ${car.rotation}%.0f deg", 20, 60, WHITE)
     if(path.nonEmpty) {
-      val need_rotation = (path.head - car.carCenter).mydeg(def_vector)
+      val need_rotation = def_vector.signedDeg(path.head - car.carCenter)
       print(f"need rotation is $need_rotation%.1f deg", 20, 40, WHITE)
     }
     print(f"speed: ${car.speed/5}%.0f m/s; ${car.speed/5*3.6}%.0f km/h", 20, 20, WHITE)

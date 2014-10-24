@@ -23,12 +23,12 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
         val y = l((math.random*l.length).toInt)
         (y - x).n
       }).getOrElse(def_vector)
-      cars += new AICar(index, x+rot*(-20), rot.mydeg(def_vector), this)
+      cars += new AICar(index, x+rot*(-20), def_vector.signedDeg(rot), this)
     }
   }
-  (1 to 10).foreach(i => addAICar(s"ai_car$i"))
+  (1 to 20).foreach(i => addAICar(s"ai_car$i"))
 
-  private val ai_car  = cars.head
+  private var ai_car  = cars.head
 
   private def generatePathForCar(car:AICar): Unit = {
     if(car.path.isEmpty) {
@@ -52,8 +52,20 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
     }
   }
 
+  private var _center = windowCenter
+
+  key(KEY_W, 100, onKeyDown = _center += Vec(0, 5))
+  key(KEY_A, 100, onKeyDown = _center -= Vec(5, 0))
+  key(KEY_S, 100, onKeyDown = _center -= Vec(0, 5))
+  key(KEY_D, 100, onKeyDown = _center += Vec(5, 0))
 
   key(KEY_Q, onKeyDown = {if(keyPressed(KEY_LCONTROL)) stopApp()})
+
+  leftMouse(onBtnDown = m => {
+    val pos = scaledCoord(m)
+    ai_car = cars.sortBy(_.carCenter.dist(pos)).head
+    _center = ai_car.carCenter
+  })
 
   mouseWheelUp(onWheelUp = m => {
     if(globalScale < 1) globalScale += 0.1f
@@ -64,10 +76,12 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
     else if(globalScale > 0.1f) globalScale -= 0.1f
   })
 
-  center = ai_car.carCenter/*+Vec(0,100)*/
+  center = _center
+
+  //center = ai_car.carCenter/*+Vec(0,100)*/
   globalScale = 3
-  rotationPoint = ai_car.carCenter
-  rotationAngleDeg = -ai_car.rotation
+  /*rotationPoint = ai_car.carCenter
+  rotationAngleDeg = -ai_car.rotation*/
 
   action(1000) {
     cars.foreach(generatePathForCar)
@@ -97,7 +111,7 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
         }
     }
 
-    cars.foreach {
+    /*cars.foreach {
       case car =>
         val bs = car.bodyState(seconds)
         openglLocalTransform {
@@ -105,6 +119,25 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
           openglRotateDeg(bs.ang.toFloat)
           drawRectCentered(Vec.zero, 9, 23.3f, GRAY)
         }
+    }*/
+
+    val bs1 = ai_car.bodyState(seconds)
+    openglLocalTransform {
+      openglMove(bs1.coord)
+      openglRotateDeg(bs1.ang.toFloat)
+      drawRectCentered(Vec.zero, 9, 23.3f, RED)
+    }
+    val bs2 = ai_car.bodyState(seconds, ai_car.needSpeed, ai_car.needWheelsRotation)
+    openglLocalTransform {
+      openglMove(bs2.coord)
+      openglRotateDeg(bs2.ang.toFloat)
+      drawRectCentered(Vec.zero, 9, 23.3f, YELLOW)
+    }
+    val bs3 = ai_car.bodyState(seconds, -5f/3.6f*5f, 0)
+    openglLocalTransform {
+      openglMove(bs3.coord)
+      openglRotateDeg(bs3.ang.toFloat)
+      drawRectCentered(Vec.zero, 9, 23.3f, GREEN)
     }
   }
 

@@ -39,10 +39,10 @@ class Car(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen) 
           car_center + car_direction*speed*seconds_from_now
         } else {
           // радиус поворота. 13.4 - расстояние между осями колес
-          val r = 13.4f/math.sin(_front_wheels_rotation/180f*math.Pi)
+          val r = 13.4f/math.sin(_front_wheels_rotation.toRad)
 
           // радиус поворота r известен, линейная скорость speed известна, посчитаем угловую по формуле w = v/r
-          val w = speed/r/math.Pi*180f
+          val w = (speed/r).toDeg
 
           // speed у нас в пикселях в секунду. r в пикселях. w получилась в градусах в секунду
           // за время seconds_from_now будет сделан угол w*seconds_from_now. Нас интересует половина этого угла
@@ -51,7 +51,7 @@ class Car(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen) 
           // a в градусах! При подстановке его в следующие формулы под синус не забываем переводить в радианы!
 
           // машина за это время переместится на такое расстояние, описывая дугу окружности радиуса r:
-          val len = 2f*r*math.sin(a/180f*math.Pi/2f)
+          val len = 2f*r*math.sin(a.toRad/2f)
 
           car_center + car_direction.rotateDeg(a/2f).n*len
         }
@@ -63,10 +63,10 @@ class Car(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen) 
       if(_front_wheels_rotation == 0) _rotation
       else {
         // радиус поворота. 13.4 - расстояние между осями колес
-        val r = 13.4f/math.sin(_front_wheels_rotation/180f*math.Pi)
+        val r = 13.4f/math.sin(_front_wheels_rotation.toRad)
 
         // радиус поворота r известен, линейная скорость speed известна, посчитаем угловую по формуле w = v/r
-        val w = speed/r/math.Pi*180f
+        val w = (speed/r).toDeg
 
         // speed у нас в пикселях в секунду. r в пикселях. w получилась в градусах в секунду
         // за время seconds_from_now будет сделан угол w*seconds_from_now.
@@ -89,8 +89,8 @@ class Car(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen) 
         if(_front_wheels_rotation == 0) {
           car_center + car_direction*speed*seconds_from_now
         } else {
-          val radius = 13.4f/math.sin(_front_wheels_rotation/180f*math.Pi)
-          val w = speed/radius/math.Pi*180f
+          val radius = 13.4f/math.sin(_front_wheels_rotation.toRad)
+          val w = (speed/radius).toDeg
           val a = w*seconds_from_now
           val len = 2f*radius*math.sin(a/2f)
           val (rcc, rcd, rr) = (0 to seconds_from_now*60).foldLeft((car_center, car_direction, _rotation)) {
@@ -116,8 +116,8 @@ class Car(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen) 
     ang = {
       if(_front_wheels_rotation == 0) _rotation
       else {
-        val radius = 13.4f/math.sin(_front_wheels_rotation/180f*math.Pi)
-        val w = speed/radius/math.Pi*180f
+        val radius = 13.4f/math.sin(_front_wheels_rotation.toRad)
+        val w = (speed/radius).toDeg
         val (rcc, rcd, rr) = (0 to seconds_from_now*60).foldLeft((car_center, car_direction, _rotation)) {
           case ((cc, cd, r), sec) =>
             val nr = {
@@ -142,10 +142,10 @@ class Car(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen) 
       if(math.abs(_front_wheels_rotation) < 1f) _front_wheels_rotation = 0
       if(_front_wheels_rotation != 0) {
         // радиус поворота. 13.4 - расстояние между осями колес
-        val r = 13.4f/math.sin(_front_wheels_rotation/180f*math.Pi)
+        val r = 13.4f/math.sin(_front_wheels_rotation.toRad)
 
         // радиус поворота r известен, линейная скорость speed известна, посчитаем угловую по формуле w = v/r
-        val w = speed/r/math.Pi*180f
+        val w = (speed/r).toDeg
 
         // speed у нас в пикселях в 1/60 секунды. r в пикселях. w получилась в градусах в 1/60 секунды
         rotation += (w/60f).toFloat

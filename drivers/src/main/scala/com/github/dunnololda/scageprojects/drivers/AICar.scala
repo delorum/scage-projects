@@ -31,6 +31,8 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
   private var _speed = 0f           // скорость в пикселях в  секунду
   def speed = _speed
 
+  private var car_direction = Vec(0,1)  // единичный вектор, показывающий ориентацию машины
+
   private var _rotation = 0f        // угол в градусах между вектором Vec(0,1) и текущим направлением машины
   def rotation_=(new_rotation:Float) {
     _rotation = new_rotation % 360
@@ -51,7 +53,7 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
   private var car_center:Vec = start_pos
   def carCenter = car_center
 
-  private var car_direction = Vec(0,1)  // единичный вектор, показывающий ориентацию машины
+
 
   private var need_wheels_rotation = 0f
   def needWheelsRotation = need_wheels_rotation
@@ -59,7 +61,7 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
   private var need_speed = 0f
   def needSpeed = need_speed
 
-  def needRotation =  _path.headOption.map(p => (p - car_center).mydeg(def_vector)).getOrElse(_rotation)
+  def needRotation =  _path.headOption.map(p => def_vector.signedDeg(p - car_center)).getOrElse(_rotation)
 
   def distToNextPoint:Float =  _path.headOption.map(p => p.dist(car_center) / 5f).getOrElse(0)
   def distToNextTurn:Float =  {
@@ -84,11 +86,11 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
         if(front_wheels_rotation == 0) {
           car_center + car_direction*speed*seconds_from_now
         } else {
-          // радиус поворота. 13.4 - расстояние между осями колес
-          val r = 13.4f/math.sin(front_wheels_rotation/180f*math.Pi)
+          // радиус поворота. 13.4 - расстояние между осями колес, то бишь "колесная база"
+          val r = 13.4f/math.sin(front_wheels_rotation.toRad)
 
           // радиус поворота r известен, линейная скорость speed известна, посчитаем угловую по формуле w = v/r
-          val w = speed/r/math.Pi*180f
+          val w = (speed/r).toDeg
 
           // speed у нас в пикселях в секунду. r в пикселях. w получилась в градусах в секунду
           // за время seconds_from_now будет сделан угол w*seconds_from_now. Нас интересует половина этого угла
@@ -97,7 +99,7 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
           // a в градусах! При подстановке его в следующие формулы под синус не забываем переводить в радианы!
 
           // машина за это время переместится на такое расстояние, описывая дугу окружности радиуса r:
-          val len = 2f*r*math.sin(a/180f*math.Pi/2f)
+          val len = 2f*r*math.sin(a.toRad/2f)
 
           car_center + car_direction.rotateDeg(a/2f).n*len
         }
@@ -109,10 +111,10 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
       if(front_wheels_rotation == 0) _rotation
       else {
         // радиус поворота. 13.4 - расстояние между осями колес
-        val r = 13.4f/math.sin(front_wheels_rotation/180f*math.Pi)
+        val r = 13.4f/math.sin(front_wheels_rotation.toRad)
 
         // радиус поворота r известен, линейная скорость speed известна, посчитаем угловую по формуле w = v/r
-        val w = speed/r/math.Pi*180f
+        val w = (speed/r).toDeg
 
         // speed у нас в пикселях в секунду. r в пикселях. w получилась в градусах в секунду
         // за время seconds_from_now будет сделан угол w*seconds_from_now.
@@ -129,10 +131,13 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
     val other_cars = AICarTestArea.cars.filterNot(_.index == index)
 
     if(_path.nonEmpty) {
-      val need_rotation = (_path.head - car_center).mydeg(def_vector)
+      val need_rotation = def_vector.signedDeg(_path.head - car_center)
       val tmp1 = need_rotation - _rotation
       val tmp = if(math.abs(tmp1) < 180) tmp1 else (360 - math.abs(tmp1))*math.signum(tmp1)*(-1)
       val dist_to_next_point = _path.head.dist(car_center) / 5f      // дистанция в метрах до следующей точки
+      if(dist_to_next_point > 100) {
+        println("gotcha!")
+      }
       val dist_to_next_turn = if(_path.length == 1) dist_to_next_point else {
         val turn_point = _path.sliding(2).find {
           case Seq(from, to) => (_path.head - car_center).deg(to - from) > 5
@@ -147,51 +152,61 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
       } else {
         need_wheels_rotation = if(tmp < 0) math.max(tmp, -45) else math.min(tmp, 45)
       }
-
-      val is_in_collision = {val bs = bodyState(); other_cars.exists(car => maybeCollision(bs, car.bodyState()).nonEmpty)}
-      need_speed = if(is_in_collision) {
-        5f
-      } else {
-        if (math.abs(need_wheels_rotation) > 30) {
-          if (dist_to_next_point < 6) {
-            if (math.abs(_front_wheels_rotation) >= 44) 10f / 3.6f * 5f
-            else 5f / 3.6f * 5f
-          } else 5f / 3.6f * 5f
-        } else if (math.abs(need_wheels_rotation) > 10) 10f / 3.6f * 5f
-        else {
-          if (dist_to_next_turn > 20) 40f / 3.6f * 5f
-          else 20f / 3.6f * 5f
-        }
+      need_speed = if (math.abs(need_wheels_rotation) > 30) {
+        if (dist_to_next_point < 6) {
+          if (math.abs(_front_wheels_rotation) >= 44) 10f / 3.6f * 5f
+          else 5f / 3.6f * 5f
+        } else 5f / 3.6f * 5f
+      } else if (math.abs(need_wheels_rotation) > 10) 10f / 3.6f * 5f
+      else {
+        if (dist_to_next_turn > 20) 40f / 3.6f * 5f
+        else 20f / 3.6f * 5f
       }
     } else {
       need_wheels_rotation = 0
       need_speed = 0
     }
 
-    // алгоритм избежания столкновений:
-    // просчитываем позицию машины через 5 секунд при данной скорости
-    // если намечается столкновение, сбрасываем скорость до нуля
-    val state_after = bodyState(AICarTestArea.seconds)
-    if(other_cars.exists(car => {
-      val car_state = car.bodyState(AICarTestArea.seconds)
-      maybeCollision(state_after, car_state).nonEmpty
-    })) {
-      need_speed = 0
-    }
-
-    val state_after2 = bodyState(AICarTestArea.seconds, need_speed, need_wheels_rotation)
-    if(other_cars.exists(car => {
-      val car_state = car.bodyState(AICarTestArea.seconds)
-      maybeCollision(state_after2, car_state).nonEmpty
-    })) {
-      val state_after3 = bodyState(AICarTestArea.seconds, -5, 0)
-      if(!other_cars.exists(car => {
-        val car_state = car.bodyState(AICarTestArea.seconds)
-        maybeCollision(state_after3, car_state).nonEmpty
+    // алгоритм избежания столкновений
+    val is_in_collision_now = {val bs = bodyState(); other_cars.exists(car => maybeCollision(bs, car.bodyState()).nonEmpty)}
+    val other_cars_states_after = other_cars.map(car =>  car.bodyState(AICarTestArea.seconds))
+    if(is_in_collision_now) {
+      val state_after4 = bodyState(AICarTestArea.seconds, 5f / 3.6f * 5f, need_wheels_rotation)
+      if(!other_cars_states_after.exists(other_car_state => {
+        maybeCollision(state_after4, other_car_state).nonEmpty
       })) {
-        need_speed = -5
-        need_wheels_rotation = 0
-      } else need_speed = 0
+        need_speed = 5f / 3.6f * 5f
+      } else {
+        val state_after5 = bodyState(AICarTestArea.seconds, -5f / 3.6f * 5f, need_wheels_rotation)
+        if(!other_cars_states_after.exists(other_car_state => {
+          maybeCollision(state_after5, other_car_state).nonEmpty
+        })) {
+          need_speed = -5f / 3.6f * 5f
+        } else {
+          need_speed = 0
+        }
+      }
+    } else {
+      val state_after = bodyState(AICarTestArea.seconds)
+
+      if(other_cars_states_after.exists(other_car_state => {
+        maybeCollision(state_after, other_car_state).nonEmpty
+      })) {
+        need_speed = -5f / 3.6f * 5f
+      }
+
+      val state_after2 = bodyState(AICarTestArea.seconds, need_speed, need_wheels_rotation)
+      if(other_cars_states_after.exists(other_car_state => {
+        maybeCollision(state_after2, other_car_state).nonEmpty
+      })) {
+        val state_after3 = bodyState(AICarTestArea.seconds, -5f / 3.6f * 5f, 0)
+        if(!other_cars_states_after.exists(other_car_state => {
+          maybeCollision(state_after3, other_car_state).nonEmpty
+        })) {
+          need_speed = -5f / 3.6f * 5f
+          need_wheels_rotation = 0
+        } else need_speed = 0
+      }
     }
 
     if(_path.nonEmpty) {
@@ -230,10 +245,10 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
       if(math.abs(_front_wheels_rotation) < 1f) _front_wheels_rotation = 0
       if(_front_wheels_rotation != 0) {
         // радиус поворота. 13.4 - расстояние между осями колес
-        val r = 13.4f/math.sin(_front_wheels_rotation/180f*math.Pi)
+        val r = 13.4f/math.sin(_front_wheels_rotation.toRad)
 
         // радиус поворота r известен, линейная скорость speed известна, посчитаем угловую по формуле w = v/r
-        val w = _speed/r/math.Pi*180f
+        val w = (_speed/r).toDeg
 
         // speed у нас в пикселях в секунду. r в пикселях. w получилась в градусах в  секунду
         rotation += (w/60f).toFloat
