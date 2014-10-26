@@ -90,7 +90,7 @@ object RoadsCreator extends ScageScreenApp("Roads Creator", 1920, 1200) {
         map_elements += CrossRoad(pos/*, roads*/)
         map_elements.find {
           case FourLaneRoad(from, to) =>
-            (pos - from).n == (to - from).n
+            (pos - from).n == (to - from).n && pos.dist(from) < to.dist(from)
           case _ => false
         }.foreach {
           case er @ FourLaneRoad(from, to) =>
