@@ -5,7 +5,7 @@ import com.github.dunnololda.scageprojects.drivers.RoadMap._
 
 import scala.collection.mutable.ArrayBuffer
 
-object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
+object AICarTestArea extends ScageScreenApp("AI Car Test Area", 1920, 1200) {
   private val map_name = "map.txt"
   loadMap(map_name)
 

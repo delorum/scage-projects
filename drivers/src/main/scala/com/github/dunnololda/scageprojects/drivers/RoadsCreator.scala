@@ -4,13 +4,14 @@ import com.github.dunnololda.scage.ScageLib._
 import com.github.dunnololda.scageprojects.drivers.RoadMap._
 import scala.collection.mutable.ArrayBuffer
 
-object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
-  private val map_name = "map.txt"
+object RoadsCreator extends ScageScreenApp("Roads Creator", 1920, 1200) {
+  private val map_name = "protvino.txt"
 
   private val ROADS_MODE = 1
   private val CROSSROADS_MODE = 2
   private val NETWORK_MODE = 3
   private val PATH_FINDING = 4
+  private val NAVIGATION = 0
   
   private var mode = ROADS_MODE
   
@@ -30,6 +31,7 @@ object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
   key(KEY_2, onKeyDown = mode = CROSSROADS_MODE)
   key(KEY_3, onKeyDown = mode = NETWORK_MODE)
   key(KEY_4, onKeyDown = mode = PATH_FINDING)
+  key(KEY_0, onKeyDown = mode = NAVIGATION)
 
   key(KEY_W, 100, onKeyDown = _center += Vec(0, 5))
   key(KEY_A, 100, onKeyDown = _center -= Vec(5, 0))
@@ -67,24 +69,37 @@ object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
       case ROADS_MODE =>
         _road_start match {
           case Some(from) =>
-            map_elements += FourLaneRoad(from, nearestPoint(scaledCoord(m)))
+            val to = nearestPoint(scaledCoord(m))
+            addRoad(from, to)
             _road_start = None
           case None =>
             _road_start = Some(nearestPoint(scaledCoord(m)))
         }
       case CROSSROADS_MODE =>
         val pos = nearestPoint(scaledCoord(m))
-        val four_ends = Set(
+        /*val four_ends = Set(
           pos + Vec( 30,   0),
           pos + Vec(-30,   0),
           pos + Vec(  0,  30),
           pos + Vec(  0, -30)
         )
-        /*val roads = road_elements.filter {
+        val roads = road_elements.filter {
           case TwoLinesEachSide(from, to) => four_ends.contains(from) || four_ends.contains(to)
           case _ => false
         }.toList*/
         map_elements += CrossRoad(pos/*, roads*/)
+        map_elements.find {
+          case FourLaneRoad(from, to) =>
+            (pos - from).n == (to - from).n
+          case _ => false
+        }.foreach {
+          case er @ FourLaneRoad(from, to) =>
+            removeRoad(er)
+            val dir = (to - from).n
+            addRoad(from, pos+dir*(-30))
+            addRoad(pos+dir*30, to)
+          case _ =>
+        }
       case NETWORK_MODE =>
         val pos = nearestPoint(scaledCoord(m))
         if(!road_network.contains(pos)) {
@@ -108,6 +123,8 @@ object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
           }
           find_path_from = None
         }
+      case NAVIGATION =>
+        _center = scaledCoord(m)
       case _ =>
     }
   })
@@ -119,7 +136,10 @@ object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
         mode match {
           case ROADS_MODE | CROSSROADS_MODE =>
             if(selected_map_element != -1 && map_elements.nonEmpty && selected_map_element >= 0 && selected_map_element < map_elements.length) {
-              map_elements.remove(selected_map_element)
+              map_elements(selected_map_element) match {
+                case fr:FourLaneRoad => removeRoad(fr)
+                case x => map_elements -= x
+              }
               if(selected_map_element >= map_elements.length) selected_map_element = -1
             }
           case NETWORK_MODE =>
@@ -246,19 +266,84 @@ object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
   interface {
     mode match {
       case ROADS_MODE =>
-        print("Mode: Roads", 20, 20, WHITE)
+        val p = nearestPoint(scaledCoord(mouseCoord))
+        print(s"Mode: Roads ${_road_start.map(v => s"${v.x}:${v.y}").getOrElse("-")} -> ${p.x}:${p.y}", 20, 20, WHITE)
       case CROSSROADS_MODE =>
         print("Mode: Crossroads", 20, 20, WHITE)
       case NETWORK_MODE =>
         print("Mode: Network", 20, 20, WHITE)
       case PATH_FINDING =>
         print("Mode: Path Finding", 20, 20, WHITE)
+      case NAVIGATION =>
+        print("Mode: Navigation", 20, 20, WHITE)
       case _ =>
     }
   }
 
   private def nearestPoint(v:Vec):Vec = {
     Vec(v.ix/15*15-5, v.iy/15*15-5)
+  }
+
+  private def calculateRoadsToReplace(from:Vec, to:Vec, replaced_roads:Set[FourLaneRoad] = Set()):(Vec, Vec, Set[FourLaneRoad]) = {
+    map_elements.find {
+      case fr @ FourLaneRoad(exists_from, exists_to) if !replaced_roads.contains(fr) =>
+        from == exists_to || from == exists_from ||
+          to == exists_to   || to == exists_from
+      case _ => false
+    } match {
+      case Some(er @ FourLaneRoad(exists_from, exists_to)) =>
+        if(exists_to == from) {
+          calculateRoadsToReplace(exists_from, to, replaced_roads + er)
+        } else if(exists_to == to) {
+          calculateRoadsToReplace(from, exists_from, replaced_roads + er)
+        } else if(exists_from == to) {
+          calculateRoadsToReplace(from, exists_to, replaced_roads + er)
+        } else if(exists_from == from) {
+          calculateRoadsToReplace(to, exists_to, replaced_roads + er)
+        } else (from, to, replaced_roads)
+      case _ => (from, to, replaced_roads)
+    }
+  }
+
+  private def addRoad(from:Vec, to:Vec) {
+    val (f, t, replaced_roads) = calculateRoadsToReplace(from, to)
+    replaced_roads.foreach(removeRoad)
+    map_elements += FourLaneRoad(f, t)
+    val dir = (t - f).n
+    val dir1 = dir.rotateDeg(-90).n*15
+    val dir2 = dir.rotateDeg(90).n*15
+    val road_len = (t - f).norma
+    val network_points1 = (0f to road_len by 45f).map {
+      case len => f + dir*len + dir1
+    }.toList ::: {if(road_len % 45 == 0) Nil else List(t+dir1)}
+    network_points1.zipWithIndex.init.foreach {
+      case (np1, idx) => road_network(np1) = ArrayBuffer[Vec](network_points1(idx+1))
+    }
+    road_network(network_points1.last) = ArrayBuffer[Vec]()
+    val network_points2 = (0f to road_len by 45f).map {
+      case len => t - dir*len + dir2
+    }.toList ::: {if(road_len % 45 == 0) Nil else List(f+dir2)}
+    network_points2.zipWithIndex.init.foreach {
+      case (np2, idx) => road_network(np2) = ArrayBuffer[Vec](network_points2(idx+1))
+    }
+    road_network(network_points2.last) = ArrayBuffer[Vec]()
+  }
+
+  private def removeRoad(road:FourLaneRoad) {
+    val FourLaneRoad(from, to) = road
+    val dir = (to - from).n
+    val dir1 = dir.rotateDeg(-90).n*15
+    val dir2 = dir.rotateDeg(90).n*15
+    val road_len = (to - from).norma
+    val network_points1 = (0f to road_len by 45f).map {
+      case len => from + dir*len + dir1
+    }.toList ::: {if(road_len % 45 == 0) Nil else List(to+dir1)}
+    network_points1.foreach(np => road_network -= np)
+    val network_points2 = (0f to road_len by 45f).map {
+      case len => to - dir*len + dir2
+    }.toList ::: {if(road_len % 45 == 0) Nil else List(from+dir2)}
+    network_points2.foreach(np => road_network -= np)
+    map_elements -= road
   }
 }
 
