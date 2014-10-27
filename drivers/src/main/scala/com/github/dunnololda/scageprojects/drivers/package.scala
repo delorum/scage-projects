@@ -5,6 +5,8 @@ import net.phys2d.raw.shapes.{DynamicShape => Phys2dShape, _}
 import net.phys2d.raw.collide.{Collider => Phys2dCollider, _}
 import net.phys2d.raw.{Body => Phys2dBody, StaticBody => Phys2dStaticBody, BodyList => Phys2dBodyList, World => Phys2dWorld}
 
+import scala.collection.mutable
+
 package object drivers {
   val def_vector = Vec(0,1)
   def drawDashedLine(from:Vec, to:Vec, dash_len:Float, color:ScageColor): Unit = {
@@ -66,6 +68,41 @@ package object drivers {
     _nextNode(from, List(from), Set())
 
     result.map(kv => (kv._1, kv._2.toList)).toMap
+  }
+
+  def aStar(from:Vec, to:Vec, network:Map[Vec, List[Vec]]):List[Vec] = {
+    case class VecData(v:Vec, g:Int, h:Float, came_from:Option[VecData]) {
+      def f = g + h
+    }
+
+    def reconstructPath(goal_node:VecData, res:List[VecData] = Nil):List[VecData] = {
+      if(goal_node.came_from.isEmpty) goal_node :: res
+      else {
+        reconstructPath(goal_node.came_from.get, goal_node :: res)
+      }
+    }
+
+    val closed_set = mutable.HashMap[Vec, VecData]()
+    val open_set = mutable.HashMap[Vec, VecData](from -> VecData(from, g = 0, h = from.dist(to), came_from = None))
+    while(open_set.nonEmpty) {
+      val x = open_set.toList.sortBy(_._2.f).head
+      if(x._1 == to) {
+        return reconstructPath(x._2).map(_.v)
+      } else {
+        open_set -= x._1
+        closed_set += x
+        for {
+          y <- network(x._1)
+          if !closed_set.contains(y)
+        } {
+          val tentative_g_score = x._2.g + 1
+          if(!open_set.contains(y) || tentative_g_score < open_set(y).g) {
+            open_set(y) = VecData(y, tentative_g_score, y.dist(to), Some(x._2))
+          }
+        }
+      }
+    }
+    Nil
   }
 
   case class AABB(center:Vec, width:Double, height:Double) {

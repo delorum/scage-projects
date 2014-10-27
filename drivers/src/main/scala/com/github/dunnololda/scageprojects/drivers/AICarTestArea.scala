@@ -3,14 +3,15 @@ package com.github.dunnololda.scageprojects.drivers
 import com.github.dunnololda.scage.ScageLib._
 import com.github.dunnololda.scageprojects.drivers.RoadMap._
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-object AICarTestArea extends ScageScreenApp("AI Car Test Area", 1920, 1200) {
+object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
   private val map_name = "map.txt"
   loadMap(map_name)
 
-  val seconds = 2
-
+  //val seconds = 5
+  def seconds:List[Float] = List(0.5f, 1f,2f,3f,4f)
 
   private val road_points = RoadMap.road_network.keys.toList
 
@@ -30,11 +31,11 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 1920, 1200) {
 
   private var ai_car  = cars.head
 
-  private def generatePathForCar(car:AICar): Unit = {
+  private def generatePathForCar(car:AICar) {
     if(car.path.isEmpty) {
       val p1 = road_points.sortBy(v => v.dist(car.carCenter)).head
       val p2 = road_points((math.random*road_points.length).toInt)
-      val path = dijkstra1(p1, RoadMap.road_network.map(kv => (kv._1, kv._2.toList)).toMap).getOrElse(p2, Nil)
+      val path = aStar(p1, p2, road_network.map(kv => (kv._1, kv._2.toList)).toMap)
       /*val reduced_path = if(path.length > 2) {
         path.tail.sliding(2).foldLeft((List(path.head), (path.tail.head - path.head).n)) {
           case ((res, cur_dir), List(from, to)) =>
@@ -47,7 +48,8 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 1920, 1200) {
     } else if(car.path.length < 20) {
       val p1 = car.path.last
       val p2 = road_points((math.random*road_points.length).toInt)
-      val path = dijkstra1(p1, RoadMap.road_network.map(kv => (kv._1, kv._2.toList)).toMap).getOrElse(p2, Nil)
+      //val path = dijkstra1(p1, RoadMap.road_network.map(kv => (kv._1, kv._2.toList)).toMap).getOrElse(p2, Nil)
+      val path = aStar(p1, p2, road_network.map(kv => (kv._1, kv._2.toList)).toMap)
       car.addPath(path)
     }
   }
@@ -65,6 +67,7 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 1920, 1200) {
     val pos = scaledCoord(m)
     ai_car = cars.sortBy(_.carCenter.dist(pos)).head
     _center = ai_car.carCenter
+    //_center = pos
   })
 
   mouseWheelUp(onWheelUp = m => {
@@ -85,6 +88,25 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 1920, 1200) {
 
   action(1000) {
     cars.foreach(generatePathForCar)
+  }
+  
+  // для каждой машины состояния остальных машин в такую-то секунду
+  val future_other_cars_states = mutable.HashMap[Float, Map[String, List[BodyState]]]()
+  val other_cars_states_now_and_after = mutable.HashMap[Float, Map[String, List[(BodyState, BodyState)]]]()
+
+  private def updateStates(): Unit = {
+    seconds.foreach {
+      case second =>
+        future_other_cars_states(second) = cars.map(car => (car.index, cars.filterNot(_.index == car.index).map(_.bodyState(second)).toList)).toMap
+        other_cars_states_now_and_after(second) = cars.map(car => (car.index, cars.filterNot(_.index == car.index).map(other_car => {
+          (other_car.bodyState(), other_car.bodyState(second))
+        }).toList)).toMap
+    }
+  }
+  updateStates()
+  
+  action(100) {
+    updateStates()
   }
 
   render {
@@ -121,19 +143,19 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 1920, 1200) {
         }
     }*/
 
-    val bs1 = ai_car.bodyState(seconds)
+    val bs1 = ai_car.bodyState(2)
     openglLocalTransform {
       openglMove(bs1.coord)
       openglRotateDeg(bs1.ang.toFloat)
       drawRectCentered(Vec.zero, 9, 23.3f, RED)
     }
-    val bs2 = ai_car.bodyState(seconds, ai_car.needSpeed, ai_car.needWheelsRotation)
+    val bs2 = ai_car.bodyState(2, ai_car.needSpeed, ai_car.needWheelsRotation)
     openglLocalTransform {
       openglMove(bs2.coord)
       openglRotateDeg(bs2.ang.toFloat)
       drawRectCentered(Vec.zero, 9, 23.3f, YELLOW)
     }
-    val bs3 = ai_car.bodyState(seconds, -5f/3.6f*5f, 0)
+    val bs3 = ai_car.bodyState(2, -5f/3.6f*5f, 0)
     openglLocalTransform {
       openglMove(bs3.coord)
       openglRotateDeg(bs3.ang.toFloat)

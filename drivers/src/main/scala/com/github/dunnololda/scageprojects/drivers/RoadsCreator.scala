@@ -4,7 +4,7 @@ import com.github.dunnololda.scage.ScageLib._
 import com.github.dunnololda.scageprojects.drivers.RoadMap._
 import scala.collection.mutable.ArrayBuffer
 
-object RoadsCreator extends ScageScreenApp("Roads Creator", 1920, 1200) {
+object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
   private val map_name = "protvino.txt"
 
   private val ROADS_MODE = 1
@@ -119,7 +119,8 @@ object RoadsCreator extends ScageScreenApp("Roads Creator", 1920, 1200) {
         } else {
           val find_path_to = road_network.keys.toList.sortBy(_.dist2(pos)).headOption
           if(find_path_to.nonEmpty) {
-            found_path = dijkstra1(find_path_from.get, road_network.map(kv => (kv._1, kv._2.toList)).toMap).getOrElse(find_path_to.get, Nil)
+            //found_path = dijkstra1(find_path_from.get, road_network.map(kv => (kv._1, kv._2.toList)).toMap).getOrElse(find_path_to.get, Nil)
+            found_path = aStar(find_path_from.get, find_path_to.get, road_network.map(kv => (kv._1, kv._2.toList)).toMap)
           }
           find_path_from = None
         }
