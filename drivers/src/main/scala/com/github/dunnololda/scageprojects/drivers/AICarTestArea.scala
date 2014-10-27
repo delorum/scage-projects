@@ -7,7 +7,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
-  private val map_name = "map.txt"
+  private val map_name = "protvino.txt"
   loadMap(map_name)
 
   //val seconds = 5
@@ -63,12 +63,12 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
 
   key(KEY_Q, onKeyDown = {if(keyPressed(KEY_LCONTROL)) stopApp()})
 
-  leftMouse(onBtnDown = m => {
+  /*leftMouse(onBtnDown = m => {
     val pos = scaledCoord(m)
     ai_car = cars.sortBy(_.carCenter.dist(pos)).head
     _center = ai_car.carCenter
     //_center = pos
-  })
+  })*/
 
   mouseWheelUp(onWheelUp = m => {
     if(globalScale < 1) globalScale += 0.1f
@@ -79,12 +79,12 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
     else if(globalScale > 0.1f) globalScale -= 0.1f
   })
 
-  center = _center
+  //center = _center
 
-  //center = ai_car.carCenter/*+Vec(0,100)*/
+  center = ai_car.carCenter/*+Vec(0,100)*/
   globalScale = 3
-  /*rotationPoint = ai_car.carCenter
-  rotationAngleDeg = -ai_car.rotation*/
+  rotationPoint = ai_car.carCenter
+  rotationAngleDeg = -ai_car.rotation
 
   action(1000) {
     cars.foreach(generatePathForCar)
