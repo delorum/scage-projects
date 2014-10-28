@@ -102,10 +102,14 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
   private def updateStates(): Unit = {
     seconds.foreach {
       case second =>
-        future_other_cars_states(second) = cars.map(car => (car.index, cars.filterNot(_.index == car.index).map(_.bodyState(second)).toList)).toMap
-        other_cars_states_now_and_after(second) = cars.map(car => (car.index, cars.filterNot(_.index == car.index).map(other_car => {
-          (other_car.bodyState(), other_car.bodyState(second))
-        }).toList)).toMap
+        future_other_cars_states(second) = cars.map(car => {
+          (car.index, cars.filterNot(_.index == car.index).map(_.bodyState(second)).toList)
+        }).toMap
+        other_cars_states_now_and_after(second) = cars.map(car => {
+          (car.index, cars.filterNot(_.index == car.index).map(other_car => {
+            (other_car.bodyState(), other_car.bodyState(second))
+          }).toList)
+        }).toMap
     }
   }
   updateStates()
