@@ -27,7 +27,7 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
       cars += new AICar(index, x+rot*(-20), def_vector.signedDeg(rot), this)
     }
   }
-  (1 to 30).foreach(i => addAICar(s"ai_car$i"))
+  (1 to 20).foreach(i => addAICar(s"ai_car$i"))
 
   var ai_car  = cars.head
 
@@ -113,16 +113,16 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
   action(100) {
     updateStates()
 
-    if(!ignore_collisions) {
-      cars.combinations(2).foreach {
-        case Seq(car1, car2) =>
-          maybeCollision(car1.bodyState(0), car2.bodyState(0)).foreach {
-            case Contact(b1, b2, contact_point, normal, separation) =>
-              println(s"collision! separation=$separation")
+    cars.combinations(2).foreach {
+      case Seq(car1, car2) =>
+        maybeCollision(car1.bodyState(0), car2.bodyState(0)).foreach {
+          case Contact(b1, b2, contact_point, normal, separation) =>
+            println(s"collision! ${car1.index}<->${car2.index} separation=$separation")
+            if(!ignore_collisions) {
               ai_car = car1
               pause()
-          }
-      }
+            }
+        }
     }
   }
 

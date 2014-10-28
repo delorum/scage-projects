@@ -227,14 +227,14 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
           val collision2 = other_cars_states_after2.map(other_car_state => maybeCollision(our_state2, other_car_state)).flatten
           (collision1.headOption, collision2.headOption) match {
             case (Some(col1), Some(col2)) =>
-              if(col1.separation >= col2.separation) {
+              if(math.abs(col1.separation) < math.abs(col2.separation)) {
                 if(index == AICarTestArea.ai_car.index) {
-                  println(s"[$index] $moment. коллизия есть сейчас и будет куда ни двигайся, но если двигаться вперед, separation увеличивается")
+                  println(s"[$index] $moment. коллизия есть сейчас и будет куда ни двигайся, но если двигаться вперед, separation уменьшается")
                 }
                 need_speed = 5f / 3.6f * 5f
               } else {
                 if(index == AICarTestArea.ai_car.index) {
-                  println(s"[$index] $moment. коллизия есть сейчас и будет куда ни двигайся, но если двигаться назад, separation увеличивается")
+                  println(s"[$index] $moment. коллизия есть сейчас и будет куда ни двигайся, но если двигаться назад, separation уменьшается")
                 }
                 need_speed = -5f / 3.6f * 5f
               }
@@ -258,8 +258,8 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
       }
     } else {
       // если при сохранении текущих параметров скорости/направления мы столкнемся через столько-то секунд - 
-      // сдаем назад или вперед или стоим ждем
-
+      // сдаем назад или вперед или стоим ждем. При этом, мы стараемся сохранить запланированное положение руля, потому что
+      // нам также важно не отдалится от точки пути, к которой мы едем
       if(collisionIfSuchSpeedAndRotation(AICarTestArea.seconds, _speed, _front_wheels_rotation)) {
         if(!collisionIfSuchSpeedAndRotation(AICarTestArea.seconds, 5f / 3.6f * 5f, need_wheels_rotation)) {
           if(index == AICarTestArea.ai_car.index) {
@@ -280,17 +280,85 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
           }
         }
       } else {
+        // раз мы здесь, значит текущие скорость и направление в норме. Теперь надо проверить запланированные.
         if (collisionIfSuchSpeedAndRotation(AICarTestArea.seconds, need_speed, need_wheels_rotation)) {
-          if (!collisionIfSuchSpeedAndRotation(AICarTestArea.seconds, 5f / 3.6f * 5f, 0)) {
-            if (index == AICarTestArea.ai_car.index) {
-              println(s"[$index] $moment. коллизия случится, если двигаться с запланированными скоростью/направлением, но ее не будет, если сбросить до 5км/ч и не крутить рулем")
-            }
-            need_speed = 5f / 3.6f * 5f
-            need_wheels_rotation = 0
-          } else {
-            if (!collisionIfSuchSpeedAndRotation(AICarTestArea.seconds, -5f / 3.6f * 5f, 0)) {
+          // Запланированные скорость и направление ведут к коллизии. Казалось бы, мы можем просто приравнять их текущим, ведь те в норме
+          // Но все не так просто: текущие скорость/направление могут отдалить нас от точки пути, к которой мы едем. Так что мы постараемся
+          // сохранить направление
+          if(_speed > 5f / 3.6f * 5f) {
+            if (!collisionIfSuchSpeedAndRotation(AICarTestArea.seconds, _speed, need_wheels_rotation)) {
               if (index == AICarTestArea.ai_car.index) {
-                println(s"[$index] $moment. коллизия случится, если двигаться с запланированными скоростью/направлением, но ее не будет, если сбросить до -5км/ч и не крутить рулем")
+                println(s"[$index] $moment. коллизия случится, если двигаться с запланированными скоростью/направлением, но ее не будет, если двигаться с текущей скоростью, но сохранить запланированное направление")
+              }
+              need_speed = _speed
+            } else {
+              if (!collisionIfSuchSpeedAndRotation(AICarTestArea.seconds, 5f / 3.6f * 5f, need_wheels_rotation)) {
+                if (index == AICarTestArea.ai_car.index) {
+                  println(s"[$index] $moment. коллизия случится, если двигаться с запланированными скоростью/направлением, но ее не будет, если сбросить до 5км/ч, но сохранить запланированное направление")
+                }
+                need_speed = 5f / 3.6f * 5f
+              } else if(!collisionIfSuchSpeedAndRotation(AICarTestArea.seconds, -5f / 3.6f * 5f, need_wheels_rotation)) {
+                if(index == AICarTestArea.ai_car.index) {
+                  println(s"[$index] $moment. коллизия случится, если двигаться с текущими скоростью/направлением, но ее не будет, если сбросить до -5км/ч, но сохранить запланированное направление")
+                }
+                need_speed = -5f / 3.6f * 5f
+              } else if(!collisionIfSuchSpeedAndRotation(AICarTestArea.seconds, -5f / 3.6f * 5f, 0)) {
+                if(index == AICarTestArea.ai_car.index) {
+                  println(s"[$index] $moment. коллизия случится, если двигаться с текущими скоростью/направлением, но ее не будет, если сбросить до -5км/ч и не крутить рулем")
+                }
+                need_speed = -5f / 3.6f * 5f
+                need_wheels_rotation = 0
+              } else {
+                if (index == AICarTestArea.ai_car.index) {
+                  println(s"[$index] $moment. коллизия случится, если двигаться с запланированными скоростью/направлением, и будет, если сбросить до 5км/ч или до -5км/ч и не крутить рулем, так что останавливаемся")
+                }
+                need_speed = 0
+              }
+            }
+          } else if(_speed != 0) {
+            // в эту секцию попадаем, если _speed меньше 5км/ч. Но _speed меняется, только чтобы достичь need_speed,
+            // а need_speed не может быть ноль и меньше -5км/ч. То есть -5км/ч < _speed < 5км/ч
+            if (!collisionIfSuchSpeedAndRotation(AICarTestArea.seconds, 5f / 3.6f * 5f, need_wheels_rotation)) {
+              if (index == AICarTestArea.ai_car.index) {
+                println(s"[$index] $moment. коллизия случится, если двигаться с запланированными скоростью/направлением, но ее не будет, если сбросить до 5км/ч, но сохранить запланированное направление")
+              }
+              need_speed = 5f / 3.6f * 5f
+            } else if(!collisionIfSuchSpeedAndRotation(AICarTestArea.seconds, _speed, need_wheels_rotation)) {
+              if(index == AICarTestArea.ai_car.index) {
+                println(s"[$index] $moment. коллизия случится, если двигаться с текущими скоростью/направлением, но ее не будет, если двигаться с текущей скоростью, но сохранить запланированное направление")
+              }
+              need_speed = _speed
+            } else if(!collisionIfSuchSpeedAndRotation(AICarTestArea.seconds, -5f / 3.6f * 5f, need_wheels_rotation)) {
+              if(index == AICarTestArea.ai_car.index) {
+                println(s"[$index] $moment. коллизия случится, если двигаться с текущими скоростью/направлением, но ее не будет, если сбросить до -5км/ч, но сохранить запланированное направление")
+              }
+              need_speed = -5f / 3.6f * 5f
+            } else if(!collisionIfSuchSpeedAndRotation(AICarTestArea.seconds, -5f / 3.6f * 5f, 0)) {
+              if(index == AICarTestArea.ai_car.index) {
+                println(s"[$index] $moment. коллизия случится, если двигаться с текущими скоростью/направлением, но ее не будет, если сбросить до -5км/ч и не крутить рулем")
+              }
+              need_speed = -5f / 3.6f * 5f
+              need_wheels_rotation = 0
+            } else {
+              if (index == AICarTestArea.ai_car.index) {
+                println(s"[$index] $moment. коллизия случится, если двигаться с запланированными скоростью/направлением, и будет, если сбросить до 5км/ч или до -5км/ч и не крутить рулем, так что останавливаемся")
+              }
+              need_speed = 0
+            }
+          } else {
+            if (!collisionIfSuchSpeedAndRotation(AICarTestArea.seconds, 5f / 3.6f * 5f, need_wheels_rotation)) {
+              if (index == AICarTestArea.ai_car.index) {
+                println(s"[$index] $moment. коллизия случится, если двигаться с запланированными скоростью/направлением, но ее не будет, если сбросить до 5км/ч, но сохранить запланированное направление")
+              }
+              need_speed = 5f / 3.6f * 5f
+            } else if(!collisionIfSuchSpeedAndRotation(AICarTestArea.seconds, -5f / 3.6f * 5f, need_wheels_rotation)) {
+              if(index == AICarTestArea.ai_car.index) {
+                println(s"[$index] $moment. коллизия случится, если двигаться с текущими скоростью/направлением, но ее не будет, если сбросить до -5км/ч, но сохранить запланированное направление")
+              }
+              need_speed = -5f / 3.6f * 5f
+            } else if(!collisionIfSuchSpeedAndRotation(AICarTestArea.seconds, -5f / 3.6f * 5f, 0)) {
+              if(index == AICarTestArea.ai_car.index) {
+                println(s"[$index] $moment. коллизия случится, если двигаться с текущими скоростью/направлением, но ее не будет, если сбросить до -5км/ч и не крутить рулем")
               }
               need_speed = -5f / 3.6f * 5f
               need_wheels_rotation = 0
