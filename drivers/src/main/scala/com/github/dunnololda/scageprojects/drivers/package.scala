@@ -156,8 +156,8 @@ package object drivers {
   private val contacts = Array.fill(10)(new net.phys2d.raw.Contact)
   private val box_box_collider = new BoxBoxCollider
 
-  case class GeometricContactData(contact_point:Vec, normal:Vec)
-  case class Contact(body1:BodyState, body2:BodyState, contact_point:Vec, normal:Vec)
+  case class GeometricContactData(contact_point:Vec, normal:Vec, separation:Float)
+  case class Contact(body1:BodyState, body2:BodyState, contact_point:Vec, normal:Vec, separation:Float)
 
   case class BodyState(index:String,
                        mass:Double,
@@ -201,15 +201,17 @@ package object drivers {
           case 1 =>
             val contact_point = contacts(0).getPosition.toVec
             val normal = contacts(0).getNormal.toVec
-            Some(GeometricContactData(contact_point, normal))
+            val separation = contacts(0).getSeparation
+            Some(GeometricContactData(contact_point, normal, separation))
           case 2 =>
             val contact_point = (contacts(0).getPosition.toVec + contacts(1).getPosition.toVec)/2
             val normal = contacts(0).getNormal.toVec
-            Some(GeometricContactData(contact_point, normal))
+            val separation = math.max(contacts(0).getSeparation, contacts(1).getSeparation)
+            Some(GeometricContactData(contact_point, normal, separation))
           case _ => None
         }
       }
     }
-    collide(body1.phys2dBody, body2.phys2dBody, box_box_collider).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal))
+    collide(body1.phys2dBody, body2.phys2dBody, box_box_collider).map(gcd => Contact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
   }
 }

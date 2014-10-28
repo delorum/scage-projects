@@ -137,6 +137,19 @@ class Car(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen) 
     is_static = false
   )
 
+  def needRotation =  DriversMain.path.headOption.map(p => def_vector.signedDeg(p - car_center)).getOrElse(_rotation)
+  def distToNextPoint:Float =  DriversMain.path.headOption.map(p => p.dist(car_center) / 5f).getOrElse(0)
+  def distToNextTurn:Float =  {
+    if(DriversMain.path.nonEmpty) {
+      if(DriversMain.path.length == 1) distToNextPoint else {
+        val turn_point = DriversMain.path.sliding(2).find {
+          case Seq(from, to) => (DriversMain.path.head - car_center).deg(to - from) > 20
+        }.map(x => x.head).getOrElse(DriversMain.path.head)
+        turn_point.dist(car_center) / 5f
+      }
+    } else 0f
+  }
+
   screen.action {
     if(speed != 0) {
       if(math.abs(_front_wheels_rotation) < 1f) _front_wheels_rotation = 0

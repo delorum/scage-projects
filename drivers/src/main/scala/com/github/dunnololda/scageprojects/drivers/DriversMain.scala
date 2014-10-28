@@ -14,7 +14,7 @@ object DriversMain extends ScageScreenApp("Drivers", 800, 600) {
   private val road_points = RoadMap.road_network.keys.toList
   private val car = new Car("car", road_network.keys.head, 0, this)
 
-  private val path = ArrayBuffer[Vec]()
+  val path = ArrayBuffer[Vec]()
 
   private var need_wheel_rotation = 0f
   private val def_vector = Vec(0,1)
@@ -72,11 +72,20 @@ object DriversMain extends ScageScreenApp("Drivers", 800, 600) {
       } else (path, Vec.zero)
       reduced_path._1.foreach(ai_car.addWayPoint)*/
       path ++= new_path
+
+      println(path.sliding(2).toList.grouped(2).map {
+        case Seq(Seq(a,b), Seq(c,d)) => (c-d).deg(b-a)
+        case _ => 0f
+      }.toList.distinct.sorted.mkString(", "))
     } else if(path.length < 20) {
       val p1 = path.last
       val p2 = road_points((math.random*road_points.length).toInt)
       val new_path = dijkstra1(p1, RoadMap.road_network.map(kv => (kv._1, kv._2.toList)).toMap).getOrElse(p2, Nil)
       path ++= new_path
+      println(path.sliding(2).toList.grouped(2).map {
+        case Seq(Seq(a,b), Seq(c,d)) => (d-c).deg(b-a)
+        case _ => 0f
+      }.toList.distinct.sorted.mkString(", "))
     }
 
     need_wheel_rotation = if(path.nonEmpty) {
@@ -135,16 +144,13 @@ object DriversMain extends ScageScreenApp("Drivers", 800, 600) {
   }
 
   interface {
-    //print(f"rotation radius: ${18.03f/math.sin(car.frontWheelsRotation.toRad)/5f}%.1f m", 20, 80, WHITE)
+    print(f"distance to next point: ${car.distToNextPoint}%.0f m",      500, 60, WHITE)
+    print(f"distance to next turn: ${car.distToNextTurn}%.0f m",        500, 40, WHITE)
+    print(f"speed: ${car.speed/5}%.0f m/s; ${car.speed/5*3.6}%.0f km/h",   500, 20, WHITE)
 
-    print(f"wheels rotation: ${car.frontWheelsRotation}%.0f deg", 20, 100, WHITE)
-    print(f"need wheel rotation is $need_wheel_rotation%.1f deg", 20, 80, WHITE)
-    print(f"rotation: ${car.rotation}%.0f deg", 20, 60, WHITE)
-    if(path.nonEmpty) {
-      val need_rotation = def_vector.signedDeg(path.head - car.carCenter)
-      print(f"need rotation is $need_rotation%.1f deg", 20, 40, WHITE)
-    }
-    print(f"speed: ${car.speed/5}%.0f m/s; ${car.speed/5*3.6}%.0f km/h", 20, 20, WHITE)
+    print(f"rotation is ${car.rotation}%.1f deg",                        20, 60, WHITE)
+    print(f"need rotation is ${car.needRotation}%.1f deg",                 20, 40, WHITE)
+    print(f"wheels rotation: ${car.frontWheelsRotation}%.0f deg",      20, 20, WHITE)
   }
 }
 

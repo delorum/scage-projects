@@ -7,7 +7,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
-  private val map_name = "protvino.txt"
+  private val map_name = "map.txt"
   loadMap(map_name)
 
   //val seconds = 5
@@ -29,7 +29,7 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
   }
   (1 to 30).foreach(i => addAICar(s"ai_car$i"))
 
-  private var ai_car  = cars.head
+  var ai_car  = cars.head
 
   private def generatePathForCar(car:AICar) {
     if(car.path.isEmpty) {
@@ -56,12 +56,17 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
 
   private var _center = windowCenter
 
-  key(KEY_W, 100, onKeyDown = _center += Vec(0, 5))
-  key(KEY_A, 100, onKeyDown = _center -= Vec(5, 0))
-  key(KEY_S, 100, onKeyDown = _center -= Vec(0, 5))
-  key(KEY_D, 100, onKeyDown = _center += Vec(5, 0))
+  keyIgnorePause(KEY_W, 100, onKeyDown = _center += Vec(0, 5))
+  keyIgnorePause(KEY_A, 100, onKeyDown = _center -= Vec(5, 0))
+  keyIgnorePause(KEY_S, 100, onKeyDown = _center -= Vec(0, 5))
+  keyIgnorePause(KEY_D, 100, onKeyDown = _center += Vec(5, 0))
 
-  key(KEY_Q, onKeyDown = {if(keyPressed(KEY_LCONTROL)) stopApp()})
+  keyIgnorePause(KEY_P, 500, onKeyDown = switchPause())
+
+  private var ignore_collisions = false
+  keyIgnorePause(KEY_I, onKeyDown = ignore_collisions = !ignore_collisions)
+
+  keyIgnorePause(KEY_Q, onKeyDown = {if(keyPressed(KEY_LCONTROL)) stopApp()})
 
   /*leftMouse(onBtnDown = m => {
     val pos = scaledCoord(m)
@@ -70,11 +75,11 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
     //_center = pos
   })*/
 
-  mouseWheelUp(onWheelUp = m => {
+  mouseWheelUpIgnorePause(onWheelUp = m => {
     if(globalScale < 1) globalScale += 0.1f
     else if(globalScale < 4) globalScale += 1
   })
-  mouseWheelDown(onWheelDown = m => {
+  mouseWheelDownIgnorePause(onWheelDown = m => {
     if(globalScale > 1) globalScale -= 1
     else if(globalScale > 0.1f) globalScale -= 0.1f
   })
@@ -107,6 +112,18 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
   
   action(100) {
     updateStates()
+
+    if(!ignore_collisions) {
+      cars.combinations(2).foreach {
+        case Seq(car1, car2) =>
+          maybeCollision(car1.bodyState(0), car2.bodyState(0)).foreach {
+            case Contact(b1, b2, contact_point, normal, separation) =>
+              println(s"collision! separation=$separation")
+              ai_car = car1
+              pause()
+          }
+      }
+    }
   }
 
   render {
@@ -127,8 +144,7 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
     cars.combinations(2).foreach {
       case Seq(car1, car2) =>
         maybeCollision(car1.bodyState(0), car2.bodyState(0)).foreach {
-          case Contact(b1, b2, contact_point, normal) =>
-            println("collision!")
+          case Contact(b1, b2, contact_point, normal, separation) =>
             drawFilledCircle(contact_point, 3, GREEN)
         }
     }
@@ -164,10 +180,13 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
   }
 
   interface {
+
     print(f"distance to next point: ${ai_car.distToNextPoint}%.0f m",      500, 60, WHITE)
     print(f"distance to next turn: ${ai_car.distToNextTurn}%.0f m",        500, 40, WHITE)
     print(f"speed: ${ai_car.speed/5}%.0f m/s; ${ai_car.speed/5*3.6}%.0f km/h",   500, 20, WHITE)
 
+    if(on_pause) print("PAUSE", 20, 120, WHITE)
+    print(s"ignore collisions: $ignore_collisions", 20, 100, WHITE)
     print(f"rotation is ${ai_car.rotation}%.1f deg",                        20, 80, WHITE)
     print(f"need rotation is ${ai_car.needRotation}%.1f deg",                 20, 60, WHITE)
     print(f"wheels rotation: ${ai_car.frontWheelsRotation}%.0f deg",      20, 40, WHITE)
