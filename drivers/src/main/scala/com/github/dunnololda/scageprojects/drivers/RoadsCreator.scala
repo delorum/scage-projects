@@ -5,7 +5,7 @@ import com.github.dunnololda.scageprojects.drivers.RoadMap._
 import scala.collection.mutable.ArrayBuffer
 
 object RoadsCreator extends ScageScreenApp("Roads Creator", 800, 600) {
-  private val map_name = "protvino.txt"
+  private val map_name = "map2.txt"
 
   private val ROADS_MODE = 1
   private val CROSSROADS_MODE = 2
