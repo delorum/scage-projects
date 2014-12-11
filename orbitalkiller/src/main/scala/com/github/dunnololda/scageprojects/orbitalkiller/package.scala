@@ -1,18 +1,14 @@
 package com.github.dunnololda.scageprojects
 
-import com.github.dunnololda.scage.ScageLib._
-import com.github.dunnololda.scage.ScageLib.Vec
+import com.github.dunnololda.scage.ScageLib.{Vec, _}
 import net.phys2d.raw.collide.{Collider => Phys2dCollider, _}
-import net.phys2d.raw.{Body => Phys2dBody, StaticBody => Phys2dStaticBody, BodyList => Phys2dBodyList, World => Phys2dWorld}
 import net.phys2d.raw.shapes.{DynamicShape => Phys2dShape, _}
+import net.phys2d.raw.{Body => Phys2dBody, BodyList => Phys2dBodyList, StaticBody => Phys2dStaticBody, World => Phys2dWorld}
+
 import scala.collection.mutable
-import scala.Some
+import scala.language.reflectiveCalls
 
 package object orbitalkiller {
-  val k:Double = 0.01 // базовой единичкой у нас будет одна сотая секунды
-  // доля времени, которая обсчитывается каждый такт расчетов. Каждая секунда реального времени это примерно 60 тактов (поддерживается частота 60 фпс)
-  val base_dt:Double = 1.0/60*k
-
   val G:Double = 6.6742867E-11
 
   case class AABB(center:DVec, width:Double, height:Double) {
@@ -514,27 +510,32 @@ package object orbitalkiller {
 
   case class Orbit(a:Double, b:Double, e:Double, c:Double, p:Double, r_p:Double, r_a:Double, t:Double)
 
-  def calculateOrbit(planet_mass:Double, body_coord:DVec, body_velocity:DVec, G:Double):Orbit = {
-    val k = planet_mass*G
-    //val a = body_coord.norma*k/(2*k*k - body_coord.norma*body_velocity.norma2)   //http://ru.wikipedia.org/wiki/Кеплеровы_элементы_орбиты
+  def calculateOrbit(planet_mass:Double, body_mass:Double, body_coord:DVec, body_velocity:DVec, G:Double):Orbit = {
+    //https://ru.wikipedia.org/wiki/Гравитационный_параметр
+    val mu = (planet_mass + body_mass)*G // гравитационный параметр
+
+    //http://ru.wikipedia.org/wiki/Кеплеровы_элементы_орбиты
+    //val a = body_coord.norma*k/(2*k*k - body_coord.norma*body_velocity.norma2)
+
+    //https://en.wikipedia.org/wiki/Specific_orbital_energy
+    val epsilon = body_velocity.norma2/2 - mu/body_coord.norma   // орбитальная энергия - сумма потенциальной и кинетической энергии тел, деленные на приведенную массу
 
     //http://ru.wikipedia.org/wiki/Большая_полуось
-    val epsilon = body_velocity.norma2/2 - k/body_coord.norma
-    val a = math.abs(k/(2*epsilon))
+    val a = math.abs(mu/(2*epsilon))                             // большая полуось
 
     //http://en.wikipedia.org/wiki/Kepler_orbit
     val r_n = body_coord.n
     val v_t = math.abs(body_velocity*r_n.perpendicular)
-    val p = math.pow(body_coord.norma*v_t, 2)/k
+    val p = math.pow(body_coord.norma*v_t, 2)/mu                 // фокальный параметр (половина длины хорды, проходящей через фокус и перпендикулярной к фокальной оси)
 
     //http://ru.wikipedia.org/wiki/Эллипс
-    val b = math.sqrt(math.abs(a*p))
-    val e = math.sqrt(math.abs(1 - (b*b)/(a*a)))
-    val c = a*e
-    val r_p = a*(1 - e)
-    val r_a = a*(1 + e)
+    val b = math.sqrt(math.abs(a*p))                             // малая полуось
+    val e = math.sqrt(math.abs(1 - (b*b)/(a*a)))                 // эксцентриситет
+    val c = a*e                                                  // фокальное расстояние (полурасстояние между фокусами)
+    val r_p = a*(1 - e)                                          // перигей
+    val r_a = a*(1 + e)                                          // апогей
 
-    val t = 2 * math.Pi * math.sqrt(math.abs(a * a * a / k))
+    val t = 2 * math.Pi * math.sqrt(math.abs(a * a * a / mu))    // орбитальный период (период обращения по орбите)
     Orbit(a, b, e, c, p, r_p, r_a, t)
   }
 

@@ -12,6 +12,12 @@ abstract class PolygonShip(
   def engines:List[Engine]
   def engines_mapping:Map[Int, Engine]
 
+  def radius = {
+    val x = points.map(_.x).max - points.map(_.x).min
+    val y = points.map(_.y).max - points.map(_.y).min
+    math.max(x,y)
+  }
+
   def currentState:BodyState = currentBodyState(index).getOrElse(
     BodyState(
       index,

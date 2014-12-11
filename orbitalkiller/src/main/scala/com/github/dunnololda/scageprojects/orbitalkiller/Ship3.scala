@@ -30,10 +30,10 @@ class Ship3(
     DVec(-10.0, 30.0)
   )
 
-  val eight = Engine(position = DVec(0.0, 70.0),    force_dir = DVec(0.0, -1.0), max_power = 10000, this)
+  val eight = Engine(position = DVec(0.0, 70.0),    force_dir = DVec(0.0, -1.0), max_power = 1000000, this)
   val two   = Engine(position = DVec(0.0, -70.0),   force_dir = DVec(0.0, 1.0),  max_power = 1000000, this)
-  val four  = Engine(position = DVec(-10.0, 0.0),   force_dir = DVec(1.0, 0.0),  max_power = 10000, this)
-  val six   = Engine(position = DVec(10.0, 0.0),    force_dir = DVec(-1.0, 0.0), max_power = 10000, this)
+  val four  = Engine(position = DVec(-10.0, 0.0),   force_dir = DVec(1.0, 0.0),  max_power = 1000000, this)
+  val six   = Engine(position = DVec(10.0, 0.0),    force_dir = DVec(-1.0, 0.0), max_power = 1000000, this)
   val seven = Engine(position = DVec(-40.0, 10.0),  force_dir = DVec(0.0, 1.0),  max_power = 10000, this)
   val nine  = Engine(position = DVec(40.0, 10.0),   force_dir = DVec(0.0, 1.0),  max_power = 10000, this)
   val one   = Engine(position = DVec(-40.0, -30.0), force_dir = DVec(0.0, 1.0),  max_power = 10000, this)

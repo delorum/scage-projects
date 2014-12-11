@@ -3,7 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import com.github.dunnololda.scage.ScageLib._
 import com.github.dunnololda.scage.ScageScreenApp
 
-object ScaledCoordTest extends ScageScreenApp("absCoord Test", 800, 600) {
+object ScaledCoordTest extends ScageScreenApp("ScaledCoord Test", 800, 600) {
   private var mouse_coord:Vec = Vec.zero
 
   private var _center = Vec.zero
@@ -38,7 +38,7 @@ object ScaledCoordTest extends ScageScreenApp("absCoord Test", 800, 600) {
   })
 
   center = _center
-  rotationPoint = _rotation_center
+  rotationCenter = _rotation_center
   rotationAngleDeg = _rotation_angle_deg
   render {
     (-1005 to 1005 by 15).foreach(x => drawLine(Vec(x, -1005), Vec(x, 1005), DARK_GRAY))

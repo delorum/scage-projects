@@ -11,7 +11,6 @@ object HelpScreen extends ScageScreen("Help Screen") {
       |5 - отключить все двигатели
       |
       |+, - - ускорение/замедление времени
-      |*, / - ускорение/замедление времени в 50 раз
       |
       |Стрелки вверх/вниз - добавить/убавить мощность выбранного двигателя
       |Стрелки влево/вправо - добавить/убавить время работы выбранного двигателя
@@ -42,4 +41,5 @@ object HelpScreen extends ScageScreen("Help Screen") {
   }
 
   key(KEY_ESCAPE, onKeyDown = stop())
+  keyIgnorePause(KEY_Q, onKeyDown = {if(keyPressed(KEY_LCONTROL)) stopApp()})
 }

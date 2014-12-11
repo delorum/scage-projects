@@ -12,6 +12,7 @@ trait Ship {
   def engines:List[Engine]
   def engines_mapping:Map[Int, Engine]
   def switchEngineActive(engine_code:Int) {
+    timeMultiplier = realtime
     engines_mapping.get(engine_code).foreach(e => e.switchActive())
   }
 
