@@ -20,7 +20,7 @@ abstract class PolygonShip(
       vel = init_velocity,
       coord = init_coord,
       ang_acc = 0,
-      ang_vel = 1,
+      ang_vel = 0,
       ang = init_rotation,
       shape = PolygonShape(points),
       is_static = false)

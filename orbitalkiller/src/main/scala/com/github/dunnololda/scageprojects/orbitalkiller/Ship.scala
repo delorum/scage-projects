@@ -32,13 +32,13 @@ trait Ship {
   def rotation = currentState.ang
 
   def currentReactiveForce(time:Long, bs:BodyState):DVec = {
-    engines.filter(e => e.active && time < e.stopMomentSeconds).foldLeft(DVec.dzero) {
+    engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(DVec.dzero) {
       case (sum, e) => sum + e.force.rotateDeg(bs.ang)
     }
   }
 
   def currentTorque(time:Long, bs:BodyState):Double = {
-    engines.filter(e => e.active && time < e.stopMomentSeconds).foldLeft(0.0) {
+    engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0.0) {
       case (sum, e) => sum + e.torque
     }
   }
@@ -115,7 +115,7 @@ trait Ship {
     case 3 => "ориентация по осям"
     case 4 => "ориентация по траектории"
     case 5 => "ориентация против траектории"
-    case 6 => "выход на орбиту"
+    case 6 => "выход на круговую орбиту"
     case _ => ""
   }
 }

@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import com.github.dunnololda.scage.ScageLib._
 import collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.language.reflectiveCalls
 
 
 object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
@@ -181,11 +182,11 @@ class MyPentagon(val index:String, init_coord:Vec, init_velocity:Vec, val len:Do
       ang_vel = 0f,
       ang = 0f,
       shape = {
-        val one = DVec(0, len).rotateDeg(0)
-        val two = DVec(0, len).rotateDeg(0+72)
+        val one   = DVec(0, len).rotateDeg(0)
+        val two   = DVec(0, len).rotateDeg(0+72)
         val three = DVec(0, len).rotateDeg(0+72+72)
-        val four = DVec(0, len).rotateDeg(0+72+72+72)
-        val five = DVec(0, len).rotateDeg(0+72+72+72+72)
+        val four  = DVec(0, len).rotateDeg(0+72+72+72)
+        val five  = DVec(0, len).rotateDeg(0+72+72+72+72)
         PolygonShape(List(one, two, three, four, five))
       },
       is_static = false))

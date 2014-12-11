@@ -2,6 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import collection.mutable.HashMap
 import collection.mutable.ArrayBuffer
+import scala.collection.mutable
 import scala.util.control.TailCalls._
 
 object Test {
@@ -43,7 +44,7 @@ object Test {
     "", "", "", "", "", ""))
 
 
-  val stats = HashMap[String, Int]()
+  val stats = mutable.HashMap[String, Int]()
 
   def init() {
     stats.clear()

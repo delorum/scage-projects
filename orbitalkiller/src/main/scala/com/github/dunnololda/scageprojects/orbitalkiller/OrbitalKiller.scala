@@ -1,7 +1,10 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLib._
-import collection.mutable.ArrayBuffer
+
+import scala.collection.mutable.ArrayBuffer
+
+//import collection.mutable.ArrayBuffer
 import scala.collection.mutable
 import com.github.dunnololda.scage.ScageLib
 
@@ -11,7 +14,7 @@ sealed trait FlightMode
 
 object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
-  private var _time_mulitplier = 1
+  private var _time_mulitplier = 100
   def timeMultiplier = _time_mulitplier
   def timeMultiplier_=(tm:Int) {
     if(tm > 0) {
@@ -22,7 +25,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
       })
     }
   }
-  private var _dt:Double = base_dt
+  private var _dt:Double = _time_mulitplier*base_dt
   def dt = _dt
 
   private var _tacts = 0l  
@@ -36,8 +39,6 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     val day  = hour*24
     s"${time_msec/day} дн ${time_msec%day/hour} ч ${time_msec%hour/min} мин ${time_msec%min/sec} сек ${time_msec%sec/msec} мсек"
   }
-
-  private var continue_future_trajectory = false
 
   private val current_body_states = mutable.HashMap[String, BodyState]()
   def currentBodyState(index:String):Option[BodyState] = current_body_states.get(index)
@@ -70,14 +71,15 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     },
     enable_collisions = enable_collisions)((tacts, body_states))
 
+  //private var continue_future_trajectory = false
   val trajectory_accuracy = 100
   val trajectory_capacity = 100000
 
   private val future_trajectory = ArrayBuffer[(Long, List[BodyState])]()
   private val future_trajectory_map = mutable.HashMap[String, ArrayBuffer[(Long, BodyState)]]()
-  private def future_trajectory_capacity = if(ship.flightMode == 1) 10000 else 100
+  private val future_trajectory_capacity = 10000
 
-  private val body_trajectories_map = mutable.HashMap[String, ArrayBuffer[(Long, BodyState)]]()
+  //private val body_trajectories_map = mutable.HashMap[String, ArrayBuffer[(Long, BodyState)]]()
 
   private def updateFutureTrajectoryMap() {
     future_trajectory_map.clear()
@@ -94,13 +96,23 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     }
   }
 
-  def updateFutureTrajectory() {
+  def updateFutureTrajectory(future_trajectory_capacity:Int = 10000) {
     future_trajectory.clear()
     future_trajectory ++= {
       futureSystemEvolutionFrom(_tacts, currentBodyStates, enable_collisions = false)
         .take(future_trajectory_capacity)
     }
     updateFutureTrajectoryMap()
+  }
+
+  def continueFutureTrajectory() {
+    val (t, s) = future_trajectory.lastOption.getOrElse((_tacts, currentBodyStates))
+    val steps = {
+      futureSystemEvolutionFrom(t, s, enable_collisions = false)
+        .take(future_trajectory_capacity)
+    }.toSeq
+    future_trajectory ++= steps
+    continueFutureTrajectoryMap(steps)
   }
 
   private def continueFutureTrajectoryMap(steps:Seq[(Long, List[BodyState])]) {
@@ -117,19 +129,9 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     }
   }
 
-  def continueFutureTrajectory() {
-    val (t, s) = future_trajectory.lastOption.getOrElse((_tacts, currentBodyStates))
-    val steps = {
-      futureSystemEvolutionFrom(t, s, enable_collisions = false)
-        .take(future_trajectory_capacity)
-    }.toSeq
-    future_trajectory ++= steps
-    continueFutureTrajectoryMap(steps)
-  }
-
   val earth = new Star("Earth", mass = 5.9746E24.toFloat, coord = DVec.dzero, radius = 6400000)
 
-  val moon_start_position = DVec(-190000000, 190000000)
+  val moon_start_position = DVec(-269000000, 269000000)
   val moon_init_velocity = satelliteSpeed(moon_start_position, earth.coord, earth.linearVelocity, earth.mass, G)
   val moon = new Planet(
     "Moon",
@@ -159,24 +161,24 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   private val real_system_evolution =
     futureSystemEvolutionFrom(0, List(ship.currentState, station.currentState, moon.currentState, earth.currentState), enable_collisions = true).iterator
 
-  private var skipped_points = 0
+  //private var skipped_points = 0
   private def nextStep() {
     val (t, body_states) = real_system_evolution.next()
     _tacts = t
-    if(skipped_points == trajectory_accuracy-1) {
+    /*if(skipped_points == trajectory_accuracy-1) {
       body_states.foreach(bs => {
         current_body_states(bs.index) = bs
-        val body_trajectory = body_trajectories_map.getOrElseUpdate(bs.index, ArrayBuffer[(Long, BodyState)]())
+        /*val body_trajectory = body_trajectories_map.getOrElseUpdate(bs.index, ArrayBuffer[(Long, BodyState)]())
         body_trajectory += (_tacts -> bs)
-        if(body_trajectory.size >= trajectory_capacity) body_trajectory.remove(0, 1000)
+        if(body_trajectory.size >= trajectory_capacity) body_trajectory.remove(0, 1000)*/
       })
       skipped_points = 0
-    } else {
+    } else {*/
       body_states.foreach(bs => {
         current_body_states(bs.index) = bs
       })
-      skipped_points += 1
-    }
+      //skipped_points += 1
+    /*}*/
   }
   nextStep()
 
@@ -197,12 +199,12 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
         view_mode = 0
       case 1 => // фиксация на корабле
         center = ship.coord.toVec
-        rotationPoint = ship.coord.toVec
+        rotationCenter = ship.coord.toVec
         rotationAngleDeg = -ship.rotation.toFloat
         view_mode = 1
       case 2 => // посадка на планету
         center = ship.coord.toVec
-        rotationPoint = ship.coord.toVec
+        rotationCenter = ship.coord.toVec
         rotationAngleDeg = {
           val nearest_body_coord = if(ship.coord.dist2(earth.coord) < ship.coord.dist2(moon.coord)) earth.coord else moon.coord
           val vec = ship.coord - nearest_body_coord
@@ -270,7 +272,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   def linearSpeedWhenEnginesOff:String = {
     if(ship.flightMode != 1) "N/A"  // только в свободном режиме отображать инфу
     else {
-      future_trajectory.find(_._1 >= ship.engines.map(_.stopMomentSeconds).max) match {
+      future_trajectory.find(_._1 >= ship.engines.map(_.stopMomentTacts).max) match {
         case Some((t, lbs)) =>
           lbs.find(_.index == ship.index) match {
             case Some(bs) =>
@@ -278,7 +280,9 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
               f"${msecOrKmsec(s.norma)} (velx = ${msecOrKmsec(s.x)}, vely = ${msecOrKmsec(s.y)})"
             case None => "N/A"
           }
-        case None => "N/A"
+        case None =>
+          continueFutureTrajectory()
+          "N/A"
       }
     }
   }
@@ -286,7 +290,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   def angularSpeedWhenEnginesOff:String = {
     if(ship.flightMode != 1) "N/A"  // только в свободном режиме отображать инфу
     else {
-      future_trajectory.find(_._1 >= ship.engines.map(_.stopMomentSeconds).max) match {
+      future_trajectory.find(_._1 >= ship.engines.map(_.stopMomentTacts).max) match {
         case Some((t, lbs)) =>
           lbs.find(_.index == ship.index) match {
             case Some(bs) =>
@@ -294,7 +298,9 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
               f" $s%.2f град/сек"
             case None => "N/A"
           }
-        case None => "N/A"
+        case None =>
+          continueFutureTrajectory()
+          "N/A"
       }
     }
   }
@@ -302,20 +308,22 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   def orbitParametersWhenEnginesOff:String = {
     if(ship.flightMode != 1) "N/A"  // только в свободном режиме отображать инфу
     else {
-      future_trajectory.find(_._1 >= ship.engines.map(_.stopMomentSeconds).max) match {
+      future_trajectory.find(_._1 >= ship.engines.map(_.stopMomentTacts).max) match {
         case Some((t, lbs)) =>
           lbs.find(_.index == ship.index) match {
             case Some(bs) =>
               orbitInPointWithVelocity(bs.coord, bs.vel)
-            case None => "N/A"
+            case None =>"N/A"
           }
-        case None => "N/A"
+        case None =>
+          continueFutureTrajectory()
+          "N/A"
       }
     }
   }
 
-  private var disable_trajectory_drawing = false
-  private var disable_future_trajectory_drawing = false
+  /*private var disable_trajectory_drawing = false
+  private var disable_future_trajectory_drawing = false*/
   private var disable_interface_drawing = false
 
   def insideGravitationalRadiusOfCelestialBody(coord:DVec):Option[CelestialBody] = {
@@ -345,10 +353,10 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   }, onKeyUp = updateFutureTrajectory())
   keyIgnorePause(KEY_LEFT, 10, onKeyDown = {
     ship.selected_engine.foreach(e => {
-      if(e.worktimeTacts > 0) {
+      /*if(e.worktimeTacts > 0) {*/
         e.worktimeTacts -= 1
         //updateFutureTrajectory()
-      }
+      /*}*/
     })
   }, onKeyUp = updateFutureTrajectory())
 
@@ -362,7 +370,11 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   }, onKeyUp = updateFutureTrajectory())
 
   keyIgnorePause(KEY_MULTIPLY, 100, onKeyDown = {
-    timeMultiplier += 40
+    if(_time_mulitplier == 1) {
+      timeMultiplier = 50
+    } else {
+      timeMultiplier += 50
+    }
   }, onKeyUp = updateFutureTrajectory())
   keyIgnorePause(KEY_DIVIDE, 100, onKeyDown = {
     if (_time_mulitplier != 1) {
@@ -393,16 +405,16 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   keyIgnorePause(KEY_F5, onKeyDown = viewMode = 3)  // фиксация на солнце
   keyIgnorePause(KEY_F6, onKeyDown = viewMode = 4)  // фиксация на планете
 
-  keyIgnorePause(KEY_Z, onKeyDown = disable_trajectory_drawing = !disable_trajectory_drawing)
-  keyIgnorePause(KEY_X, onKeyDown = disable_future_trajectory_drawing = !disable_future_trajectory_drawing)
+  /*keyIgnorePause(KEY_Z, onKeyDown = disable_trajectory_drawing = !disable_trajectory_drawing)
+  keyIgnorePause(KEY_X, onKeyDown = disable_future_trajectory_drawing = !disable_future_trajectory_drawing)*/
   keyIgnorePause(KEY_V, onKeyDown = disable_interface_drawing = !disable_interface_drawing)
-  keyIgnorePause(KEY_N, onKeyDown = continue_future_trajectory = !continue_future_trajectory)
-  keyIgnorePause(KEY_C, onKeyDown = {
+  //keyIgnorePause(KEY_N, onKeyDown = continue_future_trajectory = !continue_future_trajectory)
+  /*keyIgnorePause(KEY_C, onKeyDown = {
     continue_future_trajectory = false
-    updateFutureTrajectory()
-  })
+    /*updateFutureTrajectory()*/
+  })*/
 
-
+  keyIgnorePause(KEY_Q, onKeyDown = {if(keyPressed(KEY_LCONTROL)) stopApp()})
 
   mouseWheelDownIgnorePause(onWheelDown = m => {
     if(globalScale > 0.01f) {
@@ -419,17 +431,18 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     }
   })
 
-  actionIgnorePause {
+  /*actionIgnorePause {
     if(future_trajectory.isEmpty) updateFutureTrajectory()
-  }
+  }*/
 
-  actionIgnorePause(100) {
+  /*actionIgnorePause(100) {
     if(continue_future_trajectory) continueFutureTrajectory()
-  }
+  }*/
 
   action {
     future_trajectory --= future_trajectory.takeWhile(_._1 < _tacts)
     future_trajectory_map.values.foreach(t => t --= t.takeWhile(_._1 < _tacts))
+    if(future_trajectory.isEmpty) updateFutureTrajectory()
     nextStep()
   }
 
@@ -456,7 +469,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     drawLine(to2, arrow21, DARK_GRAY)
     drawLine(to2, arrow22, DARK_GRAY)
 
-    if(!disable_future_trajectory_drawing) {
+    /*if(!disable_future_trajectory_drawing) {
       future_trajectory_map.foreach {
         case (index, body_states) =>
           index match {
@@ -498,7 +511,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
               drawSlidingLines(body_states.map(_._2.coord.toVec), color = GREEN)
           }
       }
-    }
+    }*/
   }
 
   interface {
@@ -526,14 +539,14 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
       print(f"Расстояние и скорость относительно Земли: ${mOrKm(ship.coord.dist(earth.coord) - earth.radius)}, ${msecOrKmsec(ship.linearVelocity*(ship.coord - earth.coord).n)}",
         20, heights.next(), ORANGE)
-      print(f"Расстояние и скорость относительно Луны: ${ship.coord.dist(moon.coord) - moon.radius}%.2f м, ${ship.linearVelocity* (ship.coord - moon.coord).n *60*base_dt}%.2f м/сек",
+      print(f"Расстояние и скорость относительно Луны: ${mOrKm(ship.coord.dist(moon.coord) - moon.radius)}, ${msecOrKmsec(ship.linearVelocity* (ship.coord - moon.coord).n *60*base_dt)}",
         20, heights.next(), ORANGE)
-      print(s"Расчет траектории: ${if(continue_future_trajectory) "[rактивирован]" else "отключен"}",
-        20, heights.next(), ORANGE)
+      /*print(s"Расчет траектории: ${if(continue_future_trajectory) "[rактивирован]" else "отключен"}",
+        20, heights.next(), ORANGE)*/
 
       print("", 20, heights.next(), ORANGE)
 
-      print(f"Позиция: ${ship.coord.x}%.2f : ${ship.coord.y}%.2f",
+      print(f"Позиция: ${ship.coord.x}%.2f : ${ship.coord.y}%.2f. Расстояние от точки старта: ${mOrKm(ship.coord.dist(ship_start_position))}",
         20, heights.next(), ORANGE)
       print(f"Линейная скорость: ${msecOrKmsec(ship.linearVelocity.norma)} (velx = ${msecOrKmsec(ship.linearVelocity.x)}, vely = ${msecOrKmsec(ship.linearVelocity.y)})",
         20, heights.next(), ORANGE)

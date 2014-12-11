@@ -9,11 +9,13 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, ship:Ship) {
 
   def worktimeTacts = worktime_tacts
   def worktimeTacts_=(new_worktime_tacts:Long) {
-    worktime_tacts = new_worktime_tacts
-    stop_moment_tacts = tacts + worktime_tacts*timeMultiplier
+    if(new_worktime_tacts >= 0) {
+      worktime_tacts = new_worktime_tacts
+      stop_moment_tacts = tacts + worktime_tacts * timeMultiplier
+    }
   }
 
-  def stopMomentSeconds = stop_moment_tacts
+  def stopMomentTacts = stop_moment_tacts
 
   private var _power:Double = 0.0
   def power = _power

@@ -9,7 +9,7 @@ import scala.collection.mutable
 import scala.Some
 
 package object orbitalkiller {
-  val k:Double = 0.01
+  val k:Double = 0.01 // базовой единичкой у нас будет одна сотая секунды
   // доля времени, которая обсчитывается каждый такт расчетов. Каждая секунда реального времени это примерно 60 тактов (поддерживается частота 60 фпс)
   val base_dt:Double = 1.0/60*k
 
