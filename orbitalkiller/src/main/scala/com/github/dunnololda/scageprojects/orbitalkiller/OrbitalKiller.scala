@@ -283,7 +283,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   def orbitStrInPointWithVelocity(mass:Double, coord:DVec, velocity:DVec):String = {
     insideGravitationalRadiusOfCelestialBody(coord) match {
       case Some(planet) =>
-        val Orbit(a, b, e, c, p, r_p, r_a, t) = calculateOrbit(planet.mass, mass, coord - planet.coord, velocity - planet.linearVelocity, G)
+        val Orbit(a, b, e, c, p, r_p, r_a, t, f1, f2, center) = calculateOrbit(planet.mass, planet.coord, mass, coord - planet.coord, velocity - planet.linearVelocity, G)
         f"e = $e%.2f, r_p = ${mOrKm(r_p - planet.radius)}, r_a = ${mOrKm(r_a - planet.radius)}, t = ${timeStr((t*1000l).toLong)}"
       case None => "N/A"
     }
@@ -292,7 +292,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   def orbitInPointWithVelocity(mass:Double, coord:DVec, velocity:DVec):Option[Orbit] = {
     insideGravitationalRadiusOfCelestialBody(coord) match {
       case Some(planet) =>
-        Some(calculateOrbit(planet.mass, mass, coord - planet.coord, velocity - planet.linearVelocity, G))
+        Some(calculateOrbit(planet.mass, planet.coord, mass, coord - planet.coord, velocity - planet.linearVelocity, G))
       case None => None
     }
   }
@@ -300,7 +300,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   def orbitAroundCelestialInPointWithVelocity(mass:Double, coord:DVec, velocity:DVec):Option[(CelestialBody, Orbit)] = {
     insideGravitationalRadiusOfCelestialBody(coord) match {
       case Some(planet) =>
-        Some((planet, calculateOrbit(planet.mass, mass, coord - planet.coord, velocity - planet.linearVelocity, G)))
+        Some((planet, calculateOrbit(planet.mass, planet.coord, mass, coord - planet.coord, velocity - planet.linearVelocity, G)))
       case None => None
     }
   }

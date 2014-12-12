@@ -149,10 +149,27 @@ object MapScreen extends ScageScreen("Map Screen") {
     drawCircle(moon.coord.toVec*scale, (moon.radius*scale).toFloat, WHITE)
     drawCircle(moon.coord.toVec*scale, (moon.gravitational_radius*scale).toFloat, color = DARK_GRAY)
 
-    drawFilledCircle(ship.coord.toVec*scale, (ship.radius*scale).toFloat, WHITE)
-    future_trajectory_map.foreach {
+    drawFilledCircle(ship.coord.toVec*scale, (earth.radius*scale/2f/globalScale).toFloat, WHITE)
+
+    /*future_trajectory_map.foreach {
       case (index, body_states) =>
-        drawSlidingLines(body_states.map(_._2.coord.toVec*scale), color = YELLOW)
+        drawSlidingLines(body_states.map(_._2.coord.toVec*scale), color = GREEN)
+    }*/
+    orbitAroundCelestialInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity) match {
+      case Some((planet, orbit)) =>
+        openglLocalTransform {
+          openglMove(orbit.center.toVec*scale)
+          openglRotateDeg(Vec(-1,0).signedDeg(orbit.f2-orbit.f1).toFloat)
+          drawEllipse(Vec.zero, (orbit.a*scale).toFloat, (orbit.b*scale).toFloat, YELLOW)
+        }
+      case None =>
+    }
+
+    val moon_orbit = calculateOrbit(earth.mass, earth.coord, moon.mass, moon.coord, moon.linearVelocity, G)
+    openglLocalTransform {
+      openglMove(moon_orbit.center.toVec*scale)
+      openglRotateDeg(Vec(-1,0).signedDeg(moon_orbit.f2-moon_orbit.f1).toFloat)
+      drawEllipse(Vec.zero, (moon_orbit.a*scale).toFloat, (moon_orbit.b*scale).toFloat, GREEN)
     }
   }
 

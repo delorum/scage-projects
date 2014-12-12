@@ -206,6 +206,14 @@ class Ship3(
     }
   }
 
+  private def drawArrow(from1:Vec, to1:Vec, color:ScageColor): Unit = {
+    val arrow11 = to1 + ((from1-to1).n*10/globalScale).rotateDeg(15)
+    val arrow12 = to1 + ((from1-to1).n*10/globalScale).rotateDeg(-15)
+    drawLine(from1, to1, color)
+    drawLine(to1, arrow11, color)
+    drawLine(to1, arrow12, color)
+  }
+
   render {
     openglLocalTransform {
       openglMove(coord.toVec)
@@ -224,9 +232,10 @@ class Ship3(
       }
     }
 
-    drawFilledCircle(coord.toVec, 2, GREEN)                             // mass center
-    drawLine(coord.toVec, (coord + linearVelocity.n*100).toVec, CYAN)           // current velocity
-    drawLine(coord.toVec, (coord + (earth.coord - coord).n*100).toVec, YELLOW)    // direction to sun
-    //drawLine(coord, coord + (moon.coord - coord).n*100, GREEN)   // direction to earth
+    drawFilledCircle(coord.toVec, 2, GREEN)                                         // mass center
+
+    drawArrow(coord.toVec, (coord + linearVelocity.n*100).toVec, CYAN)              // current velocity
+    drawArrow(coord.toVec, (coord + (earth.coord - coord).n*100).toVec, YELLOW)     // direction to eart
+    drawArrow(coord.toVec, (coord + (moon.coord - coord).n*100).toVec, GREEN)       // direction to moon
   }
 }

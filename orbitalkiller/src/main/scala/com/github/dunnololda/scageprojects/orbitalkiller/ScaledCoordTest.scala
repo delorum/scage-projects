@@ -47,6 +47,9 @@ object ScaledCoordTest extends ScageScreenApp("ScaledCoord Test", 800, 600) {
     /*drawFilledCircle(absCoord(mouse_coord), 3, GREEN)*/
     drawFilledCircle(_rotation_center, 3, YELLOW)
     drawFilledCircle(_center, 3, BLUE)
+
+    openglRotateDeg(90)
+    drawEllipse(_center, 100 ,50, WHITE)
   }
 
   interface {
