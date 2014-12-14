@@ -6,7 +6,6 @@ import scala.collection.mutable.ArrayBuffer
 
 //import collection.mutable.ArrayBuffer
 import scala.collection.mutable
-import com.github.dunnololda.scage.ScageLib
 
 // TODO: implement this
 sealed trait ViewMode
@@ -144,21 +143,21 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     }
   }*/
 
-  val earth = new Star("Earth", mass = 5.9746E24.toFloat, coord = DVec.dzero, radius = 6400000)
+  val earth = new Star("Earth", mass = 5.9746E24, coord = DVec.dzero, radius = 6400000)
 
   val moon_start_position = DVec(-269000000, 269000000)
   val moon_init_velocity = satelliteSpeed(moon_start_position, earth.coord, earth.linearVelocity, earth.mass, G)
   val moon = new Planet(
     "Moon",
-    mass = 7.3477E22.toFloat,
+    mass = 7.3477E22,
     init_coord = moon_start_position,
     init_velocity = moon_init_velocity,
     radius = 1737000)
 
   val ship_start_position = earth.coord + DVec(0, earth.radius + 100000)
   val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G)
-  /*val ship_start_position = moon.coord + Vec(moon.radius*1.5f, moon.radius*1.5f)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G)*/
+  //val ship_start_position = moon.coord + DVec(300, moon.radius + 500)
+  //val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G)
   val ship = new Ship3("ship",
     init_coord = ship_start_position,
     init_velocity = ship_init_velocity,
@@ -229,7 +228,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
           val nearest_body_coord = if(ship.coord.dist2(earth.coord) < ship.coord.dist2(moon.coord)) earth.coord else moon.coord
           val vec = ship.coord - nearest_body_coord
           if(vec.x >= 0) vec.deg(DVec(0, 1)).toFloat
-          else vec.deg(DVec(0, 1)).toFloat*(-1)
+          else (vec.deg(DVec(0, 1))*(-1)).toFloat
         }
         view_mode = 2
       case 3 => // фиксация на солнце
@@ -362,6 +361,21 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   private var disable_future_trajectory_drawing = false*/
   private var disable_interface_drawing = false
 
+  private var _draw_map_mode = false
+  def drawMapMode = _draw_map_mode
+  def drawMapMode_=(new_mode:Boolean) {
+    if(new_mode) {
+      _draw_map_mode = true
+      globalScale = orbitAroundCelestialInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity).map(x => (2f*x._2.a/232000f).toFloat).getOrElse(1f)
+      viewMode = 0
+      _center = earth.coord.toVec*scale
+    } else {
+      _draw_map_mode = false
+      globalScale = 1
+      viewMode = 1
+    }
+  }
+
   def insideGravitationalRadiusOfCelestialBody(coord:DVec):Option[CelestialBody] = {
     if(coord.dist(moon.coord) < moon.gravitational_radius) Some(moon)
     else if(coord.dist(earth.coord) < earth.gravitational_radius) Some(earth)
@@ -400,26 +414,30 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     timeMultiplier += realtime
   }, onKeyUp = updateFutureTrajectory())
   keyIgnorePause(KEY_SUBTRACT, 100, onKeyDown = {
-    if (_time_multiplier != realtime) {
-      timeMultiplier = realtime
+    if(timeMultiplier > realtime) {
+      timeMultiplier -= realtime
     }
   }, onKeyUp = updateFutureTrajectory())
 
-  /*keyIgnorePause(KEY_MULTIPLY, 100, onKeyDown = {
-    timeMultiplier += realtime
+  keyIgnorePause(KEY_MULTIPLY, 100, onKeyDown = {
+    if(timeMultiplier == realtime) {
+      timeMultiplier = realtime*100
+    } else {
+      timeMultiplier += realtime*100
+    }
   }, onKeyUp = updateFutureTrajectory())
   keyIgnorePause(KEY_DIVIDE, 100, onKeyDown = {
-    if (_time_multiplier != 1) {
-      timeMultiplier = 1
+    if (timeMultiplier != realtime) {
+      timeMultiplier = realtime
     }
-  }, onKeyUp = updateFutureTrajectory())*/
+  }, onKeyUp = updateFutureTrajectory())
 
   keyIgnorePause(KEY_W, 10, onKeyDown = {freeCenter(); _center += Vec(0, 5/globalScale)})
   keyIgnorePause(KEY_A, 10, onKeyDown = {freeCenter(); _center += Vec(-5/globalScale, 0)})
   keyIgnorePause(KEY_S, 10, onKeyDown = {freeCenter(); _center += Vec(0, -5/globalScale)})
   keyIgnorePause(KEY_D, 10, onKeyDown = {freeCenter(); _center += Vec(5/globalScale, 0)})
 
-  keyIgnorePause(KEY_M, onKeyDown = {pause(); MapScreen.run()})
+  keyIgnorePause(KEY_M, onKeyDown = {drawMapMode = !drawMapMode})
 
   keyIgnorePause(KEY_SPACE, onKeyDown = {freeCenter(); _center = ship.coord.toVec})
 
@@ -452,17 +470,20 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
   mouseWheelDownIgnorePause(onWheelDown = m => {
     if(globalScale > 0.01f) {
-      if(globalScale > 1) globalScale -= 1
-      else if(globalScale > 0.1f) globalScale -= 0.1f
+      if(globalScale.toInt > 1) globalScale -= 1
+      else if((globalScale*10).toInt > 1) globalScale -= 0.1f
       else globalScale -= 0.01f
       if(globalScale < 0.01f) globalScale = 0.01f
     }
+    println(s"$globalScale : ${orbitAroundCelestialInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity).map(x => s"${2*x._2.a}").getOrElse("")} : ${orbitAroundCelestialInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity).map(x => s"${2*x._2.a/globalScale}").getOrElse("")}")
   })
   mouseWheelUpIgnorePause(onWheelUp = m => {
-    if(globalScale < 5) {
-      if(globalScale < 1) globalScale += 0.1f
+    if(globalScale < (if(!drawMapMode) 5 else 1000)) {
+      if(globalScale < 0.1) globalScale += 0.01f
+      else if(globalScale < 1) globalScale += 0.1f
       else globalScale += 1
     }
+      println(s"$globalScale : ${orbitAroundCelestialInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity).map(x => s"${2*x._2.a}").getOrElse("")} : ${orbitAroundCelestialInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity).map(x => s"${2*x._2.a/globalScale}").getOrElse("")}")
   })
 
   /*actionIgnorePause {
@@ -485,75 +506,104 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   windowCenter = Vec((windowWidth-1024)+1024/2, windowHeight/2)
   viewMode = 1
 
+  private val scale = 1e-6
+
   render {    // TODO: display list!
-    val y = windowHeight/2-20
-    val x = windowWidth/2-20
-    val from1 = center + Vec(0, -y/globalScale)
-    val to1 = center + Vec(0, y/globalScale)
-    val arrow11 = to1 + ((from1-to1).n*10/globalScale).rotateDeg(15)
-    val arrow12 = to1 + ((from1-to1).n*10/globalScale).rotateDeg(-15)
-    drawLine(from1, to1, DARK_GRAY)
-    drawLine(to1, arrow11, DARK_GRAY)
-    drawLine(to1, arrow12, DARK_GRAY)
+    if(!drawMapMode) {
+      val y = windowHeight/2f-20f
+      val x = windowWidth/2f-20f
 
-    val from2 = center + Vec(-x/globalScale, 0)
-    val to2 = center + Vec(x/globalScale, 0)
-    val arrow21 = to2 + ((from2-to2).n*10/globalScale).rotateDeg(15)
-    val arrow22 = to2 + ((from2-to2).n*10/globalScale).rotateDeg(-15)
-    drawLine(from2, to2, DARK_GRAY)
-    drawLine(to2, arrow21, DARK_GRAY)
-    drawLine(to2, arrow22, DARK_GRAY)
+      openglLocalTransform {
+        openglMove(center)
+        val from1 = Vec(0f, -y/globalScale)
+        val to1 = Vec(0f, y/globalScale)
+        val arrow11 = to1 + ((from1-to1).n*10/globalScale).rotateDeg(15)
+        val arrow12 = to1 + ((from1-to1).n*10/globalScale).rotateDeg(-15)
+        drawLine(from1, to1, DARK_GRAY)
+        drawLine(to1, arrow11, DARK_GRAY)
+        drawLine(to1, arrow12, DARK_GRAY)
 
-    /*if(!disable_future_trajectory_drawing) {
-      future_trajectory_map.foreach {
+        val from2 = Vec(-x/globalScale, 0)
+        val to2 = Vec(x/globalScale, 0)
+        val arrow21 = to2 + ((from2-to2).n*10/globalScale).rotateDeg(15)
+        val arrow22 = to2 + ((from2-to2).n*10/globalScale).rotateDeg(-15)
+        drawLine(from2, to2, DARK_GRAY)
+        drawLine(to2, arrow21, DARK_GRAY)
+        drawLine(to2, arrow22, DARK_GRAY)
+      }
+    } else {
+      drawCircle(earth.coord.toVec*scale, (earth.radius*scale).toFloat, WHITE)
+      drawCircle(earth.coord.toVec*scale, (earth.gravitational_radius*scale).toFloat, color = DARK_GRAY)
+
+      drawCircle(moon.coord.toVec*scale, (moon.radius*scale).toFloat, WHITE)
+      drawCircle(moon.coord.toVec*scale, (moon.gravitational_radius*scale).toFloat, color = DARK_GRAY)
+
+      drawFilledCircle(ship.coord.toVec*scale, (earth.radius*scale/2f/globalScale).toFloat, WHITE)
+
+      /*future_trajectory_map.foreach {
         case (index, body_states) =>
-          index match {
-            case "ship" =>
-              viewMode match {
-                case 4 =>
-                  drawSlidingLines(
-                    for {
-                      ((_, bs), (_, earth_bs)) <- body_states.zip(future_trajectory_map(moon.index))
-                      coord = bs.coord - earth_bs.coord + moon.coord
-                    } yield coord.toVec,
-                    color = YELLOW)
-                case _ =>
-                  drawSlidingLines(body_states.map(_._2.coord.toVec), color = YELLOW)
-              }
-            case _ =>
-              drawSlidingLines(body_states.map(_._2.coord.toVec), color = YELLOW)
+          drawSlidingLines(body_states.map(_._2.coord*scale), color = GREEN)
+      }*/
+      orbitAroundCelestialInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity) match {
+        case Some((planet, orbit)) =>
+          openglLocalTransform {
+            openglMove(orbit.center.toVec*scale)
+            openglRotateDeg(Vec(-1,0).signedDeg(orbit.f2-orbit.f1).toFloat)
+            drawEllipse(Vec.zero, (orbit.a*scale).toFloat, (orbit.b*scale).toFloat, YELLOW)
           }
+          val b = BoxShape(2*orbit.a, 2*orbit.b)
+          if(orbit.e > 0.1) {
+            val aabb = b.aabb(orbit.center, (orbit.f2-orbit.f1).signedDeg(Vec(0,1)))
+            drawRectCentered(orbit.center.toVec*scale, (aabb.width*scale).toFloat, (aabb.height*scale).toFloat, YELLOW)
+          } else {
+            drawRectCentered(orbit.center.toVec*scale, (2*orbit.a*scale).toFloat, (2*orbit.a*scale).toFloat, YELLOW)
+          }
+        case None =>
+      }
+
+      val moon_orbit = calculateOrbit(earth.mass, earth.coord, moon.mass, moon.coord, moon.linearVelocity, G)
+      openglLocalTransform {
+        openglMove(moon_orbit.center.toVec*scale)
+        openglRotateDeg(Vec(-1,0).signedDeg(moon_orbit.f2-moon_orbit.f1).toFloat)
+        drawEllipse(Vec.zero, (moon_orbit.a*scale).toFloat, (moon_orbit.b*scale).toFloat, GREEN)
+      }
+
+      if(ship.engines.exists(_.active)) {
+        future_trajectory.find(_._1 >= ship.engines.map(_.stopMomentTacts).max) match {
+          case Some((t, lbs)) =>
+            lbs.find(_.index == ship.index) match {
+              case Some(bs) =>
+                orbitAroundCelestialInPointWithVelocity(bs.mass, bs.coord, bs.vel) match {
+                  case Some((planet, orbit)) =>
+                    openglLocalTransform {
+                      openglMove(orbit.center.toVec*scale)
+                      openglRotateDeg(Vec(-1,0).signedDeg(orbit.f2-orbit.f1).toFloat)
+                      drawEllipse(Vec.zero, (orbit.a*scale).toFloat, (orbit.b*scale).toFloat, RED)
+                    }
+                  case None =>
+                }
+              case None =>
+
+            }
+          case None =>
+            continueFutureTrajectory()
+        }
       }
     }
-
-    if(!disable_trajectory_drawing) {
-      body_trajectories_map.foreach {
-        case (index, body_states) =>
-          index match {
-            case "ship" =>
-              viewMode match {
-                case 4 =>
-                  drawSlidingLines(
-                    for {
-                      ((_, bs), (_, earth_bs)) <- body_states.zip(body_trajectories_map(moon.index))
-                      coord = bs.coord - earth_bs.coord + moon.coord
-                    } yield coord.toVec,
-                    color = GREEN)
-                case _ =>
-                  drawSlidingLines(body_states.map(_._2.coord.toVec), color = GREEN)
-              }
-            case _ =>
-              drawSlidingLines(body_states.map(_._2.coord.toVec), color = GREEN)
-          }
-      }
-    }*/
   }
 
   interface {
-    if(onPause) print("Пауза", windowCenter, align = "center", color = WHITE)
-    print("F1 - Справка, P - пауза", windowWidth - 20, 20, align = "bottom-right", color = GREEN)
+    if(onPause) print("Пауза", windowCenter.toVec, align = "center", color = WHITE)
+    print("F1 - Справка", 20, windowHeight - 40, align = "bottom-left", color = DARK_GRAY)
     print(s"сборка $appVersion", windowWidth - 20, windowHeight - 20, align = "top-right", color = DARK_GRAY)
     print(s"FPS/Ticks $fps/$ticks", windowWidth - 20, windowHeight - 40, align = "top-right", color = DARK_GRAY)
+
+    val a = Vec(windowWidth - 180, 20)
+    val b = Vec(windowWidth - 180+100, 20)
+    drawLine(a,b, DARK_GRAY)
+    drawLine(a, a+(a-b).rotateDeg(90).n*5, DARK_GRAY)
+    drawLine(b, b+(a-b).rotateDeg(90).n*5, DARK_GRAY)
+    print(s"${mOrKm((100/globalScale).toInt)}", b, DARK_GRAY)
 
     if(!disable_interface_drawing) {
       val heights = (520 to 20 by -20).iterator
@@ -660,18 +710,24 @@ class Planet(
       is_static = false))
 
   render {
-    val viewpoint_dist = math.abs(center.dist(coord) - radius)
+    val viewpoint_dist = math.abs(ship.coord.dist(coord) - radius)
     if(viewpoint_dist < 50000) {
-      val to_viewpoint = center - coord
-      val points = for {
-        ang <- -1f to 1f by 0.01f
-        point = (coord + to_viewpoint.rotateDeg(ang).n * radius).toVec
-      } yield point
-      drawSlidingLines(points, WHITE)
+      openglLocalTransform {
+        openglMove(coord.toVec)
+        val to_viewpoint = ship.coord - coord
+        val alpha = (100000*180/math.Pi/radius).toFloat
+        val points = for {
+          ang <- -alpha to alpha by 0.01f
+          point = (to_viewpoint.rotateDeg(ang).n * radius).toVec
+        } yield point
+        drawSlidingLines(points, WHITE)
+
+        /*val x = (ship.coord-coord).n*radius
+        val p1 = x + (ship.coord-coord).rotateDeg(90).n*60000
+        val p2 = x + (ship.coord-coord).rotateDeg(-90).n*60000
+        drawLine(p1.toVec,p2.toVec,GREEN)*/
+      }
     }
-    //drawCircle(coord.toVec, radius.toFloat, color = WHITE)
-    //drawCircle(coord.toVec, gravitational_radius.toFloat, color = DARK_GRAY)
-    //print(index, coord.toVec, size = max_font_size/globalScale*2f, WHITE, align = "center")
   }
 }
 
@@ -695,22 +751,28 @@ class Star(val index:String, val mass:Double, val coord:DVec, val radius:Double)
       is_static = true))
 
   render {
-    val viewpoint_dist = math.abs(center.dist(coord) - radius)
+    val viewpoint_dist = math.abs(ship.coord.dist(coord) - radius)
     if(viewpoint_dist < 50000) {
-      val to_viewpoint = center - coord
-      val points = for {
-        ang <- -1f to 1f by 0.01f
-        point = (coord + to_viewpoint.rotateDeg(ang).n * radius).toVec
-      } yield point
-      drawSlidingLines(points, WHITE)
+      openglLocalTransform {
+        openglMove(coord.toVec)
+        val to_viewpoint = ship.coord - coord
+        val alpha = (100000*180/math.Pi/radius).toFloat
+        val points = for {
+          ang <- -alpha to alpha by 0.01f
+          point = (to_viewpoint.rotateDeg(ang).n * radius).toVec
+        } yield point
+        drawSlidingLines(points, WHITE)
+
+        /*val x = (ship.coord-coord).n*radius
+        val p1 = x + (ship.coord-coord).rotateDeg(90).n*60000
+        val p2 = x + (ship.coord-coord).rotateDeg(-90).n*60000
+        drawLine(p1.toVec,p2.toVec,GREEN)*/
+      }
     }
-    /*drawCircle(coord.toVec, radius.toFloat, color = WHITE)
-    drawCircle(coord.toVec, gravitational_radius.toFloat, color = DARK_GRAY)
-    print(index, coord.toVec, size = max_font_size/globalScale*2f, WHITE, align = "center")*/
   }
 
 
-  def linearVelocity: ScageLib.DVec = DVec.dzero
+  def linearVelocity: DVec = DVec.dzero
 }
 
 

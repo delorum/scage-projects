@@ -130,14 +130,12 @@ object MapScreen extends ScageScreen("Map Screen") {
       else globalScale -= 0.01f
       if(globalScale < 0.01f) globalScale = 0.01f
     }
-    println(globalScale)
   })
   mouseWheelUpIgnorePause(onWheelUp = m => {
     if(globalScale < 1000) {
       if(globalScale < 1) globalScale += 0.1f
       else globalScale += 1
     }
-    println(globalScale)
   })
 
   center = _center

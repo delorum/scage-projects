@@ -1,9 +1,16 @@
-package com.github.dunnololda.scageprojects.orbitalkiller
+package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLib._
 import collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.language.reflectiveCalls
+import com.github.dunnololda.scageprojects.orbitalkiller._
+import com.github.dunnololda.scageprojects.orbitalkiller.AABB
+import com.github.dunnololda.scageprojects.orbitalkiller.LineShape
+import com.github.dunnololda.scageprojects.orbitalkiller.CircleShape
+import com.github.dunnololda.scageprojects.orbitalkiller.BoxShape
+import com.github.dunnololda.scageprojects.orbitalkiller.BodyState
+import com.github.dunnololda.scageprojects.orbitalkiller.PolygonShape
 
 
 object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){

@@ -1,6 +1,5 @@
-package com.github.dunnololda.scageprojects.orbitalkiller
+package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
-import collection.mutable.HashMap
 import collection.mutable.ArrayBuffer
 import scala.collection.mutable
 import scala.util.control.TailCalls._

@@ -215,27 +215,28 @@ class Ship3(
   }
 
   render {
-    openglLocalTransform {
-      openglMove(coord.toVec)
-      openglRotateDeg(rotation.toFloat)
-      drawSlidingLines((points :+ points.head).map(_.toVec), WHITE)
+    if(!drawMapMode) {
+      openglLocalTransform {
+        openglMove(coord.toVec)
+        drawFilledCircle(Vec.zero, 2, GREEN)                                 // mass center
+        drawArrow(Vec.zero, (linearVelocity.n*100).toVec, CYAN)              // current velocity
+        drawArrow(Vec.zero, ((earth.coord - coord).n*100).toVec, YELLOW)     // direction to eart
+        drawArrow(Vec.zero, ((moon.coord - coord).n*100).toVec, GREEN)       // direction to moon
 
-      engines.foreach {
-        case e =>
-          e.force_dir match {
-            case DVec(0, -1) => drawEngine(e, e.position + DVec(0, 2.5f),  10, 5,  is_vertical = false)
-            case DVec(0, 1)  => drawEngine(e, e.position + DVec(0, -2.5f), 10, 5,  is_vertical = false)
-            case DVec(-1, 0) => drawEngine(e, e.position + DVec(2.5f, 0),  5,  10, is_vertical = true)
-            case DVec(1, 0)  => drawEngine(e, e.position + DVec(-2.5f, 0), 5,  10, is_vertical = true)
-            case _ =>
-          }
+        openglRotateDeg(rotation.toFloat)
+        drawSlidingLines((points :+ points.head).map(_.toVec), WHITE)
+
+        engines.foreach {
+          case e =>
+            e.force_dir match {
+              case DVec(0, -1) => drawEngine(e, e.position + DVec(0, 2.5f),  10, 5,  is_vertical = false)
+              case DVec(0, 1)  => drawEngine(e, e.position + DVec(0, -2.5f), 10, 5,  is_vertical = false)
+              case DVec(-1, 0) => drawEngine(e, e.position + DVec(2.5f, 0),  5,  10, is_vertical = true)
+              case DVec(1, 0)  => drawEngine(e, e.position + DVec(-2.5f, 0), 5,  10, is_vertical = true)
+              case _ =>
+            }
+        }
       }
     }
-
-    drawFilledCircle(coord.toVec, 2, GREEN)                                         // mass center
-
-    drawArrow(coord.toVec, (coord + linearVelocity.n*100).toVec, CYAN)              // current velocity
-    drawArrow(coord.toVec, (coord + (earth.coord - coord).n*100).toVec, YELLOW)     // direction to eart
-    drawArrow(coord.toVec, (coord + (moon.coord - coord).n*100).toVec, GREEN)       // direction to moon
   }
 }
