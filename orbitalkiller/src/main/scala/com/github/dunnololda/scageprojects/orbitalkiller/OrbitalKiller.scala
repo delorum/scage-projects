@@ -155,7 +155,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     radius = 1737000)
 
   val ship_start_position = earth.coord + DVec(0, earth.radius + 100000)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G)
+  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G)*1.25f
   //val ship_start_position = moon.coord + DVec(300, moon.radius + 500)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G)
   val ship = new Ship3("ship",
@@ -366,9 +366,18 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   def drawMapMode_=(new_mode:Boolean) {
     if(new_mode) {
       _draw_map_mode = true
-      globalScale = orbitAroundCelestialInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity).map(x => (2f*x._2.a/232000f).toFloat).getOrElse(1f)
-      viewMode = 0
-      _center = earth.coord.toVec*scale
+      orbitAroundCelestialInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity) match {
+        case Some((planet, orbit)) =>
+          val b = BoxShape(2*orbit.a, 2*orbit.b)
+          val aabb = b.aabb(orbit.center, Vec(-1,0).signedDeg(orbit.f2-orbit.f1).toFloat)
+          viewMode = 0
+          globalScale = 750f / (aabb.height * scale).toFloat
+          _center = orbit.center.toVec*scale
+        case None =>
+          viewMode = 0
+          globalScale = 1
+          _center = earth.coord.toVec*scale
+      }
     } else {
       _draw_map_mode = false
       globalScale = 1
@@ -380,6 +389,14 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     if(coord.dist(moon.coord) < moon.gravitational_radius) Some(moon)
     else if(coord.dist(earth.coord) < earth.gravitational_radius) Some(earth)
     else None
+  }
+
+  def drawArrow(from1:Vec, to1:Vec, color:ScageColor): Unit = {
+    val arrow11 = to1 + ((from1-to1).n*10/globalScale).rotateDeg(15)
+    val arrow12 = to1 + ((from1-to1).n*10/globalScale).rotateDeg(-15)
+    drawLine(from1, to1, color)
+    drawLine(to1, arrow11, color)
+    drawLine(to1, arrow12, color)
   }
 
   keyIgnorePause(KEY_NUMPAD1, onKeyDown = {ship.switchEngineActive(KEY_NUMPAD1)})
@@ -537,30 +554,6 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
       drawCircle(moon.coord.toVec*scale, (moon.radius*scale).toFloat, WHITE)
       drawCircle(moon.coord.toVec*scale, (moon.gravitational_radius*scale).toFloat, color = DARK_GRAY)
-
-      drawFilledCircle(ship.coord.toVec*scale, (earth.radius*scale/2f/globalScale).toFloat, WHITE)
-
-      /*future_trajectory_map.foreach {
-        case (index, body_states) =>
-          drawSlidingLines(body_states.map(_._2.coord*scale), color = GREEN)
-      }*/
-      orbitAroundCelestialInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity) match {
-        case Some((planet, orbit)) =>
-          openglLocalTransform {
-            openglMove(orbit.center.toVec*scale)
-            openglRotateDeg(Vec(-1,0).signedDeg(orbit.f2-orbit.f1).toFloat)
-            drawEllipse(Vec.zero, (orbit.a*scale).toFloat, (orbit.b*scale).toFloat, YELLOW)
-          }
-          val b = BoxShape(2*orbit.a, 2*orbit.b)
-          if(orbit.e > 0.1) {
-            val aabb = b.aabb(orbit.center, (orbit.f2-orbit.f1).signedDeg(Vec(0,1)))
-            drawRectCentered(orbit.center.toVec*scale, (aabb.width*scale).toFloat, (aabb.height*scale).toFloat, YELLOW)
-          } else {
-            drawRectCentered(orbit.center.toVec*scale, (2*orbit.a*scale).toFloat, (2*orbit.a*scale).toFloat, YELLOW)
-          }
-        case None =>
-      }
-
       val moon_orbit = calculateOrbit(earth.mass, earth.coord, moon.mass, moon.coord, moon.linearVelocity, G)
       openglLocalTransform {
         openglMove(moon_orbit.center.toVec*scale)
@@ -568,6 +561,16 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
         drawEllipse(Vec.zero, (moon_orbit.a*scale).toFloat, (moon_orbit.b*scale).toFloat, GREEN)
       }
 
+      drawFilledCircle(ship.coord.toVec*scale, (earth.radius*scale/2f/globalScale).toFloat, WHITE)
+      orbitAroundCelestialInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity) match {
+        case Some((planet, orbit)) =>
+          openglLocalTransform {
+            openglMove(orbit.center.toVec*scale)
+            openglRotateDeg(Vec(-1,0).signedDeg(orbit.f2-orbit.f1).toFloat)
+            drawEllipse(Vec.zero, (orbit.a*scale).toFloat, (orbit.b*scale).toFloat, YELLOW)
+          }
+        case None =>
+      }
       if(ship.engines.exists(_.active)) {
         future_trajectory.find(_._1 >= ship.engines.map(_.stopMomentTacts).max) match {
           case Some((t, lbs)) =>
@@ -589,6 +592,17 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
             continueFutureTrajectory()
         }
       }
+
+      drawFilledCircle(station.coord.toVec*scale, (earth.radius*scale/2f/globalScale).toFloat, WHITE)
+      orbitAroundCelestialInPointWithVelocity(station.mass, station.coord, station.linearVelocity) match {
+        case Some((planet, orbit)) =>
+          openglLocalTransform {
+            openglMove(orbit.center.toVec*scale)
+            openglRotateDeg(Vec(-1,0).signedDeg(orbit.f2-orbit.f1).toFloat)
+            drawEllipse(Vec.zero, (orbit.a*scale).toFloat, (orbit.b*scale).toFloat, YELLOW)
+          }
+        case None =>
+      }
     }
   }
 
@@ -598,12 +612,12 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     print(s"сборка $appVersion", windowWidth - 20, windowHeight - 20, align = "top-right", color = DARK_GRAY)
     print(s"FPS/Ticks $fps/$ticks", windowWidth - 20, windowHeight - 40, align = "top-right", color = DARK_GRAY)
 
-    val a = Vec(windowWidth - 180, 20)
-    val b = Vec(windowWidth - 180+100, 20)
+    val a = Vec(windowWidth - 250, 20)
+    val b = Vec(windowWidth - 250 + 100, 20)
     drawLine(a,b, DARK_GRAY)
     drawLine(a, a+(a-b).rotateDeg(90).n*5, DARK_GRAY)
     drawLine(b, b+(a-b).rotateDeg(90).n*5, DARK_GRAY)
-    print(s"${mOrKm((100/globalScale).toInt)}", b, DARK_GRAY)
+    print(s"${mOrKm((100/globalScale/(if(drawMapMode) scale else 1.0)).toInt)}", b, DARK_GRAY)
 
     if(!disable_interface_drawing) {
       val heights = (520 to 20 by -20).iterator

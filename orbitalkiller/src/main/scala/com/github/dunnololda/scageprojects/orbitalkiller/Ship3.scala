@@ -30,6 +30,8 @@ class Ship3(
     DVec(-10.0, 30.0)
   )
 
+  val draw_points = (points :+ points.head).map(_.toVec)
+
   val eight = Engine(position = DVec(0.0, 70.0),    force_dir = DVec(0.0, -1.0), max_power = 1000000, this)
   val two   = Engine(position = DVec(0.0, -70.0),   force_dir = DVec(0.0, 1.0),  max_power = 1000000, this)
   val four  = Engine(position = DVec(-10.0, 0.0),   force_dir = DVec(1.0, 0.0),  max_power = 1000000, this)
@@ -206,14 +208,6 @@ class Ship3(
     }
   }
 
-  private def drawArrow(from1:Vec, to1:Vec, color:ScageColor): Unit = {
-    val arrow11 = to1 + ((from1-to1).n*10/globalScale).rotateDeg(15)
-    val arrow12 = to1 + ((from1-to1).n*10/globalScale).rotateDeg(-15)
-    drawLine(from1, to1, color)
-    drawLine(to1, arrow11, color)
-    drawLine(to1, arrow12, color)
-  }
-
   render {
     if(!drawMapMode) {
       openglLocalTransform {
@@ -224,7 +218,7 @@ class Ship3(
         drawArrow(Vec.zero, ((moon.coord - coord).n*100).toVec, GREEN)       // direction to moon
 
         openglRotateDeg(rotation.toFloat)
-        drawSlidingLines((points :+ points.head).map(_.toVec), WHITE)
+        drawSlidingLines(draw_points, WHITE)
 
         engines.foreach {
           case e =>

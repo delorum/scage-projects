@@ -76,6 +76,11 @@ class SpaceStation(
     if(!drawMapMode) {
       openglLocalTransform {
         openglMove(coord.toVec)
+        drawFilledCircle(Vec.zero, 2, GREEN)                                // mass center
+        drawArrow(Vec.zero, (linearVelocity.n*100).toVec, CYAN)             // current velocity
+        drawArrow(Vec.zero, ((earth.coord - coord).n*100).toVec, YELLOW)    // direction to earth
+        drawArrow(Vec.zero, ((moon.coord - coord).n*100).toVec, GREEN)      // direction to moon
+
         openglRotateDeg(rotation.toFloat)
         drawSlidingLines((points :+ points.head).map(_.toVec), WHITE)
 
@@ -90,11 +95,6 @@ class SpaceStation(
             }
         }
       }
-
-      drawFilledCircle(coord.toVec, 2, GREEN)                             // mass center
-      drawLine(coord.toVec, (coord + linearVelocity.n*100).toVec, CYAN)           // current velocity
-      drawLine(coord.toVec, (coord + (earth.coord - coord).n*100).toVec, YELLOW)    // direction to sun
-      //drawLine(coord, coord + (moon.coord - coord).n*100, GREEN)   // direction to earth
     }
   }
 }
