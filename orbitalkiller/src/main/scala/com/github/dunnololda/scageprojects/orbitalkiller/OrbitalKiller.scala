@@ -155,7 +155,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     radius = 1737000)
 
   val ship_start_position = earth.coord + DVec(0, earth.radius + 100000)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G)*1.25f
+  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G)
   //val ship_start_position = moon.coord + DVec(300, moon.radius + 500)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G)
   val ship = new Ship3("ship",
@@ -203,10 +203,10 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
   private var view_mode = 0
 
-  private def freeCenter() {
+  /*private def freeCenter() {
     _center = center
     center = _center
-  }
+  }*/
 
   def viewMode = view_mode
   def viewMode_=(new_view_mode:Int) {
@@ -217,7 +217,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
         rotationAngle = 0
         view_mode = 0
       case 1 => // фиксация на корабле
-        center = ship.coord.toVec
+        center = ship.coord.toVec + _ship_offset
         rotationCenter = ship.coord.toVec
         rotationAngleDeg = -ship.rotation.toFloat
         view_mode = 1
@@ -449,14 +449,27 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     }
   }, onKeyUp = updateFutureTrajectory())
 
-  keyIgnorePause(KEY_W, 10, onKeyDown = {freeCenter(); _center += Vec(0, 5/globalScale)})
+  /*keyIgnorePause(KEY_W, 10, onKeyDown = {freeCenter(); _center += Vec(0, 5/globalScale)})
   keyIgnorePause(KEY_A, 10, onKeyDown = {freeCenter(); _center += Vec(-5/globalScale, 0)})
   keyIgnorePause(KEY_S, 10, onKeyDown = {freeCenter(); _center += Vec(0, -5/globalScale)})
-  keyIgnorePause(KEY_D, 10, onKeyDown = {freeCenter(); _center += Vec(5/globalScale, 0)})
+  keyIgnorePause(KEY_D, 10, onKeyDown = {freeCenter(); _center += Vec(5/globalScale, 0)})*/
+
+  keyIgnorePause(KEY_W, 10, onKeyDown = {if(drawMapMode) _center += Vec(0, 5/globalScale)  else _ship_offset += Vec(0, 5/globalScale)})
+  keyIgnorePause(KEY_A, 10, onKeyDown = {if(drawMapMode) _center += Vec(-5/globalScale, 0) else _ship_offset += Vec(-5/globalScale, 0)})
+  keyIgnorePause(KEY_S, 10, onKeyDown = {if(drawMapMode) _center += Vec(0, -5/globalScale) else _ship_offset += Vec(0, -5/globalScale)})
+  keyIgnorePause(KEY_D, 10, onKeyDown = {if(drawMapMode) _center += Vec(5/globalScale, 0)  else _ship_offset += Vec(5/globalScale, 0)})
 
   keyIgnorePause(KEY_M, onKeyDown = {drawMapMode = !drawMapMode})
 
-  keyIgnorePause(KEY_SPACE, onKeyDown = {freeCenter(); _center = ship.coord.toVec})
+  keyIgnorePause(KEY_SPACE, onKeyDown = {
+    if(!drawMapMode) {
+      //freeCenter()
+      //_center = ship.coord.toVec
+      _ship_offset = Vec.zero
+    } else {
+      drawMapMode = true
+    }
+  })
 
   keyIgnorePause(KEY_1, onKeyDown = ship.flightMode = 1)
   keyIgnorePause(KEY_2, onKeyDown = ship.flightMode = 2)
@@ -468,11 +481,11 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   keyIgnorePause(KEY_P, onKeyDown = switchPause())
 
   keyIgnorePause(KEY_F1, onKeyDown = {pause(); HelpScreen.run()})
-  keyIgnorePause(KEY_F2, onKeyDown = {viewMode = 0; rotationAngle = 0})  // свободный
-  keyIgnorePause(KEY_F3, onKeyDown = viewMode = 1)  // фиксация на корабле
-  keyIgnorePause(KEY_F4, onKeyDown = viewMode = 2)  // посадка на планету
-  keyIgnorePause(KEY_F5, onKeyDown = viewMode = 3)  // фиксация на солнце
-  keyIgnorePause(KEY_F6, onKeyDown = viewMode = 4)  // фиксация на планете
+  //keyIgnorePause(KEY_F2, onKeyDown = {viewMode = 0; rotationAngle = 0})  // свободный
+  //keyIgnorePause(KEY_F3, onKeyDown = viewMode = 1)                       // фиксация на корабле
+  //keyIgnorePause(KEY_F4, onKeyDown = viewMode = 2)                       // посадка на планету
+  //keyIgnorePause(KEY_F5, onKeyDown = viewMode = 3)                       // фиксация на солнце
+  //keyIgnorePause(KEY_F6, onKeyDown = viewMode = 4)                       // фиксация на планете
 
   /*keyIgnorePause(KEY_Z, onKeyDown = disable_trajectory_drawing = !disable_trajectory_drawing)
   keyIgnorePause(KEY_X, onKeyDown = disable_future_trajectory_drawing = !disable_future_trajectory_drawing)*/
@@ -487,7 +500,12 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
   mouseWheelDownIgnorePause(onWheelDown = m => {
     if(globalScale > 0.01f) {
-      if(globalScale.toInt > 1) globalScale -= 1
+      if(globalScale.toInt > 100000) globalScale -= 100000
+      else if(globalScale.toInt > 10000) globalScale -= 10000
+      else if(globalScale.toInt > 1000) globalScale -= 1000
+      else if(globalScale.toInt > 100) globalScale -= 100
+      else if(globalScale.toInt > 10) globalScale -= 10
+      else if(globalScale.toInt > 1) globalScale -= 1
       else if((globalScale*10).toInt > 1) globalScale -= 0.1f
       else globalScale -= 0.01f
       if(globalScale < 0.01f) globalScale = 0.01f
@@ -495,13 +513,35 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     println(s"$globalScale : ${orbitAroundCelestialInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity).map(x => s"${2*x._2.a}").getOrElse("")} : ${orbitAroundCelestialInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity).map(x => s"${2*x._2.a/globalScale}").getOrElse("")}")
   })
   mouseWheelUpIgnorePause(onWheelUp = m => {
-    if(globalScale < (if(!drawMapMode) 5 else 1000)) {
+    if(globalScale < (if(!drawMapMode) 5 else 1000000)) {
       if(globalScale < 0.1) globalScale += 0.01f
       else if(globalScale < 1) globalScale += 0.1f
-      else globalScale += 1
+      else if(globalScale < 10) globalScale +=1f
+      else if(globalScale < 100) globalScale +=10f
+      else if(globalScale < 1000) globalScale +=100f
+      else if(globalScale < 10000) globalScale +=1000f
+      else if(globalScale < 100000) globalScale +=10000f
+      else globalScale += 100000
     }
       println(s"$globalScale : ${orbitAroundCelestialInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity).map(x => s"${2*x._2.a}").getOrElse("")} : ${orbitAroundCelestialInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity).map(x => s"${2*x._2.a/globalScale}").getOrElse("")}")
   })
+
+
+  private var left_up_corner:Option[Vec] = None
+  private var right_down_corner:Option[Vec] = None
+  leftMouseIgnorePause(onBtnDown = m => {if(drawMapMode) left_up_corner = Some(absCoord(m))}, onBtnUp = m => {
+    for {
+      x <- left_up_corner
+      y <- right_down_corner
+    } {
+      val c = (y-x).n*(y.dist(x)/2f)+x
+      val h = math.abs(y.y - x.y)
+      globalScale = 750f / h
+      _center = c
+    }
+    left_up_corner = None
+    right_down_corner = None})
+  leftMouseDragIgnorePause(onDrag = m => if(drawMapMode) right_down_corner = Some(absCoord(m)))
 
   /*actionIgnorePause {
     if(future_trajectory.isEmpty) updateFutureTrajectory()
@@ -519,6 +559,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   }
 
   private var _center = ship.coord.toVec
+  private var _ship_offset = Vec.zero
   center = _center
   windowCenter = Vec((windowWidth-1024)+1024/2, windowHeight/2)
   viewMode = 1
@@ -602,6 +643,17 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
             drawEllipse(Vec.zero, (orbit.a*scale).toFloat, (orbit.b*scale).toFloat, YELLOW)
           }
         case None =>
+      }
+
+      for {
+        x <- left_up_corner
+        y <- right_down_corner
+      } {
+        val c = (y-x).n*(y.dist(x)/2f)+x
+        val w = math.abs(y.x - x.x)
+        val h = math.abs(y.y - x.y)
+
+        drawRectCentered(c,w,h,DARK_GRAY)
       }
     }
   }
