@@ -381,8 +381,9 @@ package object orbitalkiller {
                           changeFunction:(Long, List[BodyState]) => (Long, List[BodyState]) =  (time, bodies) => (time, bodies),
                           enable_collisions:Boolean = true)
                          (current_state:(Long, List[BodyState])):Stream[(Long, List[BodyState])] = {
+    val cur_dt = dt
     val (tacts, bodies) = changeFunction(current_state._1, current_state._2)
-    val next_tacts = tacts + (dt/base_dt).toLong
+    val next_tacts = tacts + (cur_dt/base_dt).toLong
 
     val next_bodies = if(enable_collisions) {
       val collision_data = mutable.HashMap[String, (DVec, Double)]()
@@ -444,13 +445,13 @@ package object orbitalkiller {
 
           val next_force = force(tacts, b1, other_bodies)
           val next_acc = next_force / b1.mass
-          val next_vel = collision_data.get(b1.index).map(_._1).getOrElse(b1.vel + next_acc*dt)
-          val next_coord = b1.coord + next_vel*dt
+          val next_vel = collision_data.get(b1.index).map(_._1).getOrElse(b1.vel + next_acc*cur_dt)
+          val next_coord = b1.coord + next_vel*cur_dt
 
           val next_torque = torque(tacts, b1, other_bodies)
           val next_ang_acc = (next_torque / b1.I).toDeg  // in degrees
-          val next_ang_vel = collision_data.get(b1.index).map(_._2).getOrElse(b1.ang_vel + next_ang_acc*dt)
-          val next_ang = correctAngle((b1.ang + next_ang_vel*dt) % 360)
+          val next_ang_vel = collision_data.get(b1.index).map(_._2).getOrElse(b1.ang_vel + next_ang_acc*cur_dt)
+          val next_ang = correctAngle((b1.ang + next_ang_vel*cur_dt) % 360)
 
           b1.copy(
             acc = next_acc,
@@ -470,13 +471,13 @@ package object orbitalkiller {
 
           val next_force = force(tacts, b1, other_bodies)
           val next_acc = next_force / b1.mass
-          val next_vel = b1.vel + next_acc*dt
-          val next_coord = b1.coord + next_vel*dt
+          val next_vel = b1.vel + next_acc*cur_dt
+          val next_coord = b1.coord + next_vel*cur_dt
 
           val next_torque = torque(tacts, b1, other_bodies)
           val next_ang_acc = (next_torque / b1.I).toDeg  // in degrees
-          val next_ang_vel = b1.ang_vel + next_ang_acc*dt
-          val next_ang = correctAngle((b1.ang + next_ang_vel*dt) % 360)
+          val next_ang_vel = b1.ang_vel + next_ang_acc*cur_dt
+          val next_ang = correctAngle((b1.ang + next_ang_vel*cur_dt) % 360)
 
           b1.copy(
             acc = next_acc,

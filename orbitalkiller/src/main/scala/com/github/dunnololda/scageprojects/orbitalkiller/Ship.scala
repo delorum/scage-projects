@@ -12,7 +12,7 @@ trait Ship {
   def engines:List[Engine]
   def engines_mapping:Map[Int, Engine]
   def switchEngineActive(engine_code:Int) {
-    timeMultiplier = realtime
+    //timeMultiplier = realtime
     engines_mapping.get(engine_code).foreach(e => e.switchActive())
   }
 
@@ -44,12 +44,8 @@ trait Ship {
     }
   }
 
-  def switchEngine(e:Engine) {
-    e.switchActive()
-    updateFutureTrajectory()
-  }
-
   def activateOnlyTheseEngines(engines_to_activate:Engine*) {
+    //timeMultiplier = realtime
     engines_to_activate.foreach(_.active = true)
     engines.withFilter(e => e.active && !engines_to_activate.contains(e)).foreach(_.active = false)
   }
@@ -84,7 +80,16 @@ trait Ship {
   }
 
   def preserveAngularVelocity(ang_vel_deg:Double)
-  def enterOrbit()
+  def preserveVelocity(vel:DVec)
+
+  def enterOrbit() {
+    insideGravitationalRadiusOfCelestialBody(coord) match {
+      case Some(body) =>
+        val ss = satelliteSpeed(coord, body.coord, body.linearVelocity, body.mass, G)
+        preserveVelocity(ss)
+      case None =>
+    }
+  }
 
   def preserveAngle(angle_deg:Double) {
     if(rotation != angle_deg) {
@@ -117,6 +122,7 @@ trait Ship {
     case 4 => "ориентация по траектории"
     case 5 => "ориентация против траектории"
     case 6 => "выход на круговую орбиту"
+    case 7 => "уравнять скорость с кораблем"
     case _ => ""
   }
 }

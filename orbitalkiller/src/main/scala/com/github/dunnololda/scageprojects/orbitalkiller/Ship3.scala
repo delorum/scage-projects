@@ -32,14 +32,14 @@ class Ship3(
 
   val draw_points = (points :+ points.head).map(_.toVec)
 
-  val eight = Engine(position = DVec(0.0, 70.0),    force_dir = DVec(0.0, -1.0), max_power = 1000000, this)
-  val two   = Engine(position = DVec(0.0, -70.0),   force_dir = DVec(0.0, 1.0),  max_power = 1000000, this)
-  val four  = Engine(position = DVec(-10.0, 0.0),   force_dir = DVec(1.0, 0.0),  max_power = 1000000, this)
-  val six   = Engine(position = DVec(10.0, 0.0),    force_dir = DVec(-1.0, 0.0), max_power = 1000000, this)
-  val seven = Engine(position = DVec(-40.0, 10.0),  force_dir = DVec(0.0, 1.0),  max_power = 10000, this)
-  val nine  = Engine(position = DVec(40.0, 10.0),   force_dir = DVec(0.0, 1.0),  max_power = 10000, this)
-  val one   = Engine(position = DVec(-40.0, -30.0), force_dir = DVec(0.0, 1.0),  max_power = 10000, this)
-  val three = Engine(position = DVec(40.0, -30.0),  force_dir = DVec(0.0, 1.0),  max_power = 10000, this)
+  val eight = Engine(position = DVec(0.0, 70.0),    force_dir = DVec(0.0, -1.0), max_power = 1000000, default_power_percent = 1, this)
+  val two   = Engine(position = DVec(0.0, -70.0),   force_dir = DVec(0.0, 1.0),  max_power = 1000000, default_power_percent = 1, this)
+  val four  = Engine(position = DVec(-10.0, 0.0),   force_dir = DVec(1.0, 0.0),  max_power = 1000000, default_power_percent = 1, this)
+  val six   = Engine(position = DVec(10.0, 0.0),    force_dir = DVec(-1.0, 0.0), max_power = 1000000, default_power_percent = 1, this)
+  val seven = Engine(position = DVec(-40.0, 10.0),  force_dir = DVec(0.0, 1.0),  max_power = 10000, default_power_percent = 100, this)
+  val nine  = Engine(position = DVec(40.0, 10.0),   force_dir = DVec(0.0, 1.0),  max_power = 10000, default_power_percent = 100, this)
+  val one   = Engine(position = DVec(-40.0, -30.0), force_dir = DVec(0.0, 1.0),  max_power = 10000, default_power_percent = 100, this)
+  val three = Engine(position = DVec(40.0, -30.0),  force_dir = DVec(0.0, 1.0),  max_power = 10000, default_power_percent = 100, this)
 
   val engines = List(eight, two, four, six, seven, nine, one, three)
 
@@ -117,60 +117,55 @@ class Ship3(
     last_correction_or_check_moment = OrbitalKiller.tacts
   }
 
-  def enterOrbit() {
-    insideGravitationalRadiusOfCelestialBody(coord) match {
-      case Some(body) =>
-        val ss = satelliteSpeed(coord, body.coord, body.linearVelocity, body.mass, G)
-        val n = DVec(0, 1).rotateDeg(rotation).n
-        val p = n.p*(-1)
+  def preserveVelocity(vel:DVec): Unit = {
+    val n = DVec(0, 1).rotateDeg(rotation).n
+    val p = n.p*(-1)
 
-        val ship_velocity_n = linearVelocity*n  // from
-        val ss_n = ss*n                         // to
+    val ship_velocity_n = linearVelocity*n  // from
+    val ss_n = vel*n                         // to
 
-        if(ship_velocity_n - ss_n > 0.1f) {
-          val power = maxPossiblePowerForLinearMovement(eight.max_power, eight.force_dir.y, mass, ss_n, ship_velocity_n, 0.1f)
+    if(ship_velocity_n - ss_n > 0.1f) {
+      val power = maxPossiblePowerForLinearMovement(eight.max_power, eight.force_dir.y, mass, ss_n, ship_velocity_n, 0.1f)
 
-          eight.power = power
-          val acc = (eight.force / mass).y
-          val (tacts, result_to) = howManyTacts(ss_n, ship_velocity_n, acc, dt)
-          /*println("===========================")
-          println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
-          eight.active = true
-          eight.worktimeTacts = tacts
-        } else if(ship_velocity_n - ss_n < -0.1f) {
-          val power = maxPossiblePowerForLinearMovement(two.max_power, two.force_dir.y, mass, ss_n, ship_velocity_n, 0.1f)
-          two.power = power
-          val acc = (two.force / mass).y
-          val (tacts, result_to) = howManyTacts(ss_n, ship_velocity_n, acc, dt)
-          /*println("===========================")
-          println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
-          two.active = true
-          two.worktimeTacts = tacts
-        }
+      eight.power = power
+      val acc = (eight.force / mass).y
+      val (tacts, result_to) = howManyTacts(ss_n, ship_velocity_n, acc, dt)
+      /*println("===========================")
+      println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
+      eight.active = true
+      eight.worktimeTacts = tacts
+    } else if(ship_velocity_n - ss_n < -0.1f) {
+      val power = maxPossiblePowerForLinearMovement(two.max_power, two.force_dir.y, mass, ss_n, ship_velocity_n, 0.1f)
+      two.power = power
+      val acc = (two.force / mass).y
+      val (tacts, result_to) = howManyTacts(ss_n, ship_velocity_n, acc, dt)
+      /*println("===========================")
+      println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
+      two.active = true
+      two.worktimeTacts = tacts
+    }
 
-        val ship_velocity_p = p*linearVelocity
-        val ss_p = p*ss
+    val ship_velocity_p = p*linearVelocity
+    val ss_p = p*vel
 
-        if(ship_velocity_p - ss_p > 0.1f) {
-          val power = maxPossiblePowerForLinearMovement(six.max_power, six.force_dir.x, mass, ss_p, ship_velocity_p, 0.1f)
-          six.power = power
-          val acc = (six.force / mass).x
-          val (tacts, result_to) = howManyTacts(ss_p, ship_velocity_p, acc, dt)
-          /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
-          println("===========================")*/
-          six.active = true
-          six.worktimeTacts = tacts
-        } else if(ship_velocity_p - ss_p < -0.1f) {
-          val power = maxPossiblePowerForLinearMovement(four.max_power, four.force_dir.x, mass, ss_p, ship_velocity_p, 0.1f)
-          four.power = power
-          val acc = (four.force / mass).x
-          val (tacts, result_to) = howManyTacts(ss_p, ship_velocity_p, acc, dt)
-          /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
-          println("===========================")*/
-          four.active = true
-          four.worktimeTacts = tacts
-        }
-      case None =>
+    if(ship_velocity_p - ss_p > 0.1f) {
+      val power = maxPossiblePowerForLinearMovement(six.max_power, six.force_dir.x, mass, ss_p, ship_velocity_p, 0.1f)
+      six.power = power
+      val acc = (six.force / mass).x
+      val (tacts, result_to) = howManyTacts(ss_p, ship_velocity_p, acc, dt)
+      /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
+      println("===========================")*/
+      six.active = true
+      six.worktimeTacts = tacts
+    } else if(ship_velocity_p - ss_p < -0.1f) {
+      val power = maxPossiblePowerForLinearMovement(four.max_power, four.force_dir.x, mass, ss_p, ship_velocity_p, 0.1f)
+      four.power = power
+      val acc = (four.force / mass).x
+      val (tacts, result_to) = howManyTacts(ss_p, ship_velocity_p, acc, dt)
+      /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
+      println("===========================")*/
+      four.active = true
+      four.worktimeTacts = tacts
     }
     last_correction_or_check_moment = OrbitalKiller.tacts
   }
@@ -199,7 +194,17 @@ class Ship3(
               case body =>
                 val ss = satelliteSpeed(coord, body.coord, body.linearVelocity, body.mass, G)
                 if(linearVelocity.dist(ss) > 0.1) {
-                  enterOrbit()
+                  preserveVelocity(ss)
+                } else flightMode = 1
+            }
+          } else preserveAngularVelocity(0)
+        case 7 => // уравнять скорость с ближайшим кораблем
+          if(math.abs(angularVelocity) < 0.01) {
+            ships.filter(s => s.index != index && coord.dist(s.coord) < 80000).sortBy(s => coord.dist(s.coord)).headOption.foreach {
+              case s =>
+                val ss = s.linearVelocity
+                if(linearVelocity.dist(ss) > 0.1) {
+                  preserveVelocity(ss)
                 } else flightMode = 1
             }
           } else preserveAngularVelocity(0)

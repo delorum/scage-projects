@@ -23,19 +23,20 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
   private var _time_multiplier = realtime
   def timeMultiplier = {
-    if(_time_multiplier != realtime && ship.engines.exists(_.active)) {
+    if(_time_multiplier != realtime && ships.flatMap(_.engines).exists(_.active)) {
       timeMultiplier_=(realtime)
     }
     _time_multiplier
   }
-  def timeMultiplier_=(tm:Int) {
-    if(tm > 0) {
+  def timeMultiplier_=(new_time_multiplier:Int) {
+    if(new_time_multiplier > 0) {
       // разрешаем переход на ускоренное/замедленное течение времени только если все двигатели выключены
-      if(tm == realtime || ship.engines.forall(!_.active)) {
-        _time_multiplier = tm
-        ship.engines.filter(_.active).foreach(e => {
+      if(new_time_multiplier == realtime || ships.flatMap(_.engines).forall(!_.active)) {
+        _time_multiplier = new_time_multiplier
+        ships.flatMap(_.engines).filter(_.active).foreach(e => {
           e.worktimeTacts = e.worktimeTacts
         })
+
       }
     }
   }
@@ -171,6 +172,8 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     init_velocity = station_init_velocity,
     init_rotation = 45
   )
+  
+  val ships = List(ship, station)
 
   private val real_system_evolution =
     futureSystemEvolutionFrom(dt, 0, List(
@@ -199,7 +202,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
       //skipped_points += 1
     /*}*/
   }
-  //nextStep()
+  nextStep()
 
   private var view_mode = 0
 
@@ -391,9 +394,9 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     else None
   }
 
-  def drawArrow(from1:Vec, to1:Vec, color:ScageColor): Unit = {
-    val arrow11 = to1 + ((from1-to1).n*10/globalScale).rotateDeg(15)
-    val arrow12 = to1 + ((from1-to1).n*10/globalScale).rotateDeg(-15)
+  def drawArrow(from1:Vec, to1:Vec, color:ScageColor, scale:Float = globalScale) {
+    val arrow11 = to1 + ((from1-to1).n*10/scale).rotateDeg(15)
+    val arrow12 = to1 + ((from1-to1).n*10/scale).rotateDeg(-15)
     drawLine(from1, to1, color)
     drawLine(to1, arrow11, color)
     drawLine(to1, arrow12, color)
@@ -408,7 +411,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   keyIgnorePause(KEY_NUMPAD8, onKeyDown = {ship.switchEngineActive(KEY_NUMPAD8)})
   keyIgnorePause(KEY_NUMPAD9, onKeyDown = {ship.switchEngineActive(KEY_NUMPAD9)})
 
-  keyIgnorePause(KEY_NUMPAD5, onKeyDown = {ship.engines.foreach(_.active = false)})
+  keyIgnorePause(KEY_NUMPAD5, onKeyDown = {ship.engines.foreach(e => {e.active = false; e.power = 0})})
 
   keyIgnorePause(KEY_UP,   10, onKeyDown = {ship.selected_engine.foreach(e => e.powerPercent += 1)}, onKeyUp = updateFutureTrajectory())
   keyIgnorePause(KEY_DOWN, 10, onKeyDown = {ship.selected_engine.foreach(e => e.powerPercent -= 1)}, onKeyUp = updateFutureTrajectory())
@@ -477,6 +480,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   keyIgnorePause(KEY_4, onKeyDown = ship.flightMode = 4)
   keyIgnorePause(KEY_5, onKeyDown = ship.flightMode = 5)
   keyIgnorePause(KEY_6, onKeyDown = ship.flightMode = 6)
+  keyIgnorePause(KEY_7, onKeyDown = ship.flightMode = 7)
 
   keyIgnorePause(KEY_P, onKeyDown = switchPause())
 
@@ -543,9 +547,9 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     right_down_corner = None})
   leftMouseDragIgnorePause(onDrag = m => if(drawMapMode) right_down_corner = Some(absCoord(m)))
 
-  /*actionIgnorePause {
+  actionIgnorePause {
     if(future_trajectory.isEmpty) updateFutureTrajectory()
-  }*/
+  }
 
   /*actionIgnorePause(100) {
     if(continue_future_trajectory) continueFutureTrajectory()
@@ -554,7 +558,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
   action {
     future_trajectory --= future_trajectory.takeWhile(_._1 < _tacts)
     //future_trajectory_map.values.foreach(t => t --= t.takeWhile(_._1 < _tacts))
-    if(future_trajectory.isEmpty) updateFutureTrajectory()
+    //if(future_trajectory.isEmpty) updateFutureTrajectory()
     nextStep()
   }
 
@@ -566,30 +570,8 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
   private val scale = 1e-6
 
-  render {    // TODO: display list!
-    if(!drawMapMode) {
-      val y = windowHeight/2f-20f
-      val x = windowWidth/2f-20f
-
-      openglLocalTransform {
-        openglMove(center)
-        val from1 = Vec(0f, -y/globalScale)
-        val to1 = Vec(0f, y/globalScale)
-        val arrow11 = to1 + ((from1-to1).n*10/globalScale).rotateDeg(15)
-        val arrow12 = to1 + ((from1-to1).n*10/globalScale).rotateDeg(-15)
-        drawLine(from1, to1, DARK_GRAY)
-        drawLine(to1, arrow11, DARK_GRAY)
-        drawLine(to1, arrow12, DARK_GRAY)
-
-        val from2 = Vec(-x/globalScale, 0)
-        val to2 = Vec(x/globalScale, 0)
-        val arrow21 = to2 + ((from2-to2).n*10/globalScale).rotateDeg(15)
-        val arrow22 = to2 + ((from2-to2).n*10/globalScale).rotateDeg(-15)
-        drawLine(from2, to2, DARK_GRAY)
-        drawLine(to2, arrow21, DARK_GRAY)
-        drawLine(to2, arrow22, DARK_GRAY)
-      }
-    } else {
+  render {
+    if(drawMapMode) {
       drawCircle(earth.coord.toVec*scale, (earth.radius*scale).toFloat, WHITE)
       drawCircle(earth.coord.toVec*scale, (earth.gravitational_radius*scale).toFloat, color = DARK_GRAY)
 
@@ -655,6 +637,16 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
         drawRectCentered(c,w,h,DARK_GRAY)
       }
+    } else {
+      val m = absCoord(mouseCoord)
+      val d = ship.coord.dist(m)
+      drawArrow(ship.coord.toVec, m, DARK_GRAY)
+      openglLocalTransform {
+        openglMove(m)
+        openglRotateDeg(-rotationAngleDeg)
+        print(s"${mOrKm(d.toLong)}", Vec.zero, size = max_font_size/globalScale, DARK_GRAY)
+      }
+
     }
   }
 
@@ -663,6 +655,9 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     print("F1 - Справка", 20, windowHeight - 40, align = "bottom-left", color = DARK_GRAY)
     print(s"сборка $appVersion", windowWidth - 20, windowHeight - 20, align = "top-right", color = DARK_GRAY)
     print(s"FPS/Ticks $fps/$ticks", windowWidth - 20, windowHeight - 40, align = "top-right", color = DARK_GRAY)
+    print(f"Render/Action ${1f*averageRenderTimeMsec*fps/(averageRenderTimeMsec*fps+averageActionTimeMsec*ticks)*100}%.2f%/${1f*averageActionTimeMsec*ticks/(averageRenderTimeMsec*fps+averageActionTimeMsec*ticks)*100}%.2f%", windowWidth - 20, windowHeight - 60, align = "top-right", color = DARK_GRAY)
+    print(f"Render/Action ${averageRenderTimeMsec}%.2f msec/${averageActionTimeMsec}%.2f msec", windowWidth - 20, windowHeight - 80, align = "top-right", color = DARK_GRAY)
+    print(f"Render/Action ${currentRenderTimeMsec}%.2f msec/${currentActionTimeMsec}%.2f msec", windowWidth - 20, windowHeight - 100, align = "top-right", color = DARK_GRAY)
 
     val a = Vec(windowWidth - 250, 20)
     val b = Vec(windowWidth - 250 + 100, 20)
@@ -672,11 +667,21 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
     print(s"${mOrKm((100/globalScale/(if(drawMapMode) scale else 1.0)).toInt)}", b, DARK_GRAY)
 
     if(!disable_interface_drawing) {
+      openglLocalTransform {
+        val z = windowHeight/2f-40f
+        openglMove(windowCenter)
+        openglRotateDeg(rotationAngleDeg)
+        drawArrow(Vec(0f, -z), Vec(0f, z), DARK_GRAY, 1)
+        print("y", Vec(0f, z), DARK_GRAY)
+        drawArrow(Vec(-z, 0), Vec(z, 0), DARK_GRAY, 1)
+        print("x", Vec(z, 0f), DARK_GRAY)
+      }
+
       val heights = (520 to 20 by -20).iterator
 
       print(s"Время: ${timeStr((_tacts*base_dt*1000f).toLong)}",
         20, heights.next(), ORANGE)
-      print(f"Ускорение времени: x${_time_multiplier*k}%.2f",
+      print(f"Ускорение времени: x${timeMultiplier*k}%.2f",
         20, heights.next(), ORANGE)
 
       print("", 20, heights.next(), ORANGE)
