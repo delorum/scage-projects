@@ -1,6 +1,6 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
-import com.github.dunnololda.scage.ScageLib._
+import com.github.dunnololda.scage.ScageLibD._
 import OrbitalKiller._
 
 class Ship3(
@@ -30,7 +30,7 @@ class Ship3(
     DVec(-10.0, 30.0)
   )
 
-  val draw_points = (points :+ points.head).map(_.toVec)
+  val draw_points = points :+ points.head
 
   val eight = Engine(position = DVec(0.0, 70.0),    force_dir = DVec(0.0, -1.0), max_power = 1000000, default_power_percent = 1, this)
   val two   = Engine(position = DVec(0.0, -70.0),   force_dir = DVec(0.0, 1.0),  max_power = 1000000, default_power_percent = 1, this)
@@ -77,26 +77,26 @@ class Ship3(
         val acc = force / mass
         val (_, result_to) = howManyTacts(to, from, acc, dt)
         math.abs(to - result_to) < max_diff
-    }.map(percent => max_power*0.01*percent).getOrElse(max_power*0.01f)
+    }.map(percent => max_power*0.01*percent).getOrElse(max_power*0.01)
   }
   
   private def maxPossiblePowerForRotation(max_power:Double, force_dir:DVec, position:DVec, I:Double, to:Double, from:Double, max_diff:Double):Double = {
     (99 to 1 by -1).find {
       case percent =>
-        val power = max_power*0.01f*percent
+        val power = max_power*0.01*percent
         val torque = (-force_dir*power)*/position
         val ang_acc = (torque / I).toDeg
         val (_, result_to) = howManyTacts(to, from, ang_acc, dt)
         math.abs(to - result_to) < max_diff
-    }.map(percent => max_power*0.01f*percent).getOrElse(max_power*0.01f)
+    }.map(percent => max_power*0.01*percent).getOrElse(max_power*0.01)
   }
 
   private var last_correction_or_check_moment:Long = 0l
 
   def preserveAngularVelocity(ang_vel_deg:Double) {
     val difference = angularVelocity - ang_vel_deg
-    if(difference > 0.01f) {
-      val power = maxPossiblePowerForRotation(seven.max_power, seven.force_dir, seven.position, currentState.I, ang_vel_deg, angularVelocity, 0.01f)
+    if(difference > 0.01) {
+      val power = maxPossiblePowerForRotation(seven.max_power, seven.force_dir, seven.position, currentState.I, ang_vel_deg, angularVelocity, 0.01)
       seven.power = power
       eight.power = power
       val ang_acc = (seven.torque / currentState.I).toDeg
@@ -104,8 +104,8 @@ class Ship3(
       activateOnlyTheseEngines(seven, eight)
       seven.worktimeTacts = tacts
       eight.worktimeTacts = tacts
-    } else if(difference < -0.01f) {
-      val power = maxPossiblePowerForRotation(nine.max_power, nine.force_dir, nine.position, currentState.I, ang_vel_deg, angularVelocity, 0.01f)
+    } else if(difference < -0.01) {
+      val power = maxPossiblePowerForRotation(nine.max_power, nine.force_dir, nine.position, currentState.I, ang_vel_deg, angularVelocity, 0.01)
       nine.power = power
       eight.power = power
       val ang_acc = (nine.torque / currentState.I).toDeg
@@ -124,8 +124,8 @@ class Ship3(
     val ship_velocity_n = linearVelocity*n  // from
     val ss_n = vel*n                         // to
 
-    if(ship_velocity_n - ss_n > 0.1f) {
-      val power = maxPossiblePowerForLinearMovement(eight.max_power, eight.force_dir.y, mass, ss_n, ship_velocity_n, 0.1f)
+    if(ship_velocity_n - ss_n > 0.1) {
+      val power = maxPossiblePowerForLinearMovement(eight.max_power, eight.force_dir.y, mass, ss_n, ship_velocity_n, 0.1)
 
       eight.power = power
       val acc = (eight.force / mass).y
@@ -134,8 +134,8 @@ class Ship3(
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
       eight.active = true
       eight.worktimeTacts = tacts
-    } else if(ship_velocity_n - ss_n < -0.1f) {
-      val power = maxPossiblePowerForLinearMovement(two.max_power, two.force_dir.y, mass, ss_n, ship_velocity_n, 0.1f)
+    } else if(ship_velocity_n - ss_n < -0.1) {
+      val power = maxPossiblePowerForLinearMovement(two.max_power, two.force_dir.y, mass, ss_n, ship_velocity_n, 0.1)
       two.power = power
       val acc = (two.force / mass).y
       val (tacts, result_to) = howManyTacts(ss_n, ship_velocity_n, acc, dt)
@@ -148,8 +148,8 @@ class Ship3(
     val ship_velocity_p = p*linearVelocity
     val ss_p = p*vel
 
-    if(ship_velocity_p - ss_p > 0.1f) {
-      val power = maxPossiblePowerForLinearMovement(six.max_power, six.force_dir.x, mass, ss_p, ship_velocity_p, 0.1f)
+    if(ship_velocity_p - ss_p > 0.1) {
+      val power = maxPossiblePowerForLinearMovement(six.max_power, six.force_dir.x, mass, ss_p, ship_velocity_p, 0.1)
       six.power = power
       val acc = (six.force / mass).x
       val (tacts, result_to) = howManyTacts(ss_p, ship_velocity_p, acc, dt)
@@ -157,8 +157,8 @@ class Ship3(
       println("===========================")*/
       six.active = true
       six.worktimeTacts = tacts
-    } else if(ship_velocity_p - ss_p < -0.1f) {
-      val power = maxPossiblePowerForLinearMovement(four.max_power, four.force_dir.x, mass, ss_p, ship_velocity_p, 0.1f)
+    } else if(ship_velocity_p - ss_p < -0.1) {
+      val power = maxPossiblePowerForLinearMovement(four.max_power, four.force_dir.x, mass, ss_p, ship_velocity_p, 0.1)
       four.power = power
       val acc = (four.force / mass).x
       val (tacts, result_to) = howManyTacts(ss_p, ship_velocity_p, acc, dt)
@@ -220,40 +220,40 @@ class Ship3(
   render {
     if(!drawMapMode) {
       openglLocalTransform {
-        openglMove(coord.toVec)
-        drawFilledCircle(Vec.zero, 2, GREEN)                                 // mass center
+        openglMove(coord)
+        drawFilledCircle(DVec.zero, 2, GREEN)                                 // mass center
 
         openglLocalTransform {
-          drawArrow(Vec.zero, (linearVelocity.n*100).toVec, CYAN)              // current velocity
-          openglMove((linearVelocity.n*100).toVec)
+          drawArrow(DVec.zero, linearVelocity.n * 100, CYAN)              // current velocity
+          openglMove(linearVelocity.n * 100)
           openglRotateDeg(-rotationAngleDeg)
-          print(f"  ${msecOrKmsec(linearVelocity.norma)} : ${angularVelocity}%.2f град/сек", Vec.zero, size = max_font_size/globalScale, CYAN)
+          print(f"  ${msecOrKmsec(linearVelocity.norma)} : $angularVelocity%.2f град/сек", Vec.zero, size = (max_font_size/globalScale).toFloat, CYAN)
         }
 
         openglLocalTransform {
-          drawArrow(Vec.zero, ((earth.coord - coord).n*100).toVec, YELLOW)     // direction to earth
-          openglMove(((earth.coord - coord).n*100).toVec)
+          drawArrow(Vec.zero, (earth.coord - coord).n * 100, YELLOW)     // direction to earth
+          openglMove((earth.coord - coord).n * 100)
           openglRotateDeg(-rotationAngleDeg)
-          print(s"  ${earth.index} : ${mOrKm((earth.coord.dist(coord) - earth.radius).toLong)} : ${msecOrKmsec(linearVelocity*(coord - earth.coord).n)}", Vec.zero, size = max_font_size/globalScale, YELLOW)
+          print(s"  ${earth.index} : ${mOrKm((earth.coord.dist(coord) - earth.radius).toLong)} : ${msecOrKmsec(linearVelocity*(coord - earth.coord).n)}", Vec.zero, size = (max_font_size/globalScale).toFloat, YELLOW)
         }
 
         openglLocalTransform {
-          drawArrow(Vec.zero, ((moon.coord - coord).n * 100).toVec, GREEN)       // direction to moon
-          openglMove(((moon.coord - coord).n*100).toVec)
+          drawArrow(Vec.zero, (moon.coord - coord).n * 100, GREEN)       // direction to moon
+          openglMove((moon.coord - coord).n * 100)
           openglRotateDeg(-rotationAngleDeg)
-          print(s"  ${moon.index} : ${mOrKm((moon.coord.dist(coord) - moon.radius).toLong)} : ${msecOrKmsec(linearVelocity*(coord - moon.coord).n)}", Vec.zero, size = max_font_size/globalScale, GREEN)
+          print(s"  ${moon.index} : ${mOrKm((moon.coord.dist(coord) - moon.radius).toLong)} : ${msecOrKmsec(linearVelocity*(coord - moon.coord).n)}", Vec.zero, size = (max_font_size/globalScale).toFloat, GREEN)
         }
 
-        openglRotateDeg(rotation.toFloat)
+        openglRotateDeg(rotation)
         drawSlidingLines(draw_points, WHITE)
 
         engines.foreach {
           case e =>
             e.force_dir match {
-              case DVec(0, -1) => drawEngine(e, e.position + DVec(0, 2.5f),  10, 5,  is_vertical = false)
-              case DVec(0, 1)  => drawEngine(e, e.position + DVec(0, -2.5f), 10, 5,  is_vertical = false)
-              case DVec(-1, 0) => drawEngine(e, e.position + DVec(2.5f, 0),  5,  10, is_vertical = true)
-              case DVec(1, 0)  => drawEngine(e, e.position + DVec(-2.5f, 0), 5,  10, is_vertical = true)
+              case DVec(0, -1) => drawEngine(e, e.position + DVec(0, 2.5),  10, 5,  is_vertical = false)
+              case DVec(0, 1)  => drawEngine(e, e.position + DVec(0, -2.5), 10, 5,  is_vertical = false)
+              case DVec(-1, 0) => drawEngine(e, e.position + DVec(2.5, 0),  5,  10, is_vertical = true)
+              case DVec(1, 0)  => drawEngine(e, e.position + DVec(-2.5, 0), 5,  10, is_vertical = true)
               case _ =>
             }
         }

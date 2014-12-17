@@ -1,6 +1,6 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
-import com.github.dunnololda.scage.ScageLib._
+import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
 abstract class PolygonShip(
@@ -22,7 +22,7 @@ abstract class PolygonShip(
     BodyState(
       index,
       mass,
-      acc = DVec.dzero,
+      acc = DVec.zero,
       vel = init_velocity,
       coord = init_coord,
       ang_acc = 0,

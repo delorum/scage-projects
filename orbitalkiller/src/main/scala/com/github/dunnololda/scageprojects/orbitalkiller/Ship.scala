@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import OrbitalKiller._
-import com.github.dunnololda.scage.ScageLib._
+import com.github.dunnololda.scage.ScageLibD._
 
 trait Ship {
   var selected_engine:Option[Engine] = None
@@ -67,15 +67,15 @@ trait Ship {
   }
 
   def drawEngine(e:Engine, center:DVec, width:Double, height:Double, is_vertical:Boolean) {
-    drawRectCentered(center.toVec, width.toFloat, height.toFloat, color = engineColor(e))
+    drawRectCentered(center, width, height, color = engineColor(e))
     if(e.active && e.power > 0) {
       if(is_vertical) {
-        drawFilledRectCentered(center.toVec, width.toFloat, engineActiveSize(e).toFloat, color = engineColor(e))
+        drawFilledRectCentered(center, width, engineActiveSize(e), color = engineColor(e))
       } else {
-        drawFilledRectCentered(center.toVec, engineActiveSize(e).toFloat, height.toFloat, color = engineColor(e))
+        drawFilledRectCentered(center, engineActiveSize(e), height, color = engineColor(e))
       }
-      if(globalScale > 2) print(s"${e.powerPercent}% : ${e.worktimeTacts}", center.toVec, size = max_font_size/globalScale)
-      if(isSelectedEngine(e)) drawRectCentered(center.toVec, width.toFloat+2, height.toFloat+2, color = engineColor(e))
+      if(globalScale > 2) print(s"${e.powerPercent}% : ${e.worktimeTacts}", center.toVec, size = (max_font_size/globalScale).toFloat)
+      if(isSelectedEngine(e)) drawRectCentered(center, width+2, height+2, color = engineColor(e))
     }
   }
 
@@ -97,13 +97,13 @@ trait Ship {
         if(rotation - angle_deg > 50) preserveAngularVelocity(-5)
         else if(rotation - angle_deg > 10) preserveAngularVelocity(-2)
         else if(rotation - angle_deg > 1) preserveAngularVelocity(-1)
-        else if(rotation - angle_deg > 0.1f) preserveAngularVelocity(-0.1f)
+        else if(rotation - angle_deg > 0.1) preserveAngularVelocity(-0.1)
         else preserveAngularVelocity(0)
       } else if(rotation < angle_deg) {
         if(rotation - angle_deg < -50) preserveAngularVelocity(5)
         else if(rotation - angle_deg < -10) preserveAngularVelocity(2)
         else if(rotation - angle_deg < -1) preserveAngularVelocity(1)
-        else if(rotation - angle_deg < -0.1f) preserveAngularVelocity(0.1f)
+        else if(rotation - angle_deg < -0.1) preserveAngularVelocity(0.1)
         else preserveAngularVelocity(0)
       }
     }

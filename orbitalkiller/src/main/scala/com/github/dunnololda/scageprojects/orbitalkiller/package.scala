@@ -45,14 +45,14 @@ package object orbitalkiller {
 
     def phys2dShape: Phys2dShape = new Circle(radius.toFloat)
 
-    lazy val wI: Double = radius*radius/2f
+    lazy val wI: Double = radius*radius/2.0
   }
 
   /*
   * Due to lack of line colliding algorithms, bodies with line shapes may be static only. If you want dynamic, use boxes
   * */
   case class LineShape(to:DVec) extends Shape {
-    /*val center = from + (to - from)/2f
+    /*val center = from + (to - from)/2.0
 
     /**
      * Get the closest point on the line to a given point
@@ -79,8 +79,8 @@ package object orbitalkiller {
 
     def aabb(from:DVec, rotation:Double): AABB = {
       val to2 = from + to.rotateDeg(rotation)
-      val center = from + (to2 - from)/2f
-      AABB(center, math.max(math.abs(to2.x - from.x), 5f),  math.max(math.abs(to2.y - from.y), 5f))
+      val center = from + (to2 - from)/2.0
+      AABB(center, math.max(math.abs(to2.x - from.x), 5.0),  math.max(math.abs(to2.y - from.y), 5.0))
     }
 
     def phys2dShape: Phys2dShape = new Line(to.x.toFloat, to.y.toFloat)
@@ -388,7 +388,7 @@ package object orbitalkiller {
     val next_bodies = if(enable_collisions) {
       val collision_data = mutable.HashMap[String, (DVec, Double)]()
       for {
-        space <- splitSpace(new Space(bodies, Vec.zero), 5, 10)
+        space <- splitSpace(new Space(bodies, DVec.zero), 5, 10)
         if space.bodies.length > 1
         (b1, idx) <- space.bodies.zipWithIndex.init
         b2 <- space.bodies.drop(idx+1)
@@ -413,7 +413,7 @@ package object orbitalkiller {
           val e = elasticity
           if(mb == -1) {  // infinite mass
           val vap1 = va1 + (wa1 * rap.perpendicular)
-            val j = -(1+e)*(vap1*n)/(1f/ma + (rap*/n)*(rap*/n)/ia)
+            val j = -(1+e)*(vap1*n)/(1.0/ma + (rap*/n)*(rap*/n)/ia)
 
             val va2 = va1 + (j * n)/ma
             val wa2 = (wa1 + (rap*/(j * n))/ia).toDeg  // must be in degrees
@@ -425,7 +425,7 @@ package object orbitalkiller {
             val vb1 = b2.vel
             val wb1 = b2.ang_vel.toRad  // ang_vel in degrees, wb1 must be in radians
             val vab1 = va1 + (wa1 * rap.perpendicular) - vb1 - (wb1 * rbp.perpendicular)
-            val j = -(1+e) * vab1*n/(1f/ma + 1f/mb + (rap*/n)*(rap*/n)/ia + (rbp*/n)*(rbp*/n)/ib)
+            val j = -(1+e) * vab1*n/(1.0/ma + 1.0/mb + (rap*/n)*(rap*/n)/ia + (rbp*/n)*(rbp*/n)/ib)
 
             val va2 = va1 + (j * n)/ma
             val wa2 = (wa1 + (rap*/(j * n))/ia).toDeg  // must be in degrees

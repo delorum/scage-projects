@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import OrbitalKiller._
-import com.github.dunnololda.scage.ScageLib._
+import com.github.dunnololda.scage.ScageLibD._
 
 case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power_percent:Int, ship:Ship) {
   private var worktime_tacts = 0l
@@ -28,7 +28,7 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
   def powerPercent:Long = math.round(_power/max_power*100)
   def powerPercent_=(new_power_percent:Long) {
     if(new_power_percent >= 0 && new_power_percent <= 100) {
-      val new_power = max_power*new_power_percent/100f
+      val new_power = max_power*new_power_percent/100.0
       //println(s"$new_power_percent : $new_power")
       _power = new_power
     }
@@ -57,20 +57,6 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
   }
   def switchActive() {
     active = !active
-    /*if(!is_active) {
-      is_active = true
-      //_power = 1f
-      worktimeTacts = 10
-      ship.selected_engine = Some(this)
-      updateFutureTrajectory()
-    } else {
-      if (!ship.isSelectedEngine(this)) ship.selected_engine = Some(this)
-      else {
-        is_active = false
-        ship.selected_engine = ship.engines.filter(_.active).lastOption
-        updateFutureTrajectory()
-      }
-    }*/
   }
 
   action {
