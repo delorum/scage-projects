@@ -190,22 +190,26 @@ class Ship3(
           else preserveAngle(angle)
         case 6 => // выход на орбиту
           if(math.abs(angularVelocity) < 0.01) {
-            insideGravitationalRadiusOfCelestialBody(coord).foreach {
-              case body =>
+            insideGravitationalRadiusOfCelestialBody(coord) match {
+              case Some(body) =>
                 val ss = satelliteSpeed(coord, body.coord, body.linearVelocity, body.mass, G)
                 if(linearVelocity.dist(ss) > 0.1) {
                   preserveVelocity(ss)
                 } else flightMode = 1
+              case None =>
+                flightMode = 1
             }
           } else preserveAngularVelocity(0)
         case 7 => // уравнять скорость с ближайшим кораблем
           if(math.abs(angularVelocity) < 0.01) {
-            ships.filter(s => s.index != index && coord.dist(s.coord) < 80000).sortBy(s => coord.dist(s.coord)).headOption.foreach {
-              case s =>
+            ships.filter(s => s.index != index && coord.dist(s.coord) < 80000).sortBy(s => coord.dist(s.coord)).headOption match {
+              case Some(s) =>
                 val ss = s.linearVelocity
                 if(linearVelocity.dist(ss) > 0.1) {
                   preserveVelocity(ss)
                 } else flightMode = 1
+              case None =>
+                flightMode = 1
             }
           } else preserveAngularVelocity(0)
         case _ =>
@@ -218,9 +222,27 @@ class Ship3(
       openglLocalTransform {
         openglMove(coord.toVec)
         drawFilledCircle(Vec.zero, 2, GREEN)                                 // mass center
-        drawArrow(Vec.zero, (linearVelocity.n*100).toVec, CYAN)              // current velocity
-        drawArrow(Vec.zero, ((earth.coord - coord).n*100).toVec, YELLOW)     // direction to eart
-        drawArrow(Vec.zero, ((moon.coord - coord).n*100).toVec, GREEN)       // direction to moon
+
+        openglLocalTransform {
+          drawArrow(Vec.zero, (linearVelocity.n*100).toVec, CYAN)              // current velocity
+          openglMove((linearVelocity.n*100).toVec)
+          openglRotateDeg(-rotationAngleDeg)
+          print(f"  ${msecOrKmsec(linearVelocity.norma)} : ${angularVelocity}%.2f град/сек", Vec.zero, size = max_font_size/globalScale, CYAN)
+        }
+
+        openglLocalTransform {
+          drawArrow(Vec.zero, ((earth.coord - coord).n*100).toVec, YELLOW)     // direction to earth
+          openglMove(((earth.coord - coord).n*100).toVec)
+          openglRotateDeg(-rotationAngleDeg)
+          print(s"  ${earth.index} : ${mOrKm((earth.coord.dist(coord) - earth.radius).toLong)} : ${msecOrKmsec(linearVelocity*(coord - earth.coord).n)}", Vec.zero, size = max_font_size/globalScale, YELLOW)
+        }
+
+        openglLocalTransform {
+          drawArrow(Vec.zero, ((moon.coord - coord).n * 100).toVec, GREEN)       // direction to moon
+          openglMove(((moon.coord - coord).n*100).toVec)
+          openglRotateDeg(-rotationAngleDeg)
+          print(s"  ${moon.index} : ${mOrKm((moon.coord.dist(coord) - moon.radius).toLong)} : ${msecOrKmsec(linearVelocity*(coord - moon.coord).n)}", Vec.zero, size = max_font_size/globalScale, GREEN)
+        }
 
         openglRotateDeg(rotation.toFloat)
         drawSlidingLines(draw_points, WHITE)

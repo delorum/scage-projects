@@ -644,7 +644,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
       openglLocalTransform {
         openglMove(m)
         openglRotateDeg(-rotationAngleDeg)
-        print(s"${mOrKm(d.toLong)}", Vec.zero, size = max_font_size/globalScale, DARK_GRAY)
+        print(s"  ${mOrKm(d.toLong)}", Vec.zero, size = max_font_size/globalScale, DARK_GRAY)
       }
 
     }
@@ -677,7 +677,7 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
         print("x", Vec(z, 0f), DARK_GRAY)
       }
 
-      val heights = (520 to 20 by -20).iterator
+      val heights = (400 to 20 by -20).iterator
 
       print(s"Время: ${timeStr((_tacts*base_dt*1000f).toLong)}",
         20, heights.next(), ORANGE)
@@ -693,21 +693,21 @@ object OrbitalKiller extends ScageScreenApp("Orbital Killer", 1280, 768) {
 
       print("", 20, heights.next(), ORANGE)
 
-      print(f"Расстояние и скорость относительно Земли: ${mOrKm(ship.coord.dist(earth.coord) - earth.radius)}, ${msecOrKmsec(ship.linearVelocity*(ship.coord - earth.coord).n)}",
+      /*print(f"Расстояние и скорость относительно Земли: ${mOrKm(ship.coord.dist(earth.coord) - earth.radius)}, ${msecOrKmsec(ship.linearVelocity*(ship.coord - earth.coord).n)}",
         20, heights.next(), ORANGE)
       print(f"Расстояние и скорость относительно Луны: ${mOrKm(ship.coord.dist(moon.coord) - moon.radius)}, ${msecOrKmsec(ship.linearVelocity* (ship.coord - moon.coord).n)}",
-        20, heights.next(), ORANGE)
+        20, heights.next(), ORANGE)*/
       /*print(s"Расчет траектории: ${if(continue_future_trajectory) "[rактивирован]" else "отключен"}",
         20, heights.next(), ORANGE)*/
 
-      print("", 20, heights.next(), ORANGE)
+      //print("", 20, heights.next(), ORANGE)
 
-      print(f"Позиция: ${ship.coord.x}%.2f : ${ship.coord.y}%.2f. Расстояние от точки старта: ${mOrKm(ship.coord.dist(ship_start_position))}",
-        20, heights.next(), ORANGE)
+      /*print(f"Позиция: ${ship.coord.x}%.2f : ${ship.coord.y}%.2f. Расстояние от точки старта: ${mOrKm(ship.coord.dist(ship_start_position))}",
+        20, heights.next(), ORANGE)*/
       print(f"Линейная скорость: ${msecOrKmsec(ship.linearVelocity.norma)} (velx = ${msecOrKmsec(ship.linearVelocity.x)}, vely = ${msecOrKmsec(ship.linearVelocity.y)})",
         20, heights.next(), ORANGE)
-      print(f"Угол: ${ship.rotation}%.2f град",
-        20, heights.next(), ORANGE)
+      /*print(f"Угол: ${ship.rotation}%.2f град",
+        20, heights.next(), ORANGE)*/
       print(f"Угловая скорость: ${ship.angularVelocity}%.2f град/сек",
         20, heights.next(), ORANGE)
       print(s"Параметры орбиты: ${orbitStrInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity)}",
