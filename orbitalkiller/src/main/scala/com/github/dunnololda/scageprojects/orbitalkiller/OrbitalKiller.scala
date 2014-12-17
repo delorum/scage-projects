@@ -218,6 +218,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         _center = center
         center = _center
         rotationAngle = 0
+        base = DVec.zero
         view_mode = 0
       case 1 => // фиксация на корабле
         center = ship.coord + _ship_offset
@@ -642,7 +643,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       val m = absCoord(mouseCoord)
       val d = ship.coord.dist(m)
       openglLocalTransform {
-        openglMove(ship.coord)
+        openglMove(ship.coord - base)
         drawArrow(DVec.zero, m-ship.coord, DARK_GRAY)
         openglMove(m-ship.coord)
         openglRotateDeg(-rotationAngleDeg)
