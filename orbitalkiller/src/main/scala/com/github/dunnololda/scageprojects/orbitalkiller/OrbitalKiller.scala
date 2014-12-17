@@ -157,7 +157,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
   //val ship_start_position = earth.coord + DVec(0, earth.radius + 100000)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G)
-  val ship_start_position = moon.coord + DVec(0, moon.radius + 100000)
+  val ship_start_position = moon.coord + DVec(0, moon.radius + 500)
   val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G)
   val ship = new Ship3("ship",
     init_coord = ship_start_position,
@@ -221,8 +221,9 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         view_mode = 0
       case 1 => // фиксация на корабле
         center = ship.coord + _ship_offset
-        //rotationCenter = ship.coord
-        //rotationAngleDeg = -ship.rotation
+        base = if(ship.coord.norma < 100000) DVec.zero else ship.coord
+        rotationCenter = ship.coord
+        rotationAngleDeg = -ship.rotation
         view_mode = 1
       case 2 => // посадка на планету
         center = ship.coord
@@ -785,7 +786,7 @@ class Planet(
     val viewpoint_dist = math.abs(ship.coord.dist(coord) - radius)
     if(viewpoint_dist < 50000) {
       openglLocalTransform {
-        openglMove(coord)
+        openglMove(coord - base)
         val to_viewpoint = ship.coord - coord
         val alpha = 100000 * 180 / math.Pi / radius
         val points = for {

@@ -220,7 +220,7 @@ class Ship3(
   render {
     if(!drawMapMode) {
       openglLocalTransform {
-        openglMove(coord)
+        openglMove(coord - base)
         drawFilledCircle(DVec.zero, 2, GREEN)                                 // mass center
 
         openglLocalTransform {
