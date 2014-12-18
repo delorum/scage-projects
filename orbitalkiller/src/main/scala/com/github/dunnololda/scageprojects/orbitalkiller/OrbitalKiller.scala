@@ -155,10 +155,10 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     init_velocity = moon_init_velocity,
     radius = 1737000)
 
-  //val ship_start_position = earth.coord + DVec(0, earth.radius + 100000)
-  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G)
-  val ship_start_position = moon.coord + DVec(0, moon.radius + 500)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G)
+  val ship_start_position = earth.coord + DVec(0, earth.radius + 100000)
+  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G)
+  //val ship_start_position = moon.coord + DVec(0, moon.radius + 500)
+  //val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G)
   val ship = new Ship3("ship",
     init_coord = ship_start_position,
     init_velocity = ship_init_velocity,
@@ -647,14 +647,14 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         drawArrow(DVec.zero, m-ship.coord, DARK_GRAY)
         openglMove(m-ship.coord)
         openglRotateDeg(-rotationAngleDeg)
-        print(s"  ${mOrKm(d.toLong)}", DVec.zero, size = max_font_size / globalScale, DARK_GRAY)
+        print(s"  ${mOrKm(d.toLong)}", Vec.zero, size = (max_font_size / globalScale).toFloat, DARK_GRAY)
       }
 
     }
   }
 
   interface {
-    if(onPause) print("Пауза", windowCenter, align = "center", color = WHITE)
+    if(onPause) print("Пауза", windowCenter.toVec, align = "center", color = WHITE)
     print("F1 - Справка", 20, windowHeight - 40, align = "bottom-left", color = DARK_GRAY)
     print(s"сборка $appVersion", windowWidth - 20, windowHeight - 20, align = "top-right", color = DARK_GRAY)
     print(s"FPS/Ticks $fps/$ticks", windowWidth - 20, windowHeight - 40, align = "top-right", color = DARK_GRAY)
@@ -667,7 +667,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     drawLine(a,b, DARK_GRAY)
     drawLine(a, a+(a-b).rotateDeg(90).n*5, DARK_GRAY)
     drawLine(b, b+(a-b).rotateDeg(90).n*5, DARK_GRAY)
-    print(s"${mOrKm((100/globalScale/(if(drawMapMode) scale else 1.0)).toInt)}", b, DARK_GRAY)
+    print(s"${mOrKm((100/globalScale/(if(drawMapMode) scale else 1.0)).toInt)}", b.toVec, DARK_GRAY)
 
     if(!disable_interface_drawing) {
       openglLocalTransform {
@@ -675,9 +675,9 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         openglMove(windowCenter)
         //openglRotateDeg(rotationAngleDeg)
         drawArrow(DVec(0, -z), DVec(0, z), DARK_GRAY, 1)
-        print("y", DVec(0, z), DARK_GRAY)
+        print("y", Vec(0, z), DARK_GRAY)
         drawArrow(DVec(-z, 0), DVec(z, 0), DARK_GRAY, 1)
-        print("x", DVec(z, 0), DARK_GRAY)
+        print("x", Vec(z, 0), DARK_GRAY)
       }
 
       val heights = (400 to 20 by -20).iterator

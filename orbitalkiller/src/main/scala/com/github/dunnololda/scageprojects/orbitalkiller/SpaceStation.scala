@@ -77,7 +77,7 @@ class SpaceStation(
   render {
     if(!drawMapMode) {
       openglLocalTransform {
-        openglMove(coord)
+        openglMove(coord - base)
         drawFilledCircle(DVec.zero, 2, GREEN)                                // mass center
         drawArrow(DVec.zero, linearVelocity.n * 100, CYAN)             // current velocity
         drawArrow(DVec.zero, (earth.coord - coord).n * 100, YELLOW)    // direction to earth
