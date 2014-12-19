@@ -1,6 +1,6 @@
 package com.github.dunnololda.scageprojects
 
-import com.github.dunnololda.scage.ScageLib.{Vec, _}
+import com.github.dunnololda.scage.ScageLib._
 import net.phys2d.raw.collide.{Collider => Phys2dCollider, _}
 import net.phys2d.raw.shapes.{DynamicShape => Phys2dShape, _}
 import net.phys2d.raw.{Body => Phys2dBody, BodyList => Phys2dBodyList, StaticBody => Phys2dStaticBody, World => Phys2dWorld}
@@ -505,8 +505,9 @@ package object orbitalkiller {
     planet_velocity + from_planet_to_body.p*math.sqrt(G*planet_mass/from_planet_to_body.norma)
   }
 
-  def escapeVelocity(body_coord:DVec, planet_coord:DVec, planet_velocty:DVec, planet_mass:Double, G:Double):DVec = {
-    satelliteSpeed(body_coord, planet_coord, planet_velocty, planet_mass, G)*math.sqrt(2)
+  def escapeVelocity(body_coord:DVec, planet_coord:DVec, planet_velocity:DVec, planet_mass:Double, G:Double):DVec = {
+    val from_planet_to_body = body_coord - planet_coord
+    planet_velocity + from_planet_to_body.p*math.sqrt(G*planet_mass/from_planet_to_body.norma)*math.sqrt(2)
   }
 
   case class Orbit(

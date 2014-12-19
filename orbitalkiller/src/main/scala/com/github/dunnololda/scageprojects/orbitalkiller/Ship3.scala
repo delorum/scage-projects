@@ -190,9 +190,9 @@ class Ship3(
           else preserveAngle(angle)
         case 6 => // выход на орбиту
           if(math.abs(angularVelocity) < 0.01) {
-            insideGravitationalRadiusOfCelestialBody(coord) match {
-              case Some(body) =>
-                val ss = satelliteSpeed(coord, body.coord, body.linearVelocity, body.mass, G)
+            insideGravitationalRadiusOfCelestialBody(coord, currentPlanetStates) match {
+              case Some((planet, planet_state)) =>
+                val ss = satelliteSpeed(coord, planet_state.coord, planet_state.vel, planet_state.mass, G)
                 if(linearVelocity.dist(ss) > 0.1) {
                   preserveVelocity(ss)
                 } else flightMode = 1

@@ -82,15 +82,6 @@ trait Ship {
   def preserveAngularVelocity(ang_vel_deg:Double)
   def preserveVelocity(vel:DVec)
 
-  def enterOrbit() {
-    insideGravitationalRadiusOfCelestialBody(coord) match {
-      case Some(body) =>
-        val ss = satelliteSpeed(coord, body.coord, body.linearVelocity, body.mass, G)
-        preserveVelocity(ss)
-      case None =>
-    }
-  }
-
   def preserveAngle(angle_deg:Double) {
     if(rotation != angle_deg) {
       if(rotation > angle_deg) {
