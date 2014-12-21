@@ -223,26 +223,9 @@ class Ship3(
         openglMove(coord - base)
         drawFilledCircle(DVec.zero, 2, GREEN)                                 // mass center
 
-        openglLocalTransform {
-          drawArrow(DVec.zero, linearVelocity.n * 100, CYAN)              // current velocity
-          openglMove(linearVelocity.n * 100)
-          openglRotateDeg(-rotationAngleDeg)
-          print(f"  ${msecOrKmsec(linearVelocity.norma)} : $angularVelocity%.2f град/сек", Vec.zero, size = (max_font_size/globalScale).toFloat, CYAN)
-        }
-
-        openglLocalTransform {
-          drawArrow(Vec.zero, (earth.coord - coord).n * 100, YELLOW)     // direction to earth
-          openglMove((earth.coord - coord).n * 100)
-          openglRotateDeg(-rotationAngleDeg)
-          print(s"  ${earth.index} : ${mOrKm((earth.coord.dist(coord) - earth.radius).toLong)} : ${msecOrKmsec(linearVelocity*(coord - earth.coord).n)}", Vec.zero, size = (max_font_size/globalScale).toFloat, YELLOW)
-        }
-
-        openglLocalTransform {
-          drawArrow(Vec.zero, (moon.coord - coord).n * 100, GREEN)       // direction to moon
-          openglMove((moon.coord - coord).n * 100)
-          openglRotateDeg(-rotationAngleDeg)
-          print(s"  ${moon.index} : ${mOrKm((moon.coord.dist(coord) - moon.radius).toLong)} : ${msecOrKmsec(linearVelocity*(coord - moon.coord).n)}", Vec.zero, size = (max_font_size/globalScale).toFloat, GREEN)
-        }
+        drawArrow(DVec.zero, linearVelocity.n * 100, CYAN)              // current velocity
+        drawArrow(Vec.zero, (earth.coord - coord).n * 100, YELLOW)     // direction to earth
+        drawArrow(Vec.zero, (moon.coord - coord).n * 100, GREEN)       // direction to moon        
 
         openglRotateDeg(rotation)
         drawSlidingLines(draw_points, WHITE)

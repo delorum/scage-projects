@@ -64,7 +64,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     force = (tacts, bs, other_bodies) => {
       bs.index match {
         case ship.index =>
-          //gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G) +
+          gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G) +
           other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(DVec.dzero) +
           ship.currentReactiveForce(tacts, bs)
         case station.index =>
@@ -91,7 +91,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     force = (tacts, bs, other_bodies) => {
       bs.index match {
         case ship.index =>
-          //gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G) +
+          gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G) +
           other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(DVec.dzero)
         case station.index =>
           gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G)// +
@@ -888,14 +888,14 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       openglLocalTransform {
         val z = windowHeight/2f-40f
         openglMove(windowCenter)
-        //openglRotateDeg(rotationAngleDeg)
+        openglRotateDeg(rotationAngleDeg)
         drawArrow(DVec(0, -z), DVec(0, z), DARK_GRAY, 1)
         print("y", Vec(0, z), DARK_GRAY)
         drawArrow(DVec(-z, 0), DVec(z, 0), DARK_GRAY, 1)
         print("x", Vec(z, 0), DARK_GRAY)
       }
 
-      val heights = (400 to 20 by -20).iterator
+      val heights = (440 to 20 by -20).iterator
 
       print(s"Время: ${timeStr((_tacts*base_dt*1000).toLong)}",
         20, heights.next(), ORANGE)
@@ -911,10 +911,10 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
       print("", 20, heights.next(), ORANGE)
 
-      /*print(f"Расстояние и скорость относительно Земли: ${mOrKm(ship.coord.dist(earth.coord) - earth.radius)}, ${msecOrKmsec(ship.linearVelocity*(ship.coord - earth.coord).n)}",
+      print(f"Расстояние и скорость относительно Земли: ${mOrKm(ship.coord.dist(earth.coord) - earth.radius)}, ${msecOrKmsec(ship.linearVelocity*(ship.coord - earth.coord).n)}",
         20, heights.next(), ORANGE)
       print(f"Расстояние и скорость относительно Луны: ${mOrKm(ship.coord.dist(moon.coord) - moon.radius)}, ${msecOrKmsec(ship.linearVelocity* (ship.coord - moon.coord).n)}",
-        20, heights.next(), ORANGE)*/
+        20, heights.next(), ORANGE)
       /*print(s"Расчет траектории: ${if(continue_future_trajectory) "[rактивирован]" else "отключен"}",
         20, heights.next(), ORANGE)*/
 
@@ -972,6 +972,7 @@ trait CelestialBody {
   def radius:Double
   def gravitational_radius:Double
   def currentState:BodyState
+  def initState:BodyState
 }
 
 class Planet(
@@ -987,8 +988,7 @@ class Planet(
   def coord = currentState.coord
   def linearVelocity = currentState.vel
 
-  def currentState:BodyState = currentBodyState(index).getOrElse(
-    BodyState(
+  def initState:BodyState = BodyState(
       index,
       mass,
       acc = DVec.dzero,
@@ -998,7 +998,9 @@ class Planet(
       ang_vel = 0,
       ang = 0,
       shape = CircleShape(radius),
-      is_static = false))
+      is_static = false)
+
+  def currentState:BodyState = currentBodyState(index).getOrElse(initState)
 
   render {
     if(!drawMapMode) {
@@ -1030,8 +1032,7 @@ class Star(val index:String, val mass:Double, val coord:DVec, val radius:Double)
     /*radius + 10000000*/
   }
 
-  def currentState:BodyState = currentBodyState(index).getOrElse(
-    BodyState(
+  def initState:BodyState = BodyState(
       index,
       mass,
       acc = DVec.dzero,
@@ -1041,7 +1042,9 @@ class Star(val index:String, val mass:Double, val coord:DVec, val radius:Double)
       ang_vel = 0,
       ang = 0,
       shape = CircleShape(radius),
-      is_static = true))
+      is_static = true)
+
+  def currentState:BodyState = currentBodyState(index).getOrElse(initState)
 
   render {
     if(!drawMapMode) {

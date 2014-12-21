@@ -18,17 +18,17 @@ abstract class PolygonShip(
     math.max(x,y)
   }
 
-  def currentState:BodyState = currentBodyState(index).getOrElse(
-    BodyState(
-      index,
-      mass,
-      acc = DVec.zero,
-      vel = init_velocity,
-      coord = init_coord,
-      ang_acc = 0,
-      ang_vel = 0,
-      ang = init_rotation,
-      shape = PolygonShape(points),
-      is_static = false)
-  )
+  def initState:BodyState = BodyState(
+    index,
+    mass,
+    acc = DVec.zero,
+    vel = init_velocity,
+    coord = init_coord,
+    ang_acc = 0,
+    ang_vel = 0,
+    ang = init_rotation,
+    shape = PolygonShape(points),
+    is_static = false)
+
+  def currentState:BodyState = currentBodyState(index).getOrElse(initState)
 }

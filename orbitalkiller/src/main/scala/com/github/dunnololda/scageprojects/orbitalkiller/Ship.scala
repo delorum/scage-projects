@@ -18,6 +18,7 @@ trait Ship {
 
   def mass:Double
 
+  def initState:BodyState
   def currentState:BodyState
 
   def linearAcceleration = currentState.acc
