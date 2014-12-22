@@ -3,6 +3,8 @@ package com.github.dunnololda.scageprojects.orbitalkiller.tests
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 
+import scala.collection.mutable.ArrayBuffer
+
 object OrbitalOscillationsTests extends ScageApp {
   val earth = new Star("Earth", mass = 5.9746E24, coord = DVec.dzero, radius = 6400000)
 
@@ -30,8 +32,8 @@ object OrbitalOscillationsTests extends ScageApp {
     init_rotation = 45
   )*/
 
-  val station_start_position = earth.coord + DVec(300, earth.radius + 2500000)
-  val station_init_velocity = satelliteSpeed(station_start_position, earth.coord, earth.linearVelocity, earth.mass, G)
+  val station_start_position = earth.coord + DVec(300, earth.radius + 100000)
+  val station_init_velocity = satelliteSpeed(station_start_position, earth.coord, earth.linearVelocity, earth.mass, G)*1.25
   val station = new SpaceStation("station",
     init_coord = station_start_position,
     init_velocity = station_init_velocity,
@@ -48,28 +50,6 @@ object OrbitalOscillationsTests extends ScageApp {
   val base_dt:Double = 1.0/63*k
 
   val realtime = (1.0/k).toInt // 1/k*baseDt соответствует реальному течению времени
-
-  private var _time_multiplier = realtime
-  def timeMultiplier = {
-    if(_time_multiplier != realtime && ships.flatMap(_.engines).exists(_.active)) {
-      timeMultiplier_=(realtime)
-    }
-    _time_multiplier
-  }
-  def timeMultiplier_=(new_time_multiplier:Int) {
-    if(new_time_multiplier > 0) {
-      // разрешаем переход на ускоренное/замедленное течение времени только если все двигатели выключены
-      if(new_time_multiplier == realtime || ships.flatMap(_.engines).forall(!_.active)) {
-        _time_multiplier = new_time_multiplier
-        ships.flatMap(_.engines).filter(_.active).foreach(e => {
-          e.worktimeTacts = e.worktimeTacts
-        })
-
-      }
-    }
-  }
-
-  def dt = timeMultiplier*base_dt
 
   def futureSystemEvolutionFrom(dt: => Double, tacts:Long, body_states:List[BodyState], enable_collisions:Boolean) = systemEvolutionFrom(
     dt, base_dt, elasticity = 0.9,
@@ -106,7 +86,7 @@ object OrbitalOscillationsTests extends ScageApp {
       earth.initState),
       enable_collisions = true).iterator
 
-  val l = 100
+  val l = 1000
   private val system_evolution_lx =
     futureSystemEvolutionFrom(l*realtime*base_dt, 0, List(
       //ship.initState,
@@ -132,14 +112,16 @@ object OrbitalOscillationsTests extends ScageApp {
   private var min_station_earth:Double = station_start_position.dist(earth.coord) - earth.radius + 100000
   private var min_station_earth2:Double = station_start_position.dist(earth.coord) - earth.radius + 100000
 
-  timeMultiplier = 100
-
   action {
     val m = 10000
-    (1 to m-1).foreach(i => real_system_evolution.next())
+    (1 to m-1).foreach(i => {
+      val s = real_system_evolution.next()
+      val station_state = s._2.find(_.index == station.index).get
+      val earth_state = s._2.find(_.index == earth.index).get
+      val station_earth = station_state.coord.dist(earth_state.coord) - earth.radius
+      if(station_earth < min_station_earth) min_station_earth = station_earth
+    })
     val s = real_system_evolution.next()
-    (1 to (m/l-1)).foreach(i => system_evolution_lx.next())
-    val s2 = system_evolution_lx.next()
 
     /*val ship_state = s._2.find(_.index == ship.index).get
     val moon_state = s._2.find(_.index == moon.index).get
@@ -155,8 +137,21 @@ object OrbitalOscillationsTests extends ScageApp {
     val dt = realtime*base_dt
     val a = (station_state.coord - earth_state.coord).deg(station_state.coord - earth_state.coord + station_state.vel*dt)
 
+    val Orbit(_, _, e, _, _, r_p, r_a, t, _, _, _) = calculateOrbit(earth_state.mass, earth_state.coord, station_state.mass, station_state.coord - earth_state.coord, station_state.vel - earth_state.vel, G)
+
+    println(f"e = $e%.2f, r_p = ${mOrKm(r_p - earth.radius)}, r_a = ${mOrKm(r_a - earth.radius)}, t = ${timeStr((t*1000l).toLong)}")
+
     //println(s"${timeStr((s._1*base_dt*1000).toLong)} : ${mOrKm(ship_moon)} (${mOrKm(min_ship_moon)}, $ship_moon_deg) : ${mOrKm(station_earth)} (${mOrKm(min_station_earth)}, $station_earth_deg)")
     println(s"${timeStr((s._1*base_dt*1000).toLong)} : ${mOrKm(station_earth)} (${mOrKm(min_station_earth)}, $station_earth_deg, $a)")
+
+    (1 to (m/l-1)).foreach(i => {
+      val s2 = system_evolution_lx.next()
+      val station_state2 = s2._2.find(_.index == station.index).get
+      val earth_state2 = s2._2.find(_.index == earth.index).get
+      val station_earth2 = station_state2.coord.dist(earth_state2.coord) - earth.radius
+      if(station_earth2 < min_station_earth2) min_station_earth2 = station_earth2
+    })
+    val s2 = system_evolution_lx.next()
 
     val station_state2 = s2._2.find(_.index == station.index).get
     val earth_state2 = s2._2.find(_.index == earth.index).get
@@ -167,7 +162,7 @@ object OrbitalOscillationsTests extends ScageApp {
     val a2 = (station_state2.coord - earth_state2.coord).deg(station_state2.coord - earth_state2.coord + station_state2.vel*dt2)
 
     //println(s"${timeStr((s._1*base_dt*1000).toLong)} : ${mOrKm(ship_moon)} (${mOrKm(min_ship_moon)}, $ship_moon_deg) : ${mOrKm(station_earth)} (${mOrKm(min_station_earth)}, $station_earth_deg)")
-    println(s"${timeStr((s2._1*base_dt*1000).toLong)} : ${mOrKm(station_earth2)} (${mOrKm(min_station_earth2)}, $station_earth_deg2, $a2)")
+    println(f"${timeStr((s2._1*base_dt*1000).toLong)} : ${mOrKm(station_earth2)} (${mOrKm(min_station_earth2)}, $station_earth_deg2, $a2, ${math.abs(min_station_earth2 - min_station_earth) / min_station_earth * 100}%.2f%)")
     println("===================================")
   }
 }

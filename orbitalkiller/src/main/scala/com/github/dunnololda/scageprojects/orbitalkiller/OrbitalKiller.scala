@@ -196,15 +196,15 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     init_rotation = 45
   )
 
-  val station_start_position = earth.coord + DVec(300, earth.radius + 100000)
-  val station_init_velocity = satelliteSpeed(station_start_position, earth.coord, earth.linearVelocity, earth.mass, G)
+  val station_start_position = earth.coord + DVec(300, earth.radius + 300000)
+  val station_init_velocity = satelliteSpeed(station_start_position, earth.coord, earth.linearVelocity, earth.mass, G)*1.15
   val station = new SpaceStation("station",
     init_coord = station_start_position,
     init_velocity = station_init_velocity,
     init_rotation = 45
   )
   
-  val ships = List(ship, station)
+  val ships = List(ship, station)d
 
   private val real_system_evolution =
     futureSystemEvolutionFrom(dt, 0, List(
@@ -523,7 +523,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
   keyIgnorePause(KEY_P, onKeyDown = switchPause())
 
-  keyIgnorePause(KEY_F1, onKeyDown = {pause(); HelpScreen.run()})
+  keyIgnorePause(KEY_F1, onKeyDown = {pause(); holdCounters {HelpScreen.run()}})
   //keyIgnorePause(KEY_F2, onKeyDown = {viewMode = 0; rotationAngle = 0})  // свободный
   //keyIgnorePause(KEY_F3, onKeyDown = viewMode = 1)                       // фиксация на корабле
   //keyIgnorePause(KEY_F4, onKeyDown = viewMode = 2)                       // посадка на планету
