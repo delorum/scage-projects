@@ -224,6 +224,7 @@ class Ship3(
         drawFilledCircle(DVec.zero, 2, GREEN)                                 // mass center
 
         drawArrow(DVec.zero, linearVelocity.n * 100, CYAN)              // current velocity
+        drawArrow(DVec.zero, linearAcceleration.n * 100, ORANGE)              // current acceleration
         drawArrow(Vec.zero, (earth.coord - coord).n * 100, YELLOW)     // direction to earth
         drawArrow(Vec.zero, (moon.coord - coord).n * 100, GREEN)       // direction to moon        
 

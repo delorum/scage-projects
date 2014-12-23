@@ -189,7 +189,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   /*val ship_start_position = earth.coord + DVec(0, earth.radius + 100000)
   val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G)*/
   val ship_start_position = moon.coord + DVec(0, moon.radius + 100000)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G)
+  val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G)*1.15
   val ship = new Ship3("ship",
     init_coord = ship_start_position,
     init_velocity = ship_init_velocity,
@@ -204,7 +204,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     init_rotation = 45
   )
   
-  val ships = List(ship, station)d
+  val ships = List(ship, station)
 
   private val real_system_evolution =
     futureSystemEvolutionFrom(dt, 0, List(
@@ -295,6 +295,15 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     if(math.abs(meters.floatValue()) < 1000) f"${meters.floatValue()}%.2f м/сек" else f"${meters.floatValue()/1000}%.2f км/сек"
   }
 
+  /**
+   * Ускорение
+   * @param meters
+   * @return
+   */
+  def msec2OrKmsec2(meters:Number):String = {
+    if(math.abs(meters.floatValue()) < 1000) f"${meters.floatValue()}%.2f м/сек^2" else f"${meters.floatValue()/1000}%.2f км/сек^2"
+  }
+
   def satelliteSpeedStrInPoint(coord:DVec):String = {
     insideGravitationalRadiusOfCelestialBody(coord, currentPlanetStates) match {
       case Some((planet, planet_state)) =>
@@ -310,6 +319,15 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       case Some((planet, planet_state)) =>
         val ss = escapeVelocity(coord, planet_state.coord, planet_state.vel, planet_state.mass, G)
         f"${msecOrKmsec(ss.norma)} (velx = ${msecOrKmsec(ss.x)}, vely = ${msecOrKmsec(ss.y)})"
+      case None =>
+        "N/A"
+    }
+  }
+
+  def curvatureRadiusStrInPoint(body_state:BodyState):String = {
+    insideGravitationalRadiusOfCelestialBody(body_state.coord, currentPlanetStates) match {
+      case Some((planet, planet_state)) =>
+        s"${mOrKm((body_state.vel - planet_state.vel).norma2/((body_state.acc - planet_state.acc)*(body_state.vel - planet_state.vel).p))}"
       case None =>
         "N/A"
     }
@@ -452,15 +470,23 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
   keyIgnorePause(KEY_NUMPAD5, onKeyDown = {ship.engines.foreach(e => {e.active = false; e.power = 0})})
 
-  keyIgnorePause(KEY_UP,   10, onKeyDown = {ship.selected_engine.foreach(e => e.powerPercent += 1)}, onKeyUp = updateFutureTrajectory())
-  keyIgnorePause(KEY_DOWN, 10, onKeyDown = {ship.selected_engine.foreach(e => e.powerPercent -= 1)}, onKeyUp = updateFutureTrajectory())
-  keyIgnorePause(KEY_RIGHT,   10, onKeyDown = {
+  private def repeatTime(code:Int):Long = {
+    keyPress(code).map {
+      case kp =>
+        if(kp.was_pressed && System.currentTimeMillis() - kp.pressed_start_time < 100) 100l
+        else 10l
+    }.getOrElse(100l)
+  }
+
+  keyIgnorePause(KEY_UP,   repeatTime(KEY_UP), onKeyDown = {ship.selected_engine.foreach(e => e.powerPercent += 1)}, onKeyUp = updateFutureTrajectory())
+  keyIgnorePause(KEY_DOWN, repeatTime(KEY_DOWN), onKeyDown = {ship.selected_engine.foreach(e => e.powerPercent -= 1)}, onKeyUp = updateFutureTrajectory())
+  keyIgnorePause(KEY_RIGHT,   repeatTime(KEY_RIGHT), onKeyDown = {
     ship.selected_engine.foreach(e => {
       e.worktimeTacts += 1
       //updateFutureTrajectory()
     })
   }, onKeyUp = updateFutureTrajectory())
-  keyIgnorePause(KEY_LEFT, 10, onKeyDown = {
+  keyIgnorePause(KEY_LEFT, repeatTime(KEY_LEFT), onKeyDown = {
     ship.selected_engine.foreach(e => {
       /*if(e.worktimeTacts > 0) {*/
         e.worktimeTacts -= 1
@@ -553,7 +579,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       else globalScale -= 0.01
       if(globalScale < 0.01) globalScale = 0.01
     }
-    println(s"$globalScale : $windowCenter : ${((windowCenter - center * globalScale)/globalScale + center)*globalScale}")
+    //println(s"$globalScale : $windowCenter : ${((windowCenter - center * globalScale)/globalScale + center)*globalScale}")
   })
   mouseWheelUpIgnorePause(onWheelUp = m => {
     if(globalScale < (if(!drawMapMode) 5 else 1000000)) {
@@ -566,7 +592,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       else if(globalScale < 100000) globalScale +=10000
       else globalScale += 100000
     }
-    println(s"$globalScale : $windowCenter : ${((windowCenter - center * globalScale)/globalScale + center)*globalScale}")
+    //println(s"$globalScale : $windowCenter : ${((windowCenter - center * globalScale)/globalScale + center)*globalScale}")
   })
 
 
@@ -840,6 +866,9 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         // двигатели корабля не работают - можно работать с текущим состоянием
         shipOrbitRender(ship.index, currentBodyStates, ORANGE, YELLOW)
       }
+      val radius = (ship.linearVelocity - moon.linearVelocity).norma2/(ship.linearAcceleration*(ship.linearVelocity - moon.linearVelocity).p)
+      val point = if(radius >= 0) ship.coord + (ship.linearVelocity - moon.linearVelocity).p*radius else ship.coord - (ship.linearVelocity - moon.linearVelocity).p*radius
+      drawCircle(point*scale, math.abs(radius)*scale, DARK_GRAY)
 
       drawFilledCircle(station.coord*scale, earth.radius * scale / 2f / globalScale, WHITE)
       shipOrbitRender(station.index, currentBodyStates, ORANGE, YELLOW)
@@ -895,7 +924,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         print("x", Vec(z, 0), DARK_GRAY)
       }
 
-      val heights = (440 to 20 by -20).iterator
+      val heights = (460 to 20 by -20).iterator
 
       print(s"Время: ${timeStr((_tacts*base_dt*1000).toLong)}",
         20, heights.next(), ORANGE)
@@ -923,6 +952,10 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       /*print(f"Позиция: ${ship.coord.x}%.2f : ${ship.coord.y}%.2f. Расстояние от точки старта: ${mOrKm(ship.coord.dist(ship_start_position))}",
         20, heights.next(), ORANGE)*/
       print(f"Линейная скорость: ${msecOrKmsec(ship.linearVelocity.norma)} (velx = ${msecOrKmsec(ship.linearVelocity.x)}, vely = ${msecOrKmsec(ship.linearVelocity.y)})",
+        20, heights.next(), ORANGE)
+      print(f"Линейная ускорение: ${msec2OrKmsec2(ship.linearAcceleration.norma)} (tan = ${msec2OrKmsec2(ship.linearAcceleration*ship.linearVelocity.n)}, cen = ${msec2OrKmsec2(ship.linearAcceleration*ship.linearVelocity.p)})",
+        20, heights.next(), ORANGE)
+      print(f"Радиус кривизны траектории в данной точке: ${curvatureRadiusStrInPoint(ship.currentState)}",
         20, heights.next(), ORANGE)
       /*print(f"Угол: ${ship.rotation}%.2f град",
         20, heights.next(), ORANGE)*/

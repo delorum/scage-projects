@@ -113,8 +113,9 @@ object OrbitalOscillationsTests extends ScageApp {
   private var min_station_earth2:Double = station_start_position.dist(earth.coord) - earth.radius + 100000
 
   action {
-    val m = 10000
-    (1 to m-1).foreach(i => {
+    //val steps = (math.random*100+1).toInt
+    val steps = 1
+    (1 to steps*l-1).foreach(i => {
       val s = real_system_evolution.next()
       val station_state = s._2.find(_.index == station.index).get
       val earth_state = s._2.find(_.index == earth.index).get
@@ -144,7 +145,7 @@ object OrbitalOscillationsTests extends ScageApp {
     //println(s"${timeStr((s._1*base_dt*1000).toLong)} : ${mOrKm(ship_moon)} (${mOrKm(min_ship_moon)}, $ship_moon_deg) : ${mOrKm(station_earth)} (${mOrKm(min_station_earth)}, $station_earth_deg)")
     println(s"${timeStr((s._1*base_dt*1000).toLong)} : ${mOrKm(station_earth)} (${mOrKm(min_station_earth)}, $station_earth_deg, $a)")
 
-    (1 to (m/l-1)).foreach(i => {
+    (1 to (steps-1)).foreach(i => {
       val s2 = system_evolution_lx.next()
       val station_state2 = s2._2.find(_.index == station.index).get
       val earth_state2 = s2._2.find(_.index == earth.index).get
@@ -162,7 +163,7 @@ object OrbitalOscillationsTests extends ScageApp {
     val a2 = (station_state2.coord - earth_state2.coord).deg(station_state2.coord - earth_state2.coord + station_state2.vel*dt2)
 
     //println(s"${timeStr((s._1*base_dt*1000).toLong)} : ${mOrKm(ship_moon)} (${mOrKm(min_ship_moon)}, $ship_moon_deg) : ${mOrKm(station_earth)} (${mOrKm(min_station_earth)}, $station_earth_deg)")
-    println(f"${timeStr((s2._1*base_dt*1000).toLong)} : ${mOrKm(station_earth2)} (${mOrKm(min_station_earth2)}, $station_earth_deg2, $a2, ${math.abs(min_station_earth2 - min_station_earth) / min_station_earth * 100}%.2f%)")
+    println(f"${timeStr((s2._1*base_dt*1000).toLong)} : ${mOrKm(station_earth2)} : ${math.abs(station_earth2 - station_earth)/station_earth*100}%.2f% (${mOrKm(min_station_earth2)})")
     println("===================================")
   }
 }
