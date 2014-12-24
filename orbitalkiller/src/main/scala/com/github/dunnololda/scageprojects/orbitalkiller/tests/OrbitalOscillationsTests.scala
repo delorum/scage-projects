@@ -84,19 +84,23 @@ object OrbitalOscillationsTests extends ScageApp {
       station.initState,
       moon.initState,
       earth.initState),
-      enable_collisions = true).iterator
+      enable_collisions = false).iterator
 
-  val l = 1000
+  private var l = 1000
   private val system_evolution_lx =
     futureSystemEvolutionFrom(l*realtime*base_dt, 0, List(
       //ship.initState,
       station.initState,
       moon.initState,
       earth.initState),
-      enable_collisions = true).iterator
+      enable_collisions = false).iterator
 
   def mOrKm(meters:Number):String = {
     if(math.abs(meters.floatValue()) < 1000) f"${meters.floatValue()}%.2f м" else f"${meters.floatValue()/1000}%.2f км"
+  }
+
+  def msec2OrKmsec2(meters:Number):String = {
+    if(math.abs(meters.floatValue()) < 1000) f"${meters.floatValue()}%.2f м/сек^2" else f"${meters.floatValue()/1000}%.2f км/сек^2"
   }
 
   def timeStr(time_msec:Long):String = {
@@ -111,6 +115,8 @@ object OrbitalOscillationsTests extends ScageApp {
   private var min_ship_moon:Double = 150000
   private var min_station_earth:Double = station_start_position.dist(earth.coord) - earth.radius + 100000
   private var min_station_earth2:Double = station_start_position.dist(earth.coord) - earth.radius + 100000
+
+  private var max_cen_acc:Double = 0
 
   action {
     //val steps = (math.random*100+1).toInt
@@ -138,12 +144,14 @@ object OrbitalOscillationsTests extends ScageApp {
     val dt = realtime*base_dt
     val a = (station_state.coord - earth_state.coord).deg(station_state.coord - earth_state.coord + station_state.vel*dt)
 
+    val cen_acc = station_state.acc* station_state.vel.p
+
     val Orbit(_, _, e, _, _, r_p, r_a, t, _, _, _) = calculateOrbit(earth_state.mass, earth_state.coord, station_state.mass, station_state.coord - earth_state.coord, station_state.vel - earth_state.vel, G)
 
-    println(f"e = $e%.2f, r_p = ${mOrKm(r_p - earth.radius)}, r_a = ${mOrKm(r_a - earth.radius)}, t = ${timeStr((t*1000l).toLong)}")
+    //println(f"e = $e%.2f, r_p = ${mOrKm(r_p - earth.radius)}, r_a = ${mOrKm(r_a - earth.radius)}, t = ${timeStr((t*1000l).toLong)}")
 
     //println(s"${timeStr((s._1*base_dt*1000).toLong)} : ${mOrKm(ship_moon)} (${mOrKm(min_ship_moon)}, $ship_moon_deg) : ${mOrKm(station_earth)} (${mOrKm(min_station_earth)}, $station_earth_deg)")
-    println(s"${timeStr((s._1*base_dt*1000).toLong)} : ${mOrKm(station_earth)} (${mOrKm(min_station_earth)}, $station_earth_deg, $a)")
+    println(s"${timeStr((s._1*base_dt*1000).toLong)} : ${mOrKm(station_earth)} : ${msec2OrKmsec2(cen_acc)} (${mOrKm(min_station_earth)})")
 
     (1 to (steps-1)).foreach(i => {
       val s2 = system_evolution_lx.next()
@@ -151,6 +159,10 @@ object OrbitalOscillationsTests extends ScageApp {
       val earth_state2 = s2._2.find(_.index == earth.index).get
       val station_earth2 = station_state2.coord.dist(earth_state2.coord) - earth.radius
       if(station_earth2 < min_station_earth2) min_station_earth2 = station_earth2
+      /*l = {
+        val a = station_state2.acc*station_state2.vel.p
+        math.abs(math.pow(351.3011068768212 / a, 10.0 / 7).toInt)
+      }*/
     })
     val s2 = system_evolution_lx.next()
 
@@ -161,9 +173,21 @@ object OrbitalOscillationsTests extends ScageApp {
     val station_earth_deg2 = (station_state2.coord - earth_state2.coord).deg(station_state2.vel)
     val dt2 = l*realtime*base_dt
     val a2 = (station_state2.coord - earth_state2.coord).deg(station_state2.coord - earth_state2.coord + station_state2.vel*dt2)
+    l = {
+      val a = station_state2.acc*station_state2.vel.p
+      math.abs(math.pow(351.3011068768212 / a, 10.0 / 7).toInt)
+    }
+
+    val cen_acc2 = station_state2.acc*station_state2.vel.p
+    val cur = station_state2.vel.norma2/(station_state2.acc *station_state2.vel.p)
+
+    val x = (math.abs(station_earth2 - station_earth)/station_earth*100)/cen_acc2
+    val error = math.abs(station_earth2 - station_earth)/station_earth*100
 
     //println(s"${timeStr((s._1*base_dt*1000).toLong)} : ${mOrKm(ship_moon)} (${mOrKm(min_ship_moon)}, $ship_moon_deg) : ${mOrKm(station_earth)} (${mOrKm(min_station_earth)}, $station_earth_deg)")
-    println(f"${timeStr((s2._1*base_dt*1000).toLong)} : ${mOrKm(station_earth2)} : ${math.abs(station_earth2 - station_earth)/station_earth*100}%.2f% (${mOrKm(min_station_earth2)})")
+    println(f"$l : ${timeStr((s2._1*base_dt*1000).toLong)} : ${mOrKm(station_earth2)} : ${math.abs(station_earth2 - station_earth)/station_earth*100}%.2f% : ${msec2OrKmsec2(cen_acc2)} : ${mOrKm(cur)} (${mOrKm(min_station_earth2)})")
+    //println(f"${(s2._1*base_dt*1000).toLong} ${math.abs(station_earth2 - station_earth)/station_earth*100}%.2f $cen_acc2%.2f $cur%.2f")
     println("===================================")
+    //println()
   }
 }
