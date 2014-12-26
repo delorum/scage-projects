@@ -382,117 +382,120 @@ package object orbitalkiller {
                           enable_collisions:Boolean = true)
                          (current_state:(Long, List[BodyState])):Stream[(Long, List[BodyState])] = {
     val cur_dt = dt
-    val (tacts, bodies) = changeFunction(current_state._1, current_state._2)
-    val next_tacts = tacts + (cur_dt/base_dt).toLong
+    val steps = (cur_dt/base_dt).toInt
+    val pewpew = (1 to steps).foldLeft(current_state) {
+      case (state, step) =>
+        val (tacts, bodies) = changeFunction(state._1, state._2)
+        val next_tacts = tacts + 1
 
-    val next_bodies = if(enable_collisions) {
-      val collision_data = mutable.HashMap[String, (DVec, Double)]()
-      for {
-        space <- splitSpace(new Space(bodies, DVec.zero), 5, 10)
-        if space.bodies.length > 1
-        (b1, idx) <- space.bodies.zipWithIndex.init
-        b2 <- space.bodies.drop(idx+1)
-        if !b1.is_static || !b2.is_static
-        c @ Contact(_ ,_, contact_point, normal) <- maybeCollision(b1, b2)
-      } {
-        val rap = contact_point - b1.coord
-        val n = normal.n
-        val dv = b1.vel - b2.vel
-        val relative_movement = dv*n
-        if(relative_movement < 0) {  // If the objects are moving away from each other we dont need to apply an impulse
-          collision_data += (b1.index -> (b1.vel, b1.ang_vel))
-          collision_data += (b2.index -> (b2.vel, b2.ang_vel))
+        val next_bodies = if(enable_collisions) {
+          val collision_data = mutable.HashMap[String, (DVec, Double)]()
+          for {
+            space <- splitSpace(new Space(bodies, DVec.zero), 5, 10)
+            if space.bodies.length > 1
+            (b1, idx) <- space.bodies.zipWithIndex.init
+            b2 <- space.bodies.drop(idx+1)
+            if !b1.is_static || !b2.is_static
+            c @ Contact(_ ,_, contact_point, normal) <- maybeCollision(b1, b2)
+          } {
+            val rap = contact_point - b1.coord
+            val n = normal.n
+            val dv = b1.vel - b2.vel
+            val relative_movement = dv*n
+            if(relative_movement < 0) {  // If the objects are moving away from each other we dont need to apply an impulse
+              collision_data += (b1.index -> (b1.vel, b1.ang_vel))
+              collision_data += (b2.index -> (b2.vel, b2.ang_vel))
+            } else {
+              val ma = b1.mass
+              val ia = b1.I
+
+              val va1 = b1.vel
+              val wa1 = b1.ang_vel.toRad // ang_vel in degrees, wa1 must be in radians
+              val mb = b2.mass
+
+              val e = elasticity
+              if(mb == -1) {  // infinite mass
+              val vap1 = va1 + (wa1 * rap.perpendicular)
+                val j = -(1+e)*(vap1*n)/(1.0/ma + (rap*/n)*(rap*/n)/ia)
+
+                val va2 = va1 + (j * n)/ma
+                val wa2 = (wa1 + (rap*/(j * n))/ia).toDeg  // must be in degrees
+
+                collision_data += (b1.index -> (va2, wa2))
+              } else {
+                val ib = b2.I
+                val rbp = contact_point - b2.coord
+                val vb1 = b2.vel
+                val wb1 = b2.ang_vel.toRad  // ang_vel in degrees, wb1 must be in radians
+                val vab1 = va1 + (wa1 * rap.perpendicular) - vb1 - (wb1 * rbp.perpendicular)
+                val j = -(1+e) * vab1*n/(1.0/ma + 1.0/mb + (rap*/n)*(rap*/n)/ia + (rbp*/n)*(rbp*/n)/ib)
+
+                val va2 = va1 + (j * n)/ma
+                val wa2 = (wa1 + (rap*/(j * n))/ia).toDeg  // must be in degrees
+                collision_data += (b1.index -> (va2, wa2))
+
+                val vb2 = vb1 - (j * n)/mb
+                val wb2 = (wb1 - (rbp*/(j * n))/ib).toDeg  // must be in degrees
+                collision_data += (b2.index -> (vb2, wb2))
+              }
+            }
+          }
+
+          bodies.map { case b1 =>
+            if(b1.is_static) b1
+            else {
+              val other_bodies = bodies.filterNot(_ == b1)
+
+              val next_force = force(tacts, b1, other_bodies)
+              val next_acc = next_force / b1.mass
+              val next_vel = collision_data.get(b1.index).map(_._1).getOrElse(b1.vel + next_acc*base_dt)
+              val next_coord = b1.coord + next_vel*base_dt
+
+              val next_torque = torque(tacts, b1, other_bodies)
+              val next_ang_acc = (next_torque / b1.I).toDeg  // in degrees
+              val next_ang_vel = collision_data.get(b1.index).map(_._2).getOrElse(b1.ang_vel + next_ang_acc*base_dt)
+              val next_ang = correctAngle((b1.ang + next_ang_vel*base_dt) % 360)
+
+              b1.copy(
+                acc = next_acc,
+                vel = next_vel,
+                coord = next_coord,
+                ang_acc= next_ang_acc,
+                ang_vel = next_ang_vel,
+                ang = next_ang
+              )
+            }
+          }
         } else {
-          val ma = b1.mass
-          val ia = b1.I
+          bodies.map { case b1 =>
+            if(b1.is_static) b1
+            else {
+              val other_bodies = bodies.filterNot(_ == b1)
 
-          val va1 = b1.vel
-          val wa1 = b1.ang_vel.toRad // ang_vel in degrees, wa1 must be in radians
-          val mb = b2.mass
+              val next_force = force(tacts, b1, other_bodies)
+              val next_acc = next_force / b1.mass
+              val next_vel = b1.vel + next_acc*base_dt
+              val next_coord = b1.coord + next_vel*base_dt
 
-          val e = elasticity
-          if(mb == -1) {  // infinite mass
-          val vap1 = va1 + (wa1 * rap.perpendicular)
-            val j = -(1+e)*(vap1*n)/(1.0/ma + (rap*/n)*(rap*/n)/ia)
+              val next_torque = torque(tacts, b1, other_bodies)
+              val next_ang_acc = (next_torque / b1.I).toDeg  // in degrees
+              val next_ang_vel = b1.ang_vel + next_ang_acc*base_dt
+              val next_ang = correctAngle((b1.ang + next_ang_vel*base_dt) % 360)
 
-            val va2 = va1 + (j * n)/ma
-            val wa2 = (wa1 + (rap*/(j * n))/ia).toDeg  // must be in degrees
-
-            collision_data += (b1.index -> (va2, wa2))
-          } else {
-            val ib = b2.I
-            val rbp = contact_point - b2.coord
-            val vb1 = b2.vel
-            val wb1 = b2.ang_vel.toRad  // ang_vel in degrees, wb1 must be in radians
-            val vab1 = va1 + (wa1 * rap.perpendicular) - vb1 - (wb1 * rbp.perpendicular)
-            val j = -(1+e) * vab1*n/(1.0/ma + 1.0/mb + (rap*/n)*(rap*/n)/ia + (rbp*/n)*(rbp*/n)/ib)
-
-            val va2 = va1 + (j * n)/ma
-            val wa2 = (wa1 + (rap*/(j * n))/ia).toDeg  // must be in degrees
-            collision_data += (b1.index -> (va2, wa2))
-
-            val vb2 = vb1 - (j * n)/mb
-            val wb2 = (wb1 - (rbp*/(j * n))/ib).toDeg  // must be in degrees
-            collision_data += (b2.index -> (vb2, wb2))
+              b1.copy(
+                acc = next_acc,
+                vel = next_vel,
+                coord = next_coord,
+                ang_acc= next_ang_acc,
+                ang_vel = next_ang_vel,
+                ang = next_ang
+              )
+            }
           }
         }
-      }
-
-      bodies.map { case b1 =>
-        if(b1.is_static) b1
-        else {
-          val other_bodies = bodies.filterNot(_ == b1)
-
-          val next_force = force(tacts, b1, other_bodies)
-          val next_acc = next_force / b1.mass
-          val next_vel = collision_data.get(b1.index).map(_._1).getOrElse(b1.vel + next_acc*cur_dt)
-          val next_coord = b1.coord + next_vel*cur_dt
-
-          val next_torque = torque(tacts, b1, other_bodies)
-          val next_ang_acc = (next_torque / b1.I).toDeg  // in degrees
-          val next_ang_vel = collision_data.get(b1.index).map(_._2).getOrElse(b1.ang_vel + next_ang_acc*cur_dt)
-          val next_ang = correctAngle((b1.ang + next_ang_vel*cur_dt) % 360)
-
-          b1.copy(
-            acc = next_acc,
-            vel = next_vel,
-            coord = next_coord,
-            ang_acc= next_ang_acc,
-            ang_vel = next_ang_vel,
-            ang = next_ang
-          )
-        }
-      }
-    } else {
-      bodies.map { case b1 =>
-        if(b1.is_static) b1
-        else {
-          val other_bodies = bodies.filterNot(_ == b1)
-
-          val next_force = force(tacts, b1, other_bodies)
-          val next_acc = next_force / b1.mass
-          val next_vel = b1.vel + next_acc*cur_dt
-          val next_coord = b1.coord + next_vel*cur_dt
-
-          val next_torque = torque(tacts, b1, other_bodies)
-          val next_ang_acc = (next_torque / b1.I).toDeg  // in degrees
-          val next_ang_vel = b1.ang_vel + next_ang_acc*cur_dt
-          val next_ang = correctAngle((b1.ang + next_ang_vel*cur_dt) % 360)
-
-          b1.copy(
-            acc = next_acc,
-            vel = next_vel,
-            coord = next_coord,
-            ang_acc= next_ang_acc,
-            ang_vel = next_ang_vel,
-            ang = next_ang
-          )
-        }
-      }
+        (next_tacts, next_bodies)
     }
 
-
-    val pewpew = (next_tacts, next_bodies)
     pewpew #:: systemEvolutionFrom(dt, base_dt, elasticity, force, torque, changeFunction, enable_collisions)(pewpew)
   }
 
