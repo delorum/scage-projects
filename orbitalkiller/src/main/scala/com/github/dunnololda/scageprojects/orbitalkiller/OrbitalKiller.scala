@@ -43,7 +43,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
   def maxTimeMultiplier:Int = {
     val a = ships.map(s => math.abs(s.currentState.acc*s.currentState.vel.p)).max
-    math.pow(351.3011068768212/a, 10.0/7).toInt
+    math.max((0.1*math.pow(351.3011068768212/a, 10.0/7)/5).toInt, 1)
   }
 
   def dt = timeMultiplier*base_dt
@@ -65,12 +65,12 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   def currentSystemState = current_body_states.values.toList
 
   def futureSystemEvolutionFrom(dt: => Double, tacts:Long, body_states:List[BodyState], enable_collisions:Boolean) = systemEvolutionFrom(
-    dt, base_dt, elasticity = 0.9,
+    dt, maxTimeMultiplier, base_dt, elasticity = 0.9,
     force = (tacts, bs, other_bodies) => {
       bs.index match {
         case ship.index =>
           gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G) +
-          //other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(DVec.dzero) +
+          other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(DVec.dzero) +
           ship.currentReactiveForce(tacts, bs)
         /*case station.index =>
           gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G) +
@@ -89,17 +89,24 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
           0
       }
     },
+    changeFunction =  (time, bodies) => {
+      (time, bodies.map {
+        case b =>
+          if(b.ang_vel != 0 && math.abs(b.ang_vel) < 0.01 && ship_indices.contains(b.index)) b.copy(ang_vel = 0)
+          else b
+      })
+    },
     enable_collisions = enable_collisions)((tacts, body_states))
 
   def futureSystemEvolutionWithoutReactiveForcesFrom(dt: => Double, tacts:Long, body_states:List[BodyState], enable_collisions:Boolean) = systemEvolutionFrom(
-    dt, base_dt, elasticity = 0.9,
+    dt, maxTimeMultiplier, base_dt, elasticity = 0.9,
     force = (tacts, bs, other_bodies) => {
       bs.index match {
         case ship.index =>
-          gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G)// +
-          //other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(DVec.dzero)
+          gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G) +
+          other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(DVec.dzero)
         /*case station.index =>
-          gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G)// +
+          gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G) +
           other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(DVec.dzero)*/
         case moon.index =>
           gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G)
@@ -193,8 +200,8 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
   val ship_start_position = earth.coord + DVec(0, earth.radius + 100000)
   val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G)*1.15
-  /*val ship_start_position = moon.coord + DVec(0, moon.radius + 100000)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G)*1.15*/
+  //val ship_start_position = moon.coord + DVec(0, moon.radius + 100000)
+  //val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G)*1.15
   val ship = new Ship3("ship",
     init_coord = ship_start_position,
     init_velocity = ship_init_velocity,
@@ -210,11 +217,12 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   )*/
   
   val ships = List(ship/*, station*/)
+  val ship_indices = ships.map(_.index).toSet
 
   private val real_system_evolution =
     futureSystemEvolutionFrom(dt, 0, List(
         ship.currentState,
-        /*station.currentState,*/
+        //station.currentState,
         moon.currentState,
         earth.currentState),
       enable_collisions = true).iterator
@@ -664,7 +672,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
               G)
             // если скорость корабля превышает вторую космическую для данной планеты
             if(bs.vel.norma > escape_velocity.norma) {
-              // рисуем траекторию корабля на неделю
+              /*// рисуем траекторию корабля на неделю
               val one_week_evolution = futureSystemEvolutionWithoutReactiveForcesFrom(
                 3600 * base_dt, _tacts, some_system_state, enable_collisions = false)
                 .take(7* 24 * 63)
@@ -734,7 +742,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                       }
                   }
                 case None =>
-              }
+              }*/
             } else {
               // если не превышает - рисуем орбиту вокруг планеты
               openglLocalTransform {
@@ -770,7 +778,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                     drawEllipse(DVec.zero, orbit_after_engines_off.a * scale, orbit_after_engines_off.b * scale, color2)
                   }
                 } else {
-                  // если превышает - рисуем траекторию на неделю
+                  /*// если превышает - рисуем траекторию на неделю
                   val one_week_evolution_after_engines_off = futureSystemEvolutionWithoutReactiveForcesFrom(
                     3600 * base_dt, _tacts, some_system_state, enable_collisions = false)
                     .take(7* 24 * 63)
@@ -840,7 +848,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                           }
                       }
                     case None =>
-                  }
+                  }*/
                 }
               case None =>
             }
@@ -945,7 +953,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
       print(s"Время: ${timeStr((_tacts*base_dt*1000).toLong)}",
         20, heights.next(), ORANGE)
-      print(f"Ускорение времени: x${timeMultiplier*k}%.2f/$maxTimeMultiplier",
+      print(f"Ускорение времени: x${timeMultiplier*k}%.2f/$maxTimeMultiplier (${if(timeMultiplier < maxTimeMultiplier) 1 else timeMultiplier/factors5(timeMultiplier).filter(_ <= maxTimeMultiplier).max})",
         20, heights.next(), ORANGE)
 
       print("", 20, heights.next(), ORANGE)
@@ -976,7 +984,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         20, heights.next(), ORANGE)
       /*print(f"Угол: ${ship.rotation}%.2f град",
         20, heights.next(), ORANGE)*/
-      print(f"Угловая скорость: ${ship.angularVelocity}%.2f град/сек",
+      print(f"Угловая скорость: ${ship.angularVelocity}%.3f град/сек",
         20, heights.next(), ORANGE)
       print(s"Параметры орбиты: ${orbitStrInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity, currentPlanetStates)}",
         20, heights.next(), ORANGE)
@@ -995,7 +1003,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       print(s"Мощность и время работы отдельных двигателей:",
         20, heights.next(), ORANGE)
       print(s"${ship.engines.map(e => {
-        if(ship.selected_engine.exists(x => x == e)) s"[r${e.powerPercent} % (${e.worktimeTacts} т.)]"
+        if(e.active) s"[r${e.powerPercent} % (${e.worktimeTacts} т.)]"
         else s"${e.powerPercent} % (${e.worktimeTacts} т.)"
       }).mkString(", ")}",
         20, heights.next()

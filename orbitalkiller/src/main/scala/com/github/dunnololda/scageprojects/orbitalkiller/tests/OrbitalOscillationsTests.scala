@@ -52,7 +52,7 @@ object OrbitalOscillationsTests extends ScageApp {
   val realtime = (1.0/k).toInt // 1/k*baseDt соответствует реальному течению времени
 
   def futureSystemEvolutionFrom(dt: => Double, tacts:Long, body_states:List[BodyState], enable_collisions:Boolean) = systemEvolutionFrom(
-    dt, base_dt, elasticity = 0.9,
+    dt, 1000000, base_dt, elasticity = 0.9,
     force = (tacts, bs, other_bodies) => {
       bs.index match {
         /*case ship.index =>
