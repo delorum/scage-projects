@@ -135,6 +135,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   //private val body_trajectories_map = mutable.HashMap[String, ArrayBuffer[(Long, BodyState)]]()
 
   def updateFutureTrajectory() {
+    println("updateFutureTrajectory")
     future_trajectory.clear()
     future_trajectory ++= {
       futureSystemEvolutionFrom(base_dt, _tacts, currentSystemState, enable_collisions = false)
@@ -159,6 +160,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   }*/
 
   def continueFutureTrajectory() {
+    println("continueFutureTrajectory")
     val (t, s) = future_trajectory.lastOption.getOrElse((_tacts, currentSystemState))
     val steps = {
       futureSystemEvolutionFrom(base_dt, t, s, enable_collisions = false)
@@ -280,8 +282,9 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
           else vec.deg(DVec(0, 1)) * (-1)
         }
         view_mode = 2
-      case 3 => // фиксация на солнце
-        center = earth.coord
+      case 3 => // фиксация на корабле, абсолютная ориентация
+        center = ship.coord + _ship_offset
+        base = if(ship.coord.norma < 100000) DVec.zero else ship.coord
         rotationAngle = 0
         view_mode = 3
       case 4 => // фиксация на планете
@@ -295,7 +298,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     case 0 => "свободный"
     case 1 => "фиксация на корабле"
     case 2 => "посадка"
-    case 3 => "фиксация на Земле"
+    case 3 => "фиксация на корабле, абсолютная ориентация"
     case 4 => "фиксация на Луне"
     case _ => ""
   }
@@ -564,8 +567,8 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   keyIgnorePause(KEY_P, onKeyDown = switchPause())
 
   keyIgnorePause(KEY_F1, onKeyDown = {pause(); holdCounters {HelpScreen.run()}})
-  //keyIgnorePause(KEY_F2, onKeyDown = {viewMode = 0; rotationAngle = 0})  // свободный
-  //keyIgnorePause(KEY_F3, onKeyDown = viewMode = 1)                       // фиксация на корабле
+  keyIgnorePause(KEY_F2, onKeyDown = viewMode = 1)      // фиксация на корабле
+  keyIgnorePause(KEY_F3, onKeyDown = viewMode = 3)      // фиксация на корабле, абсолютная ориентация
   //keyIgnorePause(KEY_F4, onKeyDown = viewMode = 2)                       // посадка на планету
   //keyIgnorePause(KEY_F5, onKeyDown = viewMode = 3)                       // фиксация на солнце
   //keyIgnorePause(KEY_F6, onKeyDown = viewMode = 4)                       // фиксация на планете
@@ -907,6 +910,39 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         val h = math.abs(y.y - x.y)
 
         drawRectCentered(c,w,h,DARK_GRAY)
+        drawLine(c + DVec(-w/2, -h/2), c + DVec(-w/2, -h/2) + DVec(0, -10/globalScale))
+        drawLine(c + DVec(w/2, h/2),   c + DVec(w/2, h/2)   + DVec(0, -10/globalScale))
+
+        drawArrow(c + DVec(0, -h/2) + DVec(0, -5/globalScale), c + DVec(-w/2, -h/2) + DVec(0, -5/globalScale),DARK_GRAY)
+        drawArrow(c + DVec(0, -h/2) + DVec(0, -5/globalScale), c + DVec(w/2, -h/2)  + DVec(0, -5/globalScale),DARK_GRAY)
+
+        openglLocalTransform {
+          val k = messageBounds(s"${mOrKm((w / scale).toInt)}", (max_font_size / globalScale).toFloat)
+          openglMove((c + DVec(0, -h / 2) + DVec(0, -15 / globalScale) + DVec(-k.x / 2, -k.y / 2)).toVec)
+          print(
+            s"${mOrKm((w / scale).toInt)}",
+            Vec.zero,
+            color = DARK_GRAY,
+            size = (max_font_size / globalScale).toFloat
+          )
+        }
+
+        drawLine(c + DVec(w/2, h/2),  c + DVec(w/2, h/2)  + DVec(10/globalScale, 0))
+        drawLine(c + DVec(w/2, -h/2), c + DVec(w/2, -h/2) + DVec(10/globalScale, 0))
+
+        drawArrow(c + DVec(w/2, 0) + DVec(5/globalScale, 0), c + DVec(w/2, h/2) + DVec(5/globalScale, 0),DARK_GRAY)
+        drawArrow(c + DVec(w/2, 0) + DVec(5/globalScale, 0), c + DVec(w/2, -h/2) + DVec(5/globalScale, 0),DARK_GRAY)
+
+        openglLocalTransform {
+          val l = messageBounds(s"${mOrKm((h / scale).toInt)}", (max_font_size / globalScale).toFloat)
+          openglMove((c + DVec(w / 2, 0) + DVec(10 / globalScale, 0) + DVec(0, -l.y / 2)).toVec)
+          print(
+            s"${mOrKm((h / scale).toInt)}",
+            Vec.zero,
+            color = DARK_GRAY,
+            size = (max_font_size / globalScale).toFloat
+          )
+        }
       }
     } else {
       val m = absCoord(mouseCoord)
@@ -984,17 +1020,27 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         20, heights.next(), ORANGE)
       /*print(f"Угол: ${ship.rotation}%.2f град",
         20, heights.next(), ORANGE)*/
-      print(f"Угловая скорость: ${ship.angularVelocity}%.2 град/сек",
-        20, heights.next(), ORANGE)
-      print(s"Параметры орбиты: ${orbitStrInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity, currentPlanetStates)}",
+      print(f"Угловая скорость: ${ship.angularVelocity}%.2f град/сек",
         20, heights.next(), ORANGE)
 
       print("", 20, heights.next(), ORANGE)
 
-      print(f"Скорость для спутника в данной точке: ${satelliteSpeedStrInPoint(ship.coord)}",
+      val earth_force = gravityForce(earth.coord, earth.mass, ship.coord, ship.mass, G).norma
+      val moon_force = gravityForce(moon.coord, moon.mass, ship.coord, ship.mass, G).norma
+      print(f"Влияние планет: Земля ${earth_force/(earth_force + moon_force)*100}%.2f% Луна ${moon_force/(earth_force + moon_force)*100}%.2f% З/Л ${earth_force/moon_force}%.2f Л/З ${moon_force/earth_force}%.2f",
+        20, heights.next(), ORANGE)
+      val earth_sat_speed = satelliteSpeed(ship.coord, earth.coord, earth.linearVelocity, earth.mass, G).norma
+      val earth_esc_speed = escapeVelocity(ship.coord, earth.coord, earth.linearVelocity, earth.mass, G).norma
+      val moon_sat_speed = satelliteSpeed(ship.coord, moon.coord, moon.linearVelocity, moon.mass, G).norma
+      val moon_esc_speed = escapeVelocity(ship.coord, moon.coord, moon.linearVelocity, moon.mass, G).norma
+      print(f"Скорость спутника/убегания: Земля ${msecOrKmsec(earth_sat_speed)}/${msecOrKmsec(earth_esc_speed)} Луна ${msecOrKmsec(moon_sat_speed)}/${msecOrKmsec(moon_esc_speed)}",
+        20, heights.next(), ORANGE)
+      print(s"Параметры орбиты: ${orbitStrInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity, currentPlanetStates)}",
+        20, heights.next(), ORANGE)
+      /*print(f"Скорость для спутника в данной точке: ${satelliteSpeedStrInPoint(ship.coord)}",
         20, heights.next(), ORANGE)
       print(f"Скорость убегания в данной точке: ${escapeVelocityStrInPoint(ship.coord)}",
-        20, heights.next(), ORANGE)
+        20, heights.next(), ORANGE)*/
 
       print("", 20, heights.next(), ORANGE)
 
