@@ -419,7 +419,7 @@ package object orbitalkiller {
   }
 
   import collection.mutable.HashMap
-  val pfacts = HashMap[Long, List[Long]]()
+  val pfacts = mutable.HashMap[Long, List[Long]]()
 
   // возвращает список простых чисел, произведение которых равно данному числу n
   def primeFactors3(n:Long):List[Long] = {
@@ -445,7 +445,7 @@ package object orbitalkiller {
     (1L :: (1 to res23.length).flatMap(i => res23.combinations(i).map(_.product)).toList).filterNot(_ == n) ::: n :: Nil
   }
 
-  private val facts = HashMap[Long, List[Long]]()
+  private val facts = mutable.HashMap[Long, List[Long]]()
 
   // возвращает список делителей, кеширует результат
   def factors5(n:Long) = {
