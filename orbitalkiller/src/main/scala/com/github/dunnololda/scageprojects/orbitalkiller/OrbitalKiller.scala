@@ -42,8 +42,9 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   }
 
   def maxTimeMultiplier:Int = {
-    val a = ships.map(s => math.abs(s.currentState.acc*s.currentState.vel.p)).max
-    math.max((0.1*math.pow(351.3011068768212/a, 10.0/7)/5).toInt, 1)
+    /*val a = ships.map(s => math.abs(s.currentState.acc*s.currentState.vel.p)).max
+    math.max((0.1*math.pow(351.3011068768212/a, 10.0/7)/5).toInt, 1)*/
+    1
   }
 
   def dt = timeMultiplier*base_dt
@@ -668,7 +669,24 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
   private val scale = 1e-6
 
-  private def shipOrbitRender(ship_index:String, some_system_state:List[BodyState], color1:ScageColor, color2:ScageColor) {
+  private def reducePointsNumber(points:Seq[DVec], res:List[DVec] = Nil):List[DVec] = {
+    if(points.isEmpty) res
+    else {
+      val p1 = points.head
+      if(points.tail.isEmpty) res ::: List(p1)
+      else {
+        if(res.isEmpty) reducePointsNumber(points.tail, List(p1))
+        else {
+          val p0 = res.last
+          val next_points = points.tail.dropWhile(p2 => (p2-p1).deg(p1-p0) < 5)
+          reducePointsNumber(next_points, res ::: List(p1))
+        }
+      }
+    }
+  }
+
+  private def shipOrbitRender(ship_index:String, some_system_state:List[BodyState], color1:ScageColor, color2:ScageColor):() => Unit = {
+    val result = ArrayBuffer[() => Unit]()
     // находим наш корабль
     some_system_state.find(_.index == ship_index) match {
       case Some(bs) =>
@@ -698,7 +716,10 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                 .map(_._1)
                 .map(_._2)
                 .toList
-              drawSlidingLines(one_week_evolution.flatMap(x => x.find(_.index == ship_index)).map(_.coord * scale), color1)
+              val x = one_week_evolution.flatMap(x => x.find(_.index == ship_index)).map(_.coord * scale)
+              val y = reducePointsNumber(x)
+              println(s"${x.length} -> ${y.length}")
+              result += (() => drawSlidingLines(y, color1))
               // получаем последнее состояние этой недельной траектории
               val state_after_one_week = one_week_evolution.last
               // находим наш корабль
@@ -722,11 +743,11 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                       // если скорость корабля не превышает вторую космическую для данной планеты
                       if(bs_after_one_week.vel.norma < escape_velocity_after_one_week.norma) {
                         // рисуем орбиту
-                        openglLocalTransform {
+                        result += (() => openglLocalTransform {
                           openglMove(orbit_after_one_week.center*scale)
                           openglRotateDeg(Vec(-1,0).signedDeg(orbit_after_one_week.f2-orbit_after_one_week.f1))
                           drawEllipse(DVec.zero, orbit_after_one_week.a * scale, orbit_after_one_week.b * scale, color1)
-                        }
+                        })
                       } // иначе ничего не делаем
                     case None =>
                       // корабль через неделю не находится внутри гравитационного радиуса никакой планеты
@@ -754,11 +775,11 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                               bs_after_one_week.mass,
                               bs_after_one_week.coord - need_planet_after_one_week.coord,
                               bs_after_one_week.vel - need_planet_after_one_week.vel, G)
-                            openglLocalTransform {
+                            result += (() => openglLocalTransform {
                               openglMove(orbit_after_one_week.center*scale)
                               openglRotateDeg(Vec(-1,0).signedDeg(orbit_after_one_week.f2-orbit_after_one_week.f1))
                               drawEllipse(DVec.zero, orbit_after_one_week.a * scale, orbit_after_one_week.b * scale, color2)
-                            }
+                            })
                           } else if(need_planet_after_one_week.index != earth.index) {
                             // проверяем скорость корабля, превышает ли она вторую космическую для Земли через неделю
                             val escape_velocity_earth_after_one_week = escapeVelocity(
@@ -776,11 +797,11 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                                 bs_after_one_week.mass,
                                 bs_after_one_week.coord - earth_after_one_week.coord,
                                 bs_after_one_week.vel - earth_after_one_week.vel, G)
-                              openglLocalTransform {
+                              result += (() => openglLocalTransform {
                                 openglMove(orbit_earth_after_one_week.center*scale)
                                 openglRotateDeg(Vec(-1,0).signedDeg(orbit_earth_after_one_week.f2-orbit_earth_after_one_week.f1))
                                 drawEllipse(DVec.zero, orbit_earth_after_one_week.a * scale, orbit_earth_after_one_week.b * scale, color2)
-                              }
+                              })
                             }
                           }
                         case _ =>
@@ -790,11 +811,11 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
               }
             } else {
               // если не превышает - рисуем орбиту вокруг планеты
-              openglLocalTransform {
+              result += (() => openglLocalTransform {
                 openglMove(orbit.center*scale)
                 openglRotateDeg(Vec(-1,0).signedDeg(orbit.f2-orbit.f1))
                 drawEllipse(DVec.zero, orbit.a * scale, orbit.b * scale, color2)
-              }
+              })
             }
           case None =>
             // корабль не находится внутри гравитационного радиуса никакой планеты
@@ -822,11 +843,11 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                     bs.mass,
                     bs.coord - need_planet_state.coord,
                     bs.vel - need_planet_state.vel, G)
-                  openglLocalTransform {
+                  result += (() => openglLocalTransform {
                     openglMove(orbit.center*scale)
                     openglRotateDeg(Vec(-1,0).signedDeg(orbit.f2-orbit.f1))
                     drawEllipse(DVec.zero, orbit.a * scale, orbit.b * scale, color2)
-                  }
+                  })
                 } else {
                   // если превышает - рисуем траекторию на неделю
                   val one_week_evolution = futureSystemEvolutionWithoutReactiveForcesFrom(
@@ -837,7 +858,10 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                     .map(_._1)
                     .map(_._2)
                     .toList
-                  drawSlidingLines(one_week_evolution.flatMap(x => x.find(_.index == ship_index)).map(_.coord * scale), color1)
+                  val x = one_week_evolution.flatMap(x => x.find(_.index == ship_index)).map(_.coord * scale)
+                  val y = reducePointsNumber(x)
+                  println(s"${x.length} -> ${y.length}")
+                  result += (() => drawSlidingLines(x, color1))
                   // получаем последнее состояние этой недельной траектории
                   val state_after_one_week = one_week_evolution.last
                   // находим наш корабль
@@ -861,11 +885,11 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                           // если скорость корабля не превышает вторую космическую для данной планеты
                           if(bs_after_one_week.vel.norma < escape_velocity_after_one_week.norma) {
                             // рисуем орбиту
-                            openglLocalTransform {
+                            result += (() => openglLocalTransform {
                               openglMove(orbit_after_one_week.center*scale)
                               openglRotateDeg(Vec(-1,0).signedDeg(orbit_after_one_week.f2-orbit_after_one_week.f1))
                               drawEllipse(DVec.zero, orbit_after_one_week.a * scale, orbit_after_one_week.b * scale, color1)
-                            }
+                            })
                           } // иначе ничего не делаем
                         case None =>
                           // корабль через неделю не находится внутри гравитационного радиуса никакой планеты
@@ -893,11 +917,11 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                                   bs_after_one_week.mass,
                                   bs_after_one_week.coord - need_planet_after_one_week.coord,
                                   bs_after_one_week.vel - need_planet_after_one_week.vel, G)
-                                openglLocalTransform {
+                                result += (() => openglLocalTransform {
                                   openglMove(orbit_after_one_week.center*scale)
                                   openglRotateDeg(Vec(-1,0).signedDeg(orbit_after_one_week.f2-orbit_after_one_week.f1))
                                   drawEllipse(DVec.zero, orbit_after_one_week.a * scale, orbit_after_one_week.b * scale, color2)
-                                }
+                                })
                               } else if(need_planet_after_one_week.index != earth.index) {
                                 // проверяем скорость корабля, превышает ли она вторую космическую для Земли через неделю
                                 val escape_velocity_earth_after_one_week = escapeVelocity(
@@ -915,11 +939,11 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                                     bs_after_one_week.mass,
                                     bs_after_one_week.coord - earth_after_one_week.coord,
                                     bs_after_one_week.vel - earth_after_one_week.vel, G)
-                                  openglLocalTransform {
+                                  result += (() => openglLocalTransform {
                                     openglMove(orbit_earth_after_one_week.center*scale)
                                     openglRotateDeg(Vec(-1,0).signedDeg(orbit_earth_after_one_week.f2-orbit_earth_after_one_week.f1))
                                     drawEllipse(DVec.zero, orbit_earth_after_one_week.a * scale, orbit_earth_after_one_week.b * scale, color2)
-                                  }
+                                  })
                                 }
                               }
                             case _ =>
@@ -933,6 +957,31 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         }
       case None =>
     }
+    () => result.foreach(x => x())
+  }
+
+  private var ship_orbit_render:() => Unit = () => {}
+  private var station_orbit_render:() => Unit = () => {}
+
+  actionIgnorePause(1000) {
+    ship_orbit_render = if(ship.engines.exists(_.active)) {
+      // получаем состояние системы, когда двигатели отработали
+      val system_state_when_engines_off = getFutureState(ships.flatMap(_.engines.map(e => e.worktimeTacts)).max)
+      shipOrbitRender(ship.index, system_state_when_engines_off, PURPLE, RED)
+    } else {
+      // двигатели корабля не работают - можно работать с текущим состоянием
+      shipOrbitRender(ship.index, currentSystemState, ORANGE, YELLOW)
+      /*val one_week_evolution_after_engines_off = futureSystemEvolutionWithoutReactiveForcesFrom(
+        3600 * base_dt, _tacts, currentSystemState, enable_collisions = false)
+        .take(7* 24 * 63)
+        .zipWithIndex
+        .filter(_._2 % 5 == 0)
+        .map(_._1)
+        .map(_._2)
+        .toList
+      drawSlidingLines(one_week_evolution_after_engines_off.flatMap(x => x.find(_.index == ship.index)).map(_.coord * scale), ORANGE)*/
+    }
+    station_orbit_render = shipOrbitRender(station.index, currentSystemState, ORANGE, YELLOW)
   }
 
   render {
@@ -950,8 +999,9 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       }
 
       drawFilledCircle(ship.coord*scale, earth.radius * scale / 2f / globalScale, WHITE)
+      ship_orbit_render()
       // если у корабля активны двигатели
-      if(ship.engines.exists(_.active)) {
+      /*if(ship.engines.exists(_.active)) {
         // получаем состояние системы, когда двигатели отработали
         val system_state_when_engines_off = getFutureState(ships.flatMap(_.engines.map(e => e.worktimeTacts)).max)
         shipOrbitRender(ship.index, system_state_when_engines_off, PURPLE, RED)
@@ -968,13 +1018,14 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
           .map(_._2)
           .toList
         drawSlidingLines(one_week_evolution_after_engines_off.flatMap(x => x.find(_.index == ship.index)).map(_.coord * scale), ORANGE)*/
-      }
+      }*/
       /*val radius = ship.linearVelocity.norma2/(ship.linearAcceleration* ship.linearVelocity.p)
       val point = if(radius >= 0) ship.coord + ship.linearVelocity.p*radius else ship.coord - ship.linearVelocity.p*radius
       drawCircle(point*scale, math.abs(radius)*scale, DARK_GRAY)*/
 
       drawFilledCircle(station.coord*scale, earth.radius * scale / 2f / globalScale, WHITE)
-      shipOrbitRender(station.index, currentSystemState, ORANGE, YELLOW)
+      //shipOrbitRender(station.index, currentSystemState, ORANGE, YELLOW)
+      station_orbit_render()
 
       for {
         x <- left_up_corner
