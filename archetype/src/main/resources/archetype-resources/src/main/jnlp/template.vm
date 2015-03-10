@@ -21,13 +21,16 @@
    $dependencies
  </resources>
  <resources os="Windows">
-    <nativelib href="natives/lwjgl-windows.jar"/>
+    <nativelib href="natives/jinput-platform-2.0.5-natives-windows.jar"/>
+    <nativelib href="natives/lwjgl-platform-2.8.2-natives-windows.jar"/>
   </resources>
   <resources os="Linux">
-    <nativelib href="natives/lwjgl-linux.jar"/>
+    <nativelib href="natives/jinput-platform-2.0.5-natives-linux.jar"/>
+    <nativelib href="natives/lwjgl-platform-2.8.2-natives-linux.jar"/>
   </resources>
   <resources os="Mac">
-    <nativelib href="natives/lwjgl-macosx.jar"/>  
+    <nativelib href="natives/jinput-platform-2.0.5-natives-osx.jar"/>
+    <nativelib href="natives/lwjgl-platform-2.8.2-natives-osx.jar"/>
   </resources>
 
  <application-desc main-class="$mainClass" />

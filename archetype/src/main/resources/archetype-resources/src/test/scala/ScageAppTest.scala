@@ -1,16 +1,16 @@
-package ${package};
+package ${package}
 
-import junit.framework._;
-import Assert._;
+import junit.framework._
+import Assert._
 
 object ScageAppTest {
     def suite: Test = {
-        val suite = new TestSuite(classOf[ScageAppTest]);
+        val suite = new TestSuite(classOf[ScageAppTest])
         suite
     }
 
     def main(args : Array[String]) {
-        junit.textui.TestRunner.run(suite);
+        junit.textui.TestRunner.run(suite)
     }
 }
 
@@ -23,9 +23,9 @@ class ScageAppTest extends TestCase("app") {
      * Rigourous Tests :-)
      */
     def testOK() = {
-      ScageExampleApp.main(Array[String]())
+      LightCyclesOffline.main(Array[String]())
       assertTrue(true)
-    };
+    }
     //def testKO() = assertTrue(false);
     
 

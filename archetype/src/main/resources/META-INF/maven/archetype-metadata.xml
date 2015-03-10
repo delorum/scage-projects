@@ -44,5 +44,11 @@
           <include>readme</include>
       </includes>
     </fileSet>
+    <fileSet filtered="false" encoding="UTF-8">
+      <directory></directory>
+      <includes>
+        <include>my_keystore</include>
+      </includes>
+    </fileSet>
   </fileSets>
 </archetype-descriptor>
