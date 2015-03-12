@@ -154,6 +154,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       futureSystemEvolutionFrom(base_dt, _tacts, currentSystemState, enable_collisions = false)
         .take(future_trajectory_capacity)
     }
+    _calculate_orbits = true
     //updateFutureTrajectoryMap()
   }
 
@@ -616,7 +617,8 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
   /*keyIgnorePause(KEY_Z, onKeyDown = disable_trajectory_drawing = !disable_trajectory_drawing)
   keyIgnorePause(KEY_X, onKeyDown = disable_future_trajectory_drawing = !disable_future_trajectory_drawing)*/
-  keyIgnorePause(KEY_V, onKeyDown = disable_interface_drawing = !disable_interface_drawing)
+  keyIgnorePause(KEY_I, onKeyDown = disable_interface_drawing = !disable_interface_drawing)
+  keyIgnorePause(KEY_R, onKeyDown = _rendering_enabled = !_rendering_enabled)
   //keyIgnorePause(KEY_N, onKeyDown = continue_future_trajectory = !continue_future_trajectory)
   /*keyIgnorePause(KEY_C, onKeyDown = {
     continue_future_trajectory = false
@@ -989,6 +991,11 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   private var ship_orbit_render:() => Unit = () => {}
   private var station_orbit_render:() => Unit = () => {}
 
+  private var _calculate_orbits = false
+
+  private var _rendering_enabled = true
+  def renderingEnabled = _rendering_enabled
+
   private def calculateOrbits(): Unit = {
     ship_orbit_render = if(ship.engines.exists(_.active)) {
       // получаем состояние системы, когда двигатели отработали
@@ -1008,110 +1015,115 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       drawSlidingLines(one_week_evolution_after_engines_off.flatMap(x => x.find(_.index == ship.index)).map(_.coord * scale), ORANGE)*/
     }
     station_orbit_render = shipOrbitRender(station.index, currentSystemState, ORANGE, YELLOW)
+    _calculate_orbits = false
   }
   calculateOrbits()
 
-  action(1000) {
-    calculateOrbits()
+  actionIgnorePause(1000) {
+    if(_rendering_enabled && drawMapMode && (!onPause || _calculate_orbits)) {
+      calculateOrbits()
+    }
   }
 
   render {
-    if(drawMapMode) {
-      drawCircle(earth.coord*scale, earth.radius * scale, WHITE)
-      drawCircle(earth.coord*scale, earth.gravitational_radius * scale, color = DARK_GRAY)
+    if(_rendering_enabled) {
+      if(drawMapMode) {
+        drawCircle(earth.coord*scale, earth.radius * scale, WHITE)
+        drawCircle(earth.coord*scale, earth.gravitational_radius * scale, color = DARK_GRAY)
 
-      drawCircle(moon.coord*scale, moon.radius * scale, WHITE)
-      drawCircle(moon.coord*scale, moon.gravitational_radius * scale, color = DARK_GRAY)
-      val moon_orbit = calculateOrbit(earth.mass, earth.coord, moon.mass, moon.coord, moon.linearVelocity, G)
-      openglLocalTransform {
-        openglMove(moon_orbit.center*scale)
-        openglRotateDeg(Vec(-1,0).signedDeg(moon_orbit.f2-moon_orbit.f1))
-        drawEllipse(DVec.zero, moon_orbit.a * scale, moon_orbit.b * scale, GREEN)
-      }
+        drawCircle(moon.coord*scale, moon.radius * scale, WHITE)
+        drawCircle(moon.coord*scale, moon.gravitational_radius * scale, color = DARK_GRAY)
+        val moon_orbit = calculateOrbit(earth.mass, earth.coord, moon.mass, moon.coord, moon.linearVelocity, G)
+        openglLocalTransform {
+          openglMove(moon_orbit.center*scale)
+          openglRotateDeg(Vec(-1,0).signedDeg(moon_orbit.f2-moon_orbit.f1))
+          drawEllipse(DVec.zero, moon_orbit.a * scale, moon_orbit.b * scale, GREEN)
+        }
 
-      drawFilledCircle(ship.coord*scale, earth.radius * scale / 2f / globalScale, WHITE)
-      ship_orbit_render()
-      // если у корабля активны двигатели
-      /*if(ship.engines.exists(_.active)) {
-        // получаем состояние системы, когда двигатели отработали
-        val system_state_when_engines_off = getFutureState(ships.flatMap(_.engines.map(e => e.worktimeTacts)).max)
-        shipOrbitRender(ship.index, system_state_when_engines_off, PURPLE, RED)
-        
+        drawFilledCircle(ship.coord*scale, earth.radius * scale / 2f / globalScale, WHITE)
+        ship_orbit_render()
+        // если у корабля активны двигатели
+        /*if(ship.engines.exists(_.active)) {
+          // получаем состояние системы, когда двигатели отработали
+          val system_state_when_engines_off = getFutureState(ships.flatMap(_.engines.map(e => e.worktimeTacts)).max)
+          shipOrbitRender(ship.index, system_state_when_engines_off, PURPLE, RED)
+
+        } else {
+          // двигатели корабля не работают - можно работать с текущим состоянием
+          shipOrbitRender(ship.index, currentSystemState, ORANGE, YELLOW)
+          /*val one_week_evolution_after_engines_off = futureSystemEvolutionWithoutReactiveForcesFrom(
+            3600 * base_dt, _tacts, currentSystemState, enable_collisions = false)
+            .take(7* 24 * 63)
+            .zipWithIndex
+            .filter(_._2 % 5 == 0)
+            .map(_._1)
+            .map(_._2)
+            .toList
+          drawSlidingLines(one_week_evolution_after_engines_off.flatMap(x => x.find(_.index == ship.index)).map(_.coord * scale), ORANGE)*/
+        }*/
+        /*val radius = ship.linearVelocity.norma2/(ship.linearAcceleration* ship.linearVelocity.p)
+        val point = if(radius >= 0) ship.coord + ship.linearVelocity.p*radius else ship.coord - ship.linearVelocity.p*radius
+        drawCircle(point*scale, math.abs(radius)*scale, DARK_GRAY)*/
+
+        drawFilledCircle(station.coord*scale, earth.radius * scale / 2f / globalScale, WHITE)
+        //shipOrbitRender(station.index, currentSystemState, ORANGE, YELLOW)
+        station_orbit_render()
+
+        for {
+          x <- left_up_corner
+          y <- right_down_corner
+        } {
+          val c = (y-x).n*(y.dist(x)/2f)+x
+          val w = math.abs(y.x - x.x)
+          val h = math.abs(y.y - x.y)
+
+          drawRectCentered(c,w,h,DARK_GRAY)
+          drawLine(c + DVec(-w/2, -h/2), c + DVec(-w/2, -h/2) + DVec(0, -10/globalScale))
+          drawLine(c + DVec(w/2, h/2),   c + DVec(w/2, h/2)   + DVec(0, -10/globalScale))
+
+          drawArrow(c + DVec(0, -h/2) + DVec(0, -5/globalScale), c + DVec(-w/2, -h/2) + DVec(0, -5/globalScale),DARK_GRAY)
+          drawArrow(c + DVec(0, -h/2) + DVec(0, -5/globalScale), c + DVec(w/2, -h/2)  + DVec(0, -5/globalScale),DARK_GRAY)
+
+          openglLocalTransform {
+            val k = messageBounds(s"${mOrKm((w / scale).toInt)}", (max_font_size / globalScale).toFloat)
+            openglMove((c + DVec(0, -h / 2) + DVec(0, -15 / globalScale) + DVec(-k.x / 2, -k.y / 2)).toVec)
+            print(
+              s"${mOrKm((w / scale).toInt)}",
+              Vec.zero,
+              color = DARK_GRAY,
+              size = (max_font_size / globalScale).toFloat
+            )
+          }
+
+          drawLine(c + DVec(w/2, h/2),  c + DVec(w/2, h/2)  + DVec(10/globalScale, 0))
+          drawLine(c + DVec(w/2, -h/2), c + DVec(w/2, -h/2) + DVec(10/globalScale, 0))
+
+          drawArrow(c + DVec(w/2, 0) + DVec(5/globalScale, 0), c + DVec(w/2, h/2) + DVec(5/globalScale, 0),DARK_GRAY)
+          drawArrow(c + DVec(w/2, 0) + DVec(5/globalScale, 0), c + DVec(w/2, -h/2) + DVec(5/globalScale, 0),DARK_GRAY)
+
+          openglLocalTransform {
+            val l = messageBounds(s"${mOrKm((h / scale).toInt)}", (max_font_size / globalScale).toFloat)
+            openglMove((c + DVec(w / 2, 0) + DVec(10 / globalScale, 0) + DVec(0, -l.y / 2)).toVec)
+            print(
+              s"${mOrKm((h / scale).toInt)}",
+              Vec.zero,
+              color = DARK_GRAY,
+              size = (max_font_size / globalScale).toFloat
+            )
+          }
+        }
       } else {
-        // двигатели корабля не работают - можно работать с текущим состоянием
-        shipOrbitRender(ship.index, currentSystemState, ORANGE, YELLOW)
-        /*val one_week_evolution_after_engines_off = futureSystemEvolutionWithoutReactiveForcesFrom(
-          3600 * base_dt, _tacts, currentSystemState, enable_collisions = false)
-          .take(7* 24 * 63)
-          .zipWithIndex
-          .filter(_._2 % 5 == 0)
-          .map(_._1)
-          .map(_._2)
-          .toList
-        drawSlidingLines(one_week_evolution_after_engines_off.flatMap(x => x.find(_.index == ship.index)).map(_.coord * scale), ORANGE)*/
-      }*/
-      /*val radius = ship.linearVelocity.norma2/(ship.linearAcceleration* ship.linearVelocity.p)
-      val point = if(radius >= 0) ship.coord + ship.linearVelocity.p*radius else ship.coord - ship.linearVelocity.p*radius
-      drawCircle(point*scale, math.abs(radius)*scale, DARK_GRAY)*/
-
-      drawFilledCircle(station.coord*scale, earth.radius * scale / 2f / globalScale, WHITE)
-      //shipOrbitRender(station.index, currentSystemState, ORANGE, YELLOW)
-      station_orbit_render()
-
-      for {
-        x <- left_up_corner
-        y <- right_down_corner
-      } {
-        val c = (y-x).n*(y.dist(x)/2f)+x
-        val w = math.abs(y.x - x.x)
-        val h = math.abs(y.y - x.y)
-
-        drawRectCentered(c,w,h,DARK_GRAY)
-        drawLine(c + DVec(-w/2, -h/2), c + DVec(-w/2, -h/2) + DVec(0, -10/globalScale))
-        drawLine(c + DVec(w/2, h/2),   c + DVec(w/2, h/2)   + DVec(0, -10/globalScale))
-
-        drawArrow(c + DVec(0, -h/2) + DVec(0, -5/globalScale), c + DVec(-w/2, -h/2) + DVec(0, -5/globalScale),DARK_GRAY)
-        drawArrow(c + DVec(0, -h/2) + DVec(0, -5/globalScale), c + DVec(w/2, -h/2)  + DVec(0, -5/globalScale),DARK_GRAY)
-
+        val m = absCoord(mouseCoord)
+        val d = ship.coord.dist(m)
         openglLocalTransform {
-          val k = messageBounds(s"${mOrKm((w / scale).toInt)}", (max_font_size / globalScale).toFloat)
-          openglMove((c + DVec(0, -h / 2) + DVec(0, -15 / globalScale) + DVec(-k.x / 2, -k.y / 2)).toVec)
-          print(
-            s"${mOrKm((w / scale).toInt)}",
-            Vec.zero,
-            color = DARK_GRAY,
-            size = (max_font_size / globalScale).toFloat
-          )
+          openglMove(ship.coord - base)
+          drawArrow(DVec.zero, m-ship.coord, DARK_GRAY)
+          openglMove(m-ship.coord)
+          openglRotateDeg(-rotationAngleDeg)
+          print(s"  ${mOrKm(d.toLong)}", Vec.zero, size = (max_font_size / globalScale).toFloat, DARK_GRAY)
         }
 
-        drawLine(c + DVec(w/2, h/2),  c + DVec(w/2, h/2)  + DVec(10/globalScale, 0))
-        drawLine(c + DVec(w/2, -h/2), c + DVec(w/2, -h/2) + DVec(10/globalScale, 0))
-
-        drawArrow(c + DVec(w/2, 0) + DVec(5/globalScale, 0), c + DVec(w/2, h/2) + DVec(5/globalScale, 0),DARK_GRAY)
-        drawArrow(c + DVec(w/2, 0) + DVec(5/globalScale, 0), c + DVec(w/2, -h/2) + DVec(5/globalScale, 0),DARK_GRAY)
-
-        openglLocalTransform {
-          val l = messageBounds(s"${mOrKm((h / scale).toInt)}", (max_font_size / globalScale).toFloat)
-          openglMove((c + DVec(w / 2, 0) + DVec(10 / globalScale, 0) + DVec(0, -l.y / 2)).toVec)
-          print(
-            s"${mOrKm((h / scale).toInt)}",
-            Vec.zero,
-            color = DARK_GRAY,
-            size = (max_font_size / globalScale).toFloat
-          )
-        }
       }
-    } else {
-      val m = absCoord(mouseCoord)
-      val d = ship.coord.dist(m)
-      openglLocalTransform {
-        openglMove(ship.coord - base)
-        drawArrow(DVec.zero, m-ship.coord, DARK_GRAY)
-        openglMove(m-ship.coord)
-        openglRotateDeg(-rotationAngleDeg)
-        print(s"  ${mOrKm(d.toLong)}", Vec.zero, size = (max_font_size / globalScale).toFloat, DARK_GRAY)
-      }
-
     }
   }
 
@@ -1124,22 +1136,26 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     print(f"Render/Action $averageRenderTimeMsec%.2f msec/$averageActionTimeMsec%.2f msec", windowWidth - 20, windowHeight - 80, align = "top-right", color = DARK_GRAY)
     print(s"Render/Action $currentRenderTimeMsec msec/$currentActionTimeMsec msec", windowWidth - 20, windowHeight - 100, align = "top-right", color = DARK_GRAY)
 
-    val a = DVec(windowWidth - 250, 20)
-    val b = DVec(windowWidth - 250 + 100, 20)
-    drawLine(a,b, DARK_GRAY)
-    drawLine(a, a+(a-b).rotateDeg(90).n*5, DARK_GRAY)
-    drawLine(b, b+(a-b).rotateDeg(90).n*5, DARK_GRAY)
-    print(s"${mOrKm((100/globalScale/(if(drawMapMode) scale else 1.0)).toInt)}", b.toVec, DARK_GRAY)
+    if(_rendering_enabled) {
+      val a = DVec(windowWidth - 250, 20)
+      val b = DVec(windowWidth - 250 + 100, 20)
+      drawLine(a,b, DARK_GRAY)
+      drawLine(a, a+(a-b).rotateDeg(90).n*5, DARK_GRAY)
+      drawLine(b, b+(a-b).rotateDeg(90).n*5, DARK_GRAY)
+      print(s"${mOrKm((100/globalScale/(if(drawMapMode) scale else 1.0)).toInt)}", b.toVec, DARK_GRAY)
+    }
 
     if(!disable_interface_drawing) {
-      openglLocalTransform {
-        val z = windowHeight/2f-40f
-        openglMove(windowCenter)
-        openglRotateDeg(rotationAngleDeg)
-        drawArrow(DVec(0, -z), DVec(0, z), DARK_GRAY, 1)
-        print("y", Vec(0, z), DARK_GRAY)
-        drawArrow(DVec(-z, 0), DVec(z, 0), DARK_GRAY, 1)
-        print("x", Vec(z, 0), DARK_GRAY)
+      if(_rendering_enabled) {
+        openglLocalTransform {
+          val z = windowHeight/2f-40f
+          openglMove(windowCenter)
+          openglRotateDeg(rotationAngleDeg)
+          drawArrow(DVec(0, -z), DVec(0, z), DARK_GRAY, 1)
+          print("y", Vec(0, z), DARK_GRAY)
+          drawArrow(DVec(-z, 0), DVec(z, 0), DARK_GRAY, 1)
+          print("x", Vec(z, 0), DARK_GRAY)
+        }
       }
 
       val heights = if(_stop_after_number_of_tacts > 0)  {
@@ -1157,74 +1173,76 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
           20, heights.next(), ORANGE)
       }
 
-      print("", 20, heights.next(), ORANGE)
+      if(_rendering_enabled) {
+        print("", 20, heights.next(), ORANGE)
 
-      print(s"Режим камеры: $viewModeStr",
-        20, heights.next(), ORANGE)
-      print(s"Полетный режим: ${ship.flightModeStr}",
-        20, heights.next(), ORANGE)
+        print(s"Режим камеры: $viewModeStr",
+          20, heights.next(), ORANGE)
+        print(s"Полетный режим: ${ship.flightModeStr}",
+          20, heights.next(), ORANGE)
 
-      print("", 20, heights.next(), ORANGE)
+        print("", 20, heights.next(), ORANGE)
 
-      print(f"Расстояние и скорость относительно Земли: ${mOrKm(ship.coord.dist(earth.coord) - earth.radius)}, ${msecOrKmsec((ship.linearVelocity - earth.linearVelocity)*(ship.coord - earth.coord).n)}",
-        20, heights.next(), ORANGE)
-      print(f"Расстояние и скорость относительно Луны: ${mOrKm(ship.coord.dist(moon.coord) - moon.radius)}, ${msecOrKmsec((ship.linearVelocity - moon.linearVelocity)* (ship.coord - moon.coord).n)}",
-        20, heights.next(), ORANGE)
-      /*print(s"Расчет траектории: ${if(continue_future_trajectory) "[rактивирован]" else "отключен"}",
-        20, heights.next(), ORANGE)*/
+        print(f"Расстояние и скорость относительно Земли: ${mOrKm(ship.coord.dist(earth.coord) - earth.radius)}, ${msecOrKmsec((ship.linearVelocity - earth.linearVelocity)*(ship.coord - earth.coord).n)}",
+          20, heights.next(), ORANGE)
+        print(f"Расстояние и скорость относительно Луны: ${mOrKm(ship.coord.dist(moon.coord) - moon.radius)}, ${msecOrKmsec((ship.linearVelocity - moon.linearVelocity)* (ship.coord - moon.coord).n)}",
+          20, heights.next(), ORANGE)
+        /*print(s"Расчет траектории: ${if(continue_future_trajectory) "[rактивирован]" else "отключен"}",
+          20, heights.next(), ORANGE)*/
 
-      //print("", 20, heights.next(), ORANGE)
+        //print("", 20, heights.next(), ORANGE)
 
-      /*print(f"Позиция: ${ship.coord.x}%.2f : ${ship.coord.y}%.2f. Расстояние от точки старта: ${mOrKm(ship.coord.dist(ship_start_position))}",
-        20, heights.next(), ORANGE)*/
-      print(f"Линейная скорость: ${msecOrKmsec(ship.linearVelocity.norma)} (velx = ${msecOrKmsec(ship.linearVelocity.x)}, vely = ${msecOrKmsec(ship.linearVelocity.y)})",
-        20, heights.next(), ORANGE)
-      print(f"Линейная ускорение: ${msec2OrKmsec2(ship.linearAcceleration.norma)} (tan = ${msec2OrKmsec2(ship.linearAcceleration*ship.linearVelocity.n)}, cen = ${msec2OrKmsec2(math.abs(ship.linearAcceleration*ship.linearVelocity.p))})",
-        20, heights.next(), ORANGE)
-      print(f"Радиус кривизны траектории в данной точке: ${curvatureRadiusStrInPoint(ship.currentState)}",
-        20, heights.next(), ORANGE)
-      /*print(f"Угол: ${ship.rotation}%.2f град",
-        20, heights.next(), ORANGE)*/
-      print(f"Угловая скорость: ${ship.angularVelocity}%.2f град/сек",
-        20, heights.next(), ORANGE)
+        /*print(f"Позиция: ${ship.coord.x}%.2f : ${ship.coord.y}%.2f. Расстояние от точки старта: ${mOrKm(ship.coord.dist(ship_start_position))}",
+          20, heights.next(), ORANGE)*/
+        print(f"Линейная скорость: ${msecOrKmsec(ship.linearVelocity.norma)} (velx = ${msecOrKmsec(ship.linearVelocity.x)}, vely = ${msecOrKmsec(ship.linearVelocity.y)})",
+          20, heights.next(), ORANGE)
+        print(f"Линейная ускорение: ${msec2OrKmsec2(ship.linearAcceleration.norma)} (tan = ${msec2OrKmsec2(ship.linearAcceleration*ship.linearVelocity.n)}, cen = ${msec2OrKmsec2(math.abs(ship.linearAcceleration*ship.linearVelocity.p))})",
+          20, heights.next(), ORANGE)
+        print(f"Радиус кривизны траектории в данной точке: ${curvatureRadiusStrInPoint(ship.currentState)}",
+          20, heights.next(), ORANGE)
+        /*print(f"Угол: ${ship.rotation}%.2f град",
+          20, heights.next(), ORANGE)*/
+        print(f"Угловая скорость: ${ship.angularVelocity}%.2f град/сек",
+          20, heights.next(), ORANGE)
 
-      print("", 20, heights.next(), ORANGE)
+        print("", 20, heights.next(), ORANGE)
 
-      val earth_force = gravityForce(earth.coord, earth.mass, ship.coord, ship.mass, G).norma
-      val moon_force = gravityForce(moon.coord, moon.mass, ship.coord, ship.mass, G).norma
-      print(f"Влияние планет: Земля ${earth_force/(earth_force + moon_force)*100}%.2f% Луна ${moon_force/(earth_force + moon_force)*100}%.2f% З/Л ${earth_force/moon_force}%.2f Л/З ${moon_force/earth_force}%.2f",
-        20, heights.next(), ORANGE)
-      val earth_sat_speed = satelliteSpeed(ship.coord, earth.coord, earth.linearVelocity, earth.mass, G).norma
-      val earth_esc_speed = escapeVelocity(ship.coord, earth.coord, earth.linearVelocity, earth.mass, G).norma
-      val moon_sat_speed = satelliteSpeed(ship.coord, moon.coord, moon.linearVelocity, moon.mass, G).norma
-      val moon_esc_speed = escapeVelocity(ship.coord, moon.coord, moon.linearVelocity, moon.mass, G).norma
-      print(f"Скорость спутника/убегания: Земля ${msecOrKmsec(earth_sat_speed)}/${msecOrKmsec(earth_esc_speed)} Луна ${msecOrKmsec(moon_sat_speed)}/${msecOrKmsec(moon_esc_speed)}",
-        20, heights.next(), ORANGE)
-      print(s"Параметры орбиты: ${orbitStrInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity, currentPlanetStates)}",
-        20, heights.next(), ORANGE)
-      /*print(f"Скорость для спутника в данной точке: ${satelliteSpeedStrInPoint(ship.coord)}",
-        20, heights.next(), ORANGE)
-      print(f"Скорость убегания в данной точке: ${escapeVelocityStrInPoint(ship.coord)}",
-        20, heights.next(), ORANGE)*/
+        val earth_force = gravityForce(earth.coord, earth.mass, ship.coord, ship.mass, G).norma
+        val moon_force = gravityForce(moon.coord, moon.mass, ship.coord, ship.mass, G).norma
+        print(f"Влияние планет: Земля ${earth_force/(earth_force + moon_force)*100}%.2f% Луна ${moon_force/(earth_force + moon_force)*100}%.2f% З/Л ${earth_force/moon_force}%.2f Л/З ${moon_force/earth_force}%.2f",
+          20, heights.next(), ORANGE)
+        val earth_sat_speed = satelliteSpeed(ship.coord, earth.coord, earth.linearVelocity, earth.mass, G).norma
+        val earth_esc_speed = escapeVelocity(ship.coord, earth.coord, earth.linearVelocity, earth.mass, G).norma
+        val moon_sat_speed = satelliteSpeed(ship.coord, moon.coord, moon.linearVelocity, moon.mass, G).norma
+        val moon_esc_speed = escapeVelocity(ship.coord, moon.coord, moon.linearVelocity, moon.mass, G).norma
+        print(f"Скорость спутника/убегания: Земля ${msecOrKmsec(earth_sat_speed)}/${msecOrKmsec(earth_esc_speed)} Луна ${msecOrKmsec(moon_sat_speed)}/${msecOrKmsec(moon_esc_speed)}",
+          20, heights.next(), ORANGE)
+        print(s"Параметры орбиты: ${orbitStrInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity, currentPlanetStates)}",
+          20, heights.next(), ORANGE)
+        /*print(f"Скорость для спутника в данной точке: ${satelliteSpeedStrInPoint(ship.coord)}",
+          20, heights.next(), ORANGE)
+        print(f"Скорость убегания в данной точке: ${escapeVelocityStrInPoint(ship.coord)}",
+          20, heights.next(), ORANGE)*/
 
-      print("", 20, heights.next(), ORANGE)
+        print("", 20, heights.next(), ORANGE)
 
-      print(s"Двигательная установка: ${if(ship.engines.exists(_.active)) "[rактивирована]" else "отключена"}",
-        20, heights.next(), ORANGE)
-      print(s"Мощность и время работы отдельных двигателей:",
-        20, heights.next(), ORANGE)
-      print(s"${ship.engines.map(e => {
-        if(e.active) s"[r${e.powerPercent} % (${e.worktimeTacts} т.)]"
-        else s"${e.powerPercent} % (${e.worktimeTacts} т.)"
-      }).mkString(", ")}",
-        20, heights.next()
-        , ORANGE)
-      print(f"Линейная скорость в момент отключения двигателей: $linearSpeedStrWhenEnginesOff",
-        20, heights.next(), ORANGE)
-      print(f"Угловая скорость в момент отключения двигателей: $angularSpeedStrWhenEnginesOff",
-        20, heights.next(), ORANGE)
-      print(s"Параметры орбиты в момент отключения двигателей: $orbitParametersStrWhenEnginesOff",
-        20, heights.next(), ORANGE)
+        print(s"Двигательная установка: ${if(ship.engines.exists(_.active)) "[rактивирована]" else "отключена"}",
+          20, heights.next(), ORANGE)
+        print(s"Мощность и время работы отдельных двигателей:",
+          20, heights.next(), ORANGE)
+        print(s"${ship.engines.map(e => {
+          if(e.active) s"[r${e.powerPercent} % (${e.worktimeTacts} т.)]"
+          else s"${e.powerPercent} % (${e.worktimeTacts} т.)"
+        }).mkString(", ")}",
+          20, heights.next()
+          , ORANGE)
+        print(f"Линейная скорость в момент отключения двигателей: $linearSpeedStrWhenEnginesOff",
+          20, heights.next(), ORANGE)
+        print(f"Угловая скорость в момент отключения двигателей: $angularSpeedStrWhenEnginesOff",
+          20, heights.next(), ORANGE)
+        print(s"Параметры орбиты в момент отключения двигателей: $orbitParametersStrWhenEnginesOff",
+          20, heights.next(), ORANGE)
+      }
     }
   }
 
@@ -1272,23 +1290,25 @@ class Planet(
   def currentState:BodyState = currentBodyState(index).getOrElse(initState)
 
   render {
-    if(!drawMapMode) {
-      val viewpoint_dist = math.abs((ship.coord + shipOffset).dist(coord) - radius)
-      if (viewpoint_dist < 50000) {
-        openglLocalTransform {
-          openglMove(coord - base)
-          val to_viewpoint = ship.coord + shipOffset - coord
-          val alpha = 100000 * 180 / math.Pi / radius
-          val points = for {
-            ang <- -alpha to alpha by 0.01
-            point = to_viewpoint.rotateDeg(ang).n * radius
-          } yield point
-          drawSlidingLines(points, WHITE)
+    if(renderingEnabled) {
+      if(!drawMapMode) {
+        val viewpoint_dist = math.abs((ship.coord + shipOffset).dist(coord) - radius)
+        if (viewpoint_dist < 50000) {
+          openglLocalTransform {
+            openglMove(coord - base)
+            val to_viewpoint = ship.coord + shipOffset - coord
+            val alpha = 100000 * 180 / math.Pi / radius
+            val points = for {
+              ang <- -alpha to alpha by 0.01
+              point = to_viewpoint.rotateDeg(ang).n * radius
+            } yield point
+            drawSlidingLines(points, WHITE)
 
-          /*val x = (ship.coord-coord).n*radius
-        val p1 = x + (ship.coord-coord).rotateDeg(90).n*60000
-        val p2 = x + (ship.coord-coord).rotateDeg(-90).n*60000
-        drawLine(p1,p2,GREEN)*/
+            /*val x = (ship.coord-coord).n*radius
+          val p1 = x + (ship.coord-coord).rotateDeg(90).n*60000
+          val p2 = x + (ship.coord-coord).rotateDeg(-90).n*60000
+          drawLine(p1,p2,GREEN)*/
+          }
         }
       }
     }
@@ -1316,23 +1336,25 @@ class Star(val index:String, val mass:Double, val coord:DVec, val radius:Double)
   def currentState:BodyState = currentBodyState(index).getOrElse(initState)
 
   render {
-    if(!drawMapMode) {
-      val viewpoint_dist = math.abs((ship.coord + shipOffset).dist(coord) - radius)
-      if (viewpoint_dist < 50000) {
-        openglLocalTransform {
-          openglMove(coord - base)
-          val to_viewpoint = ship.coord + shipOffset - coord
-          val alpha = 100000 * 180 / math.Pi / radius
-          val points = for {
-            ang <- -alpha to alpha by 0.01
-            point = to_viewpoint.rotateDeg(ang).n * radius
-          } yield point
-          drawSlidingLines(points, WHITE)
+    if(renderingEnabled) {
+      if(!drawMapMode) {
+        val viewpoint_dist = math.abs((ship.coord + shipOffset).dist(coord) - radius)
+        if (viewpoint_dist < 50000) {
+          openglLocalTransform {
+            openglMove(coord - base)
+            val to_viewpoint = ship.coord + shipOffset - coord
+            val alpha = 100000 * 180 / math.Pi / radius
+            val points = for {
+              ang <- -alpha to alpha by 0.01
+              point = to_viewpoint.rotateDeg(ang).n * radius
+            } yield point
+            drawSlidingLines(points, WHITE)
 
-          /*val x = (ship.coord-coord).n*radius
-        val p1 = x + (ship.coord-coord).rotateDeg(90).n*60000
-        val p2 = x + (ship.coord-coord).rotateDeg(-90).n*60000
-        drawLine(p1,p2,GREEN)*/
+            /*val x = (ship.coord-coord).n*radius
+          val p1 = x + (ship.coord-coord).rotateDeg(90).n*60000
+          val p2 = x + (ship.coord-coord).rotateDeg(-90).n*60000
+          drawLine(p1,p2,GREEN)*/
+          }
         }
       }
     }
