@@ -417,8 +417,6 @@ package object orbitalkiller {
       }
     }
   }
-
-  import collection.mutable.HashMap
   val pfacts = mutable.HashMap[Long, List[Long]]()
 
   // возвращает список простых чисел, произведение которых равно данному числу n

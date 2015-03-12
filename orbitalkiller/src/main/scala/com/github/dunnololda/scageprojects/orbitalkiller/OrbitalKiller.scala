@@ -12,14 +12,14 @@ sealed trait ViewMode
 sealed trait FlightMode
 
 object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
-  val k:Double = 1 // доля секунды симуляции, которая обрабатывается за один тик, если не применяется ускорение
+  val k:Double = 1 // доля секунды симуляции, которая обрабатывается за одну реальную секунду, если не применяется ускорение
 
   // движок делает вызов обработчика примерно 60 раз в секунду, за каждый вызов будет обрабатывать вот такую порцию симуляции
   // то есть, мы хотим, чтобы за одну реальную секунду обрабатывалось k секунд симуляции, поэтому за один такт движка (которых 60 в секунду)
   // будем обрабатывать k/60
   val base_dt:Double = 1.0/63*k
 
-  val realtime = (1.0/k).toInt // 1/k*baseDt соответствует реальному течению времени
+  val realtime = (1.0/k).toInt // 1/k соответствует реальному течению времени
 
   private var _time_multiplier = realtime
   def timeMultiplier = {
@@ -53,12 +53,24 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   def tacts:Long = _tacts
 
   def timeStr(time_msec:Long):String = {
-    val msec  = 1l
-    val sec  = msec*1000
-    val min  = sec*60
-    val hour  = min*60
-    val day  = hour*24
-    s"${time_msec/day} дн ${time_msec%day/hour} ч ${time_msec%hour/min} мин ${time_msec%min/sec} сек ${time_msec%sec/msec} мсек"
+    val is_below_zero = time_msec < 0
+    val abs_time_msec = math.abs(time_msec)
+    val result = if (abs_time_msec < 1000) s"$abs_time_msec мсек."
+    else {
+      val sec  = 1000l
+      val min  = sec*60
+      val hour = min*60
+      val day  = hour*24
+
+      List(
+        (abs_time_msec/day,      "д."),
+        (abs_time_msec%day/hour, "ч."),
+        (abs_time_msec%hour/min, "мин."),
+        (abs_time_msec%min/sec,  "сек."),
+        (abs_time_msec%sec,      "мсек.")
+      ).filter(_._1 > 0).map(e => e._1+" "+e._2).mkString(" ")
+    }
+    if(is_below_zero) s"-$result" else result
   }
 
   private val current_body_states = mutable.HashMap[String, BodyState]()
@@ -230,10 +242,24 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         earth.currentState),
       enable_collisions = true).iterator
 
+  private var _stop_after_number_of_tacts:Long = 6300
+
   //private var skipped_points = 0
   private def nextStep() {
     val (t, body_states) = real_system_evolution.next()
+    if(_stop_after_number_of_tacts > 0) {
+      _stop_after_number_of_tacts -= (t - _tacts)
+      if(_stop_after_number_of_tacts <= 0) {
+        if (timeMultiplier != realtime) {
+          timeMultiplier = realtime
+        }
+        pause()
+      } else if(_stop_after_number_of_tacts < timeMultiplier) {
+        timeMultiplier = math.max((_stop_after_number_of_tacts/2).toInt, 1)
+      }
+    }
     _tacts = t
+
     /*if(skipped_points == trajectory_accuracy-1) {
       body_states.foreach(bs => {
         current_body_states(bs.index) = bs
@@ -963,7 +989,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   private var ship_orbit_render:() => Unit = () => {}
   private var station_orbit_render:() => Unit = () => {}
 
-  actionIgnorePause(1000) {
+  private def calculateOrbits(): Unit = {
     ship_orbit_render = if(ship.engines.exists(_.active)) {
       // получаем состояние системы, когда двигатели отработали
       val system_state_when_engines_off = getFutureState(ships.flatMap(_.engines.map(e => e.worktimeTacts)).max)
@@ -982,6 +1008,11 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       drawSlidingLines(one_week_evolution_after_engines_off.flatMap(x => x.find(_.index == ship.index)).map(_.coord * scale), ORANGE)*/
     }
     station_orbit_render = shipOrbitRender(station.index, currentSystemState, ORANGE, YELLOW)
+  }
+  calculateOrbits()
+
+  action(1000) {
+    calculateOrbits()
   }
 
   render {
@@ -1111,12 +1142,20 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         print("x", Vec(z, 0), DARK_GRAY)
       }
 
-      val heights = (460 to 20 by -20).iterator
+      val heights = if(_stop_after_number_of_tacts > 0)  {
+        (480 to 20 by -20).iterator
+      } else {
+        (460 to 20 by -20).iterator
+      }
 
       print(s"Время: ${timeStr((_tacts*base_dt*1000).toLong)}",
         20, heights.next(), ORANGE)
       print(f"Ускорение времени: x${timeMultiplier*k}%.2f/$maxTimeMultiplier (${if(timeMultiplier < maxTimeMultiplier) 1 else timeMultiplier/factors5(timeMultiplier).filter(_ <= maxTimeMultiplier).max})",
         20, heights.next(), ORANGE)
+      if(_stop_after_number_of_tacts > 0) {
+        print(s"Пауза через: ${timeStr((_stop_after_number_of_tacts*base_dt*1000).toLong)}",
+          20, heights.next(), ORANGE)
+      }
 
       print("", 20, heights.next(), ORANGE)
 
@@ -1127,9 +1166,9 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
       print("", 20, heights.next(), ORANGE)
 
-      print(f"Расстояние и скорость относительно Земли: ${mOrKm(ship.coord.dist(earth.coord) - earth.radius)}, ${msecOrKmsec(ship.linearVelocity*(ship.coord - earth.coord).n)}",
+      print(f"Расстояние и скорость относительно Земли: ${mOrKm(ship.coord.dist(earth.coord) - earth.radius)}, ${msecOrKmsec((ship.linearVelocity - earth.linearVelocity)*(ship.coord - earth.coord).n)}",
         20, heights.next(), ORANGE)
-      print(f"Расстояние и скорость относительно Луны: ${mOrKm(ship.coord.dist(moon.coord) - moon.radius)}, ${msecOrKmsec(ship.linearVelocity* (ship.coord - moon.coord).n)}",
+      print(f"Расстояние и скорость относительно Луны: ${mOrKm(ship.coord.dist(moon.coord) - moon.radius)}, ${msecOrKmsec((ship.linearVelocity - moon.linearVelocity)* (ship.coord - moon.coord).n)}",
         20, heights.next(), ORANGE)
       /*print(s"Расчет траектории: ${if(continue_future_trajectory) "[rактивирован]" else "отключен"}",
         20, heights.next(), ORANGE)*/

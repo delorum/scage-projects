@@ -83,22 +83,22 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
         s"  Vec(${pp.x}, ${pp.y})"
       }).mkString("val points:List[Vec] = List(\n", ",\n", "\n)"))
       println()
-      engines.zipWithIndex.foreach {case (e, idx) => {
-        val mapping = engines_mapping.get(idx).getOrElse(0)
+      engines.zipWithIndex.foreach {case (e, idx) =>
+        val mapping = engines_mapping.getOrElse(idx, 0)
         val (_, val_name, _) = engineMappingStr(mapping)
         val position = e.coord - mass_center
         println(s"val $val_name = Engine(position = Vec(${position.x}, ${position.y}), force_dir = Vec(${e.force_dir.x}, ${e.force_dir.y}), max_power = 10, this)")
-      }}
+      }
       println()
-      println(engines.zipWithIndex.map {case (e, idx) => {
-        val mapping = engines_mapping.get(idx).getOrElse(0)
+      println(engines.zipWithIndex.map {case (e, idx) =>
+        val mapping = engines_mapping.getOrElse(idx, 0)
         val (_, val_name, _) = engineMappingStr(mapping)
         val_name
-      }}.mkString(s"val engines = List(", ", ", ")"))
+      }.mkString(s"val engines = List(", ", ", ")"))
       println()
       println(engines.zipWithIndex.map {
         case (e, idx) =>
-          val mapping = engines_mapping.get(idx).getOrElse(0)
+          val mapping = engines_mapping.getOrElse(idx, 0)
           val (_, val_name, key_name) = engineMappingStr(mapping)
           s"  $key_name -> $val_name"
       }.mkString("val engines_mapping = Map(\n", ",\n", "\n)"))
@@ -109,38 +109,38 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
   leftMouse(onBtnDown = m => {
     mode match {
       case 0 =>
-        val ssm = scaledCoord(m)
+        val ssm = absCoord(m)
         if(points.forall(p => p.dist2(ssm) > 100)) {
           val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 20),
                        nearestDot(ssm.y, -windowHeight/2, 20))
           points.insert(selected_point, sm)
         }
       case 1 => // engines up
-        val ssm = scaledCoord(m)
+        val ssm = absCoord(m)
         val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 20) + 10,
                      nearestDot(ssm.y, -windowHeight/2, 20))
         engines += EngineData(sm, Vec(0, -1))
         selected_engine = engines.length-1
       case 2 => // engines down
-        val ssm = scaledCoord(m)
+        val ssm = absCoord(m)
         val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 20) + 10,
                      nearestDot(ssm.y, -windowHeight/2, 20))
         engines += EngineData(sm, Vec(0, 1))
         selected_engine = engines.length-1
       case 3 => // engines right
-        val ssm = scaledCoord(m)
+        val ssm = absCoord(m)
         val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 20),
                      nearestDot(ssm.y, -windowHeight/2, 20) + 10)
         engines += EngineData(sm, Vec(-1, 0))
         selected_engine = engines.length-1
       case 4 => // engines left
-        val ssm = scaledCoord(m)
+        val ssm = absCoord(m)
         val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 20),
                      nearestDot(ssm.y, -windowHeight/2, 20) + 10)
         engines += EngineData(sm, Vec(1, 0))
         selected_engine = engines.length-1
       case 5 => // mass center set
-        val ssm = scaledCoord(m)
+        val ssm = absCoord(m)
         val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 20)+10,
                      nearestDot(ssm.y, -windowHeight/2, 20)+10)
         mass_center = sm
@@ -149,7 +149,7 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
   }, onBtnUp = m => {
     mode match {
       case 0 =>
-        val ssm = scaledCoord(m)
+        val ssm = absCoord(m)
         val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 20),
                      nearestDot(ssm.y, -windowHeight/2, 20))
         points(selected_point) = sm
@@ -198,7 +198,7 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
   leftMouseDrag(onDrag = m => {
     mode match {
       case 0 =>
-        val ssm = scaledCoord(m)
+        val ssm = absCoord(m)
         points.zipWithIndex.find(p => p._1.dist2(ssm) < 300).foreach(p => {
           selected_point = p._2
           points(selected_point) = ssm
@@ -231,7 +231,7 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
             case Vec(1, 0) => drawRectCentered(coord + Vec(-2.5f, 0), 5, 10, if(idx == selected_engine) RED else WHITE)
             case _ =>
           }
-          print(engineMappingStr(engines_mapping.get(idx).getOrElse(0))._1, coord, if(idx == selected_engine) RED else WHITE)
+          print(engineMappingStr(engines_mapping.getOrElse(idx, 0))._1, coord, if(idx == selected_engine) RED else WHITE)
       }
     }
   }
