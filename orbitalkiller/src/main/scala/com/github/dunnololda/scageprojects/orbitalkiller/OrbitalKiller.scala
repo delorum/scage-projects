@@ -609,8 +609,8 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   keyIgnorePause(KEY_P, onKeyDown = switchPause())
 
   keyIgnorePause(KEY_F1, onKeyDown = {pause(); holdCounters {HelpScreen.run()}})
-  keyIgnorePause(KEY_F2, onKeyDown = viewMode = 1)      // фиксация на корабле
-  keyIgnorePause(KEY_F3, onKeyDown = viewMode = 3)      // фиксация на корабле, абсолютная ориентация
+  keyIgnorePause(KEY_F2, onKeyDown = if(!drawMapMode) viewMode = 1)        // фиксация на корабле
+  keyIgnorePause(KEY_F3, onKeyDown = if(!drawMapMode) viewMode = 3)        // фиксация на корабле, абсолютная ориентация
   //keyIgnorePause(KEY_F4, onKeyDown = viewMode = 2)                       // посадка на планету
   //keyIgnorePause(KEY_F5, onKeyDown = viewMode = 3)                       // фиксация на солнце
   //keyIgnorePause(KEY_F6, onKeyDown = viewMode = 4)                       // фиксация на планете
@@ -659,18 +659,27 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   private var left_up_corner:Option[DVec] = None
   private var right_down_corner:Option[DVec] = None
   leftMouseIgnorePause(onBtnDown = m => {if(drawMapMode) left_up_corner = Some(absCoord(m))}, onBtnUp = m => {
-    for {
-      x <- left_up_corner
-      y <- right_down_corner
-    } {
-      val c = (y-x).n*(y.dist(x)/2f)+x
-      val h = math.abs(y.y - x.y)
-      globalScale = 750 / h
-      _center = c
-    }
-    left_up_corner = None
-    right_down_corner = None})
-  leftMouseDragIgnorePause(onDrag = m => if(drawMapMode) right_down_corner = Some(absCoord(m)))
+    if(drawMapMode) {
+      if(right_down_corner.nonEmpty) {
+        for {
+          x <- left_up_corner
+          y <- right_down_corner
+          c = (y - x).n * (y.dist(x) / 2f) + x
+          h = math.abs(y.y - x.y)
+          if h*globalScale > 10
+        } {
+          globalScale = 750 / h
+          _center = c
+        }
+        left_up_corner = None
+        right_down_corner = None
+      } else {
+
+      }
+    }})
+  leftMouseDragIgnorePause(onDrag = m => if(drawMapMode) {
+    right_down_corner = Some(absCoord(m))
+  })
 
   actionIgnorePause {
     //if(future_trajectory.isEmpty) updateFutureTrajectory("future_trajectory.isEmpty")
@@ -1166,7 +1175,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
       print(s"Время: ${timeStr((_tacts*base_dt*1000).toLong)}",
         20, heights.next(), ORANGE)
-      print(f"Ускорение времени: x${timeMultiplier*k}%.2f/$maxTimeMultiplier (${if(timeMultiplier < maxTimeMultiplier) 1 else timeMultiplier/factors5(timeMultiplier).filter(_ <= maxTimeMultiplier).max})",
+      print(f"Ускорение времени: x${timeMultiplier*k}%.2f/$maxTimeMultiplier (${if(timeMultiplier < maxTimeMultiplier) 1 else timeMultiplier/factors5(timeMultiplier).filter(_ <= maxTimeMultiplier).max}) (${1f*timeMultiplier/63*ticks}%.2f)",
         20, heights.next(), ORANGE)
       if(_stop_after_number_of_tacts > 0) {
         print(s"Пауза через: ${timeStr((_stop_after_number_of_tacts*base_dt*1000).toLong)}",

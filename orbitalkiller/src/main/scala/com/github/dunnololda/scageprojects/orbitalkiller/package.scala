@@ -606,12 +606,12 @@ package object orbitalkiller {
   case class Orbit(
     a:Double,             // большая полуось
     b:Double,             // малая полуось
-    e:Double,             // эксцентриситет
+    e:Double,             // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
     c:Double,             // фокальное расстояния (полурасстояние между фокусами)
-    p:Double,             // фокальный параметр
+    p:Double,             // фокальный параметр (половина длины хорды, проходящей через фокус и перпендикулярной к фокальной оси)
     r_p:Double,           // перигей
     r_a:Double,           // апогей
-    t:Double,             // орбитальный период
+    t:Double,             // орбитальный период, в секундах
     f1:DVec,              // координаты первого фокуса (координаты небесного тела, вокруг которого вращаемся)
     f2:DVec,              // координаты второго фокуса
     center:DVec)          // координаты центра
@@ -622,11 +622,11 @@ package object orbitalkiller {
    * @param planet_coord - абсолютные координаты планеты
    * @param body_mass - масса тела, вращающегося вокруг планеты
    * @param body_coord - относительная координата тела (абсолютная координата тела минус абсолютная координата планеты)
-   * @param body_velocity - относительная линейная скорость тела (абсолютная скорость тела минус абсолютная скорость планеты)
+   * @param body_relative_velocity - относительная линейная скорость тела (абсолютная скорость тела минус абсолютная скорость планеты)
    * @param G - гравитационная постоянная
    * @return объект Orbit, содержащий вычисленный набор параметров
    */
-  def calculateOrbit(planet_mass:Double, planet_coord:DVec, body_mass:Double, body_coord:DVec, body_velocity:DVec, G:Double):Orbit = {
+  def calculateOrbit(planet_mass:Double, planet_coord:DVec, body_mass:Double, body_coord:DVec, body_relative_velocity:DVec, G:Double):Orbit = {
     //https://ru.wikipedia.org/wiki/Гравитационный_параметр
     val mu = (planet_mass + body_mass)*G // гравитационный параметр
     //val mu = planet_mass*G // гравитационный параметр
@@ -635,32 +635,33 @@ package object orbitalkiller {
     //val a = body_coord.norma*k/(2*k*k - body_coord.norma*body_velocity.norma2)
 
     //https://en.wikipedia.org/wiki/Specific_orbital_energy
-    val epsilon = body_velocity.norma2/2 - mu/body_coord.norma   // орбитальная энергия - сумма потенциальной и кинетической энергии тел, деленные на приведенную массу
+    val epsilon = body_relative_velocity.norma2/2 - mu/body_coord.norma   // орбитальная энергия - сумма потенциальной и кинетической энергии тел, деленные на приведенную массу
 
     //http://ru.wikipedia.org/wiki/Большая_полуось
     val a = math.abs(mu/(2*epsilon))                             // большая полуось
 
     //http://en.wikipedia.org/wiki/Kepler_orbit
     val r_n = body_coord.n
-    val v_t = math.abs(body_velocity*r_n.perpendicular)
+    val v_t = math.abs(body_relative_velocity*r_n.perpendicular)
     val p = math.pow(body_coord.norma*v_t, 2)/mu                 // фокальный параметр (половина длины хорды, проходящей через фокус и перпендикулярной к фокальной оси)
 
     //http://ru.wikipedia.org/wiki/Эллипс
     val b = math.sqrt(math.abs(a*p))                             // малая полуось
-    val e = math.sqrt(math.abs(1 - (b*b)/(a*a)))                 // эксцентриситет
+    val e = math.sqrt(math.abs(1 - (b*b)/(a*a)))                 // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
     val c = a*e                                                  // фокальное расстояние (полурасстояние между фокусами)
     val r_p = a*(1 - e)                                          // перигей
     val r_a = a*(1 + e)                                          // апогей
 
-    val t = 2 * math.Pi * math.sqrt(math.abs(a * a * a / mu))    // орбитальный период (период обращения по орбите)
+    val t = 2 * math.Pi * math.sqrt(math.abs(a * a * a / mu))    // орбитальный период (период обращения по орбите, в секундах)
 
     val d1 = body_coord.norma                                    // расстояние от тела до первого фокуса (планеты)
     val d2 = 2*a - d1                                            // расстояние до второго фокуса (свойства эллипса: d1+d2 = 2*a)
-    val alpha = body_velocity.absDeg(body_coord)                 // угол между вектором скорости тела - касательным к эллипсу и направлением на первый фокус (свойство эллипса: угол между касательной и вектором на второй фокус такой же)
-    val f2 = body_velocity.rotateDeg(alpha).n*d2 + body_coord + planet_coord    // координаты второго фокуса
-    val center = (f2 - planet_coord).n*c + planet_coord                         // координаты центра орбиты-эллипса
+    val alpha = body_relative_velocity.absDeg(body_coord)        // угол между вектором скорости тела - касательным к эллипсу и направлением на первый фокус (свойство эллипса: угол между касательной и вектором на второй фокус такой же)
+    val f1 = planet_coord                                                                // координаты первого фокуса - координаты планеты (она в фокусе эллипса-орбиты)
+    val f2 = body_relative_velocity.rotateDeg(alpha).n*d2 + body_coord + planet_coord    // координаты второго фокуса
+    val center = (f2 - f1).n*c + f1                                                      // координаты центра орбиты-эллипса
 
-    Orbit(a, b, e, c, p, r_p, r_a, t, planet_coord, f2, center)
+    Orbit(a, b, e, c, p, r_p, r_a, t, f1, f2, center)
   }
 
   /**
