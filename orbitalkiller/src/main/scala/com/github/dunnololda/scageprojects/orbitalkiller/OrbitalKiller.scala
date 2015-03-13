@@ -243,7 +243,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         earth.currentState),
       enable_collisions = true).iterator
 
-  private var _stop_after_number_of_tacts:Long = 6300
+  private var _stop_after_number_of_tacts:Long = 56700
 
   //private var skipped_points = 0
   private def nextStep() {
@@ -853,6 +853,16 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                 openglRotateDeg(Vec(-1,0).signedDeg(orbit.f2-orbit.f1))
                 drawEllipse(DVec.zero, orbit.a * scale, orbit.b * scale, color2)
               })
+              if(_stop_after_number_of_tacts > 0) {
+                val x = futureSystemEvolutionWithoutReactiveForcesFrom(base_dt, _tacts, some_system_state, enable_collisions = false)(_stop_after_number_of_tacts.toInt)
+                for {
+                  s <- x._2.find(_.index == ship_index)
+                  p <- x._2.find(_.index == planet.index)
+                } {
+                  val res_coord = (s.coord - p.coord + planetByIndex(planet.index).get.coord)*scale
+                  result += (() => drawFilledCircle(res_coord, earth.radius * scale / 2f / globalScale, GREEN))
+                }
+              }
             }
           case None =>
             // корабль не находится внутри гравитационного радиуса никакой планеты
