@@ -1,5 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
+import java.io.FileOutputStream
+
 import com.github.dunnololda.scage.ScageLibD._
 
 import scala.collection.mutable.ArrayBuffer
@@ -235,7 +237,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   val ships = List(ship, station)
   val ship_indices = ships.map(_.index).toSet
 
-  private val real_system_evolution =
+  private var real_system_evolution =
     futureSystemEvolutionFrom(dt, 0, List(
         ship.currentState,
         station.currentState,
@@ -243,7 +245,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         earth.currentState),
       enable_collisions = true).iterator
 
-  private var _stop_after_number_of_tacts:Long = 56700
+  private var _stop_after_number_of_tacts:Long = 0//56700
 
   //private var skipped_points = 0
   private def nextStep() {
@@ -341,7 +343,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
   /**
    * Ускорение
-   * @param msec
+   * @param msec - метры в секунду
    * @return
    */
   def msec2OrKmsec2(msec:Number):String = {
@@ -612,8 +614,125 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   keyIgnorePause(KEY_F2, onKeyDown = if(!drawMapMode) viewMode = 1)        // фиксация на корабле
   keyIgnorePause(KEY_F3, onKeyDown = if(!drawMapMode) viewMode = 3)        // фиксация на корабле, абсолютная ориентация
   //keyIgnorePause(KEY_F4, onKeyDown = viewMode = 2)                       // посадка на планету
-  //keyIgnorePause(KEY_F5, onKeyDown = viewMode = 3)                       // фиксация на солнце
-  //keyIgnorePause(KEY_F6, onKeyDown = viewMode = 4)                       // фиксация на планете
+
+  keyIgnorePause(KEY_F5, onKeyDown = saveGame())                          // сохранить текущее состояние системы
+  keyIgnorePause(KEY_F6, onKeyDown = loadGame())                          // загрузить из файла состояние системы
+
+  private var _show_game_saved_message = false
+  def saveGame() {
+    val fos = new FileOutputStream("save.orbitalkiller")
+    fos.write(s"time ${_tacts}\n".getBytes)
+    currentSystemState.filter(_.index == "ship").foreach {
+      case BodyState(index, _, acc, vel, coord, ang_acc, ang_vel, ang, _, _) =>
+        fos.write(s"$index ${acc.x}:${acc.y} ${vel.x}:${vel.y} ${coord.x}:${coord.y} $ang_acc $ang_vel $ang\n".getBytes)
+    }
+    currentSystemState.filter(_.index == "station").foreach {
+      case BodyState(index, _, acc, vel, coord, ang_acc, ang_vel, ang, _, _) =>
+        fos.write(s"$index ${acc.x}:${acc.y} ${vel.x}:${vel.y} ${coord.x}:${coord.y} $ang_acc $ang_vel $ang\n".getBytes)
+    }
+    currentSystemState.filter(_.index == "Moon").foreach {
+      case BodyState(index, _, acc, vel, coord, _, _, _, _, _) =>
+        fos.write(s"$index ${acc.x}:${acc.y} ${vel.x}:${vel.y} ${coord.x}:${coord.y} 0 0 0\n".getBytes)
+    }
+    fos.close()
+    _show_game_saved_message = true
+    val start = System.currentTimeMillis()
+    action(1000) {
+      if(System.currentTimeMillis() - start > 2000) {
+        _show_game_saved_message = false
+        deleteSelf()
+      }
+    }
+  }
+
+  private var _show_game_loaded_message = false
+  private var _show_game_failed_to_load_message = false
+  def loadGame() {
+    def _parseDVec(str:String):Option[DVec] = {
+      val s = str.split(":")
+      if(s.length == 2) {
+        try {
+          Some(DVec(s(0).toDouble, s(1).toDouble))
+        } catch {
+          case e:Exception => None
+        }
+      } else None
+    }
+
+    def _parseLong(str:String):Option[Long] = {
+      try {
+        Some(str.toLong)
+      } catch {
+        case e: Exception => None
+      }
+    }
+
+    def _parseDouble(str:String):Option[Double] = {
+      try {
+        Some(str.toDouble)
+      } catch {
+        case e: Exception => None
+      }
+    }
+
+    val savefile_lines = io.Source.fromFile("save.orbitalkiller").getLines().toList
+    val new_tacts_option = savefile_lines.headOption.flatMap(l => {
+      val s = l.split(" ")
+      if(s.length == 2)_parseLong(s(1)) else None
+    })
+
+    val new_states = (for {
+      line <- savefile_lines.drop(1)
+      s = line.split(" ")
+      if s.length == 7
+      index = s(0)
+      acc <- _parseDVec(s(1))
+      vel <- _parseDVec(s(2))
+      coord <- _parseDVec(s(3))
+      ang_acc <- _parseDouble(s(4))
+      ang_vel <- _parseDouble(s(4))
+      ang <- _parseDouble(s(4))
+    } yield {
+      (index, (acc, vel, coord, ang_acc, ang_vel, ang))
+    }).toMap
+
+    for {
+      new_tacts <- new_tacts_option
+      ship_state <- new_states.get("ship")
+      (ship_acc, ship_vel, ship_coord, ship_ang_acc, ship_ang_vel, ship_ang) = ship_state
+      station_state <- new_states.get("station")
+      (station_acc, station_vel, station_coord, station_ang_acc, station_ang_vel, station_ang) = station_state
+      moon_state <- new_states.get("Moon")
+      (moon_acc, moon_vel, moon_coord, _, _, _) = moon_state
+    } {
+      _tacts = new_tacts
+      real_system_evolution = futureSystemEvolutionFrom(dt, _tacts, List(
+          ship.currentState.copy(acc = ship_acc, vel = ship_vel, coord = ship_coord, ang_acc = ship_ang_acc, ang_vel = ship_ang_vel, ang = ship_ang),
+          station.currentState.copy(acc = station_acc, vel = station_vel, coord = station_coord, ang_acc = station_ang_acc, ang_vel = station_ang_vel, ang = station_ang),
+          moon.currentState.copy(acc = moon_acc, vel = moon_vel, coord = moon_coord),
+          earth.currentState),
+          enable_collisions = true).iterator
+      _show_game_loaded_message = true
+    }
+    if(_show_game_loaded_message) {
+      val start = System.currentTimeMillis()
+      action(1000) {
+        if(System.currentTimeMillis() - start > 2000) {
+          _show_game_loaded_message = false
+          deleteSelf()
+        }
+      }
+    } else {
+      _show_game_failed_to_load_message = true
+      val start = System.currentTimeMillis()
+      action(1000) {
+        if(System.currentTimeMillis() - start > 2000) {
+          _show_game_failed_to_load_message = false
+          deleteSelf()
+        }
+      }
+    }
+  }
 
   /*keyIgnorePause(KEY_Z, onKeyDown = disable_trajectory_drawing = !disable_trajectory_drawing)
   keyIgnorePause(KEY_X, onKeyDown = disable_future_trajectory_drawing = !disable_future_trajectory_drawing)*/
@@ -1177,15 +1296,35 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         }
       }
 
-      val heights = if(_stop_after_number_of_tacts > 0)  {
-        (480 to 20 by -20).iterator
-      } else {
-        (460 to 20 by -20).iterator
+      val heights = {
+        var base_max_height = 460
+        if(_stop_after_number_of_tacts > 0)  {
+          base_max_height += 20
+        }
+        if(_show_game_saved_message) {
+          base_max_height += 20
+        }
+        if(_show_game_loaded_message) {
+          base_max_height += 20
+        }
+        if(_show_game_failed_to_load_message) {
+          base_max_height += 20
+        }
+        (base_max_height to 20 by -20).iterator
       }
 
-      print(s"Время: ${timeStr((_tacts*base_dt*1000).toLong)}",
-        20, heights.next(), ORANGE)
-      print(f"Ускорение времени: x${timeMultiplier*k}%.2f/$maxTimeMultiplier (${if(timeMultiplier < maxTimeMultiplier) 1 else timeMultiplier/factors5(timeMultiplier).filter(_ <= maxTimeMultiplier).max}) (${1f*timeMultiplier/63*ticks}%.2f)",
+      if(_show_game_saved_message) {
+        print(s"Игра сохранена", 20, heights.next(), ORANGE)
+      }
+      if(_show_game_loaded_message) {
+        print(s"Игра загружена", 20, heights.next(), ORANGE)
+      }
+      if(_show_game_failed_to_load_message) {
+        print(s"Не удалось загрузить игру", 20, heights.next(), ORANGE)
+      }
+      print(s"Время: ${timeStr((_tacts*base_dt*1000).toLong)}", 20, heights.next(), ORANGE)
+      // (${if(timeMultiplier < maxTimeMultiplier) 1 else timeMultiplier/factors5(timeMultiplier).filter(_ <= maxTimeMultiplier).max})
+      print(f"Ускорение времени: x${(timeMultiplier*k).toInt}/$maxTimeMultiplier (${1f*timeMultiplier/63*ticks}%.2f)",
         20, heights.next(), ORANGE)
       if(_stop_after_number_of_tacts > 0) {
         print(s"Пауза через: ${timeStr((_stop_after_number_of_tacts*base_dt*1000).toLong)}",
