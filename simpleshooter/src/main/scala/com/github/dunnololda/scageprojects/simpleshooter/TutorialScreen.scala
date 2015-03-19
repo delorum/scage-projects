@@ -156,7 +156,7 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
     "На этом обучение закончено. Выход в меню: Escape"
   )
   private var tutorial_position = 0
-  private var render_mouse = scaledCoord(mouseCoord)
+  private var render_mouse = absCoord(mouseCoord)
 
   private def selectPlayer(number:Int) {
     if(selected_player == number) {
@@ -220,7 +220,7 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
   leftMouseIgnorePause(
     onBtnDown = m => {
       if(!on_pause) {
-        val sm = scaledCoord(m)
+        val sm = absCoord(m)
         if(isCoordInsideMapBorders(sm)) {
           players.get(selected_player).foreach(p => {
             val last_position = p.ds.lastOption.getOrElse(p.coord)
@@ -270,7 +270,7 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
 
   mouseMotion(onMotion = m => {
     if(!pov_fixed) {
-      players.get(selected_player).foreach(p => p.pov = (scaledCoord(m) - p.coord).n)
+      players.get(selected_player).foreach(p => p.pov = (absCoord(m) - p.coord).n)
     }
   })
 
@@ -403,7 +403,7 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
           }
         }
         if(!on_pause) {
-          render_mouse = scaledCoord(mouseCoord)
+          render_mouse = absCoord(mouseCoord)
         }
         if(!pov_fixed && !on_pause) {
           drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), color)

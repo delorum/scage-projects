@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.scage.ScageLib._
-import com.github.dunnololda.simplenet.{State => NetState, _}
+import com.github.dunnololda.simplenet._
 import collection.mutable
 import collection.mutable.ArrayBuffer
 import scala.Some
@@ -26,12 +26,12 @@ object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", defa
       val builder = ArrayBuffer[(String, Any)]()
       builder ++= moves.filter(_._2)
       if(shoots.nonEmpty) {
-        builder += ("shoots" -> shoots.map(v => NetState("x" -> v.x, "y" -> v.y)).toList)
+        builder += ("shoots" -> shoots.map(v => State("x" -> v.x, "y" -> v.y)).toList)
       }
       if(map.isEmpty) {
         builder += ("sendmap" -> true)
       }
-      val state = NetState(builder:_*)
+      val state = State(builder:_*)
       client.send(state)
       shoots.clear()
     }
@@ -52,7 +52,7 @@ object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", defa
       case NewUdpServerData(message) =>
         //println(message.toJsonString)
         if(message.contains("walls")) {
-          map = gameMap(message.value[NetState]("map").get)
+          map = gameMap(message.value[State]("map").get)
         } else {
           val sd = serverData(message)
           //println(sd)

@@ -1,12 +1,12 @@
 package net.scageprojects.lightcycles
 
-import net.scage.ScageApp
-import net.scage.support.net.NetServer
-import net.scage.ScageLib._
+import com.github.dunnololda.scage.ScageApp
+import com.github.dunnololda.scage.support.net.NetServer
+import com.github.dunnololda.scage.ScageLib._
 import actors.Actor._
 import collection.mutable
-import net.scage.support.{ScageColor, Vec, State}
-import net.scage.support.tracer3.{DefaultTrace, CoordTracer}
+import com.github.dunnololda.scage.support.{ScageColor, Vec, State}
+import com.github.dunnololda.scage.support.tracer3.{DefaultTrace, CoordTracer}
 import scala.actors.TIMEOUT
 
 object North extends Vec( 0, 1)

@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.scage.ScageLib._
-import com.github.dunnololda.simplenet.{State => NetState, _}
+import com.github.dunnololda.simplenet._
 import scala.collection.mutable.ArrayBuffer
 
 class GamesListScreen extends ScageScreen("Games List Screen") {
@@ -147,7 +147,7 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
   // send data
   action(1000) {
     if(!is_list_received) {
-      client.send(NetState("gameslist" -> true))
+      client.send(State("gameslist" -> true))
     }
   }
 

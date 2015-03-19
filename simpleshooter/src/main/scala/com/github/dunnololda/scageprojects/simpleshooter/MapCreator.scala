@@ -1,9 +1,9 @@
 package com.github.dunnololda.scageprojects.simpleshooter
 
-import com.github.dunnololda.scage.ScageLib._
-import collection.mutable.ArrayBuffer
 import com.github.dunnololda.cli.Cli
-import scala.Some
+import com.github.dunnololda.scage.ScageLib._
+
+import scala.collection.mutable.ArrayBuffer
 
 object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersion", default_window_width, default_window_height) with Cli {
   programDescription = s"Simple Shooter Map Creator $appVersion"
@@ -122,7 +122,7 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
   }
 
   leftMouse(onBtnDown = m => {
-    val ssm = scaledCoord(m)
+    val ssm = absCoord(m)
     val sm = Vec(nearestDot(ssm.x, -map_width/2, human_size*2),
                  nearestDot(ssm.y, -map_height/2, human_size*2))
     if(isCoordInsideMapBorders(sm)) {
@@ -268,13 +268,13 @@ object MapCreator extends ScageScreenApp(s"Simple Shooter Map Creator v$appVersi
         from match {
           case Some(f) =>
             drawFilledCircle(f, 2, WHITE)
-            drawLine(f, scaledCoord(mouseCoord), WHITE)
+            drawLine(f, absCoord(mouseCoord), WHITE)
           case None =>
         }
       case 1 =>
-        drawSlidingLines(new_safe_zone.toList ::: scaledCoord(mouseCoord) :: Nil, GREEN)
+        drawSlidingLines(new_safe_zone.toList ::: absCoord(mouseCoord) :: Nil, GREEN)
       case 2 =>
-        drawSlidingLines(new_control_point_area.toList ::: scaledCoord(mouseCoord) :: Nil, GRAY)
+        drawSlidingLines(new_control_point_area.toList ::: absCoord(mouseCoord) :: Nil, GRAY)
       case _ =>
     }
   }

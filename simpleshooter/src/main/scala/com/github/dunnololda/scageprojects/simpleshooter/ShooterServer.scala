@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.scage.ScageLib._
-import com.github.dunnololda.simplenet.{State => NetState, _}
+import com.github.dunnololda.simplenet._
 import collection.mutable
 import collection.mutable.ArrayBuffer
 import com.github.dunnololda.cli.Cli
@@ -25,10 +25,10 @@ object ShooterServer extends ScageApp("Simple Shooter Server") with Cli {
     server.newEvent {
       case NewUdpConnection(client_id) =>
         players(client_id) = Client(client_id, map.randomHumanCoord, 100, 0, 0, visible = true)
-        server.sendToClient(client_id, NetState("map" -> map.netState))
+        server.sendToClient(client_id, State("map" -> map.netState))
       case NewUdpClientData(client_id, message) =>
         //println(message.toJsonString)
-        if(message.contains("sendmap")) server.sendToClient(client_id, NetState("map" -> map.netState))
+        if(message.contains("sendmap")) server.sendToClient(client_id, State("map" -> map.netState))
         val ClientData(up, left, down, right, shoots) = clientData(message)
         val delta = Vec((if(left) -1 else 0) + (if(right) 1 else 0), (if(down) -1 else 0) + (if(up) 1 else 0)).n
         val new_coord = outsideCoord(players(client_id).coord + delta*human_speed)
@@ -81,7 +81,7 @@ object ShooterServer extends ScageApp("Simple Shooter Server") with Cli {
         val (your_bullets, other_bullets) = bullets.filter(b => isCoordVisible(b.coord, client.coord, map.walls)).partition(_.shooter.id == id)
         if (your_bullets.nonEmpty) builder += ("your_bullets" -> your_bullets.map(_.netState).toList)
         if (other_bullets.nonEmpty) builder += ("other_bullets" -> other_bullets.map(_.netState).toList)
-        val data = NetState(builder:_*)
+        val data = State(builder:_*)
         server.sendToClient(id, data)
     }
   }

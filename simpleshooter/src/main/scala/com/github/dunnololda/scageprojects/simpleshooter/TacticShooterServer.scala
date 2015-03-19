@@ -2,7 +2,8 @@ package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.cli.Cli
 import com.github.dunnololda.scage.ScageLib._
-import com.github.dunnololda.simplenet.{State => NetState, _}
+import com.github.dunnololda.simplenet._
+import com.github.dunnololda.state.StateBuilder
 import collection.mutable
 import com.github.dunnololda.simplenet.NewUdpClientData
 import com.github.dunnololda.simplenet.NewUdpConnection
@@ -29,7 +30,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
   private val client_builders = mutable.HashMap[Long, (StateBuilder, TacticClientStuff)]()
   private def nonEmptyClientBuilders = client_builders.withFilter(x => x._2._1.nonEmpty).map(x => (x._1, x._2._1))
   private def stuffForClients(client_ids:Seq[Long]) = client_builders.withFilter(x => client_ids.contains(x._1)).map(_._2._2)
-  private def clientBuilderAndStuff(client_id:Long) = client_builders.getOrElseUpdate(client_id, (NetState.newBuilder, TacticClientStuff()))
+  private def clientBuilderAndStuff(client_id:Long) = client_builders.getOrElseUpdate(client_id, (State.newBuilder, TacticClientStuff()))
 
   private def addNewPlayerToGame(client_id:Long, game:TacticGame, wanted_team:Option[Int]) {
     val team = wanted_team.filter(x => x == 1 || x == 2).getOrElse({
@@ -105,7 +106,7 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
             case Some(game) =>
               builder += ("gameentered" -> true, "map" -> game.map.netState)
             case None =>
-              val JoinGame(game_id, team) = joinGame(message.value[NetState]("join").get)
+              val JoinGame(game_id, team) = joinGame(message.value[State]("join").get)
               games.get(game_id) match {
                 case Some(game) =>
                   addNewPlayerToGame(client_id, game, team)
@@ -292,12 +293,12 @@ object TacticShooterServer extends ScageApp("TacticShooter") with Cli {
               .partition(_.shooter.id == id)
             if (your_bullets.nonEmpty) builder += ("your_bullets" -> your_bullets.map(_.netState).toList)
             if (other_bullets.nonEmpty) builder += ("other_bullets" -> other_bullets.map(_.netState).toList)
-            if(player_data.control_points_update_required) builder += ("cps_infos" -> map.control_points.values.map(_.infoNetState).toList)
+            if(player_data.control_points_update_required) builder += ("cps_infos" -> map.control_points.values.map(_.infoState).toList)
             if(player_data.game_stats_update_required) {
               //println(game.gameStats)
               builder += ("gs" -> game.gameStats(your_team).netState)
             }
-            val data = NetState(builder.toState)
+            val data = State(builder.toState)
             builder.clear()
             server.sendToClient(id, data)
         }

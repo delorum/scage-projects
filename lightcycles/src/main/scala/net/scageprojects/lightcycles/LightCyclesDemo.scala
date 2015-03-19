@@ -1,13 +1,13 @@
 package net.scageprojects.lightcycles
 
-import net.scage.ScageScreenApp
-import net.scage.support.{State, Vec, ScageColor}
-import net.scage.support.tracer3.{CoordTracer, DefaultTrace}
+import com.github.dunnololda.scage.ScageScreenApp
+import com.github.dunnololda.scage.support.{State, Vec, ScageColor}
+import com.github.dunnololda.scage.support.tracer3.{CoordTracer, DefaultTrace}
 import collection.mutable
 import actors.Actor._
-import net.scage.ScageLib._
+import com.github.dunnololda.scage.ScageLib._
 import actors.TIMEOUT
-import net.scage.support.net.NetServer
+import com.github.dunnololda.scage.support.net.NetServer
 
 class LightCycleDemo(val client_id:Int, val color:ScageColor, var dir:Vec) extends DefaultTrace {
   val prev_coords = mutable.ArrayBuffer[Vec]()

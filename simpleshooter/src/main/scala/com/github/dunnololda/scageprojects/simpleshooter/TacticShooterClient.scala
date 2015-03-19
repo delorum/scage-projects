@@ -2,7 +2,7 @@ package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.scage.ScageLib._
 import collection.mutable
-import com.github.dunnololda.simplenet.{State => NetState, _}
+import com.github.dunnololda.simplenet._
 import scala.collection.mutable.ArrayBuffer
 
 class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simple Shooter Client") {
@@ -14,7 +14,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   private var game_stats_pause_interface = ArrayBuffer[() => String]()
   private var skip_stats_rows = 0
 
-  private val builder = NetState.newBuilder
+  private val builder = State.newBuilder
 
   private var new_destination:Option[Vec] = None
   private var new_pov:Option[Vec] = None
@@ -66,7 +66,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
     }
   }
 
-  private var render_mouse = scaledCoord(mouseCoord)
+  private var render_mouse = absCoord(mouseCoord)
   private val number_place = Vec(1, 1).n*human_size
 
   private var _center = Vec.zero
@@ -210,7 +210,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   leftMouseIgnorePause(
     onBtnDown = m => {
       if(!on_pause) {
-        val sm = scaledCoord(m)
+        val sm = absCoord(m)
         if(isCoordInsideMapBorders(sm)) {
           new_destination = Some(sm)
         }
@@ -254,7 +254,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   })
 
   mouseMotion(onMotion = m => {
-    if(!pov_fixed) new_pov = Some(scaledCoord(m))
+    if(!pov_fixed) new_pov = Some(absCoord(m))
   })
 
   // receive data
@@ -266,7 +266,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
         if(message.contains("gameentered")) is_game_entered = true
         if(message.contains("fire_toggle_set")) send_fire_toggle = None
         if(message.contains("dests_cleared")) clear_destinations = false
-        message.value[NetState]("map").foreach(m => {
+        message.value[State]("map").foreach(m => {
           //println(m)
           map = gameMap(m)
           val walls_dl = displayList {
@@ -288,7 +288,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
                                         (safe_zones_dl, () => checkPausedColor(GREEN)),
                                         (edges_dl, () => checkPausedColor(GRAY))))
         })
-        message.value[NetState]("gs").foreach(m => {
+        message.value[State]("gs").foreach(m => {
           game_stats = Some(gameStats(m))
           if(!is_game_started && game_stats.map(_.game_start_moment_sec).getOrElse(None).nonEmpty) is_game_started = true
           //println(game_stats.get)
@@ -350,20 +350,20 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
     if(!is_game_entered) {
       join_game match {
         case Some(jg) =>
-          client.send(NetState("join" -> jg.netState))
+          client.send(State("join" -> jg.netState))
         case None =>
-          client.send(NetState("create" -> true))
+          client.send(State("create" -> true))
       }
     } else {
       if(!is_game_started && want_start_game) builder += ("startgame" -> true)
       if(inputChanged) {
         builder += ("pn" -> selected_player)
         new_destination.foreach(nd => {
-          builder += ("d" -> NetState("x" -> nd.x, "y" -> nd.y))
+          builder += ("d" -> State("x" -> nd.x, "y" -> nd.y))
           new_destination = None
         })
         new_pov.foreach(nd => {
-          builder += ("pov" -> NetState("x" -> nd.x, "y" -> nd.y))
+          builder += ("pov" -> State("x" -> nd.x, "y" -> nd.y))
           new_pov = None
         })
         if(map.isEmpty) builder += ("sendmap" -> true)
@@ -420,7 +420,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
                 }
               }
               if(!on_pause) {
-                render_mouse = scaledCoord(mouseCoord)
+                render_mouse = absCoord(mouseCoord)
               }
               if(!pov_fixed && !on_pause) {
                 val pov = (render_mouse - you.coord).n

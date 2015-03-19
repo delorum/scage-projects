@@ -1,10 +1,11 @@
 package com.github.dunnololda.scageprojects
 
-import com.github.dunnololda.scage.ScageLib._
-import com.github.dunnololda.simplenet.{State => NetState}
-import collection.mutable.ArrayBuffer
-import scala.collection.mutable
 import java.io.FileOutputStream
+
+import com.github.dunnololda.scage.ScageLib._
+
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 //import java.awt.GraphicsEnvironment
 
 package object simpleshooter {
@@ -13,7 +14,7 @@ package object simpleshooter {
   val window_settings_title_printer = new ScageMessage(max_font_size = 30)
   val help_printer = new ScageMessage(max_font_size = 15)
 
-  val host = "fzeulf.netris.ru"
+  val host = "localhost"
   val port = 10000
 
   val human_size = 20f  // human_size is 1 meter
@@ -48,12 +49,12 @@ package object simpleshooter {
 
   val map_edges = List(Vec(-map_width/2, map_height/2), Vec(map_width/2, map_height/2), Vec(map_width/2, -map_height/2), Vec(-map_width/2, -map_height/2), Vec(-map_width/2, map_height/2))
 
-  def vec(message:NetState, x:String, y:String):Vec = {
+  def vec(message:State, x:String, y:String):Vec = {
     Vec(message.value[Float](x).get, message.value[Float](y).get)
   }
 
   case class Client(id:Long, var coord:Vec, var health:Int, var wins:Int, var deaths:Int, var visible:Boolean) {
-    def netState:NetState = NetState("id" -> id,
+    def netState:State = State("id" -> id,
       "x"  -> coord.x,
       "y"  -> coord.y,
       "hp" -> health,
@@ -62,7 +63,7 @@ package object simpleshooter {
       "v" -> visible)
   }
 
-  def client(message:NetState):Client = {
+  def client(message:State):Client = {
     Client(id = message.value[Long]("id").get,
       coord = vec(message, "x", "y"),
       health = message.value[Int]("hp").get,
@@ -74,30 +75,30 @@ package object simpleshooter {
 
   case class ClientData(up:Boolean, left:Boolean, down:Boolean, right:Boolean, shoots:List[Vec])
 
-  def clientData(message:NetState):ClientData = {
+  def clientData(message:State):ClientData = {
     ClientData(
       up = message.valueOrDefault("up", false),
       left = message.valueOrDefault("left", false),
       down = message.valueOrDefault("down", false),
       right = message.valueOrDefault("right", false),
-      shoots = message.valueOrDefault[List[NetState]]("shoots", Nil).map(x => vec(x, "x", "y"))
+      shoots = message.valueOrDefault[List[State]]("shoots", Nil).map(x => vec(x, "x", "y"))
 
     )
   }
 
   case class ServerData(you:Client, others:List[Client], your_bullets:List[Vec], other_bullets:List[Vec])
 
-  def serverData(message:NetState):ServerData = {
-    val you = client(message.value[NetState]("you").get)
-    val others = message.value[List[NetState]]("others").getOrElse(Nil).map(m => client(m))
-    val your_bullets = message.value[List[NetState]]("your_bullets").getOrElse(Nil).map(m => vec(m, "x", "y"))
-    val other_bullets = message.value[List[NetState]]("other_bullets").getOrElse(Nil).map(m => vec(m, "x", "y"))
+  def serverData(message:State):ServerData = {
+    val you = client(message.value[State]("you").get)
+    val others = message.value[List[State]]("others").getOrElse(Nil).map(m => client(m))
+    val your_bullets = message.value[List[State]]("your_bullets").getOrElse(Nil).map(m => vec(m, "x", "y"))
+    val other_bullets = message.value[List[State]]("other_bullets").getOrElse(Nil).map(m => vec(m, "x", "y"))
     ServerData(you, others, your_bullets, other_bullets)
   }
 
   case class Bullet(dir:Vec, shooter:Client, var coord:Vec) {
     var count:Int = bullet_count
-    def netState = NetState("x" -> coord.x, "y" -> coord.y)
+    def netState = State("x" -> coord.x, "y" -> coord.y)
   }
 
   case class TacticServerPlayer(
@@ -142,14 +143,14 @@ package object simpleshooter {
     def isDead = health <= 0
     def isAlive = health > 0
 
-    def netState:NetState = NetState(
+    def netState:State = State(
       "id" -> id,
       "n" -> number,
       "t" -> team,
       "nit" -> number_in_team,
       "x"  -> coord.x,
       "y"  -> coord.y,
-      "ds"  -> ds.toList.map(d => NetState("x" -> d.x, "y" -> d.y)),
+      "ds"  -> ds.toList.map(d => State("x" -> d.x, "y" -> d.y)),
       "px" -> pov.x,
       "py" -> pov.y,
       "bs" -> _bullets,
@@ -177,14 +178,14 @@ package object simpleshooter {
     def isMoving = destinations.nonEmpty
   }
 
-  def tacticClientPlayer(message:NetState):TacticClientPlayer = {
+  def tacticClientPlayer(message:State):TacticClientPlayer = {
     TacticClientPlayer(
       id = message.value[Long]("id").get,
       number = message.value[Int]("n").get,
       team = message.value[Int]("t").get,
       number_in_team = message.value[Int]("nit").get,
       coord = vec(message, "x", "y"),
-      destinations = message.value[List[NetState]]("ds").getOrElse(Nil).map(m => vec(m, "x", "y")),
+      destinations = message.value[List[State]]("ds").getOrElse(Nil).map(m => vec(m, "x", "y")),
       pov = vec(message, "px", "py"),
       bullets = message.value[Int]("bs").get,
       is_reloading = message.value[Boolean]("r").get,
@@ -196,11 +197,11 @@ package object simpleshooter {
 
   case class TacticClientData(player_num:Int, destination:Option[Vec], pov: Option[Vec], fire_toggle:Option[Int], clear_destinations:Boolean)
 
-  def tacticClientData(message:NetState):TacticClientData = {
+  def tacticClientData(message:State):TacticClientData = {
     TacticClientData(
       player_num = message.value[Int]("pn").get,
-      destination = message.value[NetState]("d").map(x => vec(x, "x", "y")),
-      pov = message.value[NetState]("pov").map(x => vec(x, "x", "y")),
+      destination = message.value[State]("d").map(x => vec(x, "x", "y")),
+      pov = message.value[State]("pov").map(x => vec(x, "x", "y")),
       fire_toggle = message.value[Int]("ft"),
       clear_destinations = message.value[Boolean]("cleardest").getOrElse(false)
     )
@@ -214,29 +215,29 @@ package object simpleshooter {
                                receive_moment:Long
   )
 
-  def tacticServerData(message:NetState, receive_moment:Long):TacticServerData = {
-    val yours = message.value[List[NetState]]("yours").getOrElse(Nil).map(m => tacticClientPlayer(m))
-    val others = message.value[List[NetState]]("others").getOrElse(Nil).map(m => tacticClientPlayer(m))
-    val your_bullets = message.value[List[NetState]]("your_bullets").getOrElse(Nil).map(m => tacticClientBullet(m))
-    val other_bullets = message.value[List[NetState]]("other_bullets").getOrElse(Nil).map(m => tacticClientBullet(m))
+  def tacticServerData(message:State, receive_moment:Long):TacticServerData = {
+    val yours = message.value[List[State]]("yours").getOrElse(Nil).map(m => tacticClientPlayer(m))
+    val others = message.value[List[State]]("others").getOrElse(Nil).map(m => tacticClientPlayer(m))
+    val your_bullets = message.value[List[State]]("your_bullets").getOrElse(Nil).map(m => tacticClientBullet(m))
+    val other_bullets = message.value[List[State]]("other_bullets").getOrElse(Nil).map(m => tacticClientBullet(m))
     TacticServerData(yours, others, your_bullets, other_bullets, receive_moment)
   }
 
   case class Wall(from:Vec, to:Vec) {
-    val netState = NetState("fromx" -> from.x, "fromy" -> from.y, "tox" -> to.x, "toy" -> to.y)
+    val netState = State("fromx" -> from.x, "fromy" -> from.y, "tox" -> to.x, "toy" -> to.y)
   }
 
-  def wall(message:NetState):Wall = {
+  def wall(message:State):Wall = {
     Wall(Vec(message.value[Float]("fromx").get, message.value[Float]("fromy").get), Vec(message.value[Float]("tox").get, message.value[Float]("toy").get))
   }
 
-  def serverWalls(message:NetState):List[Wall] = {
-    message.value[List[NetState]]("walls").get.map(x => wall(x))
+  def serverWalls(message:State):List[Wall] = {
+    message.value[List[State]]("walls").get.map(x => wall(x))
   }
 
   case class TacticServerBullet(id:Long, dir:Vec, shooter:TacticServerPlayer, var prev_coord:Vec, var coord:Vec) {
     var count:Int = bullet_count
-    def netState = NetState(
+    def netState = State(
       "id" -> id,
       "pid" -> shooter.id,
       "pn" -> shooter.number,
@@ -248,7 +249,7 @@ package object simpleshooter {
 
   case class TacticClientBullet(id:Long, player_id:Long, player_number:Int, player_team:Int, coord:Vec)
 
-  def tacticClientBullet(message:NetState):TacticClientBullet = {
+  def tacticClientBullet(message:State):TacticClientBullet = {
     TacticClientBullet(
       id = message.value[Long]("id").get,
       player_id = message.value[Long]("pid").get,
@@ -258,7 +259,7 @@ package object simpleshooter {
   }
 
   case class PlayerStats(team:Int, number_in_team:Int, number:Int, wins:Int, deaths:Int) {
-    val netState = NetState(
+    val netState = State(
       "t"   -> team,
       "nit" -> number_in_team,
       "n"   -> number,
@@ -267,7 +268,7 @@ package object simpleshooter {
     )
   }
 
-  def playerStats(message:NetState):PlayerStats = {
+  def playerStats(message:State):PlayerStats = {
     PlayerStats(
       team           = message.value[Int]("t").get,
       number_in_team = message.value[Int]("nit").get,
@@ -278,32 +279,32 @@ package object simpleshooter {
   }
 
   case class TeamStats(team:Int, team_points:Int, players_stats:List[PlayerStats]) {
-    val netState = NetState(
+    val netState = State(
       "t" -> team,
       "tp" -> team_points,
       "ps" -> players_stats.map(_.netState)
     )
   }
 
-  def teamStats(message:NetState):TeamStats = {
+  def teamStats(message:State):TeamStats = {
     TeamStats(
       team = message.value[Int]("t").get,
       team_points = message.value[Int]("tp").get,
-      players_stats = message.value[List[NetState]]("ps").getOrElse(Nil).map(x => playerStats(x))
+      players_stats = message.value[List[State]]("ps").getOrElse(Nil).map(x => playerStats(x))
     )
   }
 
   case class GameStats(teams_stats:List[TeamStats], game_start_moment_sec:Option[Long], your_team:Int) {
-    private val builder = NetState.newBuilder
+    private val builder = State.newBuilder
     builder += ("ts" -> teams_stats.map(_.netState))
     game_start_moment_sec.foreach(gs => builder += ("gs" -> gs))
     builder += ("yt" -> your_team)
     val netState = builder.toState
   }
 
-  def gameStats(message:NetState):GameStats = {
+  def gameStats(message:State):GameStats = {
     GameStats(
-      teams_stats = message.value[List[NetState]]("ts").getOrElse(Nil).map(x => teamStats(x)),
+      teams_stats = message.value[List[State]]("ts").getOrElse(Nil).map(x => teamStats(x)),
       game_start_moment_sec = message.value[Long]("gs"),
       your_team = message.value[Int]("yt").get
     )
@@ -347,7 +348,7 @@ package object simpleshooter {
 
   case class GameInfo(game_id:Int, team1_players:Int, team2_players:Int) {
     val players = team1_players+team2_players
-    val netState = NetState(
+    val netState = State(
       "gid" -> game_id,
       "t1p" -> team1_players,
       "t2p" -> team2_players
@@ -356,28 +357,28 @@ package object simpleshooter {
 
   case class JoinGame(game_id:Int, team:Option[Int]) {
     val netState = {
-      val builder = NetState.newBuilder
+      val builder = State.newBuilder
       builder += ("gid" -> game_id)
       team.foreach(t => builder += ("t" -> t))
       builder.toState
     }
   }
 
-  def joinGame(message:NetState):JoinGame = {
+  def joinGame(message:State):JoinGame = {
     JoinGame(
       game_id = message.value[Int]("gid").get,
       team =  message.value[Int]("t")
     )
   }
 
-  def gameInfo(message:NetState):GameInfo = {
+  def gameInfo(message:State):GameInfo = {
     GameInfo(message.value[Int]("gid").get,
              message.value[Int]("t1p").get,
              message.value[Int]("t2p").get)
   }
 
-  def gamesList(message:NetState):List[GameInfo] = {
-    message.value[List[NetState]]("gameslist").getOrElse(Nil).map(m => gameInfo(m))
+  def gamesList(message:State):List[GameInfo] = {
+    message.value[List[State]]("gameslist").getOrElse(Nil).map(m => gameInfo(m))
   }
 
   case class ControlPoint(number:Int, var team:Option[Int], var control_start_time_sec:Long, area:List[Vec]) {
@@ -391,16 +392,16 @@ package object simpleshooter {
     }
 
     def netState = {
-      val builder = NetState.newBuilder
+      val builder = State.newBuilder
       builder += ("n" -> number)
       if(team.nonEmpty) builder += ("t" -> team.get)
       builder += ("cst" -> control_start_time_sec)
-      builder += ("a" -> area.map(p => NetState("x" -> p.x, "y" -> p.y)))
+      builder += ("a" -> area.map(p => State("x" -> p.x, "y" -> p.y)))
       builder.toState
     }
 
-    def infoNetState = {
-      val builder = NetState.newBuilder
+    def infoState = {
+      val builder = State.newBuilder
       builder += ("n" -> number)
       if(team.nonEmpty) builder += ("t" -> team.get)
       builder += ("cst" -> control_start_time_sec)
@@ -408,19 +409,19 @@ package object simpleshooter {
     }
   }
 
-  def controlPoint(message:NetState):ControlPoint = {
+  def controlPoint(message:State):ControlPoint = {
     ControlPoint(
       number = message.value[Int]("n").get,
       team = message.value[Int]("t"),
       control_start_time_sec = message.value[Long]("cst").get,
-      area = message.value[List[NetState]]("a").get.map(p => vec(p, "x", "y"))
+      area = message.value[List[State]]("a").get.map(p => vec(p, "x", "y"))
     )
   }
 
   case class ControlPointInfo(number:Int, team:Option[Int], control_start_time:Long)
 
-  def controlPointInfos(message:NetState):List[ControlPointInfo] = {
-    message.value[List[NetState]]("cps_infos").getOrElse(Nil).map(x => {
+  def controlPointInfos(message:State):List[ControlPointInfo] = {
+    message.value[List[State]]("cps_infos").getOrElse(Nil).map(x => {
       ControlPointInfo(
         number = x.value[Int]("n").get,
         team = x.value[Int]("t"),
@@ -556,9 +557,9 @@ package object simpleshooter {
       }
     }
 
-    val netState = NetState(
+    val netState = State(
       "ws" -> walls.map(w => w.netState).toList,
-      "szs" -> safe_zones.map(sz => sz.map(p => NetState("x" -> p.x, "y" -> p.y))),
+      "szs" -> safe_zones.map(sz => sz.map(p => State("x" -> p.x, "y" -> p.y))),
       "cps" -> control_points.map(cp => cp._2.netState)
     )
   }
@@ -650,11 +651,11 @@ package object simpleshooter {
     }
   }
 
-  def gameMap(message:NetState):GameMap = {
+  def gameMap(message:State):GameMap = {
     GameMap(
-      walls = message.value[List[NetState]]("ws").getOrElse(Nil).map(m => wall(m)),
-      safe_zones = message.value[List[List[NetState]]]("szs").getOrElse(Nil).map(m => m.map(p => vec(p, "x", "y"))),
-      control_points = message.value[List[NetState]]("cps").getOrElse(Nil).map(m => {
+      walls = message.value[List[State]]("ws").getOrElse(Nil).map(m => wall(m)),
+      safe_zones = message.value[List[List[State]]]("szs").getOrElse(Nil).map(m => m.map(p => vec(p, "x", "y"))),
+      control_points = message.value[List[State]]("cps").getOrElse(Nil).map(m => {
         val cp = controlPoint(m)
         (cp.number, cp)
       }).toMap

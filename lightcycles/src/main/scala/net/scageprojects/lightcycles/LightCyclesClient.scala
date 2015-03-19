@@ -1,11 +1,11 @@
 package net.scageprojects.lightcycles
 
-import net.scage.ScageScreenApp
-import net.scage.ScageLib._
+import com.github.dunnololda.scage.ScageScreenApp
+import com.github.dunnololda.scage.ScageLib._
 import actors.Actor._
-import net.scage.support.net.NetClient
+import com.github.dunnololda.scage.support.net.NetClient
 import collection.mutable
-import net.scage.support.{State, ScageColor, Vec}
+import com.github.dunnololda.scage.support.{ScageColor, Vec}
 import actors.TIMEOUT
 
 object LightCyclesClient extends ScageScreenApp("Light Cycles Client", 640, 480) {
@@ -17,16 +17,16 @@ object LightCyclesClient extends ScageScreenApp("Light Cycles Client", 640, 480)
       case ("new server data", data:State) =>
         data.neededKeys {
           case ("cycles", cycles_data:List[State]) =>
-            cycles_data.foreach(cycle_data => cycle_data match {
-              case State(("client_id", client_id:Float),
-                         ("color",     color:ScageColor),
-                         ("location",  location:Vec)) =>
+            cycles_data.foreach {
+              case State(("client_id", client_id: Float),
+              ("color", color: ScageColor),
+              ("location", location: Vec)) =>
                 cycles.get(client_id.toInt) match {
                   case Some(cycle) =>
                     cycle.update(location)
                   case None => cycles += (client_id.toInt -> new LightCycleClient(client_id.toInt, location, color))
                 }
-            })
+            }
           case ("leaver", client_id:Float) =>
             cycles(client_id.toInt).stop()
             cycles -= client_id.toInt

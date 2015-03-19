@@ -1,10 +1,10 @@
 package net.scageprojects.lightcycles
 
-import net.scage.ScageScreenApp
-import net.scage.ScageLib._
-import net.scage.support.{ScageColor, Vec}
+import com.github.dunnololda.scage.ScageScreenApp
+import com.github.dunnololda.scage.ScageLib._
+import com.github.dunnololda.scage.support.{ScageColor, Vec}
 import collection.mutable.ArrayBuffer
-import net.scage.support.tracer3.{DefaultTrace, CoordTracer}
+import com.github.dunnololda.scage.support.tracer3.{DefaultTrace, CoordTracer}
 
 object LightCyclesOffline extends ScageScreenApp("Light Cycles", 640, 480) {
   val tracer = CoordTracer.create[LightCycleTrace](
@@ -41,7 +41,7 @@ object LightCyclesOffline extends ScageScreenApp("Light Cycles", 640, 480) {
       }
     } ++
     our_cycle.flatMap {
-      c => (c.prevLocations.init.toList).sliding(2).map {
+      c => c.prevLocations.init.toList.sliding(2).map {
         case List(a, b) => (a, b)
       }
     }
@@ -142,7 +142,7 @@ object LightCyclesOffline extends ScageScreenApp("Light Cycles", 640, 480) {
   })
 
   render(-10) {
-    print(user_count+"\n\n"+program1_count+"\n\n"+program2_count+"\n\n"+program3_count, windowWidth-15, windowHeight-160, DARK_GRAY, align = "xcenter")
+    print(user_count+"\n\n"+program1_count+"\n\n"+program2_count+"\n\n"+program3_count, windowWidth-15, windowHeight-160, DARK_GRAY, align = "center-left")
     drawTraceGrid(tracer, DARK_GRAY)
     if(onPause) {
       result match {
@@ -232,9 +232,9 @@ abstract class EnemyCycle(val max_warning_distance:Int,
 
   private var warning_distance = max_warning_distance
   protected def ai() {
-    if((otherLines(id).exists {
-      case (a1, a2) => areLinesIntersect(a1, a2, location, location + dir*warning_distance)
-    } || math.random < turn_probability)) {
+    if(otherLines(id).exists {
+      case (a1, a2) => areLinesIntersect(a1, a2, location, location + dir * warning_distance)
+    } || math.random < turn_probability) {
       dir = selectTurn(check_distance, aggression_factor)
       warning_distance -= (1 + math.random*4).toInt     // maybe make 4 a parameter
       if(warning_distance < 1) warning_distance = max_warning_distance

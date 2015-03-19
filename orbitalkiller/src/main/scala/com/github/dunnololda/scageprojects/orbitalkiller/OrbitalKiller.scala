@@ -637,7 +637,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     fos.close()
     _show_game_saved_message = true
     val start = System.currentTimeMillis()
-    action(1000) {
+    actionIgnorePause(1000) {
       if(System.currentTimeMillis() - start > 2000) {
         _show_game_saved_message = false
         deleteSelf()
@@ -716,7 +716,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     }
     if(_show_game_loaded_message) {
       val start = System.currentTimeMillis()
-      action(1000) {
+      actionIgnorePause(1000) {
         if(System.currentTimeMillis() - start > 2000) {
           _show_game_loaded_message = false
           deleteSelf()
@@ -725,7 +725,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     } else {
       _show_game_failed_to_load_message = true
       val start = System.currentTimeMillis()
-      action(1000) {
+      actionIgnorePause(1000) {
         if(System.currentTimeMillis() - start > 2000) {
           _show_game_failed_to_load_message = false
           deleteSelf()
