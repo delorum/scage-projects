@@ -117,4 +117,6 @@ trait Ship {
     case 7 => "уравнять скорость с кораблем"
     case _ => ""
   }
+
+  def otherShipsNear:List[Ship] = ships.filter(s => s.index != ship.index && ship.coord.dist(s.coord) < 100000).sortBy(s => ship.coord.dist(s.coord))
 }

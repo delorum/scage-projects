@@ -38,7 +38,18 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 480
     _a = (_a + 1) % 360
   }
 
-  render {
+  var x = 255
+  var y = 255
+  var z = 255
+
+  key(KEY_Q, 100, onKeyDown = x += 1)
+  key(KEY_A, 100, onKeyDown = x -= 1)
+  key(KEY_W, 100, onKeyDown = y += 1)
+  key(KEY_S, 100, onKeyDown = y -= 1)
+  key(KEY_E, 100, onKeyDown = z += 1)
+  key(KEY_D, 100, onKeyDown = z -= 1)
+
+  /*render {
     openglLocalTransform {
       openglMove(o.center)
       openglRotateDeg(Vec(-1,0).signedDeg(o.f2-o.f1))
@@ -46,7 +57,12 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 480
     }
     drawLine(o.f1, _m, WHITE)
     drawFilledCircle(o.f1 + (_m - o.f1).n*ro, 3, WHITE)
+  }*/
+
+  interface {
+    //print("Test", 20, 40, YELLOW)
+    val c = new ScageColor("Orange",x, y, z)
+    print(s"Message $x $y $z", 20, 40, c)
+    print(s"$c", 20, 20, c)
   }
-
-
 }

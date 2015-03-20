@@ -202,7 +202,7 @@ class Ship3(
           } else preserveAngularVelocity(0)
         case 7 => // уравнять скорость с ближайшим кораблем
           if(math.abs(angularVelocity) < 0.01) {
-            ships.filter(s => s.index != index && coord.dist(s.coord) < 80000).sortBy(s => coord.dist(s.coord)).headOption match {
+            otherShipsNear.headOption match {
               case Some(s) =>
                 val ss = s.linearVelocity
                 if(linearVelocity.dist(ss) > 0.1) {
@@ -225,9 +225,9 @@ class Ship3(
           drawFilledCircle(DVec.zero, 2, GREEN)                                 // mass center
 
           drawArrow(DVec.zero, linearVelocity.n * 100, CYAN)              // current velocity
-          drawArrow(DVec.zero, linearAcceleration.n * 100, ORANGE)              // current acceleration
-          drawArrow(Vec.zero, (earth.coord - coord).n * 100, YELLOW)     // direction to earth
-          drawArrow(Vec.zero, (moon.coord - coord).n * 100, GREEN)       // direction to moon
+          drawArrow(DVec.zero, linearAcceleration.n * 100, ORANGE)        // current acceleration
+          drawArrow(Vec.zero, (earth.coord - coord).n * 100, YELLOW)      // direction to earth
+          drawArrow(Vec.zero, (moon.coord - coord).n * 100, GREEN)        // direction to moon
 
           openglRotateDeg(rotation)
           drawSlidingLines(draw_points, WHITE)

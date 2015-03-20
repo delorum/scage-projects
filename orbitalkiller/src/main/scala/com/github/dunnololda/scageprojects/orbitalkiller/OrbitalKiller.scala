@@ -1296,8 +1296,10 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         }
       }
 
+      val other_ships_near = ship.otherShipsNear
+
       val heights = {
-        var base_max_height = 460
+        var base_max_height = 480
         if(_stop_after_number_of_tacts > 0)  {
           base_max_height += 20
         }
@@ -1310,96 +1312,97 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         if(_show_game_failed_to_load_message) {
           base_max_height += 20
         }
+        if(other_ships_near.nonEmpty) {
+          base_max_height += 20
+        }
+
         (base_max_height to 20 by -20).iterator
       }
 
       if(_show_game_saved_message) {
-        print(s"Игра сохранена", 20, heights.next(), ORANGE)
+        print(s"Игра сохранена", 20, heights.next(), YELLOW)
       }
       if(_show_game_loaded_message) {
-        print(s"Игра загружена", 20, heights.next(), ORANGE)
+        print(s"Игра загружена", 20, heights.next(), YELLOW)
       }
       if(_show_game_failed_to_load_message) {
-        print(s"Не удалось загрузить игру", 20, heights.next(), ORANGE)
+        print(s"Не удалось загрузить игру", 20, heights.next(), YELLOW)
       }
-      print(s"Время: ${timeStr((_tacts*base_dt*1000).toLong)}", 20, heights.next(), ORANGE)
+      print(s"Время: ${timeStr((_tacts*base_dt*1000).toLong)}", 20, heights.next(), YELLOW)
       // (${if(timeMultiplier < maxTimeMultiplier) 1 else timeMultiplier/factors5(timeMultiplier).filter(_ <= maxTimeMultiplier).max})
       print(f"Ускорение времени: x${(timeMultiplier*k).toInt}/$maxTimeMultiplier (${1f*timeMultiplier/63*ticks}%.2f)",
-        20, heights.next(), ORANGE)
+        20, heights.next(), YELLOW)
       if(_stop_after_number_of_tacts > 0) {
         print(s"Пауза через: ${timeStr((_stop_after_number_of_tacts*base_dt*1000).toLong)}",
-          20, heights.next(), ORANGE)
+          20, heights.next(), YELLOW)
       }
 
       if(_rendering_enabled) {
-        print("", 20, heights.next(), ORANGE)
+        print("", 20, heights.next(), YELLOW)
 
         print(s"Режим камеры: $viewModeStr",
-          20, heights.next(), ORANGE)
+          20, heights.next(), YELLOW)
         print(s"Полетный режим: ${ship.flightModeStr}",
-          20, heights.next(), ORANGE)
+          20, heights.next(), YELLOW)
 
-        print("", 20, heights.next(), ORANGE)
+        print("", 20, heights.next(), YELLOW)
 
         print(f"Расстояние и скорость относительно Земли: ${mOrKm(ship.coord.dist(earth.coord) - earth.radius)}, ${msecOrKmsec((ship.linearVelocity - earth.linearVelocity)*(ship.coord - earth.coord).n)}",
-          20, heights.next(), ORANGE)
+          20, heights.next(), YELLOW)
         print(f"Расстояние и скорость относительно Луны: ${mOrKm(ship.coord.dist(moon.coord) - moon.radius)}, ${msecOrKmsec((ship.linearVelocity - moon.linearVelocity)* (ship.coord - moon.coord).n)}",
-          20, heights.next(), ORANGE)
-        /*print(s"Расчет траектории: ${if(continue_future_trajectory) "[rактивирован]" else "отключен"}",
-          20, heights.next(), ORANGE)*/
+          20, heights.next(), YELLOW)
+        other_ships_near.headOption.foreach {
+          case os =>
+            print(f"Расстояние и скорость относительно ближайшего корабля: ${mOrKm(ship.coord.dist(os.coord))}, ${msecOrKmsec((ship.linearVelocity - os.linearVelocity)* (ship.coord - os.coord).n)}",
+              20, heights.next(), YELLOW)
+        }
 
-        //print("", 20, heights.next(), ORANGE)
+        print("", 20, heights.next(), YELLOW)
 
-        /*print(f"Позиция: ${ship.coord.x}%.2f : ${ship.coord.y}%.2f. Расстояние от точки старта: ${mOrKm(ship.coord.dist(ship_start_position))}",
-          20, heights.next(), ORANGE)*/
-        print(f"Линейная скорость: ${msecOrKmsec(ship.linearVelocity.norma)} (velx = ${msecOrKmsec(ship.linearVelocity.x)}, vely = ${msecOrKmsec(ship.linearVelocity.y)})",
-          20, heights.next(), ORANGE)
+        print(f"Линейная скорость: ${msecOrKmsec(ship.linearVelocity.norma)}",
+          20, heights.next(), YELLOW)
         print(f"Линейная ускорение: ${msec2OrKmsec2(ship.linearAcceleration.norma)} (tan = ${msec2OrKmsec2(ship.linearAcceleration*ship.linearVelocity.n)}, cen = ${msec2OrKmsec2(math.abs(ship.linearAcceleration*ship.linearVelocity.p))})",
-          20, heights.next(), ORANGE)
+          20, heights.next(), YELLOW)
         print(f"Радиус кривизны траектории в данной точке: ${curvatureRadiusStrInPoint(ship.currentState)}",
-          20, heights.next(), ORANGE)
+          20, heights.next(), YELLOW)
         /*print(f"Угол: ${ship.rotation}%.2f град",
-          20, heights.next(), ORANGE)*/
+          20, heights.next(), YELLOW)*/
         print(f"Угловая скорость: ${ship.angularVelocity}%.2f град/сек",
-          20, heights.next(), ORANGE)
+          20, heights.next(), YELLOW)
 
-        print("", 20, heights.next(), ORANGE)
+        print("", 20, heights.next(), YELLOW)
 
         val earth_force = gravityForce(earth.coord, earth.mass, ship.coord, ship.mass, G).norma
         val moon_force = gravityForce(moon.coord, moon.mass, ship.coord, ship.mass, G).norma
         print(f"Влияние планет: Земля ${earth_force/(earth_force + moon_force)*100}%.2f% Луна ${moon_force/(earth_force + moon_force)*100}%.2f% З/Л ${earth_force/moon_force}%.2f Л/З ${moon_force/earth_force}%.2f",
-          20, heights.next(), ORANGE)
+          20, heights.next(), YELLOW)
         val earth_sat_speed = satelliteSpeed(ship.coord, earth.coord, earth.linearVelocity, earth.mass, G).norma
         val earth_esc_speed = escapeVelocity(ship.coord, earth.coord, earth.linearVelocity, earth.mass, G).norma
         val moon_sat_speed = satelliteSpeed(ship.coord, moon.coord, moon.linearVelocity, moon.mass, G).norma
         val moon_esc_speed = escapeVelocity(ship.coord, moon.coord, moon.linearVelocity, moon.mass, G).norma
         print(f"Скорость спутника/убегания: Земля ${msecOrKmsec(earth_sat_speed)}/${msecOrKmsec(earth_esc_speed)} Луна ${msecOrKmsec(moon_sat_speed)}/${msecOrKmsec(moon_esc_speed)}",
-          20, heights.next(), ORANGE)
+          20, heights.next(), YELLOW)
         print(s"Параметры орбиты: ${orbitStrInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity, currentPlanetStates)}",
-          20, heights.next(), ORANGE)
-        /*print(f"Скорость для спутника в данной точке: ${satelliteSpeedStrInPoint(ship.coord)}",
-          20, heights.next(), ORANGE)
-        print(f"Скорость убегания в данной точке: ${escapeVelocityStrInPoint(ship.coord)}",
-          20, heights.next(), ORANGE)*/
+          20, heights.next(), YELLOW)
 
-        print("", 20, heights.next(), ORANGE)
+        print("", 20, heights.next(), YELLOW)
 
         print(s"Двигательная установка: ${if(ship.engines.exists(_.active)) "[rактивирована]" else "отключена"}",
-          20, heights.next(), ORANGE)
+          20, heights.next(), YELLOW)
         print(s"Мощность и время работы отдельных двигателей:",
-          20, heights.next(), ORANGE)
+          20, heights.next(), YELLOW)
         print(s"${ship.engines.map(e => {
           if(e.active) s"[r${e.powerPercent} % (${e.worktimeTacts} т.)]"
           else s"${e.powerPercent} % (${e.worktimeTacts} т.)"
         }).mkString(", ")}",
           20, heights.next()
-          , ORANGE)
+          , YELLOW)
         print(f"Линейная скорость в момент отключения двигателей: $linearSpeedStrWhenEnginesOff",
-          20, heights.next(), ORANGE)
+          20, heights.next(), YELLOW)
         print(f"Угловая скорость в момент отключения двигателей: $angularSpeedStrWhenEnginesOff",
-          20, heights.next(), ORANGE)
+          20, heights.next(), YELLOW)
         print(s"Параметры орбиты в момент отключения двигателей: $orbitParametersStrWhenEnginesOff",
-          20, heights.next(), ORANGE)
+          20, heights.next(), YELLOW)
       }
     }
   }
