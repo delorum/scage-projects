@@ -862,7 +862,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
               planet_state.mass,
               G)
             // если скорость корабля превышает вторую космическую для данной планеты
-            if(bs.vel.norma > escape_velocity.norma) {
+            if(bs.vel*escape_velocity.n > escape_velocity.norma) {
               // рисуем траекторию корабля на неделю
               val one_week_evolution = futureSystemEvolutionWithoutReactiveForcesFrom(
                 3600 * base_dt, _tacts, some_system_state, enable_collisions = false)
@@ -897,7 +897,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                         planet_state_after_one_week.mass,
                         G)
                       // если скорость корабля не превышает вторую космическую для данной планеты
-                      if(bs_after_one_week.vel.norma < escape_velocity_after_one_week.norma) {
+                      if(bs_after_one_week.vel*escape_velocity_after_one_week.n < escape_velocity_after_one_week.norma) {
                         // рисуем орбиту
                         result += (() => openglLocalTransform {
                           openglMove(orbit_after_one_week.center*scale)
@@ -923,7 +923,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                             need_planet_after_one_week.mass,
                             G)
                           // если скорость корабля не превышает вторую космическую
-                          if(bs_after_one_week.vel.norma < escape_velocity_after_one_week.norma) {
+                          if(bs_after_one_week.vel*escape_velocity_after_one_week.n < escape_velocity_after_one_week.norma) {
                             // вычисляем и рисуем орбиту вокруг планеты, к которой притяжение выше
                             val orbit_after_one_week = calculateOrbit(
                               need_planet_after_one_week.mass,
@@ -945,7 +945,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                               earth_after_one_week.mass,
                               G)
                             // если скорость корабля не превышает вторую космическую
-                            if(bs_after_one_week.vel.norma < escape_velocity_earth_after_one_week.norma) {
+                            if(bs_after_one_week.vel*escape_velocity_after_one_week.n < escape_velocity_earth_after_one_week.norma) {
                               // вычисляем и рисуем орбиту вокруг Земли
                               val orbit_earth_after_one_week = calculateOrbit(
                                 earth_after_one_week.mass,
@@ -1001,7 +1001,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                   need_planet_state.mass,
                   G)
                 // если скорость корабля не превышает вторую космическую
-                if(bs.vel.norma < escape_velocity.norma) {
+                if(bs.vel*escape_velocity.n < escape_velocity.norma) {
                   // вычисляем и рисуем орбиту вокруг Земли
                   val orbit = calculateOrbit(
                     need_planet_state.mass,
@@ -1049,7 +1049,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                             planet_state_after_one_week.mass,
                             G)
                           // если скорость корабля не превышает вторую космическую для данной планеты
-                          if(bs_after_one_week.vel.norma < escape_velocity_after_one_week.norma) {
+                          if(bs_after_one_week.vel*escape_velocity_after_one_week.n < escape_velocity_after_one_week.norma) {
                             // рисуем орбиту
                             result += (() => openglLocalTransform {
                               openglMove(orbit_after_one_week.center*scale)
@@ -1075,7 +1075,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                                 need_planet_after_one_week.mass,
                                 G)
                               // если скорость корабля не превышает вторую космическую
-                              if(bs_after_one_week.vel.norma < escape_velocity_after_one_week.norma) {
+                              if(bs_after_one_week.vel*escape_velocity_after_one_week.n < escape_velocity_after_one_week.norma) {
                                 // вычисляем и рисуем орбиту вокруг планеты, к которой притягиваемся сильнее
                                 val orbit_after_one_week = calculateOrbit(
                                   need_planet_after_one_week.mass,
@@ -1097,7 +1097,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                                   earth_after_one_week.mass,
                                   G)
                                 // если скорость корабля не превышает вторую космическую
-                                if(bs_after_one_week.vel.norma < escape_velocity_earth_after_one_week.norma) {
+                                if(bs_after_one_week.vel*escape_velocity_after_one_week.n < escape_velocity_earth_after_one_week.norma) {
                                   // вычисляем и рисуем орбиту вокруг Земли
                                   val orbit_earth_after_one_week = calculateOrbit(
                                     earth_after_one_week.mass,
@@ -1359,7 +1359,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
         print("", 20, heights.next(), YELLOW)
 
-        print(f"Линейная скорость: ${msecOrKmsec(ship.linearVelocity.norma)}",
+        print(f"Линейная скорость: ${msecOrKmsec(ship.linearVelocity.norma)} (${msecOrKmsec(ship.linearVelocity*escapeVelocity(ship.coord, moon.coord, moon.linearVelocity, moon.mass, G).n)})",
           20, heights.next(), YELLOW)
         print(f"Линейная ускорение: ${msec2OrKmsec2(ship.linearAcceleration.norma)} (tan = ${msec2OrKmsec2(ship.linearAcceleration*ship.linearVelocity.n)}, cen = ${msec2OrKmsec2(math.abs(ship.linearAcceleration*ship.linearVelocity.p))})",
           20, heights.next(), YELLOW)
