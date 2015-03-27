@@ -9,7 +9,7 @@ object OrbitalOscillationsTests extends ScageApp {
   val earth = new Star("Earth", mass = 5.9746E24, coord = DVec.dzero, radius = 6400000)
 
   val moon_start_position = DVec(-269000000, 269000000)
-  val moon_init_velocity = satelliteSpeed(moon_start_position, earth.coord, earth.linearVelocity, earth.mass, G)
+  val moon_init_velocity = satelliteSpeed(moon_start_position, earth.coord, earth.linearVelocity, earth.mass, G, true)
   val moon = new Planet(
     "Moon",
     mass = 7.3477E22,
@@ -33,7 +33,7 @@ object OrbitalOscillationsTests extends ScageApp {
   )*/
 
   val station_start_position = earth.coord + DVec(300, earth.radius + 100000)
-  val station_init_velocity = satelliteSpeed(station_start_position, earth.coord, earth.linearVelocity, earth.mass, G)*1.25
+  val station_init_velocity = satelliteSpeed(station_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.25
   val station = new SpaceStation("station",
     init_coord = station_start_position,
     init_velocity = station_init_velocity,

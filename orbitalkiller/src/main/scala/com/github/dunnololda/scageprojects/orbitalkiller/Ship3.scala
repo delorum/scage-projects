@@ -9,7 +9,7 @@ class Ship3(
              init_velocity:DVec = DVec.dzero,
              init_rotation:Double = 0.0
              ) extends PolygonShip(index, init_coord, init_velocity, init_rotation) {
-  val mass = 1000.0
+  val mass = 10*1000.0
 
   val points:List[DVec] = List(
     DVec(-10.0, 70.0),
@@ -102,8 +102,8 @@ class Ship3(
       val ang_acc = (seven.torque / currentState.I).toDeg
       val (tacts, _) = howManyTacts(ang_vel_deg, angularVelocity, ang_acc, dt)
       activateOnlyTheseEngines(seven, eight)
-      seven.worktimeTacts = tacts
-      eight.worktimeTacts = tacts
+      seven.workTimeTacts = tacts
+      eight.workTimeTacts = tacts
     } else if(difference < -0.01) {
       val power = maxPossiblePowerForRotation(nine.max_power, nine.force_dir, nine.position, currentState.I, ang_vel_deg, angularVelocity, 0.01)
       nine.power = power
@@ -111,8 +111,8 @@ class Ship3(
       val ang_acc = (nine.torque / currentState.I).toDeg
       val (tacts, _) = howManyTacts(ang_vel_deg, angularVelocity, ang_acc, dt)
       activateOnlyTheseEngines(nine, eight)
-      nine.worktimeTacts = tacts
-      eight.worktimeTacts = tacts
+      nine.workTimeTacts = tacts
+      eight.workTimeTacts = tacts
     }
     last_correction_or_check_moment = OrbitalKiller.tacts
   }
@@ -133,7 +133,7 @@ class Ship3(
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
       eight.active = true
-      eight.worktimeTacts = tacts
+      eight.workTimeTacts = tacts
     } else if(ship_velocity_n - ss_n < -0.1) {
       val power = maxPossiblePowerForLinearMovement(two.max_power, two.force_dir.y, mass, ss_n, ship_velocity_n, 0.1)
       two.power = power
@@ -142,7 +142,7 @@ class Ship3(
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
       two.active = true
-      two.worktimeTacts = tacts
+      two.workTimeTacts = tacts
     }
 
     val ship_velocity_p = p*linearVelocity
@@ -156,7 +156,7 @@ class Ship3(
       /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
       println("===========================")*/
       six.active = true
-      six.worktimeTacts = tacts
+      six.workTimeTacts = tacts
     } else if(ship_velocity_p - ss_p < -0.1) {
       val power = maxPossiblePowerForLinearMovement(four.max_power, four.force_dir.x, mass, ss_p, ship_velocity_p, 0.1)
       four.power = power
@@ -165,7 +165,7 @@ class Ship3(
       /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
       println("===========================")*/
       four.active = true
-      four.worktimeTacts = tacts
+      four.workTimeTacts = tacts
     }
     last_correction_or_check_moment = OrbitalKiller.tacts
   }
@@ -192,7 +192,7 @@ class Ship3(
           if(math.abs(angularVelocity) < 0.01) {
             insideGravitationalRadiusOfCelestialBody(coord, currentPlanetStates) match {
               case Some((planet, planet_state)) =>
-                val ss = satelliteSpeed(coord, planet_state.coord, planet_state.vel, planet_state.mass, G)
+                val ss = satelliteSpeed(coord, linearVelocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
                 if(linearVelocity.dist(ss) > 0.1) {
                   preserveVelocity(ss)
                 } else flightMode = 1

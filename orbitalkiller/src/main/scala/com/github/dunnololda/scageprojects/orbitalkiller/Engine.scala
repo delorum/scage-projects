@@ -7,8 +7,10 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
   private var worktime_tacts = 0l
   private var stop_moment_tacts = 0l
 
-  def worktimeTacts = worktime_tacts
-  def worktimeTacts_=(new_worktime_tacts:Long) {
+  def workTimeMsec  = (worktime_tacts*base_dt*1000).toLong
+  def workTimeStr   = timeStr((worktime_tacts*base_dt*1000).toLong)
+  def workTimeTacts = worktime_tacts
+  def workTimeTacts_=(new_worktime_tacts:Long) {
     if(new_worktime_tacts >= 0) {
       worktime_tacts = new_worktime_tacts
       stop_moment_tacts = tacts + worktime_tacts * timeMultiplier
@@ -47,7 +49,7 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
           powerPercent = default_power_percent
         }
         timeMultiplier = realtime
-        worktimeTacts = 10
+        workTimeTacts = 10
         ship.selected_engine = Some(this)
       } else {
         ship.selected_engine = ship.engines.filter(_.active).lastOption

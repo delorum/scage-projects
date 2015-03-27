@@ -5,8 +5,13 @@ import com.github.dunnololda.scage.ScageLibD._
 
 trait Ship {
   var selected_engine:Option[Engine] = None
+
   def isSelectedEngine(e:Engine):Boolean = {
     selected_engine.exists(x => x == e)
+  }
+
+  def switchEngineSelected(engine_code:Int) {
+    engines_mapping.get(engine_code).foreach(e => if(isSelectedEngine(e)) selected_engine = None else selected_engine = Some(e))
   }
 
   def engines:List[Engine]
@@ -14,6 +19,14 @@ trait Ship {
   def switchEngineActive(engine_code:Int) {
     //timeMultiplier = realtime
     engines_mapping.get(engine_code).foreach(e => e.switchActive())
+  }
+
+  def switchEngineActiveOrSelect(engine_code:Int) {
+    //timeMultiplier = realtime
+    engines_mapping.get(engine_code).foreach(e => if(e.active) {
+      if(selected_engine.exists(_ == e)) e.switchActive()
+      else selected_engine = Some(e)
+    } else e.switchActive())
   }
 
   def mass:Double
@@ -75,7 +88,7 @@ trait Ship {
       } else {
         drawFilledRectCentered(center, engineActiveSize(e), height, color = engineColor(e))
       }
-      if(globalScale > 2) print(s"${e.powerPercent}% : ${e.worktimeTacts}", center.toVec, size = (max_font_size/globalScale).toFloat)
+      if(globalScale > 2) print(s"${e.powerPercent}% : ${e.workTimeTacts}", center.toVec, size = (max_font_size/globalScale).toFloat)
       if(isSelectedEngine(e)) drawRectCentered(center, width+2, height+2, color = engineColor(e))
     }
   }
@@ -119,4 +132,13 @@ trait Ship {
   }
 
   def otherShipsNear:List[Ship] = ships.filter(s => s.index != ship.index && ship.coord.dist(s.coord) < 100000).sortBy(s => ship.coord.dist(s.coord))
+
+  def pilotStateStr(pilot_mass:Double, pilot_position:DVec):String = {
+    val reactive_force = currentReactiveForce(0, currentState)
+    val centrifugial_force = if(angularVelocity == 0) DVec.zero else pilot_mass*math.pow(angularVelocity.toRad, 2)*pilot_position.rotateDeg(rotation)
+    val pilot_acc = (reactive_force/mass + centrifugial_force/pilot_mass).norma
+    if(pilot_acc == 0) "Пилот в состоянии невесомости"
+    else if(pilot_acc <= 9.81) f"Пилот испытывает силу тяжести ${pilot_acc/9.81}%.1fg"
+    else f"Пилот испытывает перегрузку ${pilot_acc/9.81}%.1fg"
+  }
 }
