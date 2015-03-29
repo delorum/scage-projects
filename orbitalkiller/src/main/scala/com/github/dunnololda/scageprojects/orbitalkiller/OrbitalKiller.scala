@@ -230,12 +230,6 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     init_velocity = moon_init_velocity,
     radius = 1737000)
 
-  def equalGravityRadius(planet1:BodyState, planet2:BodyState):Double = {
-    val A = planet1.coord.dist(planet2.coord)
-    val X = planet1.mass/planet2.mass
-    A*math.sqrt(X)/(math.sqrt(X) + 1)
-  }
-
   val planets = List(earth, moon)
   val planet_indexes = planets.map(_.index).toSet
   def currentPlanetStates = planets.map(_.currentState)
