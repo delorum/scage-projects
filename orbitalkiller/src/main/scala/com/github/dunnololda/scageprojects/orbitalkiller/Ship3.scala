@@ -181,16 +181,16 @@ class Ship3(
           if(math.abs(rotation) < 0.1) flightMode = 2
           else preserveAngle(0)
         case 4 => // ориентация по траектории
-          val angle = linearVelocity.signedDeg(DVec(0,1))
+          val angle = linearVelocity.mydeg(DVec(0,1))
           if(math.abs(rotation - angle) < 0.1) flightMode = 2
           else preserveAngle(angle)
         case 5 => // ориентация против траектории
-          val angle = correctAngle(linearVelocity.signedDeg(DVec(0,1)) + 180)
+          val angle = correctAngle(linearVelocity.mydeg(DVec(0,1)) + 180)
           if(math.abs(rotation - angle) < 0.1) flightMode = 2
           else preserveAngle(angle)
         case 6 => // выход на орбиту
           if(math.abs(angularVelocity) < 0.01) {
-            insideGravitationalRadiusOfCelestialBody(coord, currentPlanetStates) match {
+            insideSphereOfInfluenceOfCelestialBody(coord, currentPlanetStates) match {
               case Some((planet, planet_state)) =>
                 val ss = satelliteSpeed(coord, linearVelocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
                 if(linearVelocity.dist(ss) > 0.1) {

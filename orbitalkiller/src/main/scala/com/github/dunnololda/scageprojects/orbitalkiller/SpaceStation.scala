@@ -48,12 +48,12 @@ class SpaceStation(
 
   val draw_points = points :+ points.head
 
-  val four = Engine(position = DVec(-10.0, 0.0), force_dir = DVec(1.0, 0.0), max_power = 10, default_power_percent = 1, this)
-  val six = Engine(position = DVec(10.0, 0.0), force_dir = DVec(-1.0, 0.0), max_power = 10, default_power_percent = 1, this)
-  val seven = Engine(position = DVec(-40.0, 110.0), force_dir = DVec(0.0, -1.0), max_power = 10, default_power_percent = 1, this)
-  val nine = Engine(position = DVec(40.0, 110.0), force_dir = DVec(0.0, -1.0), max_power = 10, default_power_percent = 1, this)
-  val one = Engine(position = DVec(-40.0, -110.0), force_dir = DVec(0.0, 1.0), max_power = 10, default_power_percent = 1, this)
-  val three = Engine(position = DVec(40.0, -110.0), force_dir = DVec(0.0, 1.0), max_power = 10, default_power_percent = 1, this)
+  val four  = Engine(position = DVec(-10.0, 0.0),    force_dir = DVec(1.0, 0.0),  max_power = 10, default_power_percent = 1, this)
+  val six   = Engine(position = DVec(10.0, 0.0),     force_dir = DVec(-1.0, 0.0), max_power = 10, default_power_percent = 1, this)
+  val seven = Engine(position = DVec(-40.0, 110.0),  force_dir = DVec(0.0, -1.0), max_power = 10, default_power_percent = 1, this)
+  val nine  = Engine(position = DVec(40.0, 110.0),   force_dir = DVec(0.0, -1.0), max_power = 10, default_power_percent = 1, this)
+  val one   = Engine(position = DVec(-40.0, -110.0), force_dir = DVec(0.0, 1.0),  max_power = 10, default_power_percent = 1, this)
+  val three = Engine(position = DVec(40.0, -110.0),  force_dir = DVec(0.0, 1.0),  max_power = 10, default_power_percent = 1, this)
 
   val engines = List(four, six, seven, nine, one, three)
 

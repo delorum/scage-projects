@@ -394,7 +394,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   }
 
   def satelliteSpeedStrInPoint(coord:DVec, velocity:DVec):String = {
-    insideGravitationalRadiusOfCelestialBody(coord, currentPlanetStates) match {
+    insideSphereOfInfluenceOfCelestialBody(coord, currentPlanetStates) match {
       case Some((planet, planet_state)) =>
         val ss = satelliteSpeed(coord, velocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
         f"${msecOrKmsec(ss.norma)} (velx = ${msecOrKmsec(ss.x)}, vely = ${msecOrKmsec(ss.y)})"
@@ -404,7 +404,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   }
 
   def escapeVelocityStrInPoint(coord:DVec, velocity:DVec):String = {
-    insideGravitationalRadiusOfCelestialBody(coord, currentPlanetStates) match {
+    insideSphereOfInfluenceOfCelestialBody(coord, currentPlanetStates) match {
       case Some((planet, planet_state)) =>
         val ss = escapeVelocity(coord, velocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
         f"${msecOrKmsec(ss.norma)} (velx = ${msecOrKmsec(ss.x)}, vely = ${msecOrKmsec(ss.y)})"
@@ -428,24 +428,24 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   }
 
   def orbitStrInPointWithVelocity(mass:Double, coord:DVec, velocity:DVec, planet_states:Seq[BodyState]):String = {
-    insideGravitationalRadiusOfCelestialBody(coord, planet_states) match {
+    insideSphereOfInfluenceOfCelestialBody(coord, planet_states) match {
       case Some((planet, planet_state)) =>
-        val Orbit(a, b, e, c, p, r_p, r_a, t, f1, f2, center) = calculateOrbit(planet_state.mass, planet_state.coord, mass, coord - planet_state.coord, velocity - planet_state.vel, G)
+        val EllipseOrbit(a, b, e, c, p, r_p, r_a, t, f1, f2, center) = calculateOrbit(planet_state.mass, planet_state.coord, mass, coord - planet_state.coord, velocity - planet_state.vel, G)
         f"e = $e%.2f, r_p = ${mOrKm(r_p - planetByIndex(planet_state.index).get.radius)}, r_a = ${mOrKm(r_a - planetByIndex(planet_state.index).get.radius)}, t = ${timeStr((t*1000l).toLong)}"
       case None => "N/A"
     }
   }
 
-  def orbitInPointWithVelocity(mass:Double, coord:DVec, velocity:DVec):Option[Orbit] = {
-    insideGravitationalRadiusOfCelestialBody(coord, currentPlanetStates) match {
+  def orbitInPointWithVelocity(mass:Double, coord:DVec, velocity:DVec):Option[EllipseOrbit] = {
+    insideSphereOfInfluenceOfCelestialBody(coord, currentPlanetStates) match {
       case Some((planet, planet_state)) =>
         Some(calculateOrbit(planet_state.mass, planet_state.coord, mass, coord - planet_state.coord, velocity - planet_state.vel, G))
       case None => None
     }
   }
 
-  def orbitAroundCelestialInPointWithVelocity(mass:Double, coord:DVec, velocity:DVec, planet_states:Seq[BodyState]):Option[((CelestialBody, BodyState), Orbit)] = {
-    insideGravitationalRadiusOfCelestialBody(coord, currentPlanetStates) match {
+  def orbitAroundCelestialInPointWithVelocity(mass:Double, coord:DVec, velocity:DVec, planet_states:Seq[BodyState]):Option[((CelestialBody, BodyState), EllipseOrbit)] = {
+    insideSphereOfInfluenceOfCelestialBody(coord, currentPlanetStates) match {
       case Some((planet, planet_state)) =>
         planetByIndex(planet_state.index).flatMap(planet => {
           Some(((planet, planet_state), calculateOrbit(planet_state.mass, planet_state.coord, mass, coord - planet_state.coord, velocity - planet_state.vel, G)))
@@ -549,14 +549,15 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     }
   }
 
-  def insideGravitationalRadiusOfCelestialBody(coord:DVec, planet_states:Seq[BodyState]):Option[(CelestialBody, BodyState)] = {
-    planet_states.find(p => coord.dist(p.coord) < {
-      p.index match {
-        case earth.index => earth.gravitational_radius
-        case moon.index => moon.gravitational_radius
-        case _ => 0.0
-      }
-    }).flatMap(x => planetByIndex(x.index).map(p => (p, x)))
+  def insideSphereOfInfluenceOfCelestialBody(coord:DVec, planet_states:Seq[BodyState]):Option[(CelestialBody, BodyState)] = {
+    for {
+      moon_state <- planet_states.find(_.index == moon.index)
+      earth_state <- planet_states.find(_.index == earth.index)
+    } yield {
+      if(coord.dist(moon_state.coord) < soi(moon_state.mass, moon_state.coord.dist(earth_state.coord), earth_state.mass)) {
+        (moon, moon_state)
+      } else (earth, earth_state)
+    }
   }
 
   def drawArrow(from1:DVec, to1:DVec, color:ScageColor, scale:Double = globalScale) {
@@ -901,22 +902,18 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     some_system_state.find(_.index == ship_index) match {
       case Some(bs) =>
         // смотрим, где он находится
-        orbitAroundCelestialInPointWithVelocity(
-          bs.mass,
-          bs.coord,
-          bs.vel,
-          some_system_state.filter(x => planet_indexes.contains(x.index))) match {
-          case Some(((planet, planet_state), orbit)) =>
+        insideSphereOfInfluenceOfCelestialBody(bs.coord, some_system_state.filter(x => planet_indexes.contains(x.index))) match {
+          case Some((planet, planet_state)) =>
             // корабль находится внутри гравитационного радиуса какой-то планеты (земли или луны)
-            // проверяем скорость корабля, превышает ли она вторую космическую
-            val escape_velocity = escapeVelocity(
-              bs.coord, bs.vel,
-              planet_state.coord,
-              planet_state.vel,
+            // вычисляем орбитальную энергию, больше ли она нуля
+            val specific_orbital_energy = specificOrbitalEnergy(
               planet_state.mass,
-              G)
-            // если скорость корабля превышает вторую космическую для данной планеты
-            if(bs.vel*escape_velocity.n > escape_velocity.norma) {
+              planet_state.coord,
+              bs.mass,
+              bs.coord - planet_state.coord,
+              bs.vel - planet_state.vel, G)
+            // если орбитальная энергия >= 0
+            if(specific_orbital_energy >= 0) {
               // рисуем траекторию корабля на неделю
               val one_week_evolution = futureSystemEvolutionWithoutReactiveForcesFrom(
                 3600 * base_dt, _tacts, some_system_state, enable_collisions = false)
@@ -936,103 +933,50 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
               state_after_one_week.find(_.index == ship_index) match {
                 case Some(bs_after_one_week) =>
                   // смотрим, где находится наш корабль через неделю
-                  orbitAroundCelestialInPointWithVelocity(
-                    bs_after_one_week.mass,
-                    bs_after_one_week.coord,
-                    bs_after_one_week.vel,
-                    state_after_one_week.filter(x => planet_indexes.contains(x.index))) match {
-                    case Some(((planet_after_one_week, planet_state_after_one_week), orbit_after_one_week)) =>
+                  insideSphereOfInfluenceOfCelestialBody(bs_after_one_week.coord, state_after_one_week.filter(x => planet_indexes.contains(x.index))) match {
+                    case Some((planet_after_one_week, planet_state_after_one_week)) =>
                       // корабль через неделю находится внутри гравитационного радиуса какой-то планеты (земли или луны)
-                      // проверяем скорость корабля, превышает ли она вторую космическую
-                      val escape_velocity_after_one_week = escapeVelocity(
-                        bs_after_one_week.coord, bs_after_one_week.vel,
-                        planet_state_after_one_week.coord,
-                        planet_state_after_one_week.vel,
+                      // вычисляем орбитальную энергию, больше ли она нуля
+                      val specific_orbital_energy_after_one_week = specificOrbitalEnergy(
                         planet_state_after_one_week.mass,
-                        G)
+                        planet_state_after_one_week.coord,
+                        bs_after_one_week.mass,
+                        bs_after_one_week.coord - planet_state_after_one_week.coord,
+                        bs_after_one_week.vel - planet_state_after_one_week.vel, G)
                       // если скорость корабля не превышает вторую космическую для данной планеты
-                      if(bs_after_one_week.vel*escape_velocity_after_one_week.n < escape_velocity_after_one_week.norma) {
+                      if(specific_orbital_energy_after_one_week < 0) {
                         // рисуем орбиту
+                        val orbit_after_one_week = calculateOrbit(
+                          planet_state_after_one_week.mass,
+                          planet_state_after_one_week.coord,
+                          bs_after_one_week.mass,
+                          bs_after_one_week.coord - planet_state_after_one_week.coord,
+                          bs_after_one_week.vel - planet_state_after_one_week.vel, G)
                         result += (() => openglLocalTransform {
                           openglMove(orbit_after_one_week.center*scale)
                           openglRotateDeg(Vec(-1,0).signedDeg(orbit_after_one_week.f2-orbit_after_one_week.f1))
                           drawEllipse(DVec.zero, orbit_after_one_week.a * scale, orbit_after_one_week.b * scale, color1)
                         })
-                        println("point1")
                       } else {
                         // иначе ничего не делаем
-                        println("point2")
                       }
                     case None =>
-                      // корабль через неделю не находится внутри гравитационного радиуса никакой планеты
-                      // найдем состояния планеты Земля и Луна через неделю
-                      (state_after_one_week.find(_.index == earth.index), state_after_one_week.find(_.index == moon.index)) match {
-                        case (Some(earth_after_one_week), Some(moon_after_one_week)) =>
-                          // найдем, к кому кораблик притягивается больше - к земле или к луне
-                          val earth_force_after_one_week = gravityForce(bs_after_one_week.coord, bs_after_one_week.mass, earth_after_one_week.coord, earth_after_one_week.mass, G)
-                          val moon_force_after_one_week = gravityForce(bs_after_one_week.coord, bs_after_one_week.mass, moon_after_one_week.coord, moon_after_one_week.mass, G)
-                          val need_planet_after_one_week = if(earth_force_after_one_week.norma > moon_force_after_one_week.norma) earth_after_one_week else moon_after_one_week
-
-                          // проверяем скорость корабля, превышает ли она вторую космическую планеты, к которой притяжение выше, через неделю
-                          val escape_velocity_after_one_week = escapeVelocity(
-                            bs_after_one_week.coord, bs_after_one_week.vel,
-                            need_planet_after_one_week.coord,
-                            need_planet_after_one_week.vel,
-                            need_planet_after_one_week.mass,
-                            G)
-                          // если скорость корабля не превышает вторую космическую
-                          if(bs_after_one_week.vel*escape_velocity_after_one_week.n < escape_velocity_after_one_week.norma) {
-                            // вычисляем и рисуем орбиту вокруг планеты, к которой притяжение выше
-                            val orbit_after_one_week = calculateOrbit(
-                              need_planet_after_one_week.mass,
-                              need_planet_after_one_week.coord,
-                              bs_after_one_week.mass,
-                              bs_after_one_week.coord - need_planet_after_one_week.coord,
-                              bs_after_one_week.vel - need_planet_after_one_week.vel, G)
-                            result += (() => openglLocalTransform {
-                              openglMove(orbit_after_one_week.center*scale)
-                              openglRotateDeg(Vec(-1,0).signedDeg(orbit_after_one_week.f2-orbit_after_one_week.f1))
-                              drawEllipse(DVec.zero, orbit_after_one_week.a * scale, orbit_after_one_week.b * scale, color2)
-                            })
-                            println("point3")
-                          } else if(need_planet_after_one_week.index != earth.index) {
-                            // проверяем скорость корабля, превышает ли она вторую космическую для Земли через неделю
-                            val escape_velocity_earth_after_one_week = escapeVelocity(
-                              bs_after_one_week.coord, bs_after_one_week.vel,
-                              earth_after_one_week.coord,
-                              earth_after_one_week.vel,
-                              earth_after_one_week.mass,
-                              G)
-                            // если скорость корабля не превышает вторую космическую
-                            if(bs_after_one_week.vel*escape_velocity_after_one_week.n < escape_velocity_earth_after_one_week.norma) {
-                              // вычисляем и рисуем орбиту вокруг Земли
-                              val orbit_earth_after_one_week = calculateOrbit(
-                                earth_after_one_week.mass,
-                                earth_after_one_week.coord,
-                                bs_after_one_week.mass,
-                                bs_after_one_week.coord - earth_after_one_week.coord,
-                                bs_after_one_week.vel - earth_after_one_week.vel, G)
-                              result += (() => openglLocalTransform {
-                                openglMove(orbit_earth_after_one_week.center*scale)
-                                openglRotateDeg(Vec(-1,0).signedDeg(orbit_earth_after_one_week.f2-orbit_earth_after_one_week.f1))
-                                drawEllipse(DVec.zero, orbit_earth_after_one_week.a * scale, orbit_earth_after_one_week.b * scale, color2)
-                              })
-                              println("point10")
-                            }
-                          }
-                        case _ =>
-                      }
                   }
                 case None =>
               }
             } else {
               // если не превышает - рисуем орбиту вокруг планеты
+              val orbit = calculateOrbit(
+                planet_state.mass,
+                planet_state.coord,
+                bs.mass,
+                bs.coord - planet_state.coord,
+                bs.vel - planet_state.vel, G)
               result += (() => openglLocalTransform {
                 openglMove(orbit.center*scale)
                 openglRotateDeg(Vec(-1,0).signedDeg(orbit.f2-orbit.f1))
                 drawEllipse(DVec.zero, orbit.a * scale, orbit.b * scale, color2)
               })
-              println("point11")
               if(_stop_after_number_of_tacts > 0) {
                 val x = futureSystemEvolutionWithoutReactiveForcesFrom(base_dt, _tacts, some_system_state, enable_collisions = false)(_stop_after_number_of_tacts.toInt)
                 for {
@@ -1041,153 +985,10 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                 } {
                   val res_coord = (s.coord - p.coord + planetByIndex(planet.index).get.coord)*scale
                   result += (() => drawFilledCircle(res_coord, earth.radius * scale / 2f / globalScale, GREEN))
-                  println("point4")
                 }
               }
             }
           case None =>
-            // корабль не находится внутри гравитационного радиуса никакой планеты
-            // найдем состояния планеты Земля и Луна
-            (some_system_state.find(_.index == earth.index), some_system_state.find(_.index == moon.index)) match {
-              case  (Some(earth_state), Some(moon_state)) =>
-                // найдем, к кому кораблик притягивается больше - к земле или к луне
-                val earth_force = gravityForce(bs.coord, bs.mass, earth_state.coord, earth_state.mass, G)
-                val moon_force = gravityForce(bs.coord, bs.mass, moon_state.coord, moon_state.mass, G)
-                val need_planet_state = if(earth_force.norma > moon_force.norma) earth_state else moon_state
-
-                // проверяем скорость корабля, превышает ли она вторую космическую для планеты, к которой притягиваемся больше
-                val escape_velocity = escapeVelocity(
-                  bs.coord, bs.vel,
-                  need_planet_state.coord,
-                  need_planet_state.vel,
-                  need_planet_state.mass,
-                  G)
-                // если скорость корабля не превышает вторую космическую
-                if(bs.vel*escape_velocity.n < escape_velocity.norma) {
-                  // вычисляем и рисуем орбиту вокруг Земли
-                  val orbit = calculateOrbit(
-                    need_planet_state.mass,
-                    need_planet_state.coord,
-                    bs.mass,
-                    bs.coord - need_planet_state.coord,
-                    bs.vel - need_planet_state.vel, G)
-                  result += (() => openglLocalTransform {
-                    openglMove(orbit.center*scale)
-                    openglRotateDeg(Vec(-1,0).signedDeg(orbit.f2-orbit.f1))
-                    drawEllipse(DVec.zero, orbit.a * scale, orbit.b * scale, color2)
-                  })
-                  println("point5")
-                } else {
-                  // если превышает - рисуем траекторию на неделю
-                  val one_week_evolution = futureSystemEvolutionWithoutReactiveForcesFrom(
-                    3600 * base_dt, _tacts, some_system_state, enable_collisions = false)
-                    .take(7* 24 * 63)
-                    .zipWithIndex
-                    .filter(_._2 % 5 == 0)
-                    .map(_._1)
-                    .map(_._2)
-                    .toList
-                  val x = one_week_evolution.flatMap(x => x.find(_.index == ship_index)).map(_.coord * scale)
-                  val y = reducePointsNumber(x)
-                  println(s"${x.length} -> ${y.length}")
-                  result += (() => drawSlidingLines(x, color1))
-                  // получаем последнее состояние этой недельной траектории
-                  val state_after_one_week = one_week_evolution.last
-                  // находим наш корабль
-                  state_after_one_week.find(_.index == ship_index) match {
-                    case Some(bs_after_one_week) =>
-                      // смотрим, где находится наш корабль через неделю
-                      orbitAroundCelestialInPointWithVelocity(
-                        bs_after_one_week.mass,
-                        bs_after_one_week.coord,
-                        bs_after_one_week.vel,
-                        state_after_one_week.filter(x => planet_indexes.contains(x.index))) match {
-                        case Some(((planet_after_one_week, planet_state_after_one_week), orbit_after_one_week)) =>
-                          // корабль через неделю находится внутри гравитационного радиуса какой-то планеты (земли или луны)
-                          // проверяем скорость корабля, превышает ли она вторую космическую
-                          val escape_velocity_after_one_week = escapeVelocity(
-                            bs_after_one_week.coord, bs_after_one_week.vel,
-                            planet_state_after_one_week.coord,
-                            planet_state_after_one_week.vel,
-                            planet_state_after_one_week.mass,
-                            G)
-                          // если скорость корабля не превышает вторую космическую для данной планеты
-                          if(bs_after_one_week.vel*escape_velocity_after_one_week.n < escape_velocity_after_one_week.norma) {
-                            // рисуем орбиту
-                            result += (() => openglLocalTransform {
-                              openglMove(orbit_after_one_week.center*scale)
-                              openglRotateDeg(Vec(-1,0).signedDeg(orbit_after_one_week.f2-orbit_after_one_week.f1))
-                              drawEllipse(DVec.zero, orbit_after_one_week.a * scale, orbit_after_one_week.b * scale, color1)
-                            })
-                            println("point6")
-                          } else {
-                            println("point7") // иначе ничего не делаем
-                          }
-                        case None =>
-                          // корабль через неделю не находится внутри гравитационного радиуса никакой планеты
-                          // найдем состояния планеты Земля и Луна через неделю
-                          (state_after_one_week.find(_.index == earth.index), state_after_one_week.find(_.index == moon.index)) match {
-                            case (Some(earth_after_one_week), Some(moon_after_one_week)) =>
-                              // найдем, к кому кораблик притягивается больше - к земле или к луне
-                              val earth_force_after_one_week = gravityForce(bs_after_one_week.coord, bs_after_one_week.mass, earth_after_one_week.coord, earth_after_one_week.mass, G)
-                              val moon_force_after_one_week = gravityForce(bs_after_one_week.coord, bs_after_one_week.mass, moon_after_one_week.coord, moon_after_one_week.mass, G)
-                              val need_planet_after_one_week = if(earth_force_after_one_week.norma > moon_force_after_one_week.norma) earth_after_one_week else moon_after_one_week
-
-                              // проверяем скорость корабля, превышает ли она вторую космическую для планеты, к которой притягиваемся сильнее через неделю
-                              val escape_velocity_after_one_week = escapeVelocity(
-                                bs_after_one_week.coord, bs_after_one_week.vel,
-                                need_planet_after_one_week.coord,
-                                need_planet_after_one_week.vel,
-                                need_planet_after_one_week.mass,
-                                G)
-                              // если скорость корабля не превышает вторую космическую
-                              if(bs_after_one_week.vel*escape_velocity_after_one_week.n < escape_velocity_after_one_week.norma) {
-                                // вычисляем и рисуем орбиту вокруг планеты, к которой притягиваемся сильнее
-                                val orbit_after_one_week = calculateOrbit(
-                                  need_planet_after_one_week.mass,
-                                  need_planet_after_one_week.coord,
-                                  bs_after_one_week.mass,
-                                  bs_after_one_week.coord - need_planet_after_one_week.coord,
-                                  bs_after_one_week.vel - need_planet_after_one_week.vel, G)
-                                result += (() => openglLocalTransform {
-                                  openglMove(orbit_after_one_week.center*scale)
-                                  openglRotateDeg(Vec(-1,0).signedDeg(orbit_after_one_week.f2-orbit_after_one_week.f1))
-                                  drawEllipse(DVec.zero, orbit_after_one_week.a * scale, orbit_after_one_week.b * scale, color2)
-                                })
-                                println("point8")
-                              } else if(need_planet_after_one_week.index != earth.index) {
-                                // проверяем скорость корабля, превышает ли она вторую космическую для Земли через неделю
-                                val escape_velocity_earth_after_one_week = escapeVelocity(
-                                  bs_after_one_week.coord, bs_after_one_week.vel,
-                                  earth_after_one_week.coord,
-                                  earth_after_one_week.vel,
-                                  earth_after_one_week.mass,
-                                  G)
-                                // если скорость корабля не превышает вторую космическую
-                                if(bs_after_one_week.vel*escape_velocity_after_one_week.n < escape_velocity_earth_after_one_week.norma) {
-                                  // вычисляем и рисуем орбиту вокруг Земли
-                                  val orbit_earth_after_one_week = calculateOrbit(
-                                    earth_after_one_week.mass,
-                                    earth_after_one_week.coord,
-                                    bs_after_one_week.mass,
-                                    bs_after_one_week.coord - earth_after_one_week.coord,
-                                    bs_after_one_week.vel - earth_after_one_week.vel, G)
-                                  result += (() => openglLocalTransform {
-                                    openglMove(orbit_earth_after_one_week.center*scale)
-                                    openglRotateDeg(Vec(-1,0).signedDeg(orbit_earth_after_one_week.f2-orbit_earth_after_one_week.f1))
-                                    drawEllipse(DVec.zero, orbit_earth_after_one_week.a * scale, orbit_earth_after_one_week.b * scale, color2)
-                                  })
-                                  println("point9")
-                                }
-                              }
-                            case _ =>
-                          }
-                      }
-                    case None =>
-                  }
-                }
-              case _ =>
-            }
         }
       case None =>
     }
@@ -1241,6 +1042,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         drawCircle(moon.coord*scale, moon.radius * scale, WHITE)
         //drawCircle(moon.coord*scale, moon.gravitational_radius * scale, color = DARK_GRAY)
         drawCircle(moon.coord*scale, equalGravityRadius(moon.currentState, earth.currentState)*scale, color = DARK_GRAY)
+        drawCircle(moon.coord*scale, soi(moon.mass, earth.coord.dist(moon.coord), earth.mass)*scale, color = DARK_GRAY)
         val moon_orbit = calculateOrbit(earth.mass, earth.coord, moon.mass, moon.coord, moon.linearVelocity, G)
         openglLocalTransform {
           openglMove(moon_orbit.center*scale)
@@ -1434,12 +1236,12 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
         print("", 20, heights.next(), YELLOW)
 
-        print(f"Линейная скорость: ${msecOrKmsec(ship.linearVelocity.norma)} (${msecOrKmsec(ship.linearVelocity*escapeVelocity(ship.coord, ship.linearVelocity, moon.coord, moon.linearVelocity, moon.mass, G).n)})",
+        print(f"Линейная скорость: ${msecOrKmsec(ship.linearVelocity.norma)}",
           20, heights.next(), YELLOW)
         print(f"Линейная ускорение: ${msec2OrKmsec2(ship.linearAcceleration.norma)} (tan = ${msec2OrKmsec2(ship.linearAcceleration*ship.linearVelocity.n)}, cen = ${msec2OrKmsec2(math.abs(ship.linearAcceleration*ship.linearVelocity.p))})",
           20, heights.next(), YELLOW)
-        print(f"Радиус кривизны траектории в данной точке: ${curvatureRadiusStrInPoint(ship.currentState)}",
-          20, heights.next(), YELLOW)
+        /*print(f"Радиус кривизны траектории в данной точке: ${curvatureRadiusStrInPoint(ship.currentState)}",
+          20, heights.next(), YELLOW)*/
         /*print(f"Угол: ${ship.rotation}%.2f град",
           20, heights.next(), YELLOW)*/
         print(f"Угловая скорость: ${ship.angularVelocity}%.2f град/сек",
@@ -1458,6 +1260,10 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         val moon_sat_speed = satelliteSpeed(ship.coord, ship.linearVelocity, moon.coord, moon.linearVelocity, moon.mass, G).norma
         val moon_esc_speed = escapeVelocity(ship.coord, ship.linearVelocity, moon.coord, moon.linearVelocity, moon.mass, G).norma
         print(f"Скорость спутника/убегания: Земля ${msecOrKmsec(earth_sat_speed)}/${msecOrKmsec(earth_esc_speed)} Луна ${msecOrKmsec(moon_sat_speed)}/${msecOrKmsec(moon_esc_speed)}",
+          20, heights.next(), YELLOW)
+        val ship_earth_orbital_energy = specificOrbitalEnergy(earth.mass, earth.coord, ship.mass, ship.coord - earth.coord, ship.linearVelocity-earth.linearVelocity, G)
+        val ship_moon_orbital_energy = specificOrbitalEnergy(moon.mass, moon.coord, ship.mass, ship.coord - moon.coord, ship.linearVelocity-moon.linearVelocity, G)
+        print(f"Орбитальная энергия: Земля $ship_earth_orbital_energy%.2f Луна $ship_moon_orbital_energy%.2f",
           20, heights.next(), YELLOW)
         print(s"Параметры орбиты: ${orbitStrInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity, currentPlanetStates)}",
           20, heights.next(), YELLOW)

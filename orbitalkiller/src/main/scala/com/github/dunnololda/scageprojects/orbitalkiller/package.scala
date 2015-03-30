@@ -619,7 +619,7 @@ package object orbitalkiller {
     else planet_velocity + from_planet_to_body.p*math.sqrt(G*planet_mass/from_planet_to_body.norma)*math.sqrt(2)
   }
 
-  case class Orbit(
+  case class EllipseOrbit(
     a:Double,             // большая полуось
     b:Double,             // малая полуось
     e:Double,             // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
@@ -642,7 +642,7 @@ package object orbitalkiller {
    * @param G - гравитационная постоянная
    * @return объект Orbit, содержащий вычисленный набор параметров
    */
-  def calculateOrbit(planet_mass:Double, planet_coord:DVec, body_mass:Double, body_relative_coord:DVec, body_relative_velocity:DVec, G:Double):Orbit = {
+  def calculateOrbit(planet_mass:Double, planet_coord:DVec, body_mass:Double, body_relative_coord:DVec, body_relative_velocity:DVec, G:Double):EllipseOrbit = {
     //https://ru.wikipedia.org/wiki/Гравитационный_параметр
     val mu = (planet_mass + body_mass)*G // гравитационный параметр
     //val mu = planet_mass*G // гравитационный параметр
@@ -677,7 +677,7 @@ package object orbitalkiller {
     val f2 = body_relative_velocity.rotateDeg(alpha).n*d2 + body_relative_coord + planet_coord    // координаты второго фокуса
     val center = (f2 - f1).n*c + f1                                                      // координаты центра орбиты-эллипса
 
-    Orbit(a, b, e, c, p, r_p, r_a, t, f1, f2, center)
+    EllipseOrbit(a, b, e, c, p, r_p, r_a, t, f1, f2, center)
   }
 
   def equalGravityRadius(planet1:BodyState, planet2:BodyState):Double = {
@@ -688,6 +688,11 @@ package object orbitalkiller {
 
   def soi(smaller_planet_mass:Double, semi_major_axis:Double, bigger_planet_mass:Double):Double = {
     semi_major_axis*math.pow(smaller_planet_mass/bigger_planet_mass, 2.0/5)
+  }
+
+  def specificOrbitalEnergy(planet_mass:Double, planet_coord:DVec, body_mass:Double, body_relative_coord:DVec, body_relative_velocity:DVec, G:Double):Double = {
+    val mu = (planet_mass + body_mass)*G // гравитационный параметр
+    body_relative_velocity.norma2/2 - mu/body_relative_coord.norma
   }
 
   /**
