@@ -632,6 +632,13 @@ package object orbitalkiller {
     f2:DVec,              // координаты второго фокуса
     center:DVec)          // координаты центра
 
+  case class HyperbolaOrbit(
+     a:Double,             // большая полуось
+     b:Double,
+     e:Double,             // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
+     f:DVec,               // координаты первого фокуса (координаты небесного тела, вокруг которого вращаемся)
+     center:DVec)
+
   /**
    * Вычисляет параметры орбиты
    * @param planet_mass - масса планеты
@@ -678,6 +685,32 @@ package object orbitalkiller {
     val center = (f2 - f1).n*c + f1                                                      // координаты центра орбиты-эллипса
 
     EllipseOrbit(a, b, e, c, p, r_p, r_a, t, f1, f2, center)
+  }
+
+  def calculateHyperbolaOrbit(planet_mass:Double, planet_coord:DVec, body_mass:Double, body_relative_coord:DVec, body_relative_velocity:DVec, G:Double):HyperbolaOrbit = {
+    //https://ru.wikipedia.org/wiki/Гравитационный_параметр
+    val mu = (planet_mass + body_mass) * G // гравитационный параметр
+    //val mu = planet_mass*G // гравитационный параметр
+
+    //http://ru.wikipedia.org/wiki/Кеплеровы_элементы_орбиты
+    //val a = body_relative_coord.norma*k/(2*k*k - body_relative_coord.norma*body_velocity.norma2)
+
+    //https://en.wikipedia.org/wiki/Specific_orbital_energy
+    val epsilon = body_relative_velocity.norma2 / 2 - mu / body_relative_coord.norma // орбитальная энергия - сумма потенциальной и кинетической энергии тел, деленные на приведенную массу
+
+    //http://ru.wikipedia.org/wiki/Большая_полуось
+    val a = math.abs(mu / (2 * epsilon)) // большая полуось
+
+    //http://en.wikipedia.org/wiki/Kepler_orbit
+    val r_n = body_relative_coord.n
+    val v_t = math.abs(body_relative_velocity * r_n.perpendicular)
+    val p = math.pow(body_relative_coord.norma * v_t, 2) / mu // фокальный параметр (половина длины хорды, проходящей через фокус и перпендикулярной к фокальной оси)
+
+    //http://ru.wikipedia.org/wiki/Эллипс
+    val b = math.sqrt(math.abs(a * p)) // малая полуось
+    val e = math.sqrt(math.abs(1 + (b * b) / (a * a))) // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
+
+    HyperbolaOrbit(a,b,e,planet_coord, DVec.zero)
   }
 
   def equalGravityRadius(planet1:BodyState, planet2:BodyState):Double = {

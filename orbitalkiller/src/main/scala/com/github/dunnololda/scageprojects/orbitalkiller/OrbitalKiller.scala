@@ -414,12 +414,6 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   }
 
   def curvatureRadiusInPoint(body_state:BodyState):Double = {
-    /*insideGravitationalRadiusOfCelestialBody(body_state.coord, currentPlanetStates) match {
-      case Some((planet, planet_state)) =>
-        s"${mOrKm((body_state.vel - planet_state.vel).norma2/((body_state.acc - planet_state.acc)*(body_state.vel - planet_state.vel).p))}"
-      case None =>
-        "N/A"
-    }*/
     math.abs(body_state.vel.norma2/(body_state.acc * body_state.vel.p))
   }
 
@@ -662,13 +656,15 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   keyIgnorePause(KEY_5, onKeyDown = ship.flightMode = 5)
   keyIgnorePause(KEY_6, onKeyDown = ship.flightMode = 6)
   keyIgnorePause(KEY_7, onKeyDown = ship.flightMode = 7)
+  keyIgnorePause(KEY_8, onKeyDown = ship.flightMode = 8)
+  keyIgnorePause(KEY_9, onKeyDown = ship.flightMode = 9)
 
   keyIgnorePause(KEY_P, onKeyDown = switchPause())
 
   keyIgnorePause(KEY_F1, onKeyDown = {pause(); holdCounters {HelpScreen.run()}})
-  keyIgnorePause(KEY_F2, onKeyDown = if(!drawMapMode) viewMode = 1 else viewMode = 0)        // фиксация на корабле
-  keyIgnorePause(KEY_F3, onKeyDown = if(!drawMapMode) viewMode = 3 else viewMode = 4)        // фиксация на корабле, абсолютная ориентация
-  //keyIgnorePause(KEY_F4, onKeyDown = viewMode = 2)                       // посадка на планету
+  keyIgnorePause(KEY_F2, onKeyDown = if(!drawMapMode) viewMode = 1 else viewMode = 0)     // фиксация на корабле, в режиме карты: свободный режим
+  keyIgnorePause(KEY_F3, onKeyDown = if(!drawMapMode) viewMode = 3 else viewMode = 4)     // фиксация на корабле, абсолютная ориентация, в режиме карты: фиксация на орбите
+  keyIgnorePause(KEY_F4, onKeyDown = if(!drawMapMode) viewMode = 2)                       // посадка на планету, если не в режиме карты
 
   keyIgnorePause(KEY_F5, onKeyDown = saveGame())                          // сохранить текущее состояние системы
   keyIgnorePause(KEY_F6, onKeyDown = loadGame())                          // загрузить из файла состояние системы
@@ -813,7 +809,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       else globalScale -= 0.01
       if(globalScale < 0.01) globalScale = 0.01
     }
-    //println(s"$globalScale : $windowCenter : ${((windowCenter - center * globalScale)/globalScale + center)*globalScale}")
+    println(globalScale)
   })
   mouseWheelUpIgnorePause(onWheelUp = m => {
     if(globalScale < (if(!drawMapMode) 5 else 1000000)) {
@@ -826,7 +822,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       else if(globalScale < 100000) globalScale +=10000
       else globalScale += 100000
     }
-    //println(s"$globalScale : $windowCenter : ${((windowCenter - center * globalScale)/globalScale + center)*globalScale}")
+    println(globalScale)
   })
 
 
@@ -914,6 +910,20 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
               bs.vel - planet_state.vel, G)
             // если орбитальная энергия >= 0
             if(specific_orbital_energy >= 0) {
+              // рисуем гиперболическую траекторию
+              val orbit = calculateHyperbolaOrbit(
+                planet_state.mass,
+                planet_state.coord,
+                bs.mass,
+                bs.coord - planet_state.coord,
+                bs.vel - planet_state.vel, G)
+              val yy = (-math.acos(-1.0/orbit.e)+0.1 to math.acos(-1.0/orbit.e)-0.1 by 0.1).map(true_anomaly => {
+                val r = orbit.a*(orbit.e*orbit.e-1)/(1 + orbit.e*math.cos(true_anomaly))
+                (orbit.f + (DVec(0,1)*r).rotateRad(true_anomaly))*scale
+              }).toList
+              result += (() => {
+                drawSlidingLines(yy, color1)
+              })
               // рисуем траекторию корабля на неделю
               val one_week_evolution = futureSystemEvolutionWithoutReactiveForcesFrom(
                 3600 * base_dt, _tacts, some_system_state, enable_collisions = false)
@@ -1036,11 +1046,27 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     if(_rendering_enabled) {
       if(drawMapMode) {
         drawCircle(earth.coord*scale, earth.radius * scale, WHITE)
-        //drawCircle(earth.coord*scale, earth.gravitational_radius * scale, color = DARK_GRAY)
         drawCircle(earth.coord*scale, equalGravityRadius(earth.currentState, moon.currentState)*scale, color = DARK_GRAY)
+        openglLocalTransform {
+          openglMove(earth.coord*scale)
+          val current_ang = (_tacts * base_dt * 1000).toLong % (24l * 60 * 60 * 1000) * 360.0 / (24.0*60*60*1000)
+          (0.0 to 359.0 by 600.0/globalScale).init.foreach {
+            case ang =>
+              openglLocalTransform {
+                openglRotateDeg(current_ang + ang.toDouble)
+                openglMove(DVec(0, 1) * (earth.radius - 20000000 / globalScale) * scale)
+                print(
+                  s"${ang.toInt}",
+                  Vec.zero,
+                  color = WHITE,
+                  size = (max_font_size / globalScale).toFloat,
+                  align = "bottom-center"
+                )
+              }
+          }
+        }
 
         drawCircle(moon.coord*scale, moon.radius * scale, WHITE)
-        //drawCircle(moon.coord*scale, moon.gravitational_radius * scale, color = DARK_GRAY)
         drawCircle(moon.coord*scale, equalGravityRadius(moon.currentState, earth.currentState)*scale, color = DARK_GRAY)
         drawCircle(moon.coord*scale, soi(moon.mass, earth.coord.dist(moon.coord), earth.mass)*scale, color = DARK_GRAY)
         val moon_orbit = calculateOrbit(earth.mass, earth.coord, moon.mass, moon.coord, moon.linearVelocity, G)
@@ -1048,6 +1074,24 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
           openglMove(moon_orbit.center*scale)
           openglRotateDeg(Vec(-1,0).signedDeg(moon_orbit.f2-moon_orbit.f1))
           drawEllipse(DVec.zero, moon_orbit.a * scale, moon_orbit.b * scale, GREEN)
+        }
+        openglLocalTransform {
+          openglMove(moon.coord*scale)
+          val current_ang = (_tacts * base_dt * 1000).toLong % (moon_orbit.t.toLong*1000l) * 360.0 / (moon_orbit.t.toLong*1000l)
+          (0.0 to 359.0 by 6000.0/globalScale).init.foreach {
+            case ang =>
+              openglLocalTransform {
+                openglRotateDeg(current_ang + ang.toDouble)
+                openglMove(DVec(0, 1) * (moon.radius - 20000000 / globalScale) * scale)
+                print(
+                  s"${ang.toInt}",
+                  Vec.zero,
+                  color = WHITE,
+                  size = (max_font_size / globalScale).toFloat,
+                  align = "bottom-center"
+                )
+              }
+          }
         }
 
         drawFilledCircle(ship.coord*scale, earth.radius * scale / 2f / globalScale, WHITE)
@@ -1307,7 +1351,6 @@ trait CelestialBody {
   def linearVelocity:DVec
   def mass:Double
   def radius:Double
-  def gravitational_radius:Double
   def currentState:BodyState
   def initState:BodyState
 }
@@ -1318,9 +1361,6 @@ class Planet(
   val init_coord:DVec,
   val init_velocity:DVec,
   val radius:Double) extends CelestialBody {
-  lazy val gravitational_radius = {
-    coord.dist(earth.coord) * math.sqrt(mass / 20.0 / earth.mass) / (1.0 + math.sqrt(mass / 20.0 / earth.mass))
-  }
 
   def coord = currentState.coord
   def linearVelocity = currentState.vel
@@ -1366,11 +1406,6 @@ class Planet(
 }
 
 class Star(val index:String, val mass:Double, val coord:DVec, val radius:Double) extends CelestialBody {
-  lazy val gravitational_radius = {
-    coord.dist(moon.coord) * math.sqrt(mass / 20 / moon.mass) / (1 + math.sqrt(mass / 20 / moon.mass))
-    /*radius + 10000000*/
-  }
-
   def initState:BodyState = BodyState(
       index,
       mass,

@@ -212,6 +212,24 @@ class Ship3(
                 flightMode = 1
             }
           } else preserveAngularVelocity(0)
+        case 8 => // уравнять скорость с ближайшей планетой
+          if(math.abs(angularVelocity) < 0.01) {
+            currentPlanetStates.sortBy(_.coord.dist(coord)).headOption match {
+              case Some(s) =>
+                val ss = s.vel
+                if(linearVelocity.dist(ss) > 0.1) {
+                  preserveVelocity(ss)
+                } else flightMode = 1
+              case None =>
+                flightMode = 1
+            }
+          } else preserveAngularVelocity(0)
+        case 9 => // остановиться
+          if(math.abs(angularVelocity) < 0.01) {
+            if(linearVelocity.dist(DVec.dzero) > 0.1) {
+              preserveVelocity(DVec.dzero)
+            } else flightMode = 1
+          } else preserveAngularVelocity(0)
         case _ =>
       }
     }
