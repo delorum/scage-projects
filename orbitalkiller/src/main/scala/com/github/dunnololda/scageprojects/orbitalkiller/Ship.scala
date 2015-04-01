@@ -139,8 +139,9 @@ trait Ship {
     val reactive_force = currentReactiveForce(0, currentState)
     val centrifugial_force = if(angularVelocity == 0) DVec.zero else pilot_mass*math.pow(angularVelocity.toRad, 2)*pilot_position.rotateDeg(rotation)
     val pilot_acc = (reactive_force/mass + centrifugial_force/pilot_mass).norma
-    if(pilot_acc == 0) "Пилот в состоянии невесомости"
-    else if(pilot_acc <= 9.81) f"Пилот испытывает силу тяжести ${pilot_acc/9.81}%.1fg"
-    else f"Пилот испытывает перегрузку ${pilot_acc/9.81}%.1fg"
+    val pilot_g = pilot_acc/9.81
+    if(pilot_g < 0.1) "Пилот в состоянии невесомости"
+    else if(pilot_acc <= 9.81) f"Пилот испытывает силу тяжести $pilot_g%.1fg"
+    else f"Пилот испытывает перегрузку $pilot_g%.1fg"
   }
 }

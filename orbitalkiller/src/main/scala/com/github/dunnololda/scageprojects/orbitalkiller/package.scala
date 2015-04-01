@@ -619,6 +619,53 @@ package object orbitalkiller {
     else planet_velocity + from_planet_to_body.p*math.sqrt(G*planet_mass/from_planet_to_body.norma)*math.sqrt(2)
   }
 
+  def timeStr(time_msec:Long):String = {
+    val is_below_zero = time_msec < 0
+    val abs_time_msec = math.abs(time_msec)
+    val result = if (abs_time_msec < 1000) s"$abs_time_msec мсек."
+    else {
+      val sec  = 1000l
+      val min  = sec*60
+      val hour = min*60
+      val day  = hour*24
+
+      List(
+        (abs_time_msec/day,      "д."),
+        (abs_time_msec%day/hour, "ч."),
+        (abs_time_msec%hour/min, "мин."),
+        (abs_time_msec%min/sec,  "сек."),
+        (abs_time_msec%sec,      "мсек.")
+      ).filter(_._1 > 0).map(e => e._1+" "+e._2).mkString(" ")
+    }
+    if(is_below_zero) s"-$result" else result
+  }
+
+  def mOrKm(meters:Number):String = {
+    if(math.abs(meters.floatValue()) < 1000) f"${meters.floatValue()}%.2f м" else f"${meters.floatValue()/1000}%.2f км"
+  }
+
+  def msecOrKmsec(msec:Number):String = {
+    if(math.abs(msec.floatValue()) < 1000) f"${msec.floatValue()}%.2f м/сек" else f"${msec.floatValue()/1000}%.2f км/сек"
+  }
+
+  /**
+   * Ускорение
+   * @param msec - метры в секунду
+   * @return
+   */
+  def msec2OrKmsec2(msec:Number):String = {
+    if(math.abs(msec.floatValue()) < 1000) f"${msec.floatValue()}%.2f м/сек^2" else f"${msec.floatValue()/1000}%.2f км/сек^2"
+  }
+  
+  sealed trait KeplerOrbit {
+    def a:Double
+    def b:Double
+    def e:Double
+    def f:DVec
+    def center:DVec
+    def strDefinition(prefix:String, planet_radius:Double):String
+  }
+
   case class EllipseOrbit(
     a:Double,             // большая полуось
     b:Double,             // малая полуось
@@ -628,16 +675,20 @@ package object orbitalkiller {
     r_p:Double,           // перигей
     r_a:Double,           // апогей
     t:Double,             // орбитальный период, в секундах
-    f1:DVec,              // координаты первого фокуса (координаты небесного тела, вокруг которого вращаемся)
+    f:DVec,              // координаты первого фокуса (координаты небесного тела, вокруг которого вращаемся)
     f2:DVec,              // координаты второго фокуса
-    center:DVec)          // координаты центра
+    center:DVec) extends KeplerOrbit {        // координаты центра
+    def strDefinition(prefix:String, planet_radius:Double):String = f"$prefix, замкнутая, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, r_a = ${mOrKm(r_a - planet_radius)}, t = ${timeStr((t*1000l).toLong)}"
+  }          
 
   case class HyperbolaOrbit(
      a:Double,             // большая полуось
      b:Double,
      e:Double,             // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
-     f:DVec,               // координаты первого фокуса (координаты небесного тела, вокруг которого вращаемся)
-     center:DVec)
+     f:DVec,                            // координаты первого фокуса (координаты небесного тела, вокруг которого вращаемся)
+     center:DVec) extends KeplerOrbit { // координаты центр
+  def strDefinition(prefix:String, planet_radius:Double):String = f"$prefix, незамкнутая, e = $e%.2f, r_p = ${mOrKm(a*(e-1) - planet_radius)}"
+  }
 
   /**
    * Вычисляет параметры орбиты
@@ -649,7 +700,7 @@ package object orbitalkiller {
    * @param G - гравитационная постоянная
    * @return объект Orbit, содержащий вычисленный набор параметров
    */
-  def calculateOrbit(planet_mass:Double, planet_coord:DVec, body_mass:Double, body_relative_coord:DVec, body_relative_velocity:DVec, G:Double):EllipseOrbit = {
+  def calculateOrbit(planet_mass:Double, planet_coord:DVec, body_mass:Double, body_relative_coord:DVec, body_relative_velocity:DVec, G:Double):KeplerOrbit = {
     //https://ru.wikipedia.org/wiki/Гравитационный_параметр
     val mu = (planet_mass + body_mass)*G // гравитационный параметр
     //val mu = planet_mass*G // гравитационный параметр
@@ -669,22 +720,43 @@ package object orbitalkiller {
     val p = math.pow(body_relative_coord.norma*v_t, 2)/mu                 // фокальный параметр (половина длины хорды, проходящей через фокус и перпендикулярной к фокальной оси)
 
     //http://ru.wikipedia.org/wiki/Эллипс
-    val b = math.sqrt(math.abs(a*p))                             // малая полуось
-    val e = math.sqrt(math.abs(1 - (b*b)/(a*a)))                 // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
-    val c = a*e                                                  // фокальное расстояние (полурасстояние между фокусами)
-    val r_p = a*(1 - e)                                          // перигей
-    val r_a = a*(1 + e)                                          // апогей
+    val b = math.sqrt(math.abs(a*p))                             // малая полуось    
+    
+    if(epsilon < 0) {
+      val e = math.sqrt(math.abs(1 - (b*b)/(a*a)))                 // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
+      
+      val c = a*e                                                  // фокальное расстояние (полурасстояние между фокусами)
+      val r_p = a*(1 - e)                                          // перигей
+      val r_a = a*(1 + e)                                          // апогей
 
-    val t = 2 * math.Pi * math.sqrt(math.abs(a * a * a / mu))    // орбитальный период (период обращения по орбите, в секундах)
+      val t = 2 * math.Pi * math.sqrt(math.abs(a * a * a / mu))    // орбитальный период (период обращения по орбите, в секундах)
 
-    val d1 = body_relative_coord.norma                                    // расстояние от тела до первого фокуса (планеты)
-    val d2 = 2*a - d1                                            // расстояние до второго фокуса (свойства эллипса: d1+d2 = 2*a)
-    val alpha = body_relative_coord.signedDeg(body_relative_velocity)        // угол между вектором скорости тела - касательным к эллипсу и направлением на первый фокус (свойство эллипса: угол между касательной и вектором на второй фокус такой же)
-    val f1 = planet_coord                                                                // координаты первого фокуса - координаты планеты (она в фокусе эллипса-орбиты)
-    val f2 = body_relative_velocity.rotateDeg(alpha).n*d2 + body_relative_coord + planet_coord    // координаты второго фокуса
-    val center = (f2 - f1).n*c + f1                                                      // координаты центра орбиты-эллипса
+      val d1 = body_relative_coord.norma                                    // расстояние от тела до первого фокуса (планеты)
+      val d2 = 2*a - d1                                            // расстояние до второго фокуса (свойства эллипса: d1+d2 = 2*a)
+      val alpha = body_relative_coord.signedDeg(body_relative_velocity)        // угол между вектором скорости тела - касательным к эллипсу и направлением на первый фокус (свойство эллипса: угол между касательной и вектором на второй фокус такой же)
+      val f1 = planet_coord                                                                // координаты первого фокуса - координаты планеты (она в фокусе эллипса-орбиты)
+      val f2 = body_relative_velocity.rotateDeg(alpha).n*d2 + body_relative_coord + planet_coord    // координаты второго фокуса
+      val center = (f2 - f1).n*c + f1                                                      // координаты центра орбиты-эллипса
 
-    EllipseOrbit(a, b, e, c, p, r_p, r_a, t, f1, f2, center)
+      EllipseOrbit(a, b, e, c, p, r_p, r_a, t, f1, f2, center)
+    } else {
+      val e = math.sqrt(math.abs(1 + (b * b) / (a * a))) // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
+
+      val true_anomaly = math.abs(math.acos((a*(e*e-1) - body_relative_coord.norma)/(body_relative_coord.norma*e)))
+
+      val counterclockwise = body_relative_coord.signedDeg(body_relative_velocity) > 0
+      val moving_away = body_relative_velocity*body_relative_coord.n > 0
+
+      val signum = if(counterclockwise) {
+        if(moving_away) -1 else 1
+      } else {
+        if(moving_away) 1 else -1
+      }
+
+      val center = planet_coord + body_relative_coord.rotateRad(true_anomaly*signum).n*a*e
+
+      HyperbolaOrbit(a,b,e,planet_coord, center)
+    }
   }
 
   def calculateHyperbolaOrbit(planet_mass:Double, planet_coord:DVec, body_mass:Double, body_relative_coord:DVec, body_relative_velocity:DVec, G:Double):HyperbolaOrbit = {
@@ -710,7 +782,10 @@ package object orbitalkiller {
     val b = math.sqrt(math.abs(a * p)) // малая полуось
     val e = math.sqrt(math.abs(1 + (b * b) / (a * a))) // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
 
-    HyperbolaOrbit(a,b,e,planet_coord, DVec.zero)
+    val true_anomaly = math.abs(math.acos((a*(e*e-1) - body_relative_coord.norma)/(body_relative_coord.norma*e)))*math.signum(-body_relative_coord.signedDeg(body_relative_velocity))
+    val center = planet_coord + body_relative_coord.rotateRad(true_anomaly).n*a*e
+
+    HyperbolaOrbit(a,b,e,planet_coord, center)
   }
 
   def equalGravityRadius(planet1:BodyState, planet2:BodyState):Double = {
