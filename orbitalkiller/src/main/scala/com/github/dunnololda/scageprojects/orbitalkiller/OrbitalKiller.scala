@@ -218,7 +218,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
   val ship_start_position = moon.coord + DVec(0, moon.radius + 100000)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = true)* 1.15
+  val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = false)* 1.15
   val ship = new Ship3("ship",
     init_coord = ship_start_position,
     init_velocity = ship_init_velocity,
@@ -340,7 +340,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         view_mode = 3
       case 4 => // в режиме карты зафиксировать центр орбиты в центре экрана
         if(drawMapMode) {
-          center = orbitAroundCelestialInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity, currentPlanetStates).map(_._2.center * scale).getOrElse(ship.coord)
+          center = orbitAroundCelestialInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass, currentPlanetStates).map(_._2.center * scale).getOrElse(ship.coord)
           rotationAngle = 0
           view_mode = 4
         }
@@ -356,8 +356,8 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     case _ => ""
   }
 
-  def satelliteSpeedStrInPoint(coord:DVec, velocity:DVec):String = {
-    insideSphereOfInfluenceOfCelestialBody(coord, currentPlanetStates) match {
+  def satelliteSpeedStrInPoint(coord:DVec, velocity:DVec, mass:Double):String = {
+    insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
       case Some((planet, planet_state)) =>
         val ss = satelliteSpeed(coord, velocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
         f"${msecOrKmsec(ss.norma)} (velx = ${msecOrKmsec(ss.x)}, vely = ${msecOrKmsec(ss.y)})"
@@ -366,8 +366,8 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     }
   }
 
-  def escapeVelocityStrInPoint(coord:DVec, velocity:DVec):String = {
-    insideSphereOfInfluenceOfCelestialBody(coord, currentPlanetStates) match {
+  def escapeVelocityStrInPoint(coord:DVec, velocity:DVec, mass:Double):String = {
+    insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
       case Some((planet, planet_state)) =>
         val ss = escapeVelocity(coord, velocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
         f"${msecOrKmsec(ss.norma)} (velx = ${msecOrKmsec(ss.x)}, vely = ${msecOrKmsec(ss.y)})"
@@ -384,8 +384,8 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     s"${mOrKm(curvatureRadiusInPoint(body_state))}"
   }
 
-  def orbitStrInPointWithVelocity(mass:Double, coord:DVec, velocity:DVec, planet_states:Seq[BodyState]):String = {
-    insideSphereOfInfluenceOfCelestialBody(coord, planet_states) match {
+  def orbitStrInPointWithVelocity(coord:DVec, velocity:DVec, mass:Double, planet_states:Seq[BodyState]):String = {
+    insideSphereOfInfluenceOfCelestialBody(coord, mass, planet_states) match {
       case Some((planet, planet_state)) =>
         val prefix = planet.index match {
           case earth.index => "Земля"
@@ -397,16 +397,16 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     }
   }
 
-  def orbitInPointWithVelocity(mass:Double, coord:DVec, velocity:DVec):Option[KeplerOrbit] = {
-    insideSphereOfInfluenceOfCelestialBody(coord, currentPlanetStates) match {
+  def orbitInPointWithVelocity(coord:DVec, velocity:DVec, mass:Double):Option[KeplerOrbit] = {
+    insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
       case Some((planet, planet_state)) =>
         Some(calculateOrbit(planet_state.mass, planet_state.coord, mass, coord - planet_state.coord, velocity - planet_state.vel, G))
       case None => None
     }
   }
 
-  def orbitAroundCelestialInPointWithVelocity(mass:Double, coord:DVec, velocity:DVec, planet_states:Seq[BodyState]):Option[((CelestialBody, BodyState), KeplerOrbit)] = {
-    insideSphereOfInfluenceOfCelestialBody(coord, currentPlanetStates) match {
+  def orbitAroundCelestialInPointWithVelocity(coord:DVec, velocity:DVec, mass:Double, planet_states:Seq[BodyState]):Option[((CelestialBody, BodyState), KeplerOrbit)] = {
+    insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
       case Some((planet, planet_state)) =>
         planetByIndex(planet_state.index).flatMap(planet => {
           Some(((planet, planet_state), calculateOrbit(planet_state.mass, planet_state.coord, mass, coord - planet_state.coord, velocity - planet_state.vel, G)))
@@ -469,7 +469,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
           case Some((t, lbs)) =>
             lbs.find(_.index == ship.index) match {
               case Some(bs) =>
-                orbitStrInPointWithVelocity(bs.mass, bs.coord, bs.vel, lbs.filter(x => planet_indexes.contains(x.index)))
+                orbitStrInPointWithVelocity(bs.coord, bs.vel, bs.mass, lbs.filter(x => planet_indexes.contains(x.index)))
               case None =>"N/A"
             }
           case None =>
@@ -477,7 +477,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
             "N/A"
         }
       } else {
-        orbitStrInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity, currentSystemState.filter(x => planet_indexes.contains(x.index)))
+        orbitStrInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass, currentSystemState.filter(x => planet_indexes.contains(x.index)))
       }
     }
   }
@@ -491,7 +491,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   def drawMapMode_=(new_mode:Boolean) {
     if(new_mode) {
       _draw_map_mode = true
-      orbitAroundCelestialInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity, currentPlanetStates) match {
+      orbitAroundCelestialInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass, currentPlanetStates) match {
         case Some((planet, kepler_orbit)) =>
           kepler_orbit match {
             case ellipse:EllipseOrbit =>
@@ -519,14 +519,17 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     }
   }
 
-  def insideSphereOfInfluenceOfCelestialBody(coord:DVec, planet_states:Seq[BodyState]):Option[(CelestialBody, BodyState)] = {
+  def insideSphereOfInfluenceOfCelestialBody(ship_coord:DVec, ship_mass:Double, planet_states:Seq[BodyState]):Option[(CelestialBody, BodyState)] = {
     for {
       moon_state <- planet_states.find(_.index == moon.index)
       earth_state <- planet_states.find(_.index == earth.index)
     } yield {
-      if(coord.dist(moon_state.coord) < soi(moon_state.mass, moon_state.coord.dist(earth_state.coord), earth_state.mass)) {
+      val earth_force = gravityForce(earth_state.coord, earth_state.mass, ship_coord, ship_mass, G).norma
+      val moon_force = gravityForce(moon_state.coord, moon_state.mass, ship_coord, ship_mass, G).norma
+      if(earth_force >= moon_force) (earth, earth_state) else (moon, moon_state)
+      /*if(coord.dist(moon_state.coord) < soi(moon_state.mass, moon_state.coord.dist(earth_state.coord), earth_state.mass)) {
         (moon, moon_state)
-      } else (earth, earth_state)
+      } else (earth, earth_state)*/
     }
   }
 
@@ -874,7 +877,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     some_system_state.find(_.index == ship_index) match {
       case Some(bs) =>
         // смотрим, где он находится
-        insideSphereOfInfluenceOfCelestialBody(bs.coord, some_system_state.filter(x => planet_indexes.contains(x.index))) match {
+        insideSphereOfInfluenceOfCelestialBody(bs.coord, bs.mass, some_system_state.filter(x => planet_indexes.contains(x.index))) match {
           case Some((planet, planet_state)) =>
             // корабль находится внутри гравитационного радиуса какой-то планеты (земли или луны)
             val orbit = calculateOrbit(
@@ -952,13 +955,13 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         openglLocalTransform {
           openglMove(earth.coord*scale)
           val current_ang = (_tacts * base_dt * 1000).toLong % (24l * 60 * 60 * 1000) * 360.0 / (24.0*60*60*1000)
-          (0.0 to 359.0 by 600.0/globalScale).init.foreach {
+          (0.0 to 359.0 by 600.0/globalScale).init.map(_.toInt).distinct.foreach {
             case ang =>
               openglLocalTransform {
                 openglRotateDeg(current_ang + ang.toDouble)
                 openglMove(DVec(0, 1) * (earth.radius - 20000000 / globalScale) * scale)
                 print(
-                  s"${ang.toInt}",
+                  s"$ang",
                   Vec.zero,
                   color = WHITE,
                   size = (max_font_size / globalScale).toFloat,
@@ -981,13 +984,13 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
             openglLocalTransform {
               openglMove(moon.coord*scale)
               val current_ang = (_tacts * base_dt * 1000).toLong % (moon_orbit.t.toLong*1000l) * 360.0 / (moon_orbit.t.toLong*1000l)
-              (0.0 to 359.0 by 6000.0/globalScale).init.foreach {
+              (0.0 to 359.0 by 6000.0/globalScale).init.map(_.toInt).distinct.foreach {
                 case ang =>
                   openglLocalTransform {
                     openglRotateDeg(current_ang + ang.toDouble)
                     openglMove(DVec(0, 1) * (moon.radius - 20000000 / globalScale) * scale)
                     print(
-                      s"${ang.toInt}",
+                      s"$ang",
                       Vec.zero,
                       color = WHITE,
                       size = (max_font_size / globalScale).toFloat,
@@ -1203,7 +1206,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         val moon_force = gravityForce(moon.coord, moon.mass, ship.coord, ship.mass, G).norma
         print(f"Влияние планет: Земля ${earth_force/(earth_force + moon_force)*100}%.2f% Луна ${moon_force/(earth_force + moon_force)*100}%.2f% З/Л ${earth_force/moon_force}%.2f Л/З ${moon_force/earth_force}%.2f",
           20, heights.next(), YELLOW)
-        insideSphereOfInfluenceOfCelestialBody(ship.coord, currentPlanetStates) match {
+        insideSphereOfInfluenceOfCelestialBody(ship.coord, ship.mass, currentPlanetStates) match {
           case Some((planet, planet_state)) =>
             val planet_name = planet.index match {
               case earth.index => "Земля"
@@ -1224,7 +1227,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         val ship_moon_orbital_energy = specificOrbitalEnergy(moon.mass, moon.coord, ship.mass, ship.coord - moon.coord, ship.linearVelocity-moon.linearVelocity, G)*/
         /*print(f"Орбитальная энергия: Земля $ship_earth_orbital_energy%.2f Луна $ship_moon_orbital_energy%.2f",
           20, heights.next(), YELLOW)*/
-        print(s"Параметры орбиты: ${orbitStrInPointWithVelocity(ship.mass, ship.coord, ship.linearVelocity, currentPlanetStates)}",
+        print(s"Параметры орбиты: ${orbitStrInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass, currentPlanetStates)}",
           20, heights.next(), YELLOW)
 
         print("", 20, heights.next(), YELLOW)
