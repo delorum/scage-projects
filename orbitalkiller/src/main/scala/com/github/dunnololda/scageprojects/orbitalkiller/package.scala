@@ -6,6 +6,7 @@ import net.phys2d.raw.shapes.{DynamicShape => Phys2dShape, _}
 import net.phys2d.raw.{Body => Phys2dBody, BodyList => Phys2dBodyList, StaticBody => Phys2dStaticBody, World => Phys2dWorld}
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.language.reflectiveCalls
 
 package object orbitalkiller {
@@ -450,6 +451,8 @@ package object orbitalkiller {
     facts.getOrElseUpdate(n, factors4(n))
   }
 
+  case class CollisionData(collided_body:BodyState, contanct_point:DVec, new_velocity:DVec, new_angular_velocity:Double)
+
   def systemEvolutionFrom(dt: => Double,           // в секундах, может быть больше либо равно base_dt - обеспечивается ускорение времени
                           maxMultiplier: => Int = 1000000,
                           base_dt:Double,          // в секундах
@@ -463,8 +466,9 @@ package object orbitalkiller {
       val (tacts, bodies) = changeFunction(state._1, state._2)
       val next_tacts = tacts + steps
 
-      val next_bodies = if(enable_collisions) {
-        val collision_data = mutable.HashMap[String, (DVec, Double)]()
+      val next_bodies = if(enable_collisions && _dt == base_dt) { // колизии, только если нет ускорения времени
+        // index -> (new_velocity, new_angular_velocity, list of (touching body, contact point))
+        val collision_data = mutable.HashMap[String, ArrayBuffer[CollisionData]]()
         for {
           space <- splitSpace(new Space(bodies, DVec.zero), 5, 10)
           if space.bodies.length > 1
@@ -478,8 +482,16 @@ package object orbitalkiller {
           val dv = b1.vel - b2.vel
           val relative_movement = dv*n
           if(relative_movement < 0) {  // If the objects are moving away from each other we dont need to apply an impulse
-            collision_data += (b1.index -> (b1.vel, b1.ang_vel))
-            collision_data += (b2.index -> (b2.vel, b2.ang_vel))
+            collision_data.getOrElseUpdate(b1.index, ArrayBuffer[CollisionData]()) += CollisionData(
+              b2, contact_point,
+              b1.vel,
+              b1.ang_vel
+            )
+            collision_data.getOrElseUpdate(b2.index, ArrayBuffer[CollisionData]()) += CollisionData(
+              b1, contact_point,
+              b2.vel,
+              b2.ang_vel
+            )
           } else {
             val ma = b1.mass
             val ia = b1.I
@@ -496,7 +508,11 @@ package object orbitalkiller {
               val va2 = va1 + (j * n)/ma
               val wa2 = (wa1 + (rap*/(j * n))/ia).toDeg  // must be in degrees
 
-              collision_data += (b1.index -> (va2, wa2))
+              collision_data.getOrElseUpdate(b1.index, ArrayBuffer[CollisionData]()) += CollisionData(
+                b2, contact_point,
+                va2,
+                wa2
+              )
             } else {
               val ib = b2.I
               val rbp = contact_point - b2.coord
@@ -507,11 +523,19 @@ package object orbitalkiller {
 
               val va2 = va1 + (j * n)/ma
               val wa2 = (wa1 + (rap*/(j * n))/ia).toDeg  // must be in degrees
-              collision_data += (b1.index -> (va2, wa2))
+              collision_data.getOrElseUpdate(b1.index, ArrayBuffer[CollisionData]()) += CollisionData(
+                b2, contact_point,
+                va2,
+                wa2
+              )
 
               val vb2 = vb1 - (j * n)/mb
               val wb2 = (wb1 - (rbp*/(j * n))/ib).toDeg  // must be in degrees
-              collision_data += (b2.index -> (vb2, wb2))
+              collision_data.getOrElseUpdate(b2.index, ArrayBuffer[CollisionData]()) += CollisionData(
+                b1, contact_point,
+                vb2,
+                wb2
+              )
             }
           }
         }
@@ -523,15 +547,23 @@ package object orbitalkiller {
 
             val next_force = force(tacts, b1, other_bodies)
             val next_acc = next_force / b1.mass
-            val next_vel = collision_data.get(b1.index).map(_._1).getOrElse(b1.vel + next_acc*_dt)
+            val next_vel = collision_data.get(b1.index).map(_.head.new_velocity).getOrElse(b1.vel + next_acc*_dt)
             val next_coord = b1.coord + next_vel*_dt
 
             val next_torque = torque(tacts, b1, other_bodies)
             val next_ang_acc = (next_torque / b1.I).toDeg  // in degrees
-            val next_ang_vel = collision_data.get(b1.index).map(_._2).getOrElse(b1.ang_vel + next_ang_acc*_dt)
+            val next_ang_vel = collision_data.get(b1.index).map(_.head.new_angular_velocity).getOrElse(b1.ang_vel + next_ang_acc*_dt)
             val next_ang = correctAngle((b1.ang + next_ang_vel*_dt) % 360)
 
-            b1.copy(
+            val is_resting = collision_data.get(b1.index).exists {
+              case touching_bodies =>
+                touching_bodies.exists(_.collided_body.is_static) &&
+                next_coord.dist(b1.coord) < 0.001 &&
+                next_vel.dist(b1.vel) < 0.001 &&
+                math.abs(next_ang_vel - b1.ang_vel) < 0.001
+            }
+            if(is_resting) b1
+            else b1.copy(
               acc = next_acc,
               vel = next_vel,
               coord = next_coord,
