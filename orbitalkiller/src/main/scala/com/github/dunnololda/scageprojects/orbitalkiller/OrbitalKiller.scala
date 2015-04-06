@@ -138,24 +138,28 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   private val future_trajectory_capacity = 10000
 
   def getFutureState(tacts:Long):List[BodyState] = {
-    if(future_trajectory.length >= tacts) future_trajectory(tacts.toInt)._2
-    else {
-      continueFutureTrajectory(s"getFutureState($tacts)")
-      getFutureState(tacts)
-    }
+    if(ship.flightMode != 0) {
+      if (future_trajectory.length >= tacts) future_trajectory(tacts.toInt)._2
+      else {
+        continueFutureTrajectory(s"getFutureState($tacts)")
+        getFutureState(tacts)
+      }
+    } else Nil
   }
 
   //private val body_trajectories_map = mutable.HashMap[String, ArrayBuffer[(Long, BodyState)]]()
 
   def updateFutureTrajectory(reason:String) {
-    println(s"updateFutureTrajectory: $reason")
-    future_trajectory.clear()
-    future_trajectory ++= {
-      futureSystemEvolutionFrom(base_dt, _tacts, currentSystemState, enable_collisions = false)
-        .take(future_trajectory_capacity)
+    if(ship.flightMode != 0) {
+      println(s"updateFutureTrajectory: $reason")
+      future_trajectory.clear()
+      future_trajectory ++= {
+        futureSystemEvolutionFrom(base_dt, _tacts, currentSystemState, enable_collisions = false)
+          .take(future_trajectory_capacity)
+      }
+      _calculate_orbits = true
+      //updateFutureTrajectoryMap()
     }
-    _calculate_orbits = true
-    //updateFutureTrajectoryMap()
   }
 
   /*private def updateFutureTrajectoryMap() {
@@ -174,14 +178,16 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   }*/
 
   def continueFutureTrajectory(reason:String) {
-    println(s"continueFutureTrajectory: $reason")
-    val (t, s) = future_trajectory.lastOption.getOrElse((_tacts, currentSystemState))
-    val steps = {
-      futureSystemEvolutionFrom(base_dt, t, s, enable_collisions = false)
-        .take(future_trajectory_capacity)
-    }.toSeq
-    future_trajectory ++= steps
-    //continueFutureTrajectoryMap(steps)
+    if(ship.flightMode != 0) {
+      println(s"continueFutureTrajectory: $reason")
+      val (t, s) = future_trajectory.lastOption.getOrElse((_tacts, currentSystemState))
+      val steps = {
+        futureSystemEvolutionFrom(base_dt, t, s, enable_collisions = false)
+          .take(future_trajectory_capacity)
+      }.toSeq
+      future_trajectory ++= steps
+      //continueFutureTrajectoryMap(steps)
+    }
   }
 
   /*private def continueFutureTrajectoryMap(steps:Seq[(Long, List[BodyState])]) {
@@ -558,6 +564,9 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       e.workTimeTacts = 0
     }
   })})
+  keyIgnorePause(KEY_NUMPAD0, onKeyDown = {ship.engines.foreach(e => {
+    e.workTimeTacts = 226800 // 1 hour
+  })})
 
   private def repeatTime(code:Int):Long = {
     keyPress(code).map {
@@ -637,6 +646,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   keyIgnorePause(KEY_7, onKeyDown = ship.flightMode = 7)
   keyIgnorePause(KEY_8, onKeyDown = ship.flightMode = 8)
   keyIgnorePause(KEY_9, onKeyDown = ship.flightMode = 9)
+  keyIgnorePause(KEY_0, onKeyDown = ship.flightMode = 0)
 
   keyIgnorePause(KEY_P, onKeyDown = switchPause())
 
@@ -653,15 +663,15 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     val fos = new FileOutputStream("save.orbitalkiller")
     fos.write(s"time ${_tacts}\n".getBytes)
     currentSystemState.filter(_.index == "ship").foreach {
-      case BodyState(index, _, acc, vel, coord, ang_acc, ang_vel, ang, _, _) =>
+      case BodyState(index, _, acc, vel, coord, ang_acc, ang_vel, ang, _, _, _) =>
         fos.write(s"$index ${acc.x}:${acc.y} ${vel.x}:${vel.y} ${coord.x}:${coord.y} $ang_acc $ang_vel $ang\n".getBytes)
     }
     currentSystemState.filter(_.index == "station").foreach {
-      case BodyState(index, _, acc, vel, coord, ang_acc, ang_vel, ang, _, _) =>
+      case BodyState(index, _, acc, vel, coord, ang_acc, ang_vel, ang, _, _, _) =>
         fos.write(s"$index ${acc.x}:${acc.y} ${vel.x}:${vel.y} ${coord.x}:${coord.y} $ang_acc $ang_vel $ang\n".getBytes)
     }
     currentSystemState.filter(_.index == "Moon").foreach {
-      case BodyState(index, _, acc, vel, coord, _, _, _, _, _) =>
+      case BodyState(index, _, acc, vel, coord, _, _, _, _, _, _) =>
         fos.write(s"$index ${acc.x}:${acc.y} ${vel.x}:${vel.y} ${coord.x}:${coord.y} 0 0 0\n".getBytes)
     }
     fos.close()
@@ -1123,7 +1133,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       val engines_active = ship.engines.exists(_.active)
 
       val heights = {
-        var base_max_height = 380
+        var base_max_height = 420
         if(_stop_after_number_of_tacts > 0)  {
           base_max_height += 20
         }
@@ -1139,8 +1149,8 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         if(other_ships_near.nonEmpty) {
           base_max_height += 20
         }
-        if(engines_active) {
-          base_max_height += 5*20
+        if(engines_active && ship.flightMode != 0) {
+          base_max_height += 3*20
         }
 
         (base_max_height to 20 by -20).iterator
@@ -1234,7 +1244,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
         print(s"Двигательная установка: ${if(engines_active) "[rактивирована]" else "отключена"}",
           20, heights.next(), YELLOW)
-        if(engines_active) {
+
           print(s"Мощность и время работы отдельных двигателей:",
             20, heights.next(), YELLOW)
           print(s"${
@@ -1247,6 +1257,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
           }",
             20, heights.next()
             , YELLOW)
+        if(engines_active && ship.flightMode != 0) {
           print(f"Линейная скорость в момент отключения двигателей: $linearSpeedStrWhenEnginesOff",
             20, heights.next(), YELLOW)
           print(f"Угловая скорость в момент отключения двигателей: $angularSpeedStrWhenEnginesOff",
@@ -1334,7 +1345,8 @@ class Star(val index:String, val mass:Double, val coord:DVec, val radius:Double)
       ang_vel = 0,
       ang = 0,
       shape = CircleShape(radius),
-      is_static = true)
+      is_static = true,
+      collisions = Nil)
 
   def currentState:BodyState = currentBodyState(index).getOrElse(initState)
 

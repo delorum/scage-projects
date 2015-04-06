@@ -49,7 +49,7 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
           powerPercent = default_power_percent
         }
         timeMultiplier = realtime
-        workTimeTacts = 10
+        if(workTimeTacts == 0) workTimeTacts = 10
         ship.selected_engine = Some(this)
       } else {
         ship.selected_engine = ship.engines.filter(_.active).lastOption

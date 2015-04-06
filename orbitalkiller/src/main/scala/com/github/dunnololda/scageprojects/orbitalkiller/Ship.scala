@@ -118,6 +118,9 @@ trait Ship {
   def flightMode = flight_mode
   def flightMode_=(new_flight_mode:Int) {
     flight_mode = new_flight_mode
+    if(flight_mode == 0) {
+      engines.foreach(e => e.workTimeTacts = 226800)
+    }
     //if(flight_mode != 1) timeMultiplier = 1
   }
   def flightModeStr:String = flight_mode match {
@@ -130,6 +133,7 @@ trait Ship {
     case 7 => "уравнять скорость с кораблем"
     case 8 => "уравнять скорость с ближайшей планетой"
     case 9 => "остановиться"
+    case 0 => "маневрирование"
     case _ => ""
   }
 
