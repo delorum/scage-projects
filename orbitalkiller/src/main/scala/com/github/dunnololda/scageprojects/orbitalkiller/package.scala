@@ -660,13 +660,20 @@ package object orbitalkiller {
     val pewpew = if(steps < max_multiplier) {
       _step(current_state, cur_dt, steps)
     } else {
-      // пусть maxMultiplier = 450, а мы хотим ускорение 1000
-      // тогда подбираем ближайший multiplier меньше 450, на который делится 1000 без остатка
-      val multiplier = factors5(steps).filter(_ <= max_multiplier).max.toInt
-      val steps2 = steps/multiplier
-      (1 to steps2).foldLeft(current_state) {
-        case (state, step) =>
-          _step(state, base_dt*multiplier, multiplier)
+      if(max_multiplier == 1) {
+        (1 to steps).foldLeft(current_state) {
+          case (state, step) =>
+            _step(state, base_dt, 1)
+        }
+      } else {
+        // пусть maxMultiplier = 450, а мы хотим ускорение 1000
+        // тогда подбираем ближайший multiplier меньше 450, на который делится 1000 без остатка
+        val multiplier = factors5(steps).filter(_ <= max_multiplier).max.toInt
+        val steps2 = steps/multiplier
+        (1 to steps2).foldLeft(current_state) {
+          case (state, step) =>
+            _step(state, base_dt*multiplier, multiplier)
+        }
       }
     }
 
