@@ -12,7 +12,7 @@ object CollisionTests2 extends ScageScreenAppD("Collision Tests 2", 640, 480) {
   def currentBodyStates = current_body_states.values.toList
 
   def futureSystemEvolutionFrom(time:Long, body_states:List[BodyState]) = systemEvolutionFrom(
-    dt = 1.0/63.0, base_dt = 1.0/63.0, elasticity = 0.3,
+    dt = 10.0/63.0, base_dt = 1.0/63.0, elasticity = 0.3,
     force = (time, bs, other_bodies) => {
       DVec(0, -9.81*bs.mass)
     },
@@ -43,10 +43,10 @@ object CollisionTests2 extends ScageScreenAppD("Collision Tests 2", 640, 480) {
   val w3 = new MyWall2("w3", Vec(w+100, h+100),  Vec(w+100, h-100))
   val w4 = new MyWall2("w4", Vec(w+100, h-100),  Vec(w-100, h-100))
 
-  val b1 = new MyBox2("b1", Vec(w-60, h), Vec(0.3f, 0), 30, 20, 1)
-  dynamic_bodies += b1
-  /*val p1 = new MyPentagon2("p1", Vec(w-60, h-40), Vec(0.0f, 0), 20, 1)
-  dynamic_bodies += p1*/
+  //val b1 = new MyBox2("b1", Vec(w-60, h), Vec(0.0f, 0), 30, 20, 1)
+  //dynamic_bodies += b1
+  val p1 = new MyPentagon2("p1", Vec(w-60, h-40), Vec(0.0f, 0), 20, 1)
+  dynamic_bodies += p1
 
   private val real_system_evolution =
     futureSystemEvolutionFrom(0, dynamic_bodies.map(_.currentState).toList ::: List(
@@ -110,6 +110,17 @@ object CollisionTests2 extends ScageScreenAppD("Collision Tests 2", 640, 480) {
 
   interface {
     //print(s"$energy", 20, 20, WHITE)
+    println("=================================")
+    currentBodyStates.foreach {
+      case bs =>
+        if(bs.collisions.nonEmpty) {
+          bs.collisions.foreach {
+            case c =>
+              println(s"${bs.index} has collision with ${c.collided_body.index} in point ${c.contact_point} with separation ${c.separation}")
+          }
+        }
+    }
+    println("=================================")
   }
 }
 
@@ -125,7 +136,7 @@ class MyPentagon2(val index:String, init_coord:Vec, init_velocity:Vec, val len:D
       coord = init_coord,
       ang_acc = 0f,
       ang_vel = 0f,
-      ang = 0f,
+      ang = 10f,
       shape = {
         val one   = DVec(0, len).rotateDeg(0)
         val two   = DVec(0, len).rotateDeg(0+72)
@@ -148,7 +159,7 @@ class MyPentagon2(val index:String, init_coord:Vec, init_velocity:Vec, val len:D
     val color = WHITE
     drawSlidingLines(List(one, two, three, four, five, one), color)
 
-    state.collisions.foreach {
+    /*state.collisions.foreach {
       case CollisionData(other_body, contact, normal, separation, contacts, _, _) =>
         contacts.foreach {
           case c =>
@@ -156,10 +167,10 @@ class MyPentagon2(val index:String, init_coord:Vec, init_velocity:Vec, val len:D
             drawLine(c.getPosition.toDVec, c.getPosition.toDVec + c.getNormal.toDVec.n*10, GREEN)
             print(f"${c.getSeparation}%.2f", c.getPosition.toVec + c.getNormal.toVec.n*10, WHITE)
         }
-    }
-    if(state.collisions.nonEmpty) {
+    }*/
+    /*if(state.collisions.nonEmpty) {
       println(state.collisions.flatMap(c => c.contacts.map(cc => f"${cc.getSeparation}%.2f")).mkString(" : "))
-    }
+    }*/
 
     /*val AABB(c, w, h) = state.aabb
     drawRectCentered(c.toVec, w.toFloat, h.toFloat, GREEN)*/
@@ -215,7 +226,15 @@ class MyBox2(val index:String, init_coord:DVec, init_velocity:DVec, val w:Double
       drawRectCentered(Vec.zero, w.toFloat, h.toFloat, color)
     }
 
-    state.collisions.foreach {
+    /*if(state.collisions.nonEmpty) {
+      println(state.collisions.flatMap(c => {
+        c.contacts.map(cc => {
+          f"${cc.getSeparation}%.2f"
+        })
+      }).mkString(" : "))
+    }*/
+
+    /*state.collisions.foreach {
       case CollisionData(other_body, contact, normal, separation, contacts, _, _) =>
         contacts.foreach {
           case c =>
@@ -223,7 +242,7 @@ class MyBox2(val index:String, init_coord:DVec, init_velocity:DVec, val w:Double
             drawLine(c.getPosition.toDVec, c.getPosition.toDVec + c.getNormal.toDVec.n*10, GREEN)
             print(f"$separation%.2f", c.getPosition.toVec + c.getNormal.toVec.n*10, WHITE)
         }
-    }
+    }*/
 
     /*val AABB(c, w2, h2) = currentState.aabb
     drawRectCentered(c.toVec, w2.toFloat, h2.toFloat, color)*/

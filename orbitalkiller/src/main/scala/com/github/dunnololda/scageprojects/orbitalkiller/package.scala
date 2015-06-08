@@ -466,7 +466,7 @@ package object orbitalkiller {
     contacts:List[net.phys2d.raw.Contact], new_velocity:DVec, new_angular_velocity:Double)
 
   def systemEvolutionFrom(dt: => Double,           // в секундах, может быть больше либо равно base_dt - обеспечивается ускорение времени
-                          maxMultiplier: => Int = 1000000,
+                          maxMultiplier: => Int = 1,
                           base_dt:Double,          // в секундах
                           elasticity:Double, // elasticity or restitution: 0 - inelastic, 1 - perfectly elastic, (va2 - vb2) = -e*(va1 - vb1)
                           force: (Long, BodyState, List[BodyState]) => DVec = (time, body, other_bodies) => DVec.dzero,
@@ -507,6 +507,8 @@ package object orbitalkiller {
             )
           } else {
             // http://gamedevelopment.tutsplus.com/tutorials/how-to-create-a-custom-2d-physics-engine-the-basics-and-impulse-resolution--gamedev-6331
+            // http://gamedevelopment.tutsplus.com/tutorials/how-to-create-a-custom-2d-physics-engine-friction-scene-and-jump-table--gamedev-7756
+            // http://gamedevelopment.tutsplus.com/tutorials/how-to-create-a-custom-2d-physics-engine-oriented-rigid-bodies--gamedev-8032
             val invMa = b1.invMass
             val ia = b1.I
 
@@ -519,7 +521,20 @@ package object orbitalkiller {
               val vap1 = va1 + (wa1 * rap.perpendicular)
               val j = -(1+e)*(vap1*n)/(invMa + (rap*/n)*(rap*/n)/ia)
 
-              val va2 = va1 + (j * n)*invMa
+              val rv = b1.vel-b2.vel
+              val t = (rv - n*(rv*n)).n
+              val jt = -(1+e)*(vap1*t)/(invMa + (rap*/n)*(rap*/n)/ia)
+
+              // коэффициент трения покоя/скольжения для пары материалов резина-сухой асфальт
+              val staticFriction = 0.95
+              val dynamicFriction = 0.5
+              val frictionImpulse = if(math.abs(jt) < staticFriction*j) {
+                jt * t
+              } else {
+                -j * t * dynamicFriction
+              }
+
+              val va2 = va1 + (j * n)*invMa - frictionImpulse*invMa
               val wa2 = (wa1 + (rap*/(j * n))/ia).toDeg  // must be in degrees
 
               collision_data.getOrElseUpdate(b1.index, ArrayBuffer[CollisionData]()) += CollisionData(
@@ -533,9 +548,22 @@ package object orbitalkiller {
               val vb1 = b2.vel
               val wb1 = b2.ang_vel.toRad  // ang_vel in degrees, wb1 must be in radians
               val vab1 = va1 + (wa1 * rap.perpendicular) - vb1 - (wb1 * rbp.perpendicular)
-              val j = -(1+e) * vab1*n/(invMa + invMb + (rap*/n)*(rap*/n)/ia + (rbp*/n)*(rbp*/n)/ib)
+              val j = -(1+e)*vab1*n/(invMa + invMb + (rap*/n)*(rap*/n)/ia + (rbp*/n)*(rbp*/n)/ib)
 
-              val va2 = va1 + (j * n)*invMa
+              val rv = b1.vel-b2.vel
+              val t = (rv - n*(rv*n)).n
+              val jt = -(1+e)*vab1*t/(invMa + invMb + (rap*/n)*(rap*/n)/ia + (rbp*/n)*(rbp*/n)/ib)
+
+              // коэффициент трения покоя/скольжения для пары материалов резина-сухой асфальт
+              val staticFriction = 0.95
+              val dynamicFriction = 0.5
+              val frictionImpulse = if(math.abs(jt) < staticFriction*j) {
+                jt * t
+              } else {
+                -j * t * dynamicFriction
+              }
+
+              val va2 = va1 + (j * n)*invMa - frictionImpulse*invMa
               val wa2 = (wa1 + (rap*/(j * n))/ia).toDeg  // must be in degrees
               collision_data.getOrElseUpdate(b1.index, ArrayBuffer[CollisionData]()) += CollisionData(
                 b2, contact_point, normal, separation, contacts,
@@ -543,7 +571,7 @@ package object orbitalkiller {
                 wa2
               )
 
-              val vb2 = vb1 - (j * n)*invMb
+              val vb2 = vb1 - (j * n)*invMb + frictionImpulse*invMb
               val wb2 = (wb1 - (rbp*/(j * n))/ib).toDeg  // must be in degrees
               collision_data.getOrElseUpdate(b2.index, ArrayBuffer[CollisionData]()) += CollisionData(
                 b1, contact_point, normal, separation, contacts,
@@ -564,7 +592,10 @@ package object orbitalkiller {
             val next_vel = collision_data.get(b1.index).map(_.head.new_velocity).getOrElse(b1.vel + next_acc*_dt)
             val next_coord = {
               collision_data.get(b1.index).map(cd => {
-                correctCoord(b1.coord + next_vel*_dt, b1.mass, b1.index, cd.head)
+                cd.foldLeft(b1.coord + next_vel * _dt) {
+                  case (res, cdd) =>
+                    correctCoord(b1.coord + next_vel * _dt, b1.mass, b1.index, cdd)
+                }
               }).getOrElse(b1.coord + next_vel*_dt)
             }
             //val next_coord = b1.coord + next_vel*_dt
@@ -624,7 +655,8 @@ package object orbitalkiller {
     }
     val cur_dt = dt
     val max_multiplier = maxMultiplier
-    val steps = (cur_dt/base_dt).toInt
+    val steps = math.max((cur_dt/base_dt).toInt, 1)
+
     val pewpew = if(steps < max_multiplier) {
       _step(current_state, cur_dt, steps)
     } else {
