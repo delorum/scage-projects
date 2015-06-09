@@ -12,7 +12,7 @@ object CollisionTests2 extends ScageScreenAppD("Collision Tests 2", 640, 480) {
   def currentBodyStates = current_body_states.values.toList
 
   def futureSystemEvolutionFrom(time:Long, body_states:List[BodyState]) = systemEvolutionFrom(
-    dt = 10.0/63.0, base_dt = 1.0/63.0, elasticity = 0.3,
+    dt = 1.0/63.0, base_dt = 1.0/63.0, elasticity = 0.3,
     force = (time, bs, other_bodies) => {
       DVec(0, -9.81*bs.mass)
     },
@@ -30,12 +30,12 @@ object CollisionTests2 extends ScageScreenAppD("Collision Tests 2", 640, 480) {
 
   def addCircleBody(i:Int) {
     val c =  new MyCircle2(s"c$i", randomPos, randomSpeed, 5, 1f)
-    if(dynamic_bodies.forall(b => maybeCollision(b.currentState, c.currentState).isEmpty) &&
+    /*if(dynamic_bodies.forall(b => maybeCollision(b.currentState, c.currentState).isEmpty) &&
       !coordOnRectCentered(c.coord, Vec(w+60, h-20), 30, 20) &&
       !coordOnRectCentered(c.coord, Vec(w-60, h-20), 30, 20))
-    {
+    {*/
       dynamic_bodies += c
-    } else addCircleBody(i)
+    //} else addCircleBody(i)
   }
 
   val w1 = new MyWall2("w1", Vec(w-100, h-100),  Vec(w-100, h+100))
@@ -43,8 +43,8 @@ object CollisionTests2 extends ScageScreenAppD("Collision Tests 2", 640, 480) {
   val w3 = new MyWall2("w3", Vec(w+100, h+100),  Vec(w+100, h-100))
   val w4 = new MyWall2("w4", Vec(w+100, h-100),  Vec(w-100, h-100))
 
-  //val b1 = new MyBox2("b1", Vec(w-60, h), Vec(0.0f, 0), 30, 20, 1)
-  //dynamic_bodies += b1
+  val b1 = new MyBox2("b1", Vec(w-60, h), Vec(0.0f, 0), 30, 20, 1)
+  dynamic_bodies += b1
   val p1 = new MyPentagon2("p1", Vec(w-60, h-40), Vec(0.0f, 0), 20, 1)
   dynamic_bodies += p1
 
@@ -99,29 +99,29 @@ object CollisionTests2 extends ScageScreenAppD("Collision Tests 2", 640, 480) {
 
   center = _center
 
-  render {
+  /*render {
     /*val spaces = splitSpace(new Space(current_body_states.values.toList, DVec.dzero), 5, 3)
     spaces.foreach {
       case s =>
         drawRectCentered(s.center.toVec, s.width.toFloat, s.height.toFloat, WHITE)
         print(s.bodies.length, s.center.toVec, max_font_size/globalScale, WHITE, align = "center")
     }*/
-  }
+  }*/
 
-  interface {
+  /*interface {
     //print(s"$energy", 20, 20, WHITE)
     println("=================================")
     currentBodyStates.foreach {
       case bs =>
-        if(bs.collisions.nonEmpty) {
+        /*if(bs.collisions.nonEmpty) {
           bs.collisions.foreach {
             case c =>
               println(s"${bs.index} has collision with ${c.collided_body.index} in point ${c.contact_point} with separation ${c.separation}")
           }
-        }
+        }*/
     }
     println("=================================")
-  }
+  }*/
 }
 
 import CollisionTests2._

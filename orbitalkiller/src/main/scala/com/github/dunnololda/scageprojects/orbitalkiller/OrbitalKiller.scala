@@ -663,15 +663,15 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     val fos = new FileOutputStream("save.orbitalkiller")
     fos.write(s"time ${_tacts}\n".getBytes)
     currentSystemState.filter(_.index == "ship").foreach {
-      case BodyState(index, _, acc, vel, coord, ang_acc, ang_vel, ang, _, _, _) =>
+      case BodyState(index, _, acc, vel, coord, ang_acc, ang_vel, ang, _, _, _, _, _) =>
         fos.write(s"$index ${acc.x}:${acc.y} ${vel.x}:${vel.y} ${coord.x}:${coord.y} $ang_acc $ang_vel $ang\n".getBytes)
     }
     currentSystemState.filter(_.index == "station").foreach {
-      case BodyState(index, _, acc, vel, coord, ang_acc, ang_vel, ang, _, _, _) =>
+      case BodyState(index, _, acc, vel, coord, ang_acc, ang_vel, ang, _, _, _, _, _) =>
         fos.write(s"$index ${acc.x}:${acc.y} ${vel.x}:${vel.y} ${coord.x}:${coord.y} $ang_acc $ang_vel $ang\n".getBytes)
     }
     currentSystemState.filter(_.index == "Moon").foreach {
-      case BodyState(index, _, acc, vel, coord, _, _, _, _, _, _) =>
+      case BodyState(index, _, acc, vel, coord, _, _, _, _, _, _, _, _) =>
         fos.write(s"$index ${acc.x}:${acc.y} ${vel.x}:${vel.y} ${coord.x}:${coord.y} 0 0 0\n".getBytes)
     }
     fos.close()
@@ -1345,8 +1345,7 @@ class Star(val index:String, val mass:Double, val coord:DVec, val radius:Double)
       ang_vel = 0,
       ang = 0,
       shape = CircleShape(radius),
-      is_static = true,
-      collisions = Nil)
+      is_static = true, 0, 0, 0)
 
   def currentState:BodyState = currentBodyState(index).getOrElse(initState)
 

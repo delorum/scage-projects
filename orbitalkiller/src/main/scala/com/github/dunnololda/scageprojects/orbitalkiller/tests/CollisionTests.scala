@@ -19,9 +19,9 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   def currentBodyStates = current_body_states.values.toList
 
   def futureSystemEvolutionFrom(time:Long, body_states:List[BodyState]) = systemEvolutionFrom(
-    dt = 10.0/63.0, maxMultiplier = 1, base_dt = 1.0/63.0, elasticity = 0.9,
+    dt = 1.0/63.0, maxMultiplier = 1, base_dt = 1.0/63.0, elasticity = 0.9,
     force = (time, bs, other_bodies) => {
-      /*Vec(0, -0.01f) + */Vec.zero/*DVec(0, -9.81*bs.mass)*/
+      /*Vec(0, -0.01f) + *//*Vec.zero*/DVec(0, -9.81*bs.mass)
     },
     torque = (time, bs, other_bodies) => {
       0f
@@ -42,14 +42,14 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   dynamic_bodies += p1
   def addCircleBody(i:Int) {
     val c =  new MyCircle(s"c$i", randomPos, randomSpeed, 5, 1f)
-    if(dynamic_bodies.forall(b => maybeCollision(b.currentState, c.currentState).isEmpty) &&
+    /*if(dynamic_bodies.forall(b => maybeCollision(b.currentState, c.currentState).isEmpty) &&
       !coordOnRectCentered(c.coord, Vec(w+60, h-20), 30, 20) &&
       !coordOnRectCentered(c.coord, Vec(w-60, h-20), 30, 20))
-    {
+    {*/
       dynamic_bodies += c
-    } else addCircleBody(i)
+    //} else addCircleBody(i)
   }
-  (1 to 20).foreach(i => addCircleBody(i))
+  (1 to 5).foreach(i => addCircleBody(i))
   /*val c1 = new MyCircle("c1", Vec(w, h), Vec(0.0f, -0.0f), 5, 1f)
   dynamic_bodies += c1*/
 
@@ -157,14 +157,14 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
 
   center = _center
 
-  render {
+  /*render {
     val spaces = splitSpace(new Space(current_body_states.values.toList, DVec.dzero), 5, 3)
     spaces.foreach {
       case s =>
         drawRectCentered(s.center.toVec, s.width.toFloat, s.height.toFloat, WHITE)
         print(s.bodies.length, s.center.toVec, max_font_size/globalScale, WHITE, align = "center")
     }
-  }
+  }*/
 
   interface {
     print(s"$energy", 20, 20, WHITE)
