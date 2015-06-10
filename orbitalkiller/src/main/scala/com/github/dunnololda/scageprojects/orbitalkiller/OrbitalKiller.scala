@@ -59,7 +59,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   def currentSystemState = current_body_states.values.toList
 
   def futureSystemEvolutionFrom(dt: => Double, tacts:Long, body_states:List[BodyState], enable_collisions:Boolean) = systemEvolutionFrom(
-    dt, maxTimeMultiplier, base_dt, elasticity = 0.9,
+    dt, maxTimeMultiplier, base_dt,
     force = (tacts, bs, other_bodies) => {
       bs.index match {
         case ship.index =>
@@ -94,7 +94,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     enable_collisions = enable_collisions)((tacts, body_states))
 
   def futureSystemEvolutionWithoutReactiveForcesFrom(dt: => Double, tacts:Long, body_states:List[BodyState], enable_collisions:Boolean) = systemEvolutionFrom(
-    dt, Int.MaxValue, base_dt, elasticity = 0.9,
+    dt, Int.MaxValue, base_dt,
     force = (tacts, bs, other_bodies) => {
       bs.index match {
         case ship.index =>
@@ -112,7 +112,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     enable_collisions = enable_collisions)((tacts, body_states))
 
   def futureSystemEvolutionWithCustomMaxMultiplierFrom(dt: => Double, max_multiplier:Int, tacts:Long, body_states:List[BodyState], enable_collisions:Boolean) = systemEvolutionFrom(
-    dt, max_multiplier, base_dt, elasticity = 0.9,
+    dt, max_multiplier, base_dt,
     force = (tacts, bs, other_bodies) => {
       bs.index match {
         case ship.index =>

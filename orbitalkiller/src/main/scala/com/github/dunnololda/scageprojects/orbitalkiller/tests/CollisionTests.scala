@@ -19,9 +19,9 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   def currentBodyStates = current_body_states.values.toList
 
   def futureSystemEvolutionFrom(time:Long, body_states:List[BodyState]) = systemEvolutionFrom(
-    dt = 1.0/63.0, maxMultiplier = 1, base_dt = 1.0/63.0, elasticity = 0.9,
+    dt = 1.0/63.0, maxMultiplier = 1, base_dt = 1.0/63.0,
     force = (time, bs, other_bodies) => {
-      /*Vec(0, -0.01f) + *//*Vec.zero*/DVec(0, -9.81*bs.mass)
+      /*Vec(0, -0.01f) + */DVec.zero/*DVec(0, -9.81*bs.mass)*/
     },
     torque = (time, bs, other_bodies) => {
       0f
@@ -31,7 +31,7 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   val h = windowHeight/2
 
   def randomPos = Vec(w-95+math.random*190, h-95+math.random*190)
-  def randomSpeed = Vec(math.random, math.random).n*5f
+  def randomSpeed = Vec(-1 + math.random*2, -1 + math.random*2).n*50f
 
   val dynamic_bodies = ArrayBuffer[MyBody]()
   val b1 = new MyBox("b1", Vec(w-60, h), Vec(0.3f, 0), 30, 20, 1)
@@ -49,7 +49,7 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
       dynamic_bodies += c
     //} else addCircleBody(i)
   }
-  (1 to 5).foreach(i => addCircleBody(i))
+  (1 to 40).foreach(i => addCircleBody(i))
   /*val c1 = new MyCircle("c1", Vec(w, h), Vec(0.0f, -0.0f), 5, 1f)
   dynamic_bodies += c1*/
 
@@ -82,6 +82,8 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   keyIgnorePause(KEY_A, 10, onKeyDown = {_center += Vec(-5/globalScale, 0)})
   keyIgnorePause(KEY_S, 10, onKeyDown = {_center += Vec(0, -5/globalScale)})
   keyIgnorePause(KEY_D, 10, onKeyDown = {_center += Vec(5/globalScale, 0)})
+
+  keyIgnorePause(KEY_Q, onKeyDown = if(keyPressed(KEY_LCONTROL)) stopApp())
 
   mouseWheelDownIgnorePause(onWheelDown = m => {
     if(globalScale > 0.01f) {
@@ -196,7 +198,7 @@ class MyPentagon(val index:String, init_coord:Vec, init_velocity:Vec, val len:Do
         val five  = DVec(0, len).rotateDeg(0+72+72+72+72)
         PolygonShape(List(one, two, three, four, five))
       },
-      is_static = false))
+      is_static = false, restitution = 1, staticFriction = 0, dynamicFriction = 0))
 
   render {
     val state = currentState
@@ -207,11 +209,11 @@ class MyPentagon(val index:String, init_coord:Vec, init_velocity:Vec, val len:Do
     val three = coord + DVec(0, len).rotateDeg(rotation+72+72)
     val four = coord + DVec(0, len).rotateDeg(rotation+72+72+72)
     val five = coord + DVec(0, len).rotateDeg(rotation+72+72+72+72)
-    val color = GREEN
+    val color = WHITE
     drawSlidingLines(List(one, two, three, four, five, one).map(_.toVec), color)
 
-    val AABB(c, w, h) = state.aabb
-    drawRectCentered(c.toVec, w.toFloat, h.toFloat, GREEN)
+    /*val AABB(c, w, h) = state.aabb
+    drawRectCentered(c.toVec, w.toFloat, h.toFloat, WHITE)*/
   }
 }
 
@@ -227,17 +229,17 @@ class MyCircle(val index:String, init_coord:DVec, init_velocity:DVec, val radius
       ang_vel = 0f,
       ang = 0f,
       shape = CircleShape(radius),
-      is_static = false))
+      is_static = false, restitution = 1, staticFriction = 0, dynamicFriction = 0))
 
   def coord = currentState.coord
   def linearVelocity = currentState.vel
 
   render(0) {
-    val color = GREEN
+    val color = WHITE
     drawCircle(coord.toVec, radius.toFloat, color)
     drawLine(coord.toVec, (coord + DVec(0,1).rotateDeg(currentState.ang).n*radius).toVec, color)
-    val AABB(c, w, h) = currentState.aabb
-    drawRectCentered(c.toVec, w.toFloat, h.toFloat, color)
+    /*val AABB(c, w, h) = currentState.aabb
+    drawRectCentered(c.toVec, w.toFloat, h.toFloat, color)*/
   }
 }
 
@@ -253,18 +255,18 @@ class MyBox(val index:String, init_coord:DVec, init_velocity:DVec, val w:Double,
       ang_vel = 0.0,
       ang = 0.0,
       shape = BoxShape(w, h),
-      is_static = false))
+      is_static = false, restitution = 1, staticFriction = 0, dynamicFriction = 0))
 
   render(0) {
-    val color = GREEN
+    val color = WHITE
     openglLocalTransform {
       openglMove(currentState.coord.toVec)
       openglRotateDeg(currentState.ang.toFloat)
       drawRectCentered(Vec.zero, w.toFloat, h.toFloat, color)
     }
 
-    val AABB(c, w2, h2) = currentState.aabb
-    drawRectCentered(c.toVec, w2.toFloat, h2.toFloat, color)
+    /*val AABB(c, w2, h2) = currentState.aabb
+    drawRectCentered(c.toVec, w2.toFloat, h2.toFloat, color)*/
   }
 }
 
@@ -280,13 +282,13 @@ class MyWall(index:String, from:DVec, to:DVec) extends MyBody {
       ang_vel = 0f,
       ang = 0f,
       shape = LineShape(to-from),
-      is_static = true))
+      is_static = true, restitution = 1, staticFriction = 0, dynamicFriction = 0))
 
   render(0) {
-    val color = GREEN
+    val color = WHITE
     drawLine(from.toVec, to.toVec, color)
-    val AABB(c, w, h) = currentState.aabb
-    drawRectCentered(c.toVec, w.toFloat, h.toFloat, color)
+    /*val AABB(c, w, h) = currentState.aabb
+    drawRectCentered(c.toVec, w.toFloat, h.toFloat, color)*/
   }
 }
 

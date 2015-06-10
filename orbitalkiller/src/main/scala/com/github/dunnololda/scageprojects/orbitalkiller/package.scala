@@ -212,31 +212,33 @@ package object orbitalkiller {
   case class GeometricContactData(contact_points:List[DVec], normal:DVec, separation:Double)
   case class Contact(a:MutableBodyState, b:MutableBodyState, contact_points:List[DVec], normal:DVec, separation:Double) {
     def applyImpulse() {
-      val e = math.min(a.restitution, b.restitution)
+      val e = math.min(a.body.restitution, b.body.restitution)
       contact_points.foreach(cp => {
         val ra = cp - a.coord
         val rb = cp - b.coord
 
-        def rv = b.vel + (b.ang_vel.toRad */ rb) - a.vel - (a.ang_vel.toRad */ ra)
+        def rvFunc = b.vel + (b.ang_vel.toRad */ rb) - a.vel - (a.ang_vel.toRad */ ra)
 
-        val contactVel = rv*normal
+        val rv1 = rvFunc
+        val contactVel = rv1*normal
         if(contactVel <= 0) {
           val raCrossN = ra */ normal
           val rbCrossN = rb */ normal
 
-          val invMassSum = a.invMass + b.invMass + (raCrossN*raCrossN)*a.invI + (rbCrossN*rbCrossN)*b.invI
+          val invMassSum = a.body.invMass + b.body.invMass + (raCrossN*raCrossN)*a.body.invI + (rbCrossN*rbCrossN)*b.body.invI
           val  j = (-(1.0f + e) * contactVel)/invMassSum/contact_points.length
           val impulse = normal * j
           a.applyImpulse(-impulse, ra)
           b.applyImpulse(impulse, rb)
 
-          val t = (rv + normal*(-rv*normal)).n
-          val jt = (-(rv*t))/invMassSum/contact_points.length
+          val rv2 = rvFunc
+          val t = (rv2 + normal*(-rv2*normal)).n
+          val jt = (-(rv2*t))/invMassSum/contact_points.length
           if(math.abs(jt) > 0.0001) {
-            val tangentImpulse = if(math.abs(jt) < j*a.staticFriction) {
+            val tangentImpulse = if(math.abs(jt) < j*a.body.staticFriction) {
               t * jt
             } else {
-              t*j*(-a.dynamicFriction)
+              t*j*(-a.body.dynamicFriction)
             }
             a.applyImpulse(-tangentImpulse, ra)
             b.applyImpulse(tangentImpulse, rb)
@@ -246,9 +248,9 @@ package object orbitalkiller {
     }
     
     def positionalCorrection() {
-      val correction = math.max(separation - 0.05, 0)/(a.invMass + b.invMass)*0.4
-      a.coord += normal*(-a.invMass*correction)
-      b.coord += normal*b.invMass*correction
+      val correction = math.max(separation - 0.05, 0)/(a.body.invMass + b.body.invMass)*0.4
+      a.coord += normal*(-a.body.invMass*correction)
+      b.coord += normal*b.body.invMass*correction
     }
   }
 
@@ -284,9 +286,9 @@ package object orbitalkiller {
         }
       }
     }
-    body1.shape match {
+    body1.body.shape match {
       case c1:CircleShape =>
-        body2.shape match {
+        body2.body.shape match {
           case c2:CircleShape =>
             collide(body1.phys2dBody, body2.phys2dBody, circle_circle_collider).map(gcd => Contact(body1, body2, gcd.contact_points, gcd.normal, gcd.separation))
           case l2:LineShape =>
@@ -298,7 +300,7 @@ package object orbitalkiller {
           case _ => None
         }
       case l1:LineShape =>
-        body2.shape match {
+        body2.body.shape match {
           case c2:CircleShape =>
             collide(body1.phys2dBody, body2.phys2dBody, line_circle_collider).map(gcd => Contact(body2, body1, gcd.contact_points, gcd.normal, gcd.separation))
           case l2:LineShape =>
@@ -310,7 +312,7 @@ package object orbitalkiller {
           case _ => None
         }
       case b1:BoxShape =>
-        body2.shape match {
+        body2.body.shape match {
           case c2:CircleShape =>
             collide(body1.phys2dBody, body2.phys2dBody, box_circle_collider).map(gcd => Contact(body1, body2, gcd.contact_points, gcd.normal, gcd.separation))
           case l2:LineShape =>
@@ -322,7 +324,7 @@ package object orbitalkiller {
           case _ => None
         }
       case p1:PolygonShape =>
-        body2.shape match {
+        body2.body.shape match {
           case c2:CircleShape =>
             collide(body1.phys2dBody, body2.phys2dBody, polygon_circle_collider).map(gcd => Contact(body1, body2, gcd.contact_points, gcd.normal, gcd.separation))
           case l2:LineShape =>
@@ -350,7 +352,7 @@ package object orbitalkiller {
                        restitution:Double = 0.2,  // elasticity or restitution: 0 - inelastic, 1 - perfectly elastic, (va2 - vb2) = -e*(va1 - vb1)
                        staticFriction:Double = 0.5,
                        dynamicFriction:Double = 0.3) {
-    val phys2dBody:Phys2dBody = {
+    lazy val phys2dBody:Phys2dBody = {
       if(is_static) {
         val b = new Phys2dStaticBody(index, shape.phys2dShape)
         b.setPosition(coord.x.toFloat, coord.y.toFloat)
@@ -373,53 +375,42 @@ package object orbitalkiller {
     val invMass = if(is_static || mass == 0) 0 else 1.0/mass
     val invI = if(is_static || I == 0) 0 else 1.0/I
 
-    val mutableBodyState = new MutableBodyState(this)
+    lazy val mutableBodyState = new MutableBodyState(this)
   }
 
-  class MutableBodyState(val b:BodyState) {
-    var vel:DVec = b.vel
-    var coord:DVec = b.coord
+  class MutableBodyState(val body:BodyState) {
+    var vel:DVec = body.vel
+    var coord:DVec = body.coord
 
-    var ang_vel:Double = b.ang_vel
-    var ang:Double = b.ang
-
-    val shape = b.shape
-    val is_static = b.is_static
-    val index = b.index
-    val mass = b.mass
-    val invMass = b.invMass
-    val restitution = b.restitution
-    val I = b.I
-    val invI = b.invI
-    val staticFriction = b.staticFriction
-    val dynamicFriction = b.dynamicFriction
+    var ang_vel:Double = body.ang_vel
+    var ang:Double = body.ang
 
     def phys2dBody = {
-      if(is_static) {
-        val x = new Phys2dStaticBody(index, shape.phys2dShape)
+      if(body.is_static) {
+        val x = new Phys2dStaticBody(body.index, body.shape.phys2dShape)
         x.setPosition(coord.x.toFloat, coord.y.toFloat)
         x.setRotation(ang.toRad.toFloat)
-        x.setUserData((index, shape))
+        x.setUserData((body.index, body.shape))
         x
       } else {
-        val x = new Phys2dBody(index, shape.phys2dShape, mass.toFloat)
+        val x = new Phys2dBody(body.index, body.shape.phys2dShape, body.mass.toFloat)
         x.setPosition(coord.x.toFloat, coord.y.toFloat)
         x.setRotation(ang.toRad.toFloat)
         x.adjustVelocity(vel.toPhys2dVec)
         x.adjustAngularVelocity(ang_vel.toRad.toFloat)
-        x.setUserData((index, shape))
+        x.setUserData((body.index, body.shape))
         x
       }
     }
 
-    def aabb = shape.aabb(coord, ang)
+    def aabb = body.shape.aabb(coord, ang)
 
     def applyImpulse(impulse:DVec, contactVector:DVec) {
-      vel += impulse*b.invMass
-      ang_vel += (b.invI * (contactVector */ impulse)).toDeg
+      vel += impulse*body.invMass
+      ang_vel += (body.invI * (contactVector */ impulse)).toDeg
     }
     
-    def toImmutableBodyState:BodyState = b.copy(coord = coord, vel = vel, ang_vel = ang_vel, ang = ang)
+    def toImmutableBodyState:BodyState = body.copy(coord = coord, vel = vel, ang_vel = ang_vel, ang = ang)
   }
 
   implicit class Phys2dBody2BodyState(pb:Phys2dBody) {
@@ -558,7 +549,6 @@ package object orbitalkiller {
   def systemEvolutionFrom(dt: => Double,           // в секундах, может быть больше либо равно base_dt - обеспечивается ускорение времени
                           maxMultiplier: => Int = 1,
                           base_dt:Double,          // в секундах
-                          elasticity:Double, // elasticity or restitution: 0 - inelastic, 1 - perfectly elastic, (va2 - vb2) = -e*(va1 - vb1)
                           force: (Long, BodyState, List[BodyState]) => DVec = (time, body, other_bodies) => DVec.dzero,
                           torque: (Long, BodyState, List[BodyState]) => Double = (time, body, other_bodies) => 0.0,
                           changeFunction:(Long, List[BodyState]) => (Long, List[BodyState]) =  (time, bodies) => (time, bodies),
@@ -571,42 +561,48 @@ package object orbitalkiller {
       // http://gamedevelopment.tutsplus.com/tutorials/how-to-create-a-custom-2d-physics-engine-the-basics-and-impulse-resolution--gamedev-6331
       // http://gamedevelopment.tutsplus.com/tutorials/how-to-create-a-custom-2d-physics-engine-friction-scene-and-jump-table--gamedev-7756
       // http://gamedevelopment.tutsplus.com/tutorials/how-to-create-a-custom-2d-physics-engine-oriented-rigid-bodies--gamedev-8032
+      // http://www.niksula.hut.fi/~hkankaan/Homepages/gravity.html
 
       val mutable_bodies = bodies.map(_.mutableBodyState)
 
-      val collisions = for {
+      val collisions = if(enable_collisions && _dt == base_dt) {for {
         space <- splitSpace(new Space(mutable_bodies, DVec.zero), 5, 10)
         if space.bodies.length > 1
         (b1, idx) <- space.bodies.zipWithIndex.init
         b2 <- space.bodies.drop(idx+1)
-        if !b1.is_static || !b2.is_static
+        if !b1.body.is_static || !b2.body.is_static
         c @ Contact(_ ,_, contact_points, normal, separation) <- maybeCollision(b1, b2)
-      } yield c
+      } yield c} else Nil
+      
+      val mb_and_others = (for {
+        (mb, idx) <- mutable_bodies.zipWithIndex
+        other_mutable_bodies = mutable_bodies.take(idx) ::: mutable_bodies.drop(idx+1) 
+      } yield (mb, other_mutable_bodies)).toList
       
       // Integrate forces first part
-      mutable_bodies.foreach(mb => {
+      mb_and_others.foreach {case (mb, other_mutable_bodies) =>
         val b = mb.toImmutableBodyState
-        if(!mb.is_static) {
-          val other_bodies = mutable_bodies.filterNot(_.index == mb.index).map(_.toImmutableBodyState)
+        if(!mb.body.is_static) {
+          val other_bodies = other_mutable_bodies.map(_.toImmutableBodyState)
           val next_force = force(tacts, b, other_bodies)
-          val next_acc = next_force * mb.invMass
+          val next_acc = next_force * mb.body.invMass
           val next_torque = torque(tacts, b, other_bodies)
-          val next_ang_acc = (next_torque * mb.invI).toDeg // in degrees
+          val next_ang_acc = (next_torque * mb.body.invI).toDeg // in degrees
           mb.vel += next_acc * _dt * 0.5
           mb.ang_vel += next_ang_acc * _dt * 0.5
         }
-      })
+      }
 
       // Solve collisions
-      collisions.foreach(c => c.applyImpulse())
+      if(collisions.nonEmpty) collisions.foreach(c => c.applyImpulse())
 
       // Integrate velocities and forces last part
-      mutable_bodies.foreach(mb => {
+      mb_and_others.foreach{ case (mb, other_mutable_bodies) =>
         val b = mb.toImmutableBodyState
         if(!b.is_static) {
           mb.coord += mb.vel*_dt
           mb.ang = correctAngle((mb.ang + mb.ang_vel*_dt) % 360)
-          val other_bodies = mutable_bodies.filterNot(_.index == b.index).map(_.toImmutableBodyState)
+          val other_bodies = other_mutable_bodies.map(_.toImmutableBodyState)
           val next_force = force(tacts, b, other_bodies)
           val next_acc = next_force * b.invMass
           val next_torque = torque(tacts, b, other_bodies)
@@ -614,10 +610,10 @@ package object orbitalkiller {
           mb.vel += next_acc * _dt * 0.5
           mb.ang_vel += next_ang_acc * _dt * 0.5
         }
-      })
+      }
       
       // Correct positions
-      collisions.foreach(c => c.positionalCorrection())
+      if(collisions.nonEmpty) collisions.foreach(c => c.positionalCorrection())
 
       val next_bodies = mutable_bodies.map(_.toImmutableBodyState)
 
@@ -647,7 +643,7 @@ package object orbitalkiller {
       }
     }
 
-    pewpew #:: systemEvolutionFrom(dt, maxMultiplier, base_dt, elasticity, force, torque, changeFunction, enable_collisions)(pewpew)
+    pewpew #:: systemEvolutionFrom(dt, maxMultiplier, base_dt, force, torque, changeFunction, enable_collisions)(pewpew)
   }
 
   def gravityForce(body1_coord:DVec, body1_mass:Double, body2_coord:DVec, body2_mass:Double, G:Double):DVec = {

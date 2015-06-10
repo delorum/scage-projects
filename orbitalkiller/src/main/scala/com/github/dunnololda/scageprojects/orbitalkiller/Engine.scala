@@ -54,7 +54,7 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
       } else {
         ship.selected_engine = ship.engines.filter(_.active).lastOption
       }
-      updateFutureTrajectory("engine active")
+      //updateFutureTrajectory("engine active")
     }
   }
   def switchActive() {

@@ -19,7 +19,6 @@ object RestingStateTests extends ScageScreenAppD("Resting State Tests", 800, 600
     dt = 1.0/63,
     maxMultiplier = 1000000,
     base_dt = 1.0/63,
-    elasticity = 0.9,
     force = (tacts, bs, other) => DVec(0, -9.81*bs.mass),
     changeFunction = (tacts, bodies) => (tacts, bodies.map(b => b.index match {
       case "b2" => b2

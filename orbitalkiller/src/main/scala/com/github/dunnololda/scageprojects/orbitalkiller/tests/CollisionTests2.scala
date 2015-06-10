@@ -12,7 +12,7 @@ object CollisionTests2 extends ScageScreenAppD("Collision Tests 2", 640, 480) {
   def currentBodyStates = current_body_states.values.toList
 
   def futureSystemEvolutionFrom(time:Long, body_states:List[BodyState]) = systemEvolutionFrom(
-    dt = 1.0/63.0, base_dt = 1.0/63.0, elasticity = 0.3,
+    dt = 1.0/63.0, base_dt = 1.0/63.0,
     force = (time, bs, other_bodies) => {
       DVec(0, -9.81*bs.mass)
     },
@@ -145,7 +145,7 @@ class MyPentagon2(val index:String, init_coord:Vec, init_velocity:Vec, val len:D
         val five  = DVec(0, len).rotateDeg(0+72+72+72+72)
         PolygonShape(List(one, two, three, four, five))
       },
-      is_static = false))
+      is_static = false, restitution = 1))
 
   render {
     val state = currentState
@@ -189,7 +189,7 @@ class MyCircle2(val index:String, init_coord:DVec, init_velocity:DVec, val radiu
       ang_vel = 0f,
       ang = 0f,
       shape = CircleShape(radius),
-      is_static = false))
+      is_static = false, restitution = 1))
 
   def coord = currentState.coord
   def linearVelocity = currentState.vel
@@ -215,7 +215,7 @@ class MyBox2(val index:String, init_coord:DVec, init_velocity:DVec, val w:Double
       ang_vel = 0.0,
       ang = 0.0,
       shape = BoxShape(w, h),
-      is_static = false))
+      is_static = false, restitution = 1))
 
   render(0) {
     val state = currentState
@@ -261,7 +261,7 @@ class MyWall2(index:String, from:DVec, to:DVec) extends MyBody {
       ang_vel = 0f,
       ang = 0f,
       shape = LineShape(to-from),
-      is_static = true))
+      is_static = true, restitution = 1))
 
   render(0) {
     val color = WHITE
