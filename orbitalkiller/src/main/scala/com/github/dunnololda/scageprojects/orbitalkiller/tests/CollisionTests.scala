@@ -159,14 +159,14 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
 
   center = _center
 
-  /*render {
-    val spaces = splitSpace(new Space(current_body_states.values.toList, DVec.dzero), 5, 3)
+  render {
+    val spaces = splitSpace(new Space(current_body_states.values.toList.map(_.mutableBodyState), DVec.dzero), 5, 3)
     spaces.foreach {
       case s =>
         drawRectCentered(s.center.toVec, s.width.toFloat, s.height.toFloat, WHITE)
         print(s.bodies.length, s.center.toVec, max_font_size/globalScale, WHITE, align = "center")
     }
-  }*/
+  }
 
   interface {
     print(s"$energy", 20, 20, WHITE)

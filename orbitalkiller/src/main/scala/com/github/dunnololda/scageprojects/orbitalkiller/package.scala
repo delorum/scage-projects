@@ -3,7 +3,7 @@ package com.github.dunnololda.scageprojects
 import com.github.dunnololda.scage.ScageLibD._
 import net.phys2d.raw.collide.{Collider => Phys2dCollider, _}
 import net.phys2d.raw.shapes.{DynamicShape => Phys2dShape, _}
-import net.phys2d.raw.{Body => Phys2dBody, BodyList => Phys2dBodyList, StaticBody => Phys2dStaticBody, World => Phys2dWorld}
+import net.phys2d.raw.{Body => Phys2dBody, BodyList => Phys2dBodyList, StaticBody => Phys2dStaticBody}
 
 import scala.collection.mutable
 import scala.language.reflectiveCalls
@@ -11,6 +11,7 @@ import scala.language.reflectiveCalls
 package object orbitalkiller {
   val G:Double = 6.6742867E-11
 
+  // axis-aligned bounding box
   case class AABB(center:DVec, width:Double, height:Double) {
     val half_width = width/2
     val half_height = height/2
@@ -137,13 +138,13 @@ package object orbitalkiller {
       this(bodies, center, {
         val (init_min_x, init_max_x) = {
           bodies.headOption.map(b => {
-            val AABB(c, w, _) = b.aabb
+            val AABB(c, w, _) = b.body.aabb
             (c.x - w/2, c.x+w/2)
           }).getOrElse((0.0, 0.0))
         }
         val (min_x, max_x) = bodies.foldLeft((init_min_x, init_max_x)) {
           case ((res_min_x, res_max_x), b) =>
-            val AABB(c, w, _) = b.aabb
+            val AABB(c, w, _) = b.body.aabb
             val new_min_x = c.x - w/2
             val new_max_x = c.x + w/2
             (
@@ -155,13 +156,13 @@ package object orbitalkiller {
       }, {
         val (init_min_y, init_max_y) = {
           bodies.headOption.map(b => {
-            val AABB(c, _, h) = b.aabb
+            val AABB(c, _, h) = b.body.aabb
             (c.y-h/2, c.y+h/2)
           }).getOrElse((0.0, 0.0))
         }
         val (min_y, max_y) = bodies.foldLeft(init_min_y, init_max_y) {
           case ((res_min_y, res_max_y), b) =>
-            val AABB(c, _, h) = b.aabb
+            val AABB(c, _, h) = b.body.aabb
             val new_min_y = c.y - h/2
             val new_max_y = c.y + h/2
             (
@@ -181,24 +182,30 @@ package object orbitalkiller {
 
       val c1 = c + DVec(-w/4, -h/4)
       val aabb1 = AABB(c1, w/2, h/2)
-      val bodies1 = bodies.filter(b => b.aabb.aabbCollision(aabb1))
+      val bodies1 = bodies.filter(b => b.body.aabb.aabbCollision(aabb1))
 
       val c2 = c + DVec(-w/4, h/4)
       val aabb2 = AABB(c2, w/2, h/2)
-      val bodies2 = bodies.filter(b => b.aabb.aabbCollision(aabb2))
+      val bodies2 = bodies.filter(b => b.body.aabb.aabbCollision(aabb2))
 
       val c3 = c + DVec(w/4, h/4)
       val aabb3 = AABB(c3, w/2, h/2)
-      val bodies3 = bodies.filter(b => b.aabb.aabbCollision(aabb3))
+      val bodies3 = bodies.filter(b => b.body.aabb.aabbCollision(aabb3))
 
       val c4 = c + DVec(w/4, -h/4)
       val aabb4 = AABB(c4, w/2, h/2)
-      val bodies4 = bodies.filter(b => b.aabb.aabbCollision(aabb4))
+      val bodies4 = bodies.filter(b => b.body.aabb.aabbCollision(aabb4))
 
-      List(new Space(bodies1, c1, w/2, h/2), new Space(bodies2, c2, w/2, h/2), new Space(bodies3, c3, w/2, h/2), new Space(bodies4, c4, w/2, h/2))
+      List(
+        new Space(bodies1, c1, w/2, h/2),
+        new Space(bodies2, c2, w/2, h/2),
+        new Space(bodies3, c3, w/2, h/2),
+        new Space(bodies4, c4, w/2, h/2)
+      )
     }
   }
 
+  // http://en.wikipedia.org/wiki/Quadtree
   def splitSpace(space:Space, max_level:Int, target:Int, level:Int = 0, spaces:List[Space] = Nil):List[Space] = {
     if(space.bodies.length <= target) space :: spaces
     else if(level > max_level) space :: spaces
@@ -214,14 +221,15 @@ package object orbitalkiller {
     def applyImpulse() {
       val e = math.min(a.body.restitution, b.body.restitution)
       contact_points.foreach(cp => {
+        // radii from centers of masses to contact
         val ra = cp - a.coord
         val rb = cp - b.coord
 
-        def rvFunc = b.vel + (b.ang_vel.toRad */ rb) - a.vel - (a.ang_vel.toRad */ ra)
+        def rvFunc = b.vel + (b.ang_vel.toRad */ rb) - a.vel - (a.ang_vel.toRad */ ra)  // Relative velocity
 
         val rv1 = rvFunc
-        val contactVel = rv1*normal
-        if(contactVel <= 0) {
+        val contactVel = rv1*normal // Relative velocity along the normal
+        if(contactVel <= 0) { // Do not resolve if velocities are separating
           val raCrossN = ra */ normal
           val rbCrossN = rb */ normal
 
@@ -235,6 +243,7 @@ package object orbitalkiller {
           val t = (rv2 + normal*(-rv2*normal)).n
           val jt = (-(rv2*t))/invMassSum/contact_points.length
           if(math.abs(jt) > 0.0001) {
+            // Coulumb's law
             val tangentImpulse = if(math.abs(jt) < j*a.body.staticFriction) {
               t * jt
             } else {
@@ -249,8 +258,8 @@ package object orbitalkiller {
     
     def positionalCorrection() {
       val correction = math.max(separation - 0.05, 0)/(a.body.invMass + b.body.invMass)*0.4
-      a.coord += normal*(-a.body.invMass*correction)
-      b.coord += normal*b.body.invMass*correction
+      if(!a.body.is_static) a.coord += normal*(-a.body.invMass*correction)
+      if(!b.body.is_static) b.coord += normal*b.body.invMass*correction
     }
   }
 
@@ -403,11 +412,11 @@ package object orbitalkiller {
       }
     }
 
-    def aabb = body.shape.aabb(coord, ang)
-
     def applyImpulse(impulse:DVec, contactVector:DVec) {
-      vel += impulse*body.invMass
-      ang_vel += (body.invI * (contactVector */ impulse)).toDeg
+      if(!body.is_static) {
+        vel += impulse * body.invMass
+        ang_vel += (body.invI * (contactVector */ impulse)).toDeg
+      }
     }
     
     def toImmutableBodyState:BodyState = body.copy(coord = coord, vel = vel, ang_vel = ang_vel, ang = ang)
@@ -424,8 +433,8 @@ package object orbitalkiller {
             vel = DVec(pb.getVelocity.getX, pb.getVelocity.getY),
             coord =  DVec(pb.getPosition.getX, pb.getPosition.getY),
             ang_acc = 0.0,
-            ang_vel = pb.getAngularVelocity.toDeg.toDouble,
-            ang = pb.getRotation.toDeg.toDouble,
+            ang_vel = pb.getAngularVelocity.toDeg,
+            ang = pb.getRotation.toDeg,
             shape = shape,
             is_static = pb.isStatic
           ))
@@ -455,11 +464,6 @@ package object orbitalkiller {
     if(angle > 360) correctAngle(angle - 360)
     else if(angle < 0) correctAngle(angle + 360)
     else angle
-  }
-
-  def correctCoord(b1_coord:DVec, b1_inv_mass:Double, b1_index:String, cd:CollisionData):DVec = {
-    val correction = math.max(cd.separation - 0.01, 0.0) / (b1_inv_mass + cd.collided_body.invMass)*0.2*cd.normal.n
-    b1_coord - correction*b1_inv_mass
   }
 
   // структура хранит и по необходимости довычисляет набор простых чисел. Вычисление производится методом решета Эратосфена
@@ -574,15 +578,15 @@ package object orbitalkiller {
         c @ Contact(_ ,_, contact_points, normal, separation) <- maybeCollision(b1, b2)
       } yield c} else Nil
       
-      val mb_and_others = (for {
+      val mb_and_others = for {
         (mb, idx) <- mutable_bodies.zipWithIndex
-        other_mutable_bodies = mutable_bodies.take(idx) ::: mutable_bodies.drop(idx+1) 
-      } yield (mb, other_mutable_bodies)).toList
+        other_mutable_bodies = mutable_bodies.take(idx) ::: mutable_bodies.drop(idx + 1)
+      } yield (mb, other_mutable_bodies)
       
       // Integrate forces first part
       mb_and_others.foreach {case (mb, other_mutable_bodies) =>
-        val b = mb.toImmutableBodyState
         if(!mb.body.is_static) {
+          val b = mb.toImmutableBodyState
           val other_bodies = other_mutable_bodies.map(_.toImmutableBodyState)
           val next_force = force(tacts, b, other_bodies)
           val next_acc = next_force * mb.body.invMass
@@ -598,8 +602,8 @@ package object orbitalkiller {
 
       // Integrate velocities and forces last part
       mb_and_others.foreach{ case (mb, other_mutable_bodies) =>
-        val b = mb.toImmutableBodyState
-        if(!b.is_static) {
+        if(!mb.body.is_static) {
+          val b = mb.toImmutableBodyState
           mb.coord += mb.vel*_dt
           mb.ang = correctAngle((mb.ang + mb.ang_vel*_dt) % 360)
           val other_bodies = other_mutable_bodies.map(_.toImmutableBodyState)
@@ -623,7 +627,7 @@ package object orbitalkiller {
     val max_multiplier = maxMultiplier
     val steps = math.max((cur_dt/base_dt).toInt, 1)
 
-    val pewpew = if(steps < max_multiplier) {
+    val next_state = if(steps < max_multiplier) {
       _step(current_state, cur_dt, steps)
     } else {
       if(max_multiplier == 1) {
@@ -643,7 +647,7 @@ package object orbitalkiller {
       }
     }
 
-    pewpew #:: systemEvolutionFrom(dt, maxMultiplier, base_dt, force, torque, changeFunction, enable_collisions)(pewpew)
+    next_state #:: systemEvolutionFrom(dt, maxMultiplier, base_dt, force, torque, changeFunction, enable_collisions)(next_state)
   }
 
   def gravityForce(body1_coord:DVec, body1_mass:Double, body2_coord:DVec, body2_mass:Double, G:Double):DVec = {
