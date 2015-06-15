@@ -1383,7 +1383,6 @@ class Star(val index:String, val mass:Double, val coord:DVec, ang_vel:Double, va
 
             val ground_position_ang = correctAngle(to_viewpoint.mydeg(Vec(0, 1)) - currentState.ang)
             val ground_position_km = ground_position_ang / 360.0 * 2 * math.Pi * radius / 1000
-            println(ground_position_km)
             for {
               real_point <- ground_position_km - 50.0 to ground_position_km + 49.0 by 1.0
               (w, h) = groundFeatureNear(real_point)
