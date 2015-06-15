@@ -204,7 +204,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     }
   }*/
 
-  val earth = new Star("Earth", mass = 5.9746E24, coord = DVec.dzero, ang_vel = 360.0/(24l*60*60), radius = 6400000)
+  val earth = new Planet("Earth", mass = 5.9746E24, init_coord = DVec.dzero, init_velocity = DVec.zero, init_ang_vel = 360.0/(24l*60*60), radius = 6400000)
 
   val moon_start_position = DVec(-269000000, 269000000)
   val moon_init_velocity = satelliteSpeed(moon_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
@@ -221,12 +221,13 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   def currentPlanetStates = planets.map(_.currentState)
   def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
 
-  val ship_start_position = earth.coord + DVec(0, earth.radius + 500)
-  val ship_init_velocity = DVec.zero/*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  //val ship_start_position = earth.coord + DVec(0, earth.radius + 500)
+  val ship_init_velocity = moon.linearVelocity/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 100000)
+  val ship_start_position = moon.coord + DVec(0, moon.radius + 500)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = false)* 1.15
-  val ship = new Ship3("ship",
+  val ship = new Ship4("ship",
     init_coord = ship_start_position,
     init_velocity = ship_init_velocity,
     init_rotation = 0
@@ -1134,7 +1135,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       val engines_active = ship.engines.exists(_.active)
 
       val heights = {
-        var base_max_height = 420
+        var base_max_height = 460
         if(_stop_after_number_of_tacts > 0)  {
           base_max_height += 20
         }
@@ -1186,12 +1187,20 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
         print("", 20, heights.next(), YELLOW)
 
-        val ship_above_earth_speed = msecOrKmsec((ship.linearVelocity*(ship.coord - earth.coord).p)/ship.coord.dist(earth.coord)*earth.radius - earth.ground_speed_msec)
+        val ship_earth_vertical_speed = msecOrKmsec((ship.linearVelocity - earth.linearVelocity) * (ship.coord - earth.coord).n)
+        val ship_earth_tangent_speed = msecOrKmsec(((ship.linearVelocity - earth.linearVelocity)*(ship.coord - earth.coord).p)/ship.coord.dist(earth.coord)*earth.radius - earth.groundSpeedMsec)
+        //val ship_earth_angular_speed = f"${(ship.linearVelocity - earth.linearVelocity)*(ship.coord - earth.coord).p/ship.coord.dist(earth.coord) - earth.currentState.ang_vel}%.3f град/сек"
+        val ship_earth_position = f"${correctAngle((ship.coord - earth.coord).mydeg(Vec(0, 1)) - earth.currentState.ang)}%.3f град."
+        print("Расстояние, скорость и позиция относительно Земли:", 20, heights.next(), YELLOW)
+        print(s"${mOrKm(ship.coord.dist(earth.coord) - earth.radius)}, $ship_earth_vertical_speed, $ship_earth_tangent_speed, $ship_earth_position", 20, heights.next(), YELLOW)
 
-        print(f"""Расстояние и скорость относительно Земли: ${mOrKm(ship.coord.dist(earth.coord) - earth.radius)}, ${msecOrKmsec((ship.linearVelocity - earth.linearVelocity) * (ship.coord - earth.coord).n)}, $ship_above_earth_speed""",
-          20, heights.next(), YELLOW)
-        print(f"Расстояние и скорость относительно Луны: ${mOrKm(ship.coord.dist(moon.coord) - moon.radius)}, ${msecOrKmsec((ship.linearVelocity - moon.linearVelocity)* (ship.coord - moon.coord).n)}",
-          20, heights.next(), YELLOW)
+        val ship_moon_vertical_speed = msecOrKmsec((ship.linearVelocity - moon.linearVelocity) * (ship.coord - moon.coord).n)
+        val ship_moon_tangent_speed = msecOrKmsec(((ship.linearVelocity - moon.linearVelocity)*(ship.coord - moon.coord).p)/ship.coord.dist(moon.coord)*moon.radius - moon.groundSpeedMsec)
+        //val ship_moon_angular_speed = f"${(ship.linearVelocity - moon.linearVelocity)*(ship.coord - moon.coord).p/ship.coord.dist(moon.coord) - moon.currentState.ang_vel}%.3f град/сек"
+        val ship_moon_position = f"${correctAngle((ship.coord - moon.coord).mydeg(Vec(0, 1)) - moon.currentState.ang)}%.3f град."
+        print("Расстояние, скорость и позиция относительно Луны:", 20, heights.next(), YELLOW)
+        print(s"${mOrKm(ship.coord.dist(moon.coord) - moon.radius)}, $ship_moon_vertical_speed, $ship_moon_tangent_speed, $ship_moon_position", 20, heights.next(), YELLOW)
+
         other_ships_near.headOption.foreach {
           case os =>
             print(f"Расстояние и скорость относительно ближайшего корабля: ${mOrKm(ship.coord.dist(os.coord))}, ${msecOrKmsec((ship.linearVelocity - os.linearVelocity)* (ship.coord - os.coord).n)}",
@@ -1283,8 +1292,11 @@ trait CelestialBody {
   def linearVelocity:DVec
   def mass:Double
   def radius:Double
-  def currentState:BodyState
   def initState:BodyState
+
+  def currentState:BodyState = currentBodyState(index).getOrElse(initState)
+  val ground_length_km = (2*math.Pi*radius/1000).toInt
+  def groundSpeedMsec = currentState.ang_vel.toRad*radius
 }
 
 class Planet(
@@ -1310,7 +1322,15 @@ class Planet(
       shape = CircleShape(radius),
       is_static = false)
 
-  def currentState:BodyState = currentBodyState(index).getOrElse(initState)
+  // рельеф планеты: треугольные горы. два параметра: высота в метрах, ширина основания в метрах
+  private val ground_features = Array.ofDim[(Int, Int)](ground_length_km)
+  (0 until ground_length_km).foreach(x => ground_features(x) = (100 + (math.random*900).toInt, 50 + (math.random*300).toInt))
+
+  private def groundFeatureNear(point_km:Double):(Int, Int) = {
+    if(point_km < 0) groundFeatureNear(point_km + ground_length_km)
+    else if(point_km >= ground_length_km) groundFeatureNear(point_km - ground_length_km)
+    else ground_features(point_km.toInt)
+  }
 
   render {
     if(renderingEnabled) {
@@ -1327,10 +1347,19 @@ class Planet(
             } yield point
             drawSlidingLines(points, WHITE)
 
-            /*val x = (ship.coord-coord).n*radius
-          val p1 = x + (ship.coord-coord).rotateDeg(90).n*60000
-          val p2 = x + (ship.coord-coord).rotateDeg(-90).n*60000
-          drawLine(p1,p2,GREEN)*/
+            val ground_position_ang = correctAngle(to_viewpoint.mydeg(Vec(0, 1)) - currentState.ang)
+            val ground_position_km = ground_position_ang / 360.0 * 2 * math.Pi * radius / 1000
+
+            for {
+              real_point <- ground_position_km - 50.0 to ground_position_km + 49.0 by 1.0
+              (w, h) = groundFeatureNear(real_point)
+              point_ang = (360.0*real_point.toInt/ground_length_km) - ground_position_ang
+              p = to_viewpoint.rotateDeg(point_ang)
+            } {
+              drawLine(p + p.p*w/2, p + p.n*h, WHITE)
+              drawLine(p - p.p*w/2, p + p.n*h, WHITE)
+              drawLine(p, p + p.n*h, WHITE)
+            }
           }
         }
       }
@@ -1350,11 +1379,6 @@ class Star(val index:String, val mass:Double, val coord:DVec, ang_vel:Double, va
       ang = 0,
       shape = CircleShape(radius),
       is_static = false)
-
-  def currentState:BodyState = currentBodyState(index).getOrElse(initState)
-
-  val ground_length_km = (2*math.Pi*radius/1000).toInt
-  val ground_speed_msec = 2*math.Pi*radius/(24*60*60)
 
   // рельеф планеты: треугольные горы. два параметра: высота в метрах, ширина основания в метрах
   private val ground_features = Array.ofDim[(Int, Int)](ground_length_km)
@@ -1383,7 +1407,7 @@ class Star(val index:String, val mass:Double, val coord:DVec, ang_vel:Double, va
 
             val ground_position_ang = correctAngle(to_viewpoint.mydeg(Vec(0, 1)) - currentState.ang)
             val ground_position_km = ground_position_ang / 360.0 * 2 * math.Pi * radius / 1000
-            println(ground_position_km)
+
             for {
               real_point <- ground_position_km - 50.0 to ground_position_km + 49.0 by 1.0
               (w, h) = groundFeatureNear(real_point)
