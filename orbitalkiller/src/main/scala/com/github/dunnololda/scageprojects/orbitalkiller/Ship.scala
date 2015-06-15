@@ -117,11 +117,18 @@ trait Ship {
   private var flight_mode = 1
   def flightMode = flight_mode
   def flightMode_=(new_flight_mode:Int) {
+    val prev_flight_mode = flight_mode
     flight_mode = new_flight_mode
     if(flight_mode == 0) {
       engines.foreach(e => e.workTimeTacts = 226800)
+    } else {
+      if(flightMode == 1) {
+        engines.foreach(e => e.active = false)
+      }
+      if(prev_flight_mode == 0) {
+        engines.foreach(e => e.workTimeTacts = 0)
+      }
     }
-    //if(flight_mode != 1) timeMultiplier = 1
   }
   def flightModeStr:String = flight_mode match {
     case 1 => "свободный"
