@@ -219,28 +219,18 @@ class Ship4(index:String,
               planet <- planetByIndex(planet_state.index)
             } yield (planet_state, planet)) match {
               case Some((planet_state, planet)) =>
-                val need_velocity_l = List({
-                  val ship_vertical_speed = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).n
-                  if (math.abs(ship_vertical_speed) > 0.3) {
-                    println(math.abs(ship_vertical_speed))
-                    Some((planet_state.vel * (coord - planet_state.coord).n) * (coord - planet_state.coord).n)
-                  } else {
-                    None
-                  }
-                }, {
+                val ship_vertical_speed = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).n
+                if (math.abs(ship_vertical_speed) > 0.3) {
+                  preserveVelocity(planet_state.vel*(coord - planet_state.coord).n*(coord - planet_state.coord).n +
+                                   linearVelocity*(coord - planet_state.coord).p*(coord - planet_state.coord).p)
+                } else {
                   if (planet_state.coord.dist(coord) - planet.radius < 10000) {
                     val ship_above_ground_velocity = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).p
                     if (math.abs(ship_above_ground_velocity - planet.groundSpeedMsec) > 0.3) {
-                      Some((planet_state.vel*(coord - planet_state.coord).p)*(coord - planet_state.coord).p)
-                    } else {
-                      None
-                    }
-                  } else {
-                    None
-                  }
-                }).flatten
-                if (need_velocity_l.nonEmpty) preserveVelocity(need_velocity_l.sum)
-                else flightMode = 1
+                      preserveVelocity(planet.groundSpeedMsec * (coord - planet_state.coord).p + planet_state.vel)
+                    } else flightMode = 1
+                  } else flightMode = 1
+                }
               case None =>
                 flightMode = 1
             }
