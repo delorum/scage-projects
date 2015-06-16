@@ -394,6 +394,8 @@ package object orbitalkiller {
     var ang_vel:Double = body.ang_vel
     var ang:Double = body.ang
 
+    def aabb = body.shape.aabb(coord, ang)
+
     def phys2dBody = {
       if(body.is_static) {
         val x = new Phys2dStaticBody(body.index, body.shape.phys2dShape)
