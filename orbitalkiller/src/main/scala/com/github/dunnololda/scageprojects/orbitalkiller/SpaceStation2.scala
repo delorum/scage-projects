@@ -78,7 +78,6 @@ class SpaceStation2(
                 case _ =>
               }
           }
-          drawCircle(DVec.zero, 100)
         }
       }
     }
