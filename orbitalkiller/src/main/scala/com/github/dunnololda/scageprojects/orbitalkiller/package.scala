@@ -1,9 +1,7 @@
 package com.github.dunnololda.scageprojects
 
 import com.github.dunnololda.scage.ScageLibD._
-import net.phys2d.raw.collide.{Collider => Phys2dCollider, _}
-import net.phys2d.raw.shapes.{DynamicShape => Phys2dShape, _}
-import net.phys2d.raw.{Body => Phys2dBody, BodyList => Phys2dBodyList, StaticBody => Phys2dStaticBody}
+import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.{DynamicShape => Phys2dShape, Body => Phys2dBody, StaticBody => Phys2dStaticBody, Collider => Phys2dCollider, BodyList => Phys2dBodyList, _}
 
 import scala.collection.mutable
 import scala.language.reflectiveCalls
@@ -44,7 +42,7 @@ package object orbitalkiller {
       AABB(center, radius*2, radius*2)
     }
 
-    def phys2dShape: Phys2dShape = new Circle(radius.toFloat)
+    def phys2dShape: Phys2dShape = new Circle(radius)
 
     lazy val wI: Double = radius*radius/2.0
   }
@@ -84,7 +82,7 @@ package object orbitalkiller {
       AABB(center, math.max(math.abs(to2.x - from.x), 5.0),  math.max(math.abs(to2.y - from.y), 5.0))
     }
 
-    def phys2dShape: Phys2dShape = new Line(to.x.toFloat, to.y.toFloat)
+    def phys2dShape: Phys2dShape = new Line(to.x, to.y)
 
     lazy val wI: Double = to.norma2/12.0
   }
@@ -105,9 +103,13 @@ package object orbitalkiller {
       AABB(center, max_x - min_x, max_y - min_y)
     }
 
-    def phys2dShape: Phys2dShape = new Box(width.toFloat, height.toFloat)
+    def phys2dShape: Phys2dShape = new Box(width, height)
 
     lazy val wI: Double = (width*width + height*height)/12.0
+  }
+
+  implicit class DVec2DoublePhys2dVector(v:DVec) {
+    def toPhys2dVecD = new Vector2f(v.x, v.y)
   }
 
   case class PolygonShape(points:List[DVec]) extends Shape {
@@ -116,7 +118,7 @@ package object orbitalkiller {
       AABB(center, r, r)
     }
 
-    def phys2dShape: Phys2dShape = new Polygon(points.map(_.toPhys2dVec).toArray)
+    def phys2dShape: Phys2dShape = new Polygon(points.map(_.toPhys2dVecD).toArray)
 
     lazy val wI: Double = {
       val numerator = (for {
@@ -263,7 +265,7 @@ package object orbitalkiller {
     }
   }
 
-  private val contacts = Array.fill(10)(new net.phys2d.raw.Contact)
+  private val contacts = Array.fill(10)(new colliders.phys2d.Contact)
   private val circle_circle_collider = new CircleCircleCollider
   private val line_circle_collider = new LineCircleCollider
   private val circle_box_collider = CircleBoxCollider.createCircleBoxCollider()
@@ -364,16 +366,16 @@ package object orbitalkiller {
     lazy val phys2dBody:Phys2dBody = {
       if(is_static) {
         val b = new Phys2dStaticBody(index, shape.phys2dShape)
-        b.setPosition(coord.x.toFloat, coord.y.toFloat)
-        b.setRotation(ang.toRad.toFloat)
+        b.setPosition(coord.x, coord.y)
+        b.setRotation(ang.toRad)
         b.setUserData((index, shape))
         b
       } else {
-        val b = new Phys2dBody(index, shape.phys2dShape, mass.toFloat)
-        b.setPosition(coord.x.toFloat, coord.y.toFloat)
-        b.setRotation(ang.toRad.toFloat)
-        b.adjustVelocity(vel.toPhys2dVec)
-        b.adjustAngularVelocity(ang_vel.toRad.toFloat)
+        val b = new Phys2dBody(index, shape.phys2dShape, mass)
+        b.setPosition(coord.x, coord.y)
+        b.setRotation(ang.toRad)
+        b.adjustVelocity(vel.toPhys2dVecD)
+        b.adjustAngularVelocity(ang_vel.toRad)
         b.setUserData((index, shape))
         b
       }
@@ -399,16 +401,16 @@ package object orbitalkiller {
     def phys2dBody = {
       if(body.is_static) {
         val x = new Phys2dStaticBody(body.index, body.shape.phys2dShape)
-        x.setPosition(coord.x.toFloat, coord.y.toFloat)
-        x.setRotation(ang.toRad.toFloat)
+        x.setPosition(coord.x, coord.y)
+        x.setRotation(ang.toRad)
         x.setUserData((body.index, body.shape))
         x
       } else {
-        val x = new Phys2dBody(body.index, body.shape.phys2dShape, body.mass.toFloat)
-        x.setPosition(coord.x.toFloat, coord.y.toFloat)
-        x.setRotation(ang.toRad.toFloat)
-        x.adjustVelocity(vel.toPhys2dVec)
-        x.adjustAngularVelocity(ang_vel.toRad.toFloat)
+        val x = new Phys2dBody(body.index, body.shape.phys2dShape, body.mass)
+        x.setPosition(coord.x, coord.y)
+        x.setRotation(ang.toRad)
+        x.adjustVelocity(vel.toPhys2dVecD)
+        x.adjustAngularVelocity(ang_vel.toRad)
         x.setUserData((body.index, body.shape))
         x
       }

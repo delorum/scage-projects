@@ -80,14 +80,14 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
       //val mass_center = polygonCentroid(points)
       println(points.map(p => {
         val pp = p - mass_center
-        s"  Vec(${pp.x}, ${pp.y})"
-      }).mkString("val points:List[Vec] = List(\n", ",\n", "\n)"))
+        s"  DVec(${pp.x}, ${pp.y})"
+      }).mkString("val points:List[DVec] = List(\n", ",\n", "\n)"))
       println()
       engines.zipWithIndex.foreach {case (e, idx) =>
         val mapping = engines_mapping.getOrElse(idx, 0)
         val (_, val_name, _) = engineMappingStr(mapping)
         val position = e.coord - mass_center
-        println(s"val $val_name = Engine(position = Vec(${position.x}, ${position.y}), force_dir = Vec(${e.force_dir.x}, ${e.force_dir.y}), max_power = 10, this)")
+        println(s"val $val_name = Engine(position = Vec(${position.x}, ${position.y}), force_dir = Vec(${e.force_dir.x}, ${e.force_dir.y}), max_power = 10, default_power_percent = 1, this)")
       }
       println()
       println(engines.zipWithIndex.map {case (e, idx) =>
@@ -102,6 +102,8 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
           val (_, val_name, key_name) = engineMappingStr(mapping)
           s"  $key_name -> $val_name"
       }.mkString("val engines_mapping = Map(\n", ",\n", "\n)"))
+      println()
+      println("val draw_points = points :+ points.head")
       println("====================================")
     }
   })
