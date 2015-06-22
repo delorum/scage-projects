@@ -177,7 +177,7 @@ class Ship4(index:String,
         }
       case 5 => // ориентация против траектории
         if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
-          val angle = correctAngle(linearVelocity.mydeg(DVec(0, 1)) + 180)
+          val angle = linearVelocity.mydeg(DVec(0, -1))
           if (math.abs(rotation - angle) < 0.1) flightMode = 2
           else preserveAngle(angle)
         }

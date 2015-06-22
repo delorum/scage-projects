@@ -363,30 +363,12 @@ package object orbitalkiller {
                        restitution:Double = 0.2,  // elasticity or restitution: 0 - inelastic, 1 - perfectly elastic, (va2 - vb2) = -e*(va1 - vb1)
                        staticFriction:Double = 0.5,
                        dynamicFriction:Double = 0.3) {
-    lazy val phys2dBody:Phys2dBody = {
-      if(is_static) {
-        val b = new Phys2dStaticBody(index, shape.phys2dShape)
-        b.setPosition(coord.x, coord.y)
-        b.setRotation(ang.toRad)
-        b.setUserData((index, shape))
-        b
-      } else {
-        val b = new Phys2dBody(index, shape.phys2dShape, mass)
-        b.setPosition(coord.x, coord.y)
-        b.setRotation(ang.toRad)
-        b.adjustVelocity(vel.toPhys2dVecD)
-        b.adjustAngularVelocity(ang_vel.toRad)
-        b.setUserData((index, shape))
-        b
-      }
-    }
-
     val aabb = shape.aabb(coord, ang)
     val I = mass*shape.wI
     val invMass = if(is_static || mass == 0) 0 else 1.0/mass
     val invI = if(is_static || I == 0) 0 else 1.0/I
 
-    lazy val mutableBodyState = new MutableBodyState(this)
+    def mutableBodyState = new MutableBodyState(this)
   }
 
   class MutableBodyState(val body:BodyState) {

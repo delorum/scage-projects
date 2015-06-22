@@ -96,20 +96,44 @@ trait Ship {
   def preserveAngularVelocity(ang_vel_deg:Double)
   def preserveVelocity(vel:DVec)
 
+  /**
+   * rotation и angle_deg оба в диапазоне 0 - 360
+   * @param angle_deg
+   */
   def preserveAngle(angle_deg:Double) {
     if(rotation != angle_deg) {
       if(rotation > angle_deg) {
-        if(rotation - angle_deg > 50) preserveAngularVelocity(-5)
-        else if(rotation - angle_deg > 10) preserveAngularVelocity(-2)
-        else if(rotation - angle_deg > 1) preserveAngularVelocity(-1)
-        else if(rotation - angle_deg > 0.1) preserveAngularVelocity(-0.1)
-        else preserveAngularVelocity(0)
+        if(rotation - angle_deg < angle_deg - rotation + 360) {
+          val diff = rotation - angle_deg
+          if (diff > 50) preserveAngularVelocity(-10)
+          else if (diff > 10) preserveAngularVelocity(-5)
+          else if (diff > 1) preserveAngularVelocity(-1.8)
+          else if (diff > 0.1) preserveAngularVelocity(-0.2)
+          else preserveAngularVelocity(0)
+        } else {
+          val diff = angle_deg - rotation + 360
+          if (diff > 50) preserveAngularVelocity(10)
+          else if (diff > 10) preserveAngularVelocity(5)
+          else if (diff > 1) preserveAngularVelocity(1.8)
+          else if (diff > 0.1) preserveAngularVelocity(0.2)
+          else preserveAngularVelocity(0)
+        }
       } else if(rotation < angle_deg) {
-        if(rotation - angle_deg < -50) preserveAngularVelocity(5)
-        else if(rotation - angle_deg < -10) preserveAngularVelocity(2)
-        else if(rotation - angle_deg < -1) preserveAngularVelocity(1)
-        else if(rotation - angle_deg < -0.1) preserveAngularVelocity(0.1)
-        else preserveAngularVelocity(0)
+        if(rotation - angle_deg > angle_deg - rotation - 360) {
+          val diff = rotation - angle_deg
+          if(diff < -50) preserveAngularVelocity(10)
+          else if(diff < -10) preserveAngularVelocity(5)
+          else if(diff < -1) preserveAngularVelocity(1.8)
+          else if(diff < -0.1) preserveAngularVelocity(0.2)
+          else preserveAngularVelocity(0)
+        } else {
+          val diff = angle_deg - rotation - 360
+          if(diff < -50) preserveAngularVelocity(-10)
+          else if(diff < -10) preserveAngularVelocity(-5)
+          else if(diff < -1) preserveAngularVelocity(-1.8)
+          else if(diff < -0.1) preserveAngularVelocity(-0.2)
+          else preserveAngularVelocity(0)
+        }
       }
     }
   }
