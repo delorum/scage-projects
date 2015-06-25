@@ -221,13 +221,13 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   def currentPlanetStates = planets.map(_.currentState)
   def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
 
-  val ship_start_position = earth.coord + DVec(0, earth.radius + 300500)
-  //val ship_init_velocity = moon.linearVelocity/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  //val ship_start_position = earth.coord + DVec(0, earth.radius + 300500)
+  val ship_init_velocity = moon.linearVelocity/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 100000)
-  //val ship_start_position = moon.coord + DVec(0, moon.radius + 500)
+  val ship_start_position = moon.coord + DVec(0, moon.radius + 500)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = false)* 1.15
-  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
+  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
   val ship = new Ship4("ship",
     init_coord = ship_start_position,
     init_velocity = ship_init_velocity,
@@ -1351,10 +1351,19 @@ class Planet(
             val ground_position_ang = correctAngle(to_viewpoint.mydeg(Vec(0, 1)) - currentState.ang)
             val ground_position_km = ground_position_ang / 360.0 * 2 * math.Pi * radius / 1000
 
+            def correctRealPoint(real_point:Double):Int = {
+              val res = real_point.toInt
+              if(res != 0) res
+              else {
+                if(real_point < 0) ground_length_km-1
+                else 0
+              }
+            }
+
             for {
-              real_point <- ground_position_km - 50.0 to ground_position_km + 49.0 by 1.0
+              real_point <- ground_position_km - 1 to ground_position_km + 1 by 1.0
               (w, h) = groundFeatureNear(real_point)
-              point_ang = (360.0*real_point.toInt/ground_length_km) - ground_position_ang
+              point_ang = (360.0*correctRealPoint(real_point)/ground_length_km) - ground_position_ang
               p = to_viewpoint.rotateDeg(point_ang)
             } {
               drawLine(p + p.p*w/2, p + p.n*h, WHITE)

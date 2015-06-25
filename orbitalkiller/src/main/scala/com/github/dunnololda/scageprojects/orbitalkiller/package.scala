@@ -218,44 +218,52 @@ package object orbitalkiller {
     }
   }
 
-  case class GeometricContactData(contact_points:List[DVec], normal:DVec, separation:Double)
-  case class Contact(a:MutableBodyState, b:MutableBodyState, contact_points:List[DVec], normal:DVec, separation:Double) {
-    def applyImpulse() {
-      val e = math.min(a.body.restitution, b.body.restitution)
-      contact_points.foreach(cp => {
-        // radii from centers of masses to contact
-        val ra = cp - a.coord
-        val rb = cp - b.coord
+  case class GeometricContactData(contact_point:DVec, normal:DVec, separation:Double)
+  case class Contact(a:BodyState, b:BodyState, contact_point:DVec, normal:DVec, separation:Double)
+  case class MutableContact(a:MutableBodyState, b:MutableBodyState, contact_point:DVec, normal:DVec, separation:Double) {
+    def applyImpulse(_dt:Double) {
+      val a_prev_vel = a.vel
+      val b_prev_vel = b.vel
 
-        def rvFunc = b.vel + (b.ang_vel.toRad */ rb) - a.vel - (a.ang_vel.toRad */ ra)  // Relative velocity
+      val e = /*1*//*0.9*/math.min(a.body.restitution, b.body.restitution)
 
-        val rv1 = rvFunc
-        val contactVel = rv1*normal // Relative velocity along the normal
-        if(contactVel <= 0) { // Do not resolve if velocities are separating
-          val raCrossN = ra */ normal
-          val rbCrossN = rb */ normal
+      // radii from centers of masses to contact
+      val ra = contact_point - a.coord
+      val rb = contact_point - b.coord
 
-          val invMassSum = a.body.invMass + b.body.invMass + (raCrossN*raCrossN)*a.body.invI + (rbCrossN*rbCrossN)*b.body.invI
-          val  j = (-(1.0f + e) * contactVel)/invMassSum/contact_points.length
-          val impulse = normal * j
-          a.applyImpulse(-impulse, ra)
-          b.applyImpulse(impulse, rb)
+      val rv = b.vel + (b.ang_vel.toRad */ rb) - a.vel - (a.ang_vel.toRad */ ra)  // Relative velocity
 
-          val rv2 = rvFunc
-          val t = (rv2 + normal*(-rv2*normal)).n
-          val jt = (-(rv2*t))/invMassSum/contact_points.length
-          if(math.abs(jt) > 0.0001) {
-            // Coulumb's law
-            val tangentImpulse = if(math.abs(jt) < j*a.body.staticFriction) {
-              t * jt
-            } else {
-              t*j*(-a.body.dynamicFriction)
-            }
-            a.applyImpulse(-tangentImpulse, ra)
-            b.applyImpulse(tangentImpulse, rb)
+      val contactVel = rv*normal // Relative velocity along the normal
+      if(contactVel <= 0) { // Do not resolve if velocities are separating
+        val raCrossN = ra */ normal
+        val rbCrossN = rb */ normal
+
+        val invMassSum = a.body.invMass + b.body.invMass + (raCrossN*raCrossN)*a.body.invI + (rbCrossN*rbCrossN)*b.body.invI
+        val  j = (-(1.0f + e) * contactVel)/invMassSum///contact_points.length
+        val impulse = normal * j
+        a.applyImpulse(-impulse, ra)
+        b.applyImpulse(impulse, rb)
+
+        val t = (rv + normal*(-rv*normal)).n
+        val jt = (-(rv*t))/invMassSum///contact_points.length
+        if(math.abs(jt) > 0.0001) {
+          // Coulumb's law
+          val tangentImpulse = if(math.abs(jt) < j*a.body.staticFriction) {
+            t * jt
+          } else {
+            t*j*(-a.body.dynamicFriction)
           }
+          a.applyImpulse(-tangentImpulse, ra)
+          b.applyImpulse(tangentImpulse, rb)
         }
-      }) 
+      }
+
+      if(!a.body.is_static) {
+        println(s"скорость ${a.body.index} до столкновения: ${a_prev_vel.norma}, скорость после столкновения: ${a.vel.norma}")
+      }
+      if(!b.body.is_static) {
+        println(s"скорость ${b.body.index} до столкновения: ${b_prev_vel.norma}, скорость после столкновения: ${b.vel.norma}")
+      }
     }
     
     def positionalCorrection() {
@@ -263,6 +271,12 @@ package object orbitalkiller {
       if(!a.body.is_static) a.coord += normal*(-a.body.invMass*correction)
       if(!b.body.is_static) b.coord += normal*b.body.invMass*correction
     }
+
+    def toImmutable = Contact(a.toImmutableBodyState,
+                              b.toImmutableBodyState,
+                              contact_point,
+                              normal,
+                              separation)
   }
 
   private val contacts = Array.fill(10)(new colliders.phys2d.Contact)
@@ -278,7 +292,7 @@ package object orbitalkiller {
   private val polygon_polygon_collider = new PolygonPolygonCollider
   private val line_line_collider = new LineLineCollider
 
-  def maybeCollision(body1:MutableBodyState, body2:MutableBodyState):Option[Contact] = {
+  def maybeCollision(body1:MutableBodyState, body2:MutableBodyState):Option[MutableContact] = {
     def collide(pb1:Phys2dBody, pb2:Phys2dBody, collider:Phys2dCollider):Option[GeometricContactData] = {
       val num_contacts = collider.collide(contacts, pb1, pb2)
       if(num_contacts == 0) None
@@ -287,12 +301,13 @@ package object orbitalkiller {
           case 1 =>
             val contact_point = contacts(0).getPosition.toDVec
             val normal = contacts(0).getNormal.toDVec
-            Some(GeometricContactData(List(contact_point), normal, math.abs(contacts(0).getSeparation)))
+            Some(GeometricContactData(contact_point, normal, math.abs(contacts(0).getSeparation)))
           case 2 =>
             val contact_points = List(contacts(0).getPosition.toDVec, contacts(1).getPosition.toDVec)
+            val contact_point = contact_points.sum/contact_points.length
             val normal = contacts(0).getNormal.toDVec
             val separation = math.max(math.abs(contacts(0).getSeparation), math.abs(contacts(1).getSeparation))
-            Some(GeometricContactData(contact_points, normal, separation))
+            Some(GeometricContactData(contact_point, normal, separation))
           case _ => None
         }
       }
@@ -301,49 +316,49 @@ package object orbitalkiller {
       case c1:CircleShape =>
         body2.body.shape match {
           case c2:CircleShape =>
-            collide(body1.phys2dBody, body2.phys2dBody, circle_circle_collider).map(gcd => Contact(body1, body2, gcd.contact_points, gcd.normal, gcd.separation))
+            collide(body1.phys2dBody, body2.phys2dBody, circle_circle_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
           case l2:LineShape =>
-            collide(body2.phys2dBody, body1.phys2dBody, line_circle_collider).map(gcd => Contact(body1, body2, gcd.contact_points, -gcd.normal, gcd.separation))
+            collide(body2.phys2dBody, body1.phys2dBody, line_circle_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation))
           case b2:BoxShape =>
-            collide(body1.phys2dBody, body2.phys2dBody, circle_box_collider).map(gcd => Contact(body1, body2, gcd.contact_points, gcd.normal, gcd.separation))
+            collide(body1.phys2dBody, body2.phys2dBody, circle_box_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
           case p2:PolygonShape =>
-            collide(body2.phys2dBody, body1.phys2dBody, polygon_circle_collider).map(gcd => Contact(body1, body2, gcd.contact_points, -gcd.normal, gcd.separation))
+            collide(body2.phys2dBody, body1.phys2dBody, polygon_circle_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation))
           case _ => None
         }
       case l1:LineShape =>
         body2.body.shape match {
           case c2:CircleShape =>
-            collide(body1.phys2dBody, body2.phys2dBody, line_circle_collider).map(gcd => Contact(body2, body1, gcd.contact_points, gcd.normal, gcd.separation))
+            collide(body1.phys2dBody, body2.phys2dBody, line_circle_collider).map(gcd => MutableContact(body2, body1, gcd.contact_point, gcd.normal, gcd.separation))
           case l2:LineShape =>
-            collide(body1.phys2dBody, body2.phys2dBody, line_line_collider).map(gcd => Contact(body1, body2, gcd.contact_points, gcd.normal, gcd.separation))
+            collide(body1.phys2dBody, body2.phys2dBody, line_line_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
           case b2:BoxShape =>
-            collide(body1.phys2dBody, body2.phys2dBody, line_box_collider).map(gcd => Contact(body1, body2, gcd.contact_points, gcd.normal, gcd.separation))
+            collide(body1.phys2dBody, body2.phys2dBody, line_box_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
           case p2:PolygonShape =>
-            collide(body1.phys2dBody, body2.phys2dBody, line_polygon_collider).map(gcd => Contact(body1, body2, gcd.contact_points, gcd.normal, gcd.separation))
+            collide(body1.phys2dBody, body2.phys2dBody, line_polygon_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
           case _ => None
         }
       case b1:BoxShape =>
         body2.body.shape match {
           case c2:CircleShape =>
-            collide(body1.phys2dBody, body2.phys2dBody, box_circle_collider).map(gcd => Contact(body1, body2, gcd.contact_points, gcd.normal, gcd.separation))
+            collide(body1.phys2dBody, body2.phys2dBody, box_circle_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
           case l2:LineShape =>
-            collide(body2.phys2dBody, body1.phys2dBody, line_box_collider).map(gcd => Contact(body1, body2, gcd.contact_points, -gcd.normal, gcd.separation))
+            collide(body2.phys2dBody, body1.phys2dBody, line_box_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation))
           case b2:BoxShape =>
-            collide(body1.phys2dBody, body2.phys2dBody, box_box_collider).map(gcd => Contact(body1, body2, gcd.contact_points, gcd.normal, gcd.separation))
+            collide(body1.phys2dBody, body2.phys2dBody, box_box_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
           case p2:PolygonShape =>
-            collide(body2.phys2dBody, body1.phys2dBody, polygon_box_collider).map(gcd => Contact(body1, body2, gcd.contact_points, -gcd.normal, gcd.separation))
+            collide(body2.phys2dBody, body1.phys2dBody, polygon_box_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation))
           case _ => None
         }
       case p1:PolygonShape =>
         body2.body.shape match {
           case c2:CircleShape =>
-            collide(body1.phys2dBody, body2.phys2dBody, polygon_circle_collider).map(gcd => Contact(body1, body2, gcd.contact_points, gcd.normal, gcd.separation))
+            collide(body1.phys2dBody, body2.phys2dBody, polygon_circle_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
           case l2:LineShape =>
-            collide(body2.phys2dBody, body1.phys2dBody, line_polygon_collider).map(gcd => Contact(body1, body2, gcd.contact_points, -gcd.normal, gcd.separation))
+            collide(body2.phys2dBody, body1.phys2dBody, line_polygon_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation))
           case b2:BoxShape =>
-            collide(body1.phys2dBody, body2.phys2dBody, polygon_box_collider).map(gcd => Contact(body1, body2, gcd.contact_points, gcd.normal, gcd.separation))
+            collide(body1.phys2dBody, body2.phys2dBody, polygon_box_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
           case p2:PolygonShape =>
-            collide(body1.phys2dBody, body2.phys2dBody, polygon_polygon_collider).map(gcd => Contact(body1, body2, gcd.contact_points, gcd.normal, gcd.separation))
+            collide(body1.phys2dBody, body2.phys2dBody, polygon_polygon_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
           case _ => None
         }
       case _ => None
@@ -561,7 +576,7 @@ package object orbitalkiller {
         (b1, idx) <- space.bodies.zipWithIndex.init
         b2 <- space.bodies.drop(idx+1)
         if !b1.body.is_static || !b2.body.is_static
-        c @ Contact(_ ,_, contact_points, normal, separation) <- maybeCollision(b1, b2)
+        c <- maybeCollision(b1, b2)
       } yield c} else Nil
       
       val mb_and_others = for {
@@ -584,7 +599,7 @@ package object orbitalkiller {
       }
 
       // Solve collisions
-      if(collisions.nonEmpty) collisions.foreach(c => c.applyImpulse())
+      if(collisions.nonEmpty) collisions.foreach(c => c.applyImpulse(_dt))
 
       // Integrate velocities and forces last part
       mb_and_others.foreach{ case (mb, other_mutable_bodies) =>

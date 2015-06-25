@@ -21,7 +21,7 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   def futureSystemEvolutionFrom(time:Long, body_states:List[BodyState]) = systemEvolutionFrom(
     dt = 1.0/63.0, maxMultiplier = 1, base_dt = 1.0/63.0,
     force = (time, bs, other_bodies) => {
-      /*Vec(0, -0.01f) + */DVec.zero/*DVec(0, -9.81*bs.mass)*/
+      /*Vec(0, -0.01f) + *//*DVec.zero*/DVec(0, -9.81*bs.mass)
     },
     torque = (time, bs, other_bodies) => {
       0f
@@ -30,15 +30,15 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   val w = windowWidth/2
   val h = windowHeight/2
 
-  def randomPos = Vec(w-95+math.random*190, h-95+math.random*190)
+  def randomPos = Vec(w-95+math.random*95, h-95+math.random*95)
   def randomSpeed = Vec(-1 + math.random*2, -1 + math.random*2).n*50f
 
   val dynamic_bodies = ArrayBuffer[MyBody]()
-  val b1 = new MyBox("b1", Vec(w-60, h), Vec(0.3f, 0), 30, 20, 1)
+  val b1 = new MyBox("b1", Vec(w+60, h), Vec(0.3f, 0), 30, 20, 1)
   dynamic_bodies += b1
   /*val b2 = new MyBox("b2", Vec(w+60, h), Vec(-0.3f, 0), 30, 20, 1f*6)
   dynamic_bodies += b2*/
-  val p1 = new MyPentagon("p1", Vec(w-60, h-40), Vec(0.0f, 0), 20, 1)
+  val p1 = new MyPentagon("p1", Vec(w+60, h+40), Vec(0.0f, 0), 20, 1)
   dynamic_bodies += p1
   def addCircleBody(i:Int) {
     val c =  new MyCircle(s"c$i", randomPos, randomSpeed, 5, 1f)
@@ -154,7 +154,8 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   def energy =
     dynamic_bodies.map(b1 => {
       b1.currentState.mass*b1.currentState.vel.norma2/2f +
-        b1.currentState.I*b1.currentState.ang_vel.toRad*b1.currentState.ang_vel.toRad/2f
+      b1.currentState.I*b1.currentState.ang_vel.toRad*b1.currentState.ang_vel.toRad/2f +
+      b1.currentState.mass*9.81*b1.currentState.coord.y
     }).sum
 
   center = _center
@@ -169,7 +170,7 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   }
 
   interface {
-    print(s"$energy", 20, 20, WHITE)
+    print(s"energy = $energy", 20, 20, WHITE)
   }
 }
 
