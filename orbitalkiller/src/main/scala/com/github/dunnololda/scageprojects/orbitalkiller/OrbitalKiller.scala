@@ -1361,7 +1361,7 @@ class Planet(
             }
 
             for {
-              real_point <- ground_position_km - 1 to ground_position_km + 1 by 1.0
+              real_point <- ground_position_km - 50 to ground_position_km + 49 by 1.0
               (w, h) = groundFeatureNear(real_point)
               point_ang = (360.0*correctRealPoint(real_point)/ground_length_km) - ground_position_ang
               p = to_viewpoint.rotateDeg(point_ang)
@@ -1390,16 +1390,6 @@ class Star(val index:String, val mass:Double, val coord:DVec, ang_vel:Double, va
       shape = CircleShape(radius),
       is_static = false)
 
-  // рельеф планеты: треугольные горы. два параметра: высота в метрах, ширина основания в метрах
-  private val ground_features = Array.ofDim[(Int, Int)](ground_length_km)
-  (0 until ground_length_km).foreach(x => ground_features(x) = (100 + (math.random*900).toInt, 50 + (math.random*300).toInt))
-
-  private def groundFeatureNear(point_km:Double):(Int, Int) = {
-    if(point_km < 0) groundFeatureNear(point_km + ground_length_km)
-    else if(point_km >= ground_length_km) groundFeatureNear(point_km - ground_length_km)
-    else ground_features(point_km.toInt)
-  }
-
   render {
     if(renderingEnabled) {
       if(!drawMapMode) {
@@ -1414,19 +1404,6 @@ class Star(val index:String, val mass:Double, val coord:DVec, ang_vel:Double, va
               point = to_viewpoint.rotateDeg(ang)
             } yield point
             drawSlidingLines(points, WHITE)
-
-            val ground_position_ang = correctAngle(to_viewpoint.mydeg(Vec(0, 1)) - currentState.ang)
-            val ground_position_km = ground_position_ang / 360.0 * 2 * math.Pi * radius / 1000
-            for {
-              real_point <- ground_position_km - 50.0 to ground_position_km + 49.0 by 1.0
-              (w, h) = groundFeatureNear(real_point)
-              point_ang = (360.0*real_point.toInt/ground_length_km) - ground_position_ang
-              p = to_viewpoint.rotateDeg(point_ang)
-            } {
-              drawLine(p + p.p*w/2, p + p.n*h, WHITE)
-              drawLine(p - p.p*w/2, p + p.n*h, WHITE)
-              drawLine(p, p + p.n*h, WHITE)
-            }
           }
         }
       }
