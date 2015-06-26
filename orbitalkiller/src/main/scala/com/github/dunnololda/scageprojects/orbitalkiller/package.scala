@@ -383,7 +383,7 @@ package object orbitalkiller {
     val invMass = if(is_static || mass == 0) 0 else 1.0/mass
     val invI = if(is_static || I == 0) 0 else 1.0/I
 
-    def mutableBodyState = new MutableBodyState(this)
+    def toMutableBodyState = new MutableBodyState(this)
   }
 
   class MutableBodyState(val body:BodyState) {
@@ -568,7 +568,7 @@ package object orbitalkiller {
       // http://gamedevelopment.tutsplus.com/tutorials/how-to-create-a-custom-2d-physics-engine-oriented-rigid-bodies--gamedev-8032
       // http://www.niksula.hut.fi/~hkankaan/Homepages/gravity.html
 
-      val mutable_bodies = bodies.map(_.mutableBodyState)
+      val mutable_bodies = bodies.map(_.toMutableBodyState)
 
       val collisions = if(enable_collisions && _dt == base_dt) {for {
         space <- splitSpace(new Space(mutable_bodies, DVec.zero), 5, 10)

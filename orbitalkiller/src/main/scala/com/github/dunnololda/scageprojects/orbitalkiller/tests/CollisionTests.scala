@@ -21,7 +21,7 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   def futureSystemEvolutionFrom(time:Long, body_states:List[BodyState]) = systemEvolutionFrom(
     dt = 1.0/63.0, maxMultiplier = 1, base_dt = 1.0/63.0,
     force = (time, bs, other_bodies) => {
-      /*Vec(0, -0.01f) + *//*DVec.zero*/DVec(0, -9.81*bs.mass)
+      /*Vec(0, -0.01f) + */DVec.zero/*DVec(0, -9.81*bs.mass)*/
     },
     torque = (time, bs, other_bodies) => {
       0f
@@ -154,14 +154,14 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
   def energy =
     dynamic_bodies.map(b1 => {
       b1.currentState.mass*b1.currentState.vel.norma2/2f +
-      b1.currentState.I*b1.currentState.ang_vel.toRad*b1.currentState.ang_vel.toRad/2f +
-      b1.currentState.mass*9.81*b1.currentState.coord.y
+      b1.currentState.I*b1.currentState.ang_vel.toRad*b1.currentState.ang_vel.toRad/2f/* +
+      b1.currentState.mass*9.81*b1.currentState.coord.y*/
     }).sum
 
   center = _center
 
   render {
-    val spaces = splitSpace(new Space(current_body_states.values.toList.map(_.mutableBodyState), DVec.dzero), 5, 3)
+    val spaces = splitSpace(new Space(current_body_states.values.toList.map(_.toMutableBodyState), DVec.dzero), 5, 3)
     spaces.foreach {
       case s =>
         drawRectCentered(s.center.toVec, s.width.toFloat, s.height.toFloat, WHITE)
