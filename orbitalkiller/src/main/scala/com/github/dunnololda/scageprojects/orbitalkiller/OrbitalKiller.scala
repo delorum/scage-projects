@@ -1333,44 +1333,57 @@ class Planet(
     else ground_features(point_km.toInt)
   }
 
+  private var data_initialized = false
+  private val half_render_length_km = 50
+  private val alpha = half_render_length_km * 2.0 * 1000 * 180 / math.Pi / radius
+  private var viewpoint_dist:Double = _
+  private var to_viewpoint:DVec = _
+  private var points:Seq[DVec] = _
+  private var ground_position_ang:Double = _
+  private var ground_position_km:Double = _
+  private var ground_features_near:Seq[(DVec, Int, Int)] = _
+
+  private def updateRenderData() {
+    viewpoint_dist = math.abs((ship.coord + shipOffset).dist(coord) - radius)
+    if(viewpoint_dist < 50000) {
+      to_viewpoint = (ship.coord + shipOffset - coord).n * radius
+      points = for {
+        ang <- -alpha to alpha by 0.01
+        point = to_viewpoint.rotateDeg(ang)
+      } yield point
+      ground_position_ang = correctAngle(to_viewpoint.mydeg(Vec(0, 1)) - currentState.ang)
+      ground_position_km = {
+        val x = ground_position_ang / 360.0 * 2 * math.Pi * radius / 1000
+        if(x - half_render_length_km < 0) x + ground_length_km else x
+      }
+      ground_features_near = for {
+        real_point <- ground_position_km - half_render_length_km to ground_position_km + half_render_length_km-1 by 1.0
+        (w, h) = groundFeatureNear(real_point)
+        point_ang = (360.0*real_point.toInt/ground_length_km) - ground_position_ang
+        p = to_viewpoint.rotateDeg(point_ang)
+      } yield (p, w, h)
+    }
+  }
+
+  action {
+    updateRenderData()
+  }
+
+  actionIgnorePause {
+    updateRenderData()
+    data_initialized = true
+    deleteSelf()
+  }
+
   render {
-    if(renderingEnabled) {
-      if(!drawMapMode) {
-        val viewpoint_dist = math.abs((ship.coord + shipOffset).dist(coord) - radius)
-        if (viewpoint_dist < 50000) {
-          openglLocalTransform {
-            openglMove(coord - base)
-            val to_viewpoint = (ship.coord + shipOffset - coord).n * radius
-            val alpha = 100000 * 180 / math.Pi / radius
-            val points = for {
-              ang <- -alpha to alpha by 0.01
-              point = to_viewpoint.rotateDeg(ang)
-            } yield point
-            drawSlidingLines(points, WHITE)
-
-            val ground_position_ang = correctAngle(to_viewpoint.mydeg(Vec(0, 1)) - currentState.ang)
-            val ground_position_km = ground_position_ang / 360.0 * 2 * math.Pi * radius / 1000
-
-            def correctRealPoint(real_point:Double):Int = {
-              val res = real_point.toInt
-              if(res != 0) res
-              else {
-                if(real_point < 0) ground_length_km-1
-                else 0
-              }
-            }
-
-            for {
-              real_point <- ground_position_km - 50 to ground_position_km + 49 by 1.0
-              (w, h) = groundFeatureNear(real_point)
-              point_ang = (360.0*correctRealPoint(real_point)/ground_length_km) - ground_position_ang
-              p = to_viewpoint.rotateDeg(point_ang)
-            } {
-              drawLine(p + p.p*w/2, p + p.n*h, WHITE)
-              drawLine(p - p.p*w/2, p + p.n*h, WHITE)
-              drawLine(p, p + p.n*h, WHITE)
-            }
-          }
+    if(data_initialized && renderingEnabled && !drawMapMode && viewpoint_dist < 50000) {
+      openglLocalTransform {
+        openglMove(coord - base)
+        drawSlidingLines(points, WHITE)
+        ground_features_near.foreach { case (p, w, h) =>
+          drawLine(p + p.p*w/2, p + p.n*h, WHITE)
+          drawLine(p - p.p*w/2, p + p.n*h, WHITE)
+          drawLine(p, p + p.n*h, WHITE)
         }
       }
     }
@@ -1390,22 +1403,38 @@ class Star(val index:String, val mass:Double, val coord:DVec, ang_vel:Double, va
       shape = CircleShape(radius),
       is_static = false)
 
+  private var data_initialized = false
+  private val alpha = 100 * 1000 * 180 / math.Pi / radius // угловой размер для 100 километров поверхности
+  private var viewpoint_dist:Double = _
+  private var to_viewpoint:DVec = _
+  private var points:Seq[DVec] = _
+
+  private def updateRenderData(): Unit = {
+    viewpoint_dist = math.abs((ship.coord + shipOffset).dist(coord) - radius)
+    if (viewpoint_dist < 50000) {
+      to_viewpoint = (ship.coord + shipOffset - coord).n * radius
+      points = for {
+        ang <- -alpha to alpha by 0.01
+        point = to_viewpoint.rotateDeg(ang)
+      } yield point
+    }
+  }
+
+  action {
+    updateRenderData()
+  }
+
+  actionIgnorePause {
+    updateRenderData()
+    data_initialized = true
+    deleteSelf()
+  }
+
   render {
-    if(renderingEnabled) {
-      if(!drawMapMode) {
-        val viewpoint_dist = math.abs((ship.coord + shipOffset).dist(coord) - radius)
-        if (viewpoint_dist < 50000) {
-          openglLocalTransform {
-            openglMove(coord - base)
-            val to_viewpoint = (ship.coord + shipOffset - coord).n * radius
-            val alpha = 100000 * 180 / math.Pi / radius // угловой размер для 100 километров поверхности
-            val points = for {
-              ang <- -alpha to alpha by 0.01
-              point = to_viewpoint.rotateDeg(ang)
-            } yield point
-            drawSlidingLines(points, WHITE)
-          }
-        }
+    if (data_initialized && renderingEnabled && !drawMapMode && viewpoint_dist < 50000) {
+      openglLocalTransform {
+        openglMove(coord - base)
+        drawSlidingLines(points, WHITE)
       }
     }
   }

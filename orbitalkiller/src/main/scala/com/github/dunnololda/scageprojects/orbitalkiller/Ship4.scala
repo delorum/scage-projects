@@ -224,7 +224,7 @@ class Ship4(index:String,
                   preserveVelocity(planet_state.vel*(coord - planet_state.coord).n*(coord - planet_state.coord).n +
                                    linearVelocity*(coord - planet_state.coord).p*(coord - planet_state.coord).p)
                 } else {
-                  if (planet_state.coord.dist(coord) - planet.radius < 10000) {
+                  if (planet_state.coord.dist(coord) - planet.radius < 1000000) { // уравниваем касательную скорость, если высота меньше 1000 км
                     val ship_above_ground_velocity = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).p
                     if (math.abs(ship_above_ground_velocity - planet.groundSpeedMsec) > 0.3) {
                       preserveVelocity(planet.groundSpeedMsec * (coord - planet_state.coord).p + planet_state.vel)
