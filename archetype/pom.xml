@@ -4,7 +4,7 @@
 
   <groupId>scage</groupId>
   <artifactId>project-archetype</artifactId>
-  <version>10.3</version>
+  <version>10.7</version>
   <packaging>maven-archetype</packaging>
 
   <name>project-archetype</name>
