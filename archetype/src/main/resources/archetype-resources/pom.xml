@@ -243,6 +243,18 @@
 
   <profiles>
       <profile>
+          <id>openjdk</id>
+          <dependencies>
+              <dependency>
+                  <groupId>javax.jnlp</groupId>
+                  <artifactId>jnlp-api</artifactId>
+                  <version>5.0</version>
+                  <scope>system</scope>
+                  <systemPath>/usr/bin/javaws</systemPath>
+              </dependency>
+          </dependencies>
+      </profile>
+      <profile>
           <id>build</id>
           <activation>
               <activeByDefault>true</activeByDefault>
