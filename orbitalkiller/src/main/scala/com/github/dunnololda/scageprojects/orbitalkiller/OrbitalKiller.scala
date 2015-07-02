@@ -1227,7 +1227,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
         val earth_force = gravityForce(earth.coord, earth.mass, ship.coord, ship.mass, G).norma
         val moon_force = gravityForce(moon.coord, moon.mass, ship.coord, ship.mass, G).norma
-        print(f"Влияние планет: Земля ${earth_force/(earth_force + moon_force)*100}%.2f% Луна ${moon_force/(earth_force + moon_force)*100}%.2f% З/Л ${earth_force/moon_force}%.2f Л/З ${moon_force/earth_force}%.2f",
+        print(f"Влияние планет: Земля ${earth_force/(earth_force + moon_force)*100}%.2f%% Луна ${moon_force/(earth_force + moon_force)*100}%.2f%% З/Л ${earth_force/moon_force}%.2f Л/З ${moon_force/earth_force}%.2f",
           20, heights.next(), YELLOW)
         insideSphereOfInfluenceOfCelestialBody(ship.coord, ship.mass, currentPlanetStates) match {
           case Some((planet, planet_state)) =>

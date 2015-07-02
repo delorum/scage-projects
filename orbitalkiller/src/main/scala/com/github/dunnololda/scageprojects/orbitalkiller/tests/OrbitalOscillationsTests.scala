@@ -184,7 +184,7 @@ object OrbitalOscillationsTests extends ScageApp {
     val error = math.abs(station_earth2 - station_earth)/station_earth*100
 
     //println(s"${timeStr((s._1*base_dt*1000).toLong)} : ${mOrKm(ship_moon)} (${mOrKm(min_ship_moon)}, $ship_moon_deg) : ${mOrKm(station_earth)} (${mOrKm(min_station_earth)}, $station_earth_deg)")
-    println(f"$l : ${timeStr((s2._1*base_dt*1000).toLong)} : ${mOrKm(station_earth2)} : ${math.abs(station_earth2 - station_earth)/station_earth*100}%.2f% : ${msec2OrKmsec2(cen_acc2)} : ${mOrKm(cur)} (${mOrKm(min_station_earth2)})")
+    println(f"$l : ${timeStr((s2._1*base_dt*1000).toLong)} : ${mOrKm(station_earth2)} : ${math.abs(station_earth2 - station_earth)/station_earth*100}%.2f%% : ${msec2OrKmsec2(cen_acc2)} : ${mOrKm(cur)} (${mOrKm(min_station_earth2)})")
     //println(f"${(s2._1*base_dt*1000).toLong} ${math.abs(station_earth2 - station_earth)/station_earth*100}%.2f $cen_acc2%.2f $cur%.2f")
     println("===================================")
     //println()

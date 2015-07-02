@@ -12,9 +12,9 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <scala.version>2.10.1</scala.version>
-    <lwjgl.version>2.8.2</lwjgl.version>
-    <scage.version>10.6</scage.version>
+    <scala.version>2.10.5</scala.version>
+    <lwjgl.version>2.9.3</lwjgl.version>
+    <scage.version>10.8</scage.version>
     <src.dir>src</src.dir>
   </properties>
 
@@ -251,6 +251,18 @@
   </build>
 
   <profiles>
+      <profile>
+          <id>openjdk</id>
+          <dependencies>
+              <dependency>
+                  <groupId>javax.jnlp</groupId>
+                  <artifactId>jnlp-api</artifactId>
+                  <version>5.0</version>
+                  <scope>system</scope>
+                  <systemPath>/usr/bin/javaws</systemPath>
+              </dependency>
+          </dependencies>
+      </profile>
       <profile>
           <id>build</id>
           <activation>
