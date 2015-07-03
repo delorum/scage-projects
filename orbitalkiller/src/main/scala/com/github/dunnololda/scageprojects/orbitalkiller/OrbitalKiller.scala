@@ -1392,16 +1392,6 @@ class Planet(
     }
   }
 
-  /*action {
-    updateRenderData()
-  }*/
-
-  actionIgnorePause {
-    updateRenderData()
-    data_initialized = true
-    deleteSelf()
-  }
-
   render {
     updateRenderData()
     if(data_initialized && renderingEnabled && !drawMapMode && viewpoint_dist < 50000) {
