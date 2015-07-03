@@ -258,12 +258,12 @@ package object orbitalkiller {
         }
       }
 
-      if(!a.body.is_static) {
+      /*if(!a.body.is_static) {
         println(s"скорость ${a.body.index} до столкновения: ${a_prev_vel.norma}, скорость после столкновения: ${a.vel.norma}")
       }
       if(!b.body.is_static) {
         println(s"скорость ${b.body.index} до столкновения: ${b_prev_vel.norma}, скорость после столкновения: ${b.vel.norma}")
-      }
+      }*/
     }
     
     def positionalCorrection() {

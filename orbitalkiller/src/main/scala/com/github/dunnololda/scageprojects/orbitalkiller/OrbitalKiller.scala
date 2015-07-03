@@ -221,11 +221,12 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   def currentPlanetStates = planets.map(_.currentState)
   def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
 
-  //val ship_start_position = earth.coord + DVec(0, earth.radius + 300500)
-  val ship_init_velocity = moon.linearVelocity/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  val ship_start_position = earth.coord + DVec(0, earth.radius + 500)
+  val ship_init_velocity = earth.linearVelocity
+  //val ship_init_velocity = moon.linearVelocity/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 100000)
-  val ship_start_position = moon.coord + DVec(0, moon.radius + 500)
+  //val ship_start_position = moon.coord + DVec(0, moon.radius + 500)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = false)* 1.15
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
   val ship = new Ship4("ship",
@@ -579,22 +580,42 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     }.getOrElse(100l)
   }
 
-  keyIgnorePause(KEY_UP,      repeatTime(KEY_UP),    onKeyDown = {ship.selected_engine.foreach(e => e.powerPercent += 1)}, onKeyUp = updateFutureTrajectory("KEY_UP"))
-  keyIgnorePause(KEY_DOWN,    repeatTime(KEY_DOWN),  onKeyDown = {ship.selected_engine.foreach(e => e.powerPercent -= 1)}, onKeyUp = updateFutureTrajectory("KEY_DOWN"))
+  keyIgnorePause(KEY_UP,      repeatTime(KEY_UP),    onKeyDown = {
+    if(ship.flightMode != 8) {
+      ship.selected_engine.foreach(e => e.powerPercent += 1)
+    } else {
+      ship.vertical_speed_msec += 1
+    }
+  }, onKeyUp = if(ship.flightMode != 8) updateFutureTrajectory("KEY_UP"))
+  keyIgnorePause(KEY_DOWN,    repeatTime(KEY_DOWN),  onKeyDown = {
+    if(ship.flightMode != 8) {
+      ship.selected_engine.foreach(e => e.powerPercent -= 1)
+    } else {
+      ship.vertical_speed_msec -= 1
+    }
+  }, onKeyUp = if(ship.flightMode != 8) updateFutureTrajectory("KEY_DOWN"))
   keyIgnorePause(KEY_RIGHT,   repeatTime(KEY_RIGHT), onKeyDown = {
-    ship.selected_engine.foreach(e => {
-      e.workTimeTacts += 1
-      //updateFutureTrajectory()
-    })
-  }, onKeyUp = updateFutureTrajectory("KEY_RIGHT"))
+    if(ship.flightMode != 8) {
+      ship.selected_engine.foreach(e => {
+        e.workTimeTacts += 1
+        //updateFutureTrajectory()
+      })
+    } else {
+      ship.horizontal_speed_msec -= 1
+    }
+  }, onKeyUp = if(ship.flightMode != 8) updateFutureTrajectory("KEY_RIGHT"))
   keyIgnorePause(KEY_LEFT,    repeatTime(KEY_LEFT),  onKeyDown = {
-    ship.selected_engine.foreach(e => {
-      /*if(e.worktimeTacts > 0) {*/
+    if(ship.flightMode != 8) {
+      ship.selected_engine.foreach(e => {
+        /*if(e.worktimeTacts > 0) {*/
         e.workTimeTacts -= 1
         //updateFutureTrajectory()
-      /*}*/
-    })
-  }, onKeyUp = updateFutureTrajectory("KEY_LEFT"))
+        /*}*/
+      })
+    } else {
+      ship.horizontal_speed_msec += 1
+    }
+  }, onKeyUp = if(ship.flightMode != 8) updateFutureTrajectory("KEY_LEFT"))
 
   keyIgnorePause(KEY_ADD, 100, onKeyDown = {
     timeMultiplier += realtime
@@ -1152,8 +1173,12 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         if(other_ships_near.nonEmpty) {
           base_max_height += 20
         }
-        if(engines_active && ship.flightMode != 0) {
-          base_max_height += 3*20
+        if(ship.flightMode != 8) {
+          if (engines_active && ship.flightMode != 0) {
+            base_max_height += 3 * 20
+          }
+        } else {
+          base_max_height -= 3 * 20
         }
 
         (base_max_height to 20 by -20).iterator
@@ -1255,8 +1280,9 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
         print("", 20, heights.next(), YELLOW)
 
-        print(s"Двигательная установка: ${if(engines_active) "[rактивирована]" else "отключена"}",
-          20, heights.next(), YELLOW)
+        if(ship.flightMode != 8) {
+          print(s"Двигательная установка: ${if (engines_active) "[rактивирована]" else "отключена"}",
+            20, heights.next(), YELLOW)
 
           print(s"Мощность и время работы отдельных двигателей:",
             20, heights.next(), YELLOW)
@@ -1270,13 +1296,14 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
           }",
             20, heights.next()
             , YELLOW)
-        if(engines_active && ship.flightMode != 0) {
-          print(f"Линейная скорость в момент отключения двигателей: $linearSpeedStrWhenEnginesOff",
-            20, heights.next(), YELLOW)
-          print(f"Угловая скорость в момент отключения двигателей: $angularSpeedStrWhenEnginesOff",
-            20, heights.next(), YELLOW)
-          print(s"Параметры орбиты в момент отключения двигателей: $orbitParametersStrWhenEnginesOff",
-            20, heights.next(), YELLOW)
+          if (engines_active && ship.flightMode != 0) {
+            print(f"Линейная скорость в момент отключения двигателей: $linearSpeedStrWhenEnginesOff",
+              20, heights.next(), YELLOW)
+            print(f"Угловая скорость в момент отключения двигателей: $angularSpeedStrWhenEnginesOff",
+              20, heights.next(), YELLOW)
+            print(s"Параметры орбиты в момент отключения двигателей: $orbitParametersStrWhenEnginesOff",
+              20, heights.next(), YELLOW)
+          }
         }
       }
     }
@@ -1365,9 +1392,9 @@ class Planet(
     }
   }
 
-  action {
+  /*action {
     updateRenderData()
-  }
+  }*/
 
   actionIgnorePause {
     updateRenderData()
@@ -1376,6 +1403,7 @@ class Planet(
   }
 
   render {
+    updateRenderData()
     if(data_initialized && renderingEnabled && !drawMapMode && viewpoint_dist < 50000) {
       openglLocalTransform {
         openglMove(coord - base)

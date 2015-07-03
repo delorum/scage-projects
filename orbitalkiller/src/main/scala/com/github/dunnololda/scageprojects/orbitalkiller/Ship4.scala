@@ -156,6 +156,9 @@ class Ship4(index:String,
     last_correction_or_check_moment = OrbitalKiller.tacts
   }
 
+  override var vertical_speed_msec:Int = 0
+  override var horizontal_speed_msec:Int = 0
+
   action {
     flightMode match {
       case 1 => // свободный режим
@@ -212,29 +215,34 @@ class Ship4(index:String,
           } else preserveAngularVelocity(0)
         }
       case 8 => // уравнять скорость с ближайшей планетой
-        if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 0) {
-          if (math.abs(angularVelocity) < 0.01) {
-            (for {
-              planet_state <- currentPlanetStates.sortBy(_.coord.dist(coord)).headOption
-              planet <- planetByIndex(planet_state.index)
-            } yield (planet_state, planet)) match {
-              case Some((planet_state, planet)) =>
-                val ship_vertical_speed = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).n
-                if (math.abs(ship_vertical_speed) > 0.3) {
-                  preserveVelocity(planet_state.vel*(coord - planet_state.coord).n*(coord - planet_state.coord).n +
-                                   linearVelocity*(coord - planet_state.coord).p*(coord - planet_state.coord).p)
-                } else {
-                  if (planet_state.coord.dist(coord) - planet.radius < 1000000) { // уравниваем касательную скорость, если высота меньше 1000 км
-                    val ship_above_ground_velocity = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).p
-                    if (math.abs(ship_above_ground_velocity - planet.groundSpeedMsec) > 0.3) {
-                      preserveVelocity(planet.groundSpeedMsec * (coord - planet_state.coord).p + planet_state.vel)
-                    } else flightMode = 1
-                  } else flightMode = 1
-                }
-              case None =>
-                flightMode = 1
+        (for {
+          planet_state <- currentPlanetStates.sortBy(_.coord.dist(coord)).headOption
+          planet <- planetByIndex(planet_state.index)
+        } yield (planet_state, planet)) match {
+          case Some((planet_state, planet)) =>
+            val vertical_orientation = (coord - planet_state.coord).mydeg(DVec(0,1))
+            if(math.abs(rotation - vertical_orientation) >= 0.1) {
+              preserveAngle(vertical_orientation)
+            } else if (math.abs(angularVelocity) >= 0.01) {
+              preserveAngularVelocity(0)
+            } else {
+              val ship_vertical_speed = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).n
+              if (math.abs(ship_vertical_speed - vertical_speed_msec) > 0.3) {
+                preserveVelocity(
+                  (planet_state.vel*(coord - planet_state.coord).n + vertical_speed_msec) * (coord - planet_state.coord).n +
+                    (linearVelocity*(coord - planet_state.coord).p)   * (coord - planet_state.coord).p
+                )
+              } else {
+                if (planet_state.coord.dist(coord) - planet.radius < 1000000) { // уравниваем касательную скорость, если высота меньше 1000 км
+                val ship_above_ground_velocity = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).p
+                  if (math.abs(ship_above_ground_velocity - horizontal_speed_msec - planet.groundSpeedMsec) > 0.3) {
+                    preserveVelocity((planet.groundSpeedMsec + horizontal_speed_msec) * (coord - planet_state.coord).p + planet_state.vel)
+                  }/* else flightMode = 1*/
+                }/* else flightMode = 1*/
+              }
             }
-          } else preserveAngularVelocity(0)
+          case None =>
+          /*flightMode = 1*/
         }
       case 9 => // остановиться
         if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {

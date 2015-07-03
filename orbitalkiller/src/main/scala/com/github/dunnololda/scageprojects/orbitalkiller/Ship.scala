@@ -154,6 +154,12 @@ trait Ship {
       }
     }
   }
+
+  def vertical_speed_msec:Int = 0
+  def vertical_speed_msec_=(x:Int) {}
+  def horizontal_speed_msec:Int = 0
+  def horizontal_speed_msec_=(x:Int) {}
+
   def flightModeStr:String = flight_mode match {
     case 1 => "свободный"
     case 2 => "запрет вращения"
@@ -162,7 +168,7 @@ trait Ship {
     case 5 => "ориентация против траектории"
     case 6 => "выход на круговую орбиту"
     case 7 => "уравнять скорость с кораблем"
-    case 8 => "уравнять скорость с ближайшей планетой"
+    case 8 => s"уравнять скорость с ближайшей планетой: ${msecOrKmsec(vertical_speed_msec)}, ${msecOrKmsec(horizontal_speed_msec)}"
     case 9 => "остановиться"
     case 0 => "маневрирование"
     case _ => ""
