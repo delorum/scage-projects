@@ -864,9 +864,9 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     right_down_corner = Some(absCoord(m))
   })
 
-  actionIgnorePause {
+  //actionIgnorePause {
     //if(future_trajectory.isEmpty) updateFutureTrajectory("future_trajectory.isEmpty")
-  }
+  //}
 
   /*actionIgnorePause(100) {
     if(continue_future_trajectory) continueFutureTrajectory()
@@ -1392,8 +1392,17 @@ class Planet(
     }
   }
 
-  render {
+  action(1) {
     updateRenderData()
+  }
+
+  actionIgnorePause(1) {
+    updateRenderData()
+    data_initialized = true
+    deleteSelf()
+  }
+
+  render {
     if(data_initialized && renderingEnabled && !drawMapMode && viewpoint_dist < 50000) {
       openglLocalTransform {
         openglMove(coord - base)
@@ -1438,11 +1447,11 @@ class Star(val index:String, val mass:Double, val coord:DVec, ang_vel:Double, va
     }
   }
 
-  action {
+  action(1) {
     updateRenderData()
   }
 
-  actionIgnorePause {
+  actionIgnorePause(1) {
     updateRenderData()
     data_initialized = true
     deleteSelf()
