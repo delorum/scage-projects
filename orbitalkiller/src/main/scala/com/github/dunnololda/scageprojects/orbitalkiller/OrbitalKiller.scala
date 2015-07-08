@@ -13,7 +13,7 @@ import scala.collection.mutable
 sealed trait ViewMode
 sealed trait FlightMode
 
-object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
+object OrbitalKiller extends ScreenAppD("Orbital Killer", 1280, 768) with ActorSingleController {
   val k:Double = 1 // доля секунды симуляции, которая обрабатывается за одну реальную секунду, если не применяется ускорение
 
   // движок делает вызов обработчика примерно 60 раз в секунду, за каждый вызов будет обрабатывать вот такую порцию симуляции

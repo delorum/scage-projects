@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLib._
-import com.github.dunnololda.scage.handlers.controller3.ActorSingleController
+import sun.awt.SunToolkit
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -11,6 +11,8 @@ object CheckControlsTest extends ScreenApp("Check Controls Test", 640, 480) with
     buf += str
     if(buf.length > 10) buf.remove(0)
   }
+
+  private val mouse_buf = ArrayBuffer[Vec]()
 
   key(KEY_1, onKeyDown = add("1"))
   key(KEY_2, onKeyDown = add("2"))
@@ -25,8 +27,21 @@ object CheckControlsTest extends ScreenApp("Check Controls Test", 640, 480) with
 
   key(KEY_Q, onKeyDown = if(keyPressed(KEY_LCONTROL)) stopApp())
 
+  leftMouse(onBtnDown = mc => {
+    mouse_buf += mc
+    if(mouse_buf.length > 10) mouse_buf.remove(0)
+  })
+
   action {
-    Thread.sleep(100)
+    //Thread.sleep(100)
+  }
+
+  render {
+    mouse_buf.foreach {
+      case mc => drawFilledCircle(mc, 3, WHITE)
+    }
+
+    drawLine(windowCenter, mouseCoord, WHITE)
   }
 
   interface {
