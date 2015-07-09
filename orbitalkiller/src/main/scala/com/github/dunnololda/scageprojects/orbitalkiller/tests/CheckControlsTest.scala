@@ -1,11 +1,10 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLib._
-import sun.awt.SunToolkit
 
 import scala.collection.mutable.ArrayBuffer
 
-object CheckControlsTest extends ScreenApp("Check Controls Test", 640, 480) with ActorSingleController {
+object CheckControlsTest extends ScageScreenAppMT("Check Controls Test", 640, 480) {
   private val buf = ArrayBuffer[String]()
   private def add(str:String) {
     buf += str
