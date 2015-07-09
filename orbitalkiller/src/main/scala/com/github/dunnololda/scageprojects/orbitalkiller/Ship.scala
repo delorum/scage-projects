@@ -152,6 +152,10 @@ trait Ship {
       if(prev_flight_mode == 0) {
         engines.foreach(e => e.workTimeTacts = 0)
       }
+      if(flightMode == 8) {
+        vertical_speed_msec = 0
+        horizontal_speed_msec = 0
+      }
     }
   }
 
