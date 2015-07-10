@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 abstract class InterfaceElement {
-  def minimizable:Boolean = true
+  protected def forceMinimizeIf:Boolean = false
 
   private var _minimized = false
   final def isMinimized = _minimized
@@ -10,13 +10,13 @@ abstract class InterfaceElement {
     _minimized = false
   }
   final def hide(): Unit = {
-    if(minimizable) _minimized = true
+    _minimized = true
   }
 
   protected def _update()
 
   final def update(): Unit = {
-    if(!_minimized || !minimizable) {
+    if(!_minimized) {
       _update()
     }
   }
@@ -24,6 +24,6 @@ abstract class InterfaceElement {
   protected def _data:Seq[String]
 
   final def data:Seq[String] = {
-    if(!_minimized || !minimizable) _data else Seq.empty[String]
+    if(!_minimized) _data else Seq.empty[String]
   }
 }
