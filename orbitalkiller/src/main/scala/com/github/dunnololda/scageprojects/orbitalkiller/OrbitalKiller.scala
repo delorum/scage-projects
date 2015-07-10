@@ -357,7 +357,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       case _ =>
     }
   }
-  private def viewModeStr = view_mode match {
+  def viewModeStr = view_mode match {
     case 0 => "свободный"
     case 1 => "фиксация на корабле"
     case 2 => "посадка"
@@ -683,6 +683,8 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   keyIgnorePause(KEY_F6, onKeyDown = loadGame())                          // загрузить из файла состояние системы
 
   private var _show_game_saved_message = false
+  def showGameSavedMessage = _show_game_saved_message
+
   def saveGame() {
     val fos = new FileOutputStream("save.orbitalkiller")
     fos.write(s"time ${_tacts}\n".getBytes)
@@ -710,7 +712,11 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   }
 
   private var _show_game_loaded_message = false
+  def showGameLoadedMessage = _show_game_loaded_message
+
   private var _show_game_failed_to_load_message = false
+  def showGameFailedToLoadMessage = _show_game_failed_to_load_message
+
   def loadGame() {
     def _parseDVec(str:String):Option[DVec] = {
       val s = str.split(":")
@@ -801,7 +807,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   /*keyIgnorePause(KEY_Z, onKeyDown = disable_trajectory_drawing = !disable_trajectory_drawing)
   keyIgnorePause(KEY_X, onKeyDown = disable_future_trajectory_drawing = !disable_future_trajectory_drawing)*/
   keyIgnorePause(KEY_I, onKeyDown = disable_interface_drawing = !disable_interface_drawing)
-  keyIgnorePause(KEY_R, onKeyDown = _rendering_enabled = !_rendering_enabled)
+  //keyIgnorePause(KEY_R, onKeyDown = _rendering_enabled = !_rendering_enabled)
   //keyIgnorePause(KEY_N, onKeyDown = continue_future_trajectory = !continue_future_trajectory)
   /*keyIgnorePause(KEY_C, onKeyDown = {
     continue_future_trajectory = false
@@ -949,8 +955,8 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
   private var _calculate_orbits = false
 
-  private var _rendering_enabled = true
-  def renderingEnabled = _rendering_enabled
+  /*private var _rendering_enabled = true
+  def renderingEnabled = _rendering_enabled*/
 
   private def updateOrbits() {
     ship_orbit_render = if(ship.engines.exists(_.active)) {
@@ -976,13 +982,13 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   updateOrbits()
 
   actionIgnorePause(1000) {
-    if(_rendering_enabled && drawMapMode && (!onPause || _calculate_orbits)) {
+    if(/*_rendering_enabled && */drawMapMode && (!onPause || _calculate_orbits)) {
       updateOrbits()
     }
   }
 
   render {
-    if(_rendering_enabled) {
+    /*if(_rendering_enabled) {*/
       if(drawMapMode) {
         drawCircle(earth.coord*scale, earth.radius * scale, WHITE)
         drawCircle(earth.coord*scale, equalGravityRadius(earth.currentState, moon.currentState)*scale, color = DARK_GRAY)
@@ -1119,7 +1125,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         }
 
       }
-    }
+    /*}*/
   }
 
   interface {
@@ -1131,17 +1137,17 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     print(f"Render/Action $averageRenderTimeMsec%.2f msec/$averageActionTimeMsec%.2f msec", windowWidth - 20, windowHeight - 80, align = "top-right", color = DARK_GRAY)
     print(s"Render/Action $currentRenderTimeMsec msec/$currentActionTimeMsec msec", windowWidth - 20, windowHeight - 100, align = "top-right", color = DARK_GRAY)
 
-    if(_rendering_enabled) {
+    /*if(_rendering_enabled) {*/
       val a = DVec(windowWidth - 250, 20)
       val b = DVec(windowWidth - 250 + 100, 20)
       drawLine(a,b, DARK_GRAY)
       drawLine(a, a+(a-b).rotateDeg(90).n*5, DARK_GRAY)
       drawLine(b, b+(a-b).rotateDeg(90).n*5, DARK_GRAY)
       print(s"${mOrKm((100/globalScale/(if(drawMapMode) scale else 1.0)).toInt)}", b.toVec, DARK_GRAY)
-    }
+    /*}*/
 
     if(!disable_interface_drawing) {
-      if(_rendering_enabled) {
+      /*if(_rendering_enabled) {*/
         openglLocalTransform {
           val z = windowHeight/2f-40f
           openglMove(windowCenter)
@@ -1151,7 +1157,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
           drawArrow(DVec(-z, 0), DVec(z, 0), DARK_GRAY, 1)
           print("x", Vec(z, 0), DARK_GRAY)
         }
-      }
+      /*}*/
 
       val other_ships_near = ship.otherShipsNear
       val engines_active = ship.engines.exists(_.active)
@@ -1202,7 +1208,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
           20, heights.next(), YELLOW)
       }
 
-      if(_rendering_enabled) {
+      /*if(_rendering_enabled) {*/
         print("", 20, heights.next(), YELLOW)
 
         print(s"Режим камеры: $viewModeStr",
@@ -1216,14 +1222,14 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         val ship_earth_vertical_speed = msecOrKmsec((ship.linearVelocity - earth.linearVelocity) * (ship.coord - earth.coord).n)
         val ship_earth_tangent_speed = msecOrKmsec(((ship.linearVelocity - earth.linearVelocity)*(ship.coord - earth.coord).p)/ship.coord.dist(earth.coord)*earth.radius - earth.groundSpeedMsec)
         //val ship_earth_angular_speed = f"${(ship.linearVelocity - earth.linearVelocity)*(ship.coord - earth.coord).p/ship.coord.dist(earth.coord) - earth.currentState.ang_vel}%.3f град/сек"
-        val ship_earth_position = f"${correctAngle((ship.coord - earth.coord).mydeg(Vec(0, 1)) - earth.currentState.ang)}%.3f град."
+        val ship_earth_position = f"${correctAngle((ship.coord - earth.coord).deg360(Vec(0, 1)) - earth.currentState.ang)}%.3f град."
         print("Расстояние, скорость и позиция относительно Земли:", 20, heights.next(), YELLOW)
         print(s"${mOrKm(ship.coord.dist(earth.coord) - earth.radius)}, $ship_earth_vertical_speed, $ship_earth_tangent_speed, $ship_earth_position", 20, heights.next(), YELLOW)
 
         val ship_moon_vertical_speed = msecOrKmsec((ship.linearVelocity - moon.linearVelocity) * (ship.coord - moon.coord).n)
         val ship_moon_tangent_speed = msecOrKmsec(((ship.linearVelocity - moon.linearVelocity)*(ship.coord - moon.coord).p)/ship.coord.dist(moon.coord)*moon.radius - moon.groundSpeedMsec)
         //val ship_moon_angular_speed = f"${(ship.linearVelocity - moon.linearVelocity)*(ship.coord - moon.coord).p/ship.coord.dist(moon.coord) - moon.currentState.ang_vel}%.3f град/сек"
-        val ship_moon_position = f"${correctAngle((ship.coord - moon.coord).mydeg(Vec(0, 1)) - moon.currentState.ang)}%.3f град."
+        val ship_moon_position = f"${correctAngle((ship.coord - moon.coord).deg360(Vec(0, 1)) - moon.currentState.ang)}%.3f град."
         print("Расстояние, скорость и позиция относительно Луны:", 20, heights.next(), YELLOW)
         print(s"${mOrKm(ship.coord.dist(moon.coord) - moon.radius)}, $ship_moon_vertical_speed, $ship_moon_tangent_speed, $ship_moon_position", 20, heights.next(), YELLOW)
 
@@ -1305,7 +1311,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
               20, heights.next(), YELLOW)
           }
         }
-      }
+      /*}*/
     }
   }
 
@@ -1378,7 +1384,7 @@ class Planet(
         ang <- -alpha to alpha by 0.01
         point = to_viewpoint.rotateDeg(ang)
       } yield point
-      ground_position_ang = correctAngle(to_viewpoint.mydeg(Vec(0, 1)) - currentState.ang)
+      ground_position_ang = correctAngle(to_viewpoint.deg360(Vec(0, 1)) - currentState.ang)
       ground_position_km = {
         val x = ground_position_ang / 360.0 * 2 * math.Pi * radius / 1000
         if(x - half_render_length_km < 0) x + ground_length_km else x
@@ -1403,7 +1409,7 @@ class Planet(
   }
 
   render {
-    if(data_initialized && renderingEnabled && !drawMapMode && viewpoint_dist < 50000) {
+    if(data_initialized && /*renderingEnabled &&*/ !drawMapMode && viewpoint_dist < 50000) {
       openglLocalTransform {
         openglMove(coord - base)
         drawSlidingLines(points, WHITE)
@@ -1458,7 +1464,7 @@ class Star(val index:String, val mass:Double, val coord:DVec, ang_vel:Double, va
   }
 
   render {
-    if (data_initialized && renderingEnabled && !drawMapMode && viewpoint_dist < 50000) {
+    if (data_initialized && /*renderingEnabled &&*/ !drawMapMode && viewpoint_dist < 50000) {
       openglLocalTransform {
         openglMove(coord - base)
         drawSlidingLines(points, WHITE)

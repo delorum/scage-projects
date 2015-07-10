@@ -892,7 +892,7 @@ package object orbitalkiller {
   def maxOption[T](l:Seq[T])(implicit o:Ordering[T]):Option[T] = if(l.isEmpty) None else Some(l.max(o))
 
   implicit class MyVec(v1:DVec) {
-    def mydeg(v2:DVec):Double = {
+    def deg360(v2:DVec):Double = {
       val scalar = v1*v2.perpendicular
       if(scalar >= 0) v1.deg(v2) else 360 - v1.deg(v2)
     }

@@ -75,7 +75,7 @@ class SpaceStation(
   }
 
   render {
-    if(renderingEnabled) {
+    /*if(renderingEnabled) {*/
       if(!drawMapMode) {
         openglLocalTransform {
           openglMove(coord - base)
@@ -99,6 +99,6 @@ class SpaceStation(
           }
         }
       }
-    }
+    /*}*/
   }
 }

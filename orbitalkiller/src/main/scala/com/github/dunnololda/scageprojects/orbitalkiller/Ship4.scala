@@ -174,13 +174,13 @@ class Ship4(index:String,
         }
       case 4 => // ориентация по траектории
         if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
-          val angle = linearVelocity.mydeg(DVec(0, 1))
+          val angle = linearVelocity.deg360(DVec(0, 1))
           if (math.abs(rotation - angle) < 0.1) flightMode = 2
           else preserveAngle(angle)
         }
       case 5 => // ориентация против траектории
         if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
-          val angle = linearVelocity.mydeg(DVec(0, -1))
+          val angle = linearVelocity.deg360(DVec(0, -1))
           if (math.abs(rotation - angle) < 0.1) flightMode = 2
           else preserveAngle(angle)
         }
@@ -220,7 +220,7 @@ class Ship4(index:String,
           planet <- planetByIndex(planet_state.index)
         } yield (planet_state, planet)) match {
           case Some((planet_state, planet)) =>
-            val vertical_orientation = (coord - planet_state.coord).mydeg(DVec(0,1))
+            val vertical_orientation = (coord - planet_state.coord).deg360(DVec(0,1))
             if(math.abs(rotation - vertical_orientation) >= 0.1) {
               preserveAngle(vertical_orientation)
             } else if (math.abs(angularVelocity) >= 0.01) {
@@ -257,7 +257,7 @@ class Ship4(index:String,
   }
 
   render {
-    if(renderingEnabled) {
+    /*if(renderingEnabled) {*/
       if(!drawMapMode) {
         openglLocalTransform {
           openglMove(coord - base)
@@ -283,6 +283,6 @@ class Ship4(index:String,
           }
         }
       }
-    }
+    /*}*/
   }
 }

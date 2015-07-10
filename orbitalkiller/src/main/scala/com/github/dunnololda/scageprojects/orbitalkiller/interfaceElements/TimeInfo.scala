@@ -1,0 +1,14 @@
+package com.github.dunnololda.scageprojects.orbitalkiller.interfaceElements
+
+import com.github.dunnololda.scageprojects.orbitalkiller.{OrbitalKiller, InterfaceElement}
+import com.github.dunnololda.scageprojects.orbitalkiller._
+
+class TimeInfo extends InterfaceElement {
+  private val strings = Array("", "")
+  override protected def _update(): Unit = {
+    strings(0) = s"Время: ${timeStr((OrbitalKiller.tacts*OrbitalKiller.base_dt*1000).toLong)}"
+    strings(1) = f"Ускорение времени: x${(OrbitalKiller.timeMultiplier*OrbitalKiller.k).toInt}/${OrbitalKiller.maxTimeMultiplier} (${1f*OrbitalKiller.timeMultiplier/63*OrbitalKiller.ticks}%.2f)"
+  }
+
+  override protected def _data: Seq[String] = strings
+}
