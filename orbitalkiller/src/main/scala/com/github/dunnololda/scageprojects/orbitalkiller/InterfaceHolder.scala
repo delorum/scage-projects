@@ -26,6 +26,7 @@ object InterfaceHolder {
 
   val linearVelocityInfo = new LinearVelocityInfo
   val angularVelocityInfo = new AngularVelocityInfo
+  val pilotStateInfo = new PilotStateInfo
 
   val planetsInfluenceInfo = new PlanetsInfluenceInfo
   val satelliteEscapeVelocityInfo = new SatelliteEscapeVelocityInfo
@@ -39,7 +40,7 @@ object InterfaceHolder {
     List(timeInfo),
     List(viewModeInfo, flightModeInfo),
     List(earthRelativeInfo, moonRelativeInfo, nearestShipInfo),
-    List(linearVelocityInfo, angularVelocityInfo),
+    List(linearVelocityInfo, angularVelocityInfo, pilotStateInfo),
     List(planetsInfluenceInfo, satelliteEscapeVelocityInfo, orbitInfo),
     List(enginesInfo),
     List(shipParamsWhenEginesOff)

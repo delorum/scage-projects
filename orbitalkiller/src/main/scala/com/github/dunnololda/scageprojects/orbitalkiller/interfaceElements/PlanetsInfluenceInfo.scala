@@ -13,5 +13,5 @@ class PlanetsInfluenceInfo extends InterfaceElement {
 
   override def data: Seq[String] = strings
 
-  override val shortDescr: String = "P"
+  override val shortDescr: String = "PI"
 }
