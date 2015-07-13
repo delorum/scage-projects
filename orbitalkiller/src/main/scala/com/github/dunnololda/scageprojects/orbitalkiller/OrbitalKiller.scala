@@ -872,7 +872,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         left_up_corner = None
         right_down_corner = None
       } else {
-
+        InterfaceHolder.determineInterfaceElem(m).foreach(i => if(i.isMinimized) i.showByUser() else i.hideByUser())
       }
     }})
   leftMouseDragIgnorePause(onDrag = m => if(drawMapMode) {
