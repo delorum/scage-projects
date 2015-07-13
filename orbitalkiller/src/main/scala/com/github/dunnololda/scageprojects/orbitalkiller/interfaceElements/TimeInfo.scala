@@ -10,5 +10,7 @@ class TimeInfo extends InterfaceElement {
     strings(1) = f"Ускорение времени: x${(OrbitalKiller.timeMultiplier*OrbitalKiller.k).toInt}/${OrbitalKiller.maxTimeMultiplier} (${1f*OrbitalKiller.timeMultiplier/63*OrbitalKiller.ticks}%.2f)"
   }
 
-  override protected def _data: Seq[String] = strings
+  override def data: Seq[String] = strings
+
+  override val shortDescr: String = "T"
 }

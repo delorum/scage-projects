@@ -16,5 +16,7 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
     }
   }
 
-  override def _data: Seq[String] = strings
+  override def data: Seq[String] = strings
+
+  override val shortDescr: String = "SP"
 }

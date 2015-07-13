@@ -15,5 +15,7 @@ class EarthRelativeInfo extends InterfaceElement {
     strings(1) = s"${mOrKm(ship.coord.dist(earth.coord) - earth.radius)}, $ship_earth_vertical_speed, $ship_earth_tangent_speed, $ship_earth_position"
   }
 
-  override def _data: Seq[String] = strings
+  override def data: Seq[String] = strings
+
+  override val shortDescr: String = "E"
 }

@@ -20,5 +20,7 @@ class EnginesInfo extends InterfaceElement {
     strings(0) = s"Двигательная установка: ${if (engines_active) "[rактивирована]" else "отключена"}"
 
   }
-  override def _data: Seq[String] = strings
+  override def data: Seq[String] = strings
+
+  override val shortDescr: String = "En"
 }

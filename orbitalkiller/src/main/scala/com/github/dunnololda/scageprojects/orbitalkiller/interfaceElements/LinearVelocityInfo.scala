@@ -9,5 +9,7 @@ class LinearVelocityInfo extends InterfaceElement {
     strings(0) = f"Линейная скорость: ${msecOrKmsec(ship.linearVelocity.norma)}"
   }
 
-  override def _data: Seq[String] = strings
+  override def data: Seq[String] = strings
+
+  override val shortDescr: String = "LV"
 }

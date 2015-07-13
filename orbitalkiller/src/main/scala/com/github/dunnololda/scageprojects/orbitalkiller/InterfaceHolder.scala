@@ -4,6 +4,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.interfaceElements._
 import OrbitalKiller._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import com.github.dunnololda.scage.ScageLibD._
 
 object InterfaceHolder {
   private val additional_messages = mutable.HashMap[String, String]()
@@ -44,40 +45,84 @@ object InterfaceHolder {
     List(shipParamsWhenEginesOff)
   )
 
-  def constraints(): Unit = {
-    if(ship.otherShipsNear.isEmpty) {
-      nearestShipInfo.hide()
-    }
-    if(ship.flightMode == 8) {
-      enginesInfo.hide()
-      shipParamsWhenEginesOff.hide()
-    }
-    if(!ship.engines.exists(_.active) || ship.flightMode == 0) {
-      shipParamsWhenEginesOff.hide()
+  def hideAllByUser(): Unit = {
+    interfaces.flatten.foreach(_.hideByUser())
+  }
+
+  def showAllByUser(): Unit = {
+    interfaces.flatten.foreach(_.showByUser())
+  }
+
+  def determineInterfaceElem(mouse_coord:DVec):Option[InterfaceElement] = {
+    if(10 < mouse_coord.y && mouse_coord.y < 30) {
+      _minimized_strings.zipWithIndex.find {
+        case ((i, color), idx) =>
+          val pos = 20 + idx*40
+          pos < mouse_coord.x && mouse_coord.x < pos+40
+      }.map(_._1._1)
+    } else {
+      val x = (_strings.length + 2) * 20 - mouse_coord.y
+      _interface_elems_positions.find {
+        case (i, pos) =>
+          pos - 20 < x && x < pos + 20 * (i.data.length - 1)
+      }.map(_._1)
     }
   }
 
-  private var _update_needed = true
-  def markUpdateNeeded(): Unit = {
-    _update_needed = true
+  def constraints(): Unit = {
+    if(ship.otherShipsNear.isEmpty) {
+      nearestShipInfo.hideByConstraint()
+    } else nearestShipInfo.showByConstraint()
+    if(ship.flightMode == 8) {
+      enginesInfo.hideByConstraint()
+      shipParamsWhenEginesOff.hideByConstraint()
+    } else {
+      enginesInfo.showByConstraint()
+      if(!ship.engines.exists(_.active) || ship.flightMode == 0) {
+        shipParamsWhenEginesOff.hideByConstraint()
+      } else {
+        shipParamsWhenEginesOff.showByConstraint()
+      }
+    }
   }
 
   private val _strings = ArrayBuffer[String]()
   def strings:Seq[String] = _strings
 
-  def updateIfNeeded(): Unit = {
-    if (_update_needed) {
-      constraints()
-      interfaces.flatten.foreach(_.update())
-      _strings.clear()
-      interfaces.foreach {
-        case l => l.foreach {
+  private val _minimized_strings = ArrayBuffer[(InterfaceElement, ScageColor)]()
+  def minimizedStrings:Seq[(InterfaceElement, ScageColor)] = _minimized_strings
+
+  private val _interface_elems_positions = ArrayBuffer[(InterfaceElement, Int)]()
+
+  def update(): Unit = {
+    constraints()
+    interfaces.flatten.foreach(_.updateIfNotMinimized())
+    _strings.clear()
+    _minimized_strings.clear()
+    _interface_elems_positions.clear()
+    var offset = 0
+    interfaces.foreach {
+      case l =>
+        var non_minimized_exists = false
+        l.foreach {
           case i =>
-            _strings ++= i.data
+            if(!i.isMinimized) {
+              non_minimized_exists = true
+              _strings ++= i.data
+             _interface_elems_positions += ((i, offset))
+              offset += i.data.length*20
+            } else {
+              if(i.isMinimizedByConstraint) {
+                _minimized_strings += ((i, DARK_GRAY))
+              } else {
+                _minimized_strings += ((i, YELLOW))
+              }
+            }
         }
-          _strings += ""
+      if(non_minimized_exists) {
+        _strings += ""
+        offset += 20
       }
     }
-    _update_needed = false
   }
 }

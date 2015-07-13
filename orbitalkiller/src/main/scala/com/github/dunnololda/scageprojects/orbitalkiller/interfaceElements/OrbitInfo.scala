@@ -9,5 +9,7 @@ class OrbitInfo extends InterfaceElement {
     strings(0) = s"Параметры орбиты: ${orbitStrInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass, currentPlanetStates)}"
   }
 
-  override def _data: Seq[String] = strings
+  override def data: Seq[String] = strings
+
+  override val shortDescr: String = "O"
 }

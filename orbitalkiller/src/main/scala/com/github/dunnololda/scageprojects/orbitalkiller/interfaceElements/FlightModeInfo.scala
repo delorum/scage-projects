@@ -7,5 +7,7 @@ class FlightModeInfo extends InterfaceElement {
   override def _update(): Unit = {
     strings(0) = s"Полетный режим: ${OrbitalKiller.ship.flightModeStr}"
   }
-  override def _data: Seq[String] = strings
+  override def data: Seq[String] = strings
+
+  override val shortDescr: String = "Fm"
 }

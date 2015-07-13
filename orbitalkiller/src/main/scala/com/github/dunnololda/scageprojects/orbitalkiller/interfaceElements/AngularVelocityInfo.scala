@@ -10,5 +10,7 @@ class AngularVelocityInfo extends InterfaceElement {
     strings(0) = str
   }
 
-  override def _data: Seq[String] = strings
+  override def data: Seq[String] = strings
+
+  override val shortDescr: String = "AV"
 }

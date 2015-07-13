@@ -806,7 +806,11 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
   /*keyIgnorePause(KEY_Z, onKeyDown = disable_trajectory_drawing = !disable_trajectory_drawing)
   keyIgnorePause(KEY_X, onKeyDown = disable_future_trajectory_drawing = !disable_future_trajectory_drawing)*/
-  keyIgnorePause(KEY_I, onKeyDown = disable_interface_drawing = !disable_interface_drawing)
+  keyIgnorePause(KEY_I, onKeyDown = {
+    disable_interface_drawing = !disable_interface_drawing
+    if(disable_interface_drawing) InterfaceHolder.hideAllByUser()
+    else InterfaceHolder.showAllByUser()
+  })
   //keyIgnorePause(KEY_R, onKeyDown = _rendering_enabled = !_rendering_enabled)
   //keyIgnorePause(KEY_N, onKeyDown = continue_future_trajectory = !continue_future_trajectory)
   /*keyIgnorePause(KEY_C, onKeyDown = {
@@ -847,7 +851,12 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
   private var left_up_corner:Option[DVec] = None
   private var right_down_corner:Option[DVec] = None
-  leftMouseIgnorePause(onBtnDown = m => {if(drawMapMode) left_up_corner = Some(absCoord(m))}, onBtnUp = m => {
+  leftMouseIgnorePause(onBtnDown = m => {
+    if(drawMapMode) left_up_corner = Some(absCoord(m))
+    else {
+      InterfaceHolder.determineInterfaceElem(m).foreach(i => if(i.isMinimized) i.showByUser() else i.hideByUser())
+    }
+  }, onBtnUp = m => {
     if(drawMapMode) {
       if(right_down_corner.nonEmpty) {
         for {
@@ -884,7 +893,6 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     //if(future_trajectory.isEmpty) updateFutureTrajectory()
     nextStep()
     //timeMultiplier = maxTimeMultiplier
-    InterfaceHolder.markUpdateNeeded()
   }
 
   private var _center = ship.coord
@@ -1147,7 +1155,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       print(s"${mOrKm((100/globalScale/(if(drawMapMode) scale else 1.0)).toInt)}", b.toVec, DARK_GRAY)
     /*}*/
 
-    if(!disable_interface_drawing) {
+    /*if(!disable_interface_drawing) {*/
       /*if(_rendering_enabled) {*/
         openglLocalTransform {
           val z = windowHeight/2f-40f
@@ -1160,11 +1168,16 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
         }
       /*}*/
 
-      InterfaceHolder.updateIfNeeded()
+      InterfaceHolder.update()
       InterfaceHolder.strings.zipWithIndex.foreach {
-        case (str, idx) => print(str, 20, (InterfaceHolder.strings.length - idx)*20, YELLOW)
+        case (str, idx) => print(str, 20, (InterfaceHolder.strings.length+2 - idx)*20, YELLOW)
       }
-    }
+      //print(InterfaceHolder.minimizedStrings.map(_._1).mkString(" "), 20, 20, DARK_GRAY)
+      InterfaceHolder.minimizedStrings.zipWithIndex.foreach {
+        case ((i, color), idx) =>
+          print(i.shortDescr, 20+idx*40, 20, color, align = "center")
+      }
+    /*}*/
   }
 
   pause()

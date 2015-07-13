@@ -7,5 +7,7 @@ class ViewModeInfo extends InterfaceElement {
   override protected def _update(): Unit = {
     strings(0) = s"Режим камеры: ${OrbitalKiller.viewModeStr}"
   }
-  override protected def _data: Seq[String] = strings
+  override def data: Seq[String] = strings
+
+  override val shortDescr: String = "Vm"
 }

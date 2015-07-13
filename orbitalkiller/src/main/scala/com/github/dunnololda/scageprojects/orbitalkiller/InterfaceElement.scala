@@ -1,29 +1,46 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 abstract class InterfaceElement {
-  protected def forceMinimizeIf:Boolean = false
+  def shortDescr:String
 
-  private var _minimized = false
-  final def isMinimized = _minimized
+  private var _minimized_by_user = false
+  final def isMinimizedByUser = _minimized_by_user
 
-  final def show(): Unit = {
-    _minimized = false
+  private var _minimized_by_constraint = false
+  final def isMinimizedByConstraint = _minimized_by_constraint
+  
+  final def isMinimized = _minimized_by_user || _minimized_by_constraint
+
+  final def showByUser(): Unit = {
+    _minimized_by_user = false
   }
-  final def hide(): Unit = {
-    _minimized = true
+
+  final def showByConstraint(): Unit = {
+    _minimized_by_constraint = false
+  }
+
+  final def hideByUser(): Unit = {
+    _minimized_by_user = true
+  }
+
+  final def hideByConstraint(): Unit = {
+    _minimized_by_constraint = true
+  }
+
+  private var _update_needed = true
+  def markUpdateNeeded(): Unit = {
+    _update_needed = true
   }
 
   protected def _update()
 
-  final def update(): Unit = {
-    if(!_minimized) {
+  final def updateIfNotMinimized(): Unit = {
+    if(!isMinimized) {
       _update()
     }
   }
 
-  protected def _data:Seq[String]
+  def data:Seq[String]
 
-  final def data:Seq[String] = {
-    if(!_minimized) _data else Seq.empty[String]
-  }
+  override def toString = shortDescr
 }

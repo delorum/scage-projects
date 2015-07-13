@@ -15,5 +15,7 @@ class MoonRelativeInfo extends InterfaceElement {
     strings(1) = s"${mOrKm(ship.coord.dist(moon.coord) - moon.radius)}, $ship_moon_vertical_speed, $ship_moon_tangent_speed, $ship_moon_position"
   }
 
-  override protected def _data: Seq[String] = strings
+  override def data: Seq[String] = strings
+
+  override val shortDescr: String = "M"
 }

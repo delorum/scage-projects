@@ -11,5 +11,7 @@ class PlanetsInfluenceInfo extends InterfaceElement {
     strings(0) = f"Влияние планет: Земля ${earth_force/(earth_force + moon_force)*100}%.2f%% Луна ${moon_force/(earth_force + moon_force)*100}%.2f%% З/Л ${earth_force/moon_force}%.2f Л/З ${moon_force/earth_force}%.2f"
   }
 
-  override def _data: Seq[String] = strings
+  override def data: Seq[String] = strings
+
+  override val shortDescr: String = "P"
 }
