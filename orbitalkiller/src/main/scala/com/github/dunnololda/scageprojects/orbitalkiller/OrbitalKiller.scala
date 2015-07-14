@@ -84,6 +84,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       }
     },
     changeFunction =  (time, bodies) => {
+      ship.updatePilotG((time*base_dt*1000).toLong)
       (time, bodies.map {
         case b =>
           // зануляем угловую скорость, если она меньше 0.01
@@ -204,7 +205,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     }
   }*/
 
-  val earth = new Planet("Earth", mass = 5.9746E24, init_coord = DVec.dzero, init_velocity = DVec.zero, init_ang_vel = 360.0/(24l*60*60), radius = 6400000)
+  val earth = new Planet("Earth", mass = 5.9746E24, init_coord = DVec.dzero, init_velocity = DVec.zero, init_ang_vel = /*0.0*/360.0/(24l*60*60), radius = 6400000)
 
   val moon_start_position = DVec(-269000000, 269000000)
   val moon_init_velocity = satelliteSpeed(moon_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
@@ -689,15 +690,15 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     val fos = new FileOutputStream("save.orbitalkiller")
     fos.write(s"time ${_tacts}\n".getBytes)
     currentSystemState.filter(_.index == "ship").foreach {
-      case BodyState(index, _, acc, vel, coord, ang_acc, ang_vel, ang, _, _, _, _, _) =>
+      case BodyState(index, _, acc, vel, coord, ang_acc, ang_vel, ang, _, _, _, _, _, _, _, _, _, _) =>
         fos.write(s"$index ${acc.x}:${acc.y} ${vel.x}:${vel.y} ${coord.x}:${coord.y} $ang_acc $ang_vel $ang\n".getBytes)
     }
     currentSystemState.filter(_.index == "station").foreach {
-      case BodyState(index, _, acc, vel, coord, ang_acc, ang_vel, ang, _, _, _, _, _) =>
+      case BodyState(index, _, acc, vel, coord, ang_acc, ang_vel, ang, _, _, _, _, _, _, _, _, _, _) =>
         fos.write(s"$index ${acc.x}:${acc.y} ${vel.x}:${vel.y} ${coord.x}:${coord.y} $ang_acc $ang_vel $ang\n".getBytes)
     }
     currentSystemState.filter(_.index == "Moon").foreach {
-      case BodyState(index, _, acc, vel, coord, _, _, _, _, _, _, _, _) =>
+      case BodyState(index, _, acc, vel, coord, _, _, _, _, _, _, _, _, _, _, _, _, _) =>
         fos.write(s"$index ${acc.x}:${acc.y} ${vel.x}:${vel.y} ${coord.x}:${coord.y} 0 0 0\n".getBytes)
     }
     fos.close()

@@ -3,6 +3,8 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import OrbitalKiller._
 import com.github.dunnololda.scage.ScageLibD._
 
+import scala.collection.mutable.ArrayBuffer
+
 trait Ship {
   var selected_engine:Option[Engine] = None
 
@@ -180,13 +182,25 @@ trait Ship {
 
   def otherShipsNear:List[Ship] = ships.filter(s => s.index != ship.index && ship.coord.dist(s.coord) < 100000).sortBy(s => ship.coord.dist(s.coord))
 
-  def pilotStateStr(pilot_mass:Double, pilot_position:DVec):String = {
+  private val pilot_mass = 75
+  private val pilot_position = DVec(0, 69)
+  private var pilot_average_g:Double = 0.0
+  private val pilot_gs = ArrayBuffer[(Double, Long)]()
+
+  def updatePilotG(time_msec:Long): Unit = {
     val reactive_force = currentReactiveForce(0, currentState)
     val centrifugial_force = if(angularVelocity == 0) DVec.zero else pilot_mass*math.pow(angularVelocity.toRad, 2)*pilot_position.rotateDeg(rotation)
-    val pilot_acc = (reactive_force/mass + centrifugial_force/pilot_mass).norma
-    val pilot_g = pilot_acc/9.81
-    if(pilot_g < 0.1) "Пилот в состоянии невесомости"
-    else if(pilot_acc <= 9.81) f"Пилот испытывает силу тяжести $pilot_g%.1fg"
-    else f"Пилот испытывает перегрузку $pilot_g%.1fg"
+    val pilot_acc = (reactive_force/mass + centrifugial_force/pilot_mass + currentState.collisions_dacc).norma
+    pilot_gs += ((pilot_acc/9.81, time_msec))
+    if(time_msec - pilot_gs.head._2 >= 1000) {
+      pilot_average_g = pilot_gs.map(_._1).sum/pilot_gs.length
+      pilot_gs.clear()
+    }
+  }
+
+  def pilotStateStr:String = {
+    if(pilot_average_g < 0.1) "Пилот в состоянии невесомости"
+    else if(pilot_average_g <= 1) f"Пилот испытывает силу тяжести $pilot_average_g%.1fg"
+    else f"Пилот испытывает перегрузку $pilot_average_g%.1fg"
   }
 }

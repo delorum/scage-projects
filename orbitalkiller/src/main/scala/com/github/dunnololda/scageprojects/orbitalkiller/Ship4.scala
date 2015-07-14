@@ -40,6 +40,10 @@ class Ship4(index:String,
     KEY_NUMPAD2 -> two
   )
 
+  private val linear_velocity_error = 0.1
+  private val angular_velocity_error = 0.01
+  private val angle_error = 0.1
+
   private def howManyTacts(to:Double, from:Double, a:Double, dt:Double):(Int, Double) = {
     val tacts = ((to - from)/(a*dt)).toInt + 1
     val result_to = from + tacts*a*dt
@@ -56,6 +60,15 @@ class Ship4(index:String,
   }
 
   private def maxPossiblePowerForLinearMovement(max_power:Double, force_dir:Double, mass:Double, to:Double, from:Double, max_diff:Double):Double = {
+    /*(99.99 to 0.01 by -0.01).map {
+      case percent =>
+        val power = max_power*0.01*percent
+        val force = force_dir*power
+        val acc = force / mass
+        val (_, result_to) = howManyTacts(to, from, acc, dt)
+        (percent, math.abs(to - result_to))
+    }.filter(_._2 < max_diff).sortBy(_._2).headOption.map(_._1*max_power*0.01).getOrElse(max_power*0.01)*/
+
     (99 to 1 by -1).find {
       case percent =>
         val power = max_power*0.01*percent
@@ -81,8 +94,8 @@ class Ship4(index:String,
 
   override def preserveAngularVelocity(ang_vel_deg: Double) {
     val difference = angularVelocity - ang_vel_deg
-    if(difference > 0.01) {
-      val power = maxPossiblePowerForRotation(seven.max_power, seven.force_dir, seven.position, currentState.I, ang_vel_deg, angularVelocity, 0.01)
+    if(difference > angular_velocity_error) {
+      val power = maxPossiblePowerForRotation(seven.max_power, seven.force_dir, seven.position, currentState.I, ang_vel_deg, angularVelocity, angular_velocity_error)
       seven.power = power
       eight.power = power
       val ang_acc = (seven.torque / currentState.I).toDeg
@@ -90,8 +103,8 @@ class Ship4(index:String,
       activateOnlyTheseEngines(seven, eight)
       seven.workTimeTacts = tacts
       eight.workTimeTacts = tacts
-    } else if(difference < -0.01) {
-      val power = maxPossiblePowerForRotation(nine.max_power, nine.force_dir, nine.position, currentState.I, ang_vel_deg, angularVelocity, 0.01)
+    } else if(difference < -angular_velocity_error) {
+      val power = maxPossiblePowerForRotation(nine.max_power, nine.force_dir, nine.position, currentState.I, ang_vel_deg, angularVelocity, angular_velocity_error)
       nine.power = power
       eight.power = power
       val ang_acc = (nine.torque / currentState.I).toDeg
@@ -110,21 +123,21 @@ class Ship4(index:String,
     val ship_velocity_n = linearVelocity*n  // from
     val ss_n = vel*n                         // to
 
-    if(ship_velocity_n - ss_n > 0.1) {
-      val power = maxPossiblePowerForLinearMovement(eight.max_power, eight.force_dir.y, mass, ss_n, ship_velocity_n, 0.1)
+    if(ship_velocity_n - ss_n > linear_velocity_error) {
+      val power = maxPossiblePowerForLinearMovement(eight.max_power, eight.force_dir.y, mass, ss_n, ship_velocity_n, linear_velocity_error)
 
       eight.power = power
       val acc = (eight.force / mass).y
-      val (tacts, result_to) = howManyTacts(ss_n, ship_velocity_n, acc, dt)
+      val (tacts, _) = howManyTacts(ss_n, ship_velocity_n, acc, dt)
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
       eight.active = true
       eight.workTimeTacts = tacts
-    } else if(ship_velocity_n - ss_n < -0.1) {
-      val power = maxPossiblePowerForLinearMovement(two.max_power, two.force_dir.y, mass, ss_n, ship_velocity_n, 0.1)
+    } else if(ship_velocity_n - ss_n < -linear_velocity_error) {
+      val power = maxPossiblePowerForLinearMovement(two.max_power, two.force_dir.y, mass, ss_n, ship_velocity_n, linear_velocity_error)
       two.power = power
       val acc = (two.force / mass).y
-      val (tacts, result_to) = howManyTacts(ss_n, ship_velocity_n, acc, dt)
+      val (tacts, _) = howManyTacts(ss_n, ship_velocity_n, acc, dt)
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
       two.active = true
@@ -134,20 +147,20 @@ class Ship4(index:String,
     val ship_velocity_p = p*linearVelocity
     val ss_p = p*vel
 
-    if(ship_velocity_p - ss_p > 0.1) {
-      val power = maxPossiblePowerForLinearMovement(six.max_power, six.force_dir.x, mass, ss_p, ship_velocity_p, 0.1)
+    if(ship_velocity_p - ss_p > linear_velocity_error) {
+      val power = maxPossiblePowerForLinearMovement(six.max_power, six.force_dir.x, mass, ss_p, ship_velocity_p, linear_velocity_error)
       six.power = power
       val acc = (six.force / mass).x
-      val (tacts, result_to) = howManyTacts(ss_p, ship_velocity_p, acc, dt)
+      val (tacts, _) = howManyTacts(ss_p, ship_velocity_p, acc, dt)
       /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
       println("===========================")*/
       six.active = true
       six.workTimeTacts = tacts
-    } else if(ship_velocity_p - ss_p < -0.1) {
-      val power = maxPossiblePowerForLinearMovement(four.max_power, four.force_dir.x, mass, ss_p, ship_velocity_p, 0.1)
+    } else if(ship_velocity_p - ss_p < -linear_velocity_error) {
+      val power = maxPossiblePowerForLinearMovement(four.max_power, four.force_dir.x, mass, ss_p, ship_velocity_p, linear_velocity_error)
       four.power = power
       val acc = (four.force / mass).x
-      val (tacts, result_to) = howManyTacts(ss_p, ship_velocity_p, acc, dt)
+      val (tacts, _) = howManyTacts(ss_p, ship_velocity_p, acc, dt)
       /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
       println("===========================")*/
       four.active = true
@@ -159,38 +172,43 @@ class Ship4(index:String,
   override var vertical_speed_msec:Int = 0
   override var horizontal_speed_msec:Int = 0
 
+  private def angleMinDiff(angle1:Double, angle2:Double):Double = {
+    val x = math.abs(angle1 - angle2)
+    if(x > 180) 360 - x else x
+  }
+
   action {
     flightMode match {
       case 1 => // свободный режим
       case 2 => // запрет вращения
         if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
-          if (math.abs(angularVelocity) < 0.01) flightMode = 1
+          if (math.abs(angularVelocity) < angular_velocity_error) flightMode = 1
           else preserveAngularVelocity(0)
         }
       case 3 => // ориентация по осям
         if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
-          if (math.abs(rotation) < 0.1) flightMode = 2
+          if (angleMinDiff(rotation, 0) < angle_error) flightMode = 2
           else preserveAngle(0)
         }
       case 4 => // ориентация по траектории
         if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
           val angle = linearVelocity.deg360(DVec(0, 1))
-          if (math.abs(rotation - angle) < 0.1) flightMode = 2
+          if (angleMinDiff(rotation, angle) < angle_error) flightMode = 2
           else preserveAngle(angle)
         }
       case 5 => // ориентация против траектории
         if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
           val angle = linearVelocity.deg360(DVec(0, -1))
-          if (math.abs(rotation - angle) < 0.1) flightMode = 2
+          if (angleMinDiff(rotation, angle) < angle_error) flightMode = 2
           else preserveAngle(angle)
         }
       case 6 => // выход на орбиту
         if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
-          if (math.abs(angularVelocity) < 0.01) {
+          if (math.abs(angularVelocity) < angular_velocity_error) {
             insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
               case Some((planet, planet_state)) =>
                 val ss = satelliteSpeed(coord, linearVelocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
-                if (linearVelocity.dist(ss) > 0.1) {
+                if (linearVelocity.dist(ss) > linear_velocity_error) {
                   preserveVelocity(ss)
                 } else flightMode = 1
               case None =>
@@ -200,11 +218,11 @@ class Ship4(index:String,
         }
       case 7 => // уравнять скорость с ближайшим кораблем
         if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
-          if (math.abs(angularVelocity) < 0.01) {
+          if (math.abs(angularVelocity) < angular_velocity_error) {
             otherShipsNear.headOption match {
               case Some(s) =>
                 val ss = s.linearVelocity
-                if (linearVelocity.dist(ss) > 0.1) {
+                if (linearVelocity.dist(ss) > linear_velocity_error) {
                   preserveVelocity(ss)
                 } else {
                   flightMode = 1
@@ -221,33 +239,43 @@ class Ship4(index:String,
         } yield (planet_state, planet)) match {
           case Some((planet_state, planet)) =>
             val vertical_orientation = (coord - planet_state.coord).deg360(DVec(0,1))
-            if(math.abs(rotation - vertical_orientation) >= 0.1) {
+            if(angleMinDiff(rotation, vertical_orientation) >= angle_error) {
               preserveAngle(vertical_orientation)
-            } else if (math.abs(angularVelocity) >= 0.01) {
+            } else if (math.abs(angularVelocity) >= angular_velocity_error) {
               preserveAngularVelocity(0)
             } else {
               val ship_vertical_speed = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).n
-              if (math.abs(ship_vertical_speed - vertical_speed_msec) > 0.3) {
-                preserveVelocity(
-                  (planet_state.vel*(coord - planet_state.coord).n + vertical_speed_msec) * (coord - planet_state.coord).n +
-                    (linearVelocity*(coord - planet_state.coord).p)   * (coord - planet_state.coord).p
-                )
-              } else {
-                if (planet_state.coord.dist(coord) - planet.radius < 1000000) { // уравниваем касательную скорость, если высота меньше 1000 км
-                val ship_above_ground_velocity = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).p
-                  if (math.abs(ship_above_ground_velocity - horizontal_speed_msec - planet.groundSpeedMsec) > 0.3) {
+              val ship_above_ground_velocity = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).p
+              val vertical_diff = math.abs(ship_vertical_speed - vertical_speed_msec)
+              val horizontal_diff = math.abs(ship_above_ground_velocity - horizontal_speed_msec - planet.groundSpeedMsec)
+              if (vertical_diff > linear_velocity_error*3) {
+                if (horizontal_diff > linear_velocity_error*3) {
+                  if (vertical_diff > horizontal_diff) {
+                    preserveVelocity(
+                      (planet_state.vel*(coord - planet_state.coord).n + vertical_speed_msec) * (coord - planet_state.coord).n +
+                      (linearVelocity*(coord - planet_state.coord).p)   * (coord - planet_state.coord).p
+                    )
+                  } else {
                     preserveVelocity((planet.groundSpeedMsec + horizontal_speed_msec) * (coord - planet_state.coord).p + planet_state.vel)
-                  }/* else flightMode = 1*/
-                }/* else flightMode = 1*/
+                  }
+                } else {
+                  preserveVelocity(
+                    (planet_state.vel*(coord - planet_state.coord).n + vertical_speed_msec) * (coord - planet_state.coord).n +
+                    (linearVelocity*(coord - planet_state.coord).p)   * (coord - planet_state.coord).p
+                  )
+                }
+              } else {
+                if (horizontal_diff > linear_velocity_error*3) {
+                  preserveVelocity((planet.groundSpeedMsec + horizontal_speed_msec) * (coord - planet_state.coord).p + planet_state.vel)
+                }
               }
             }
           case None =>
-          /*flightMode = 1*/
         }
       case 9 => // остановиться
         if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
-          if (math.abs(angularVelocity) < 0.01) {
-            if (linearVelocity.dist(DVec.dzero) > 0.1) {
+          if (math.abs(angularVelocity) < angular_velocity_error) {
+            if (linearVelocity.dist(DVec.dzero) > linear_velocity_error) {
               preserveVelocity(DVec.dzero)
             } else flightMode = 1
           } else preserveAngularVelocity(0)
