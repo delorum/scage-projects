@@ -62,11 +62,13 @@ object InterfaceHolder {
           pos < mouse_coord.x && mouse_coord.x < pos+40
       }.map(_._1._1)
     } else {
-      val x = (_strings.length + 2) * 20 - mouse_coord.y
-      _interface_elems_positions.find {
-        case (i, pos) =>
-          pos - 20 < x && x < pos + 20 * (i.data.length - 1)
-      }.map(_._1)
+      if(mouse_coord.x > 20 && mouse_coord.x < 100) {
+        val x = (_strings.length + 2) * 20 - mouse_coord.y
+        _interface_elems_positions.find {
+          case (i, pos) =>
+            pos - 20 < x && x < pos + 20 * (i.data.length - 1)
+        }.map(_._1)
+      } else None
     }
   }
 
