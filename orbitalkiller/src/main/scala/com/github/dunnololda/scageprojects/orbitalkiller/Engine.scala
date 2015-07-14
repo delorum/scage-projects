@@ -61,10 +61,12 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
     active = !active
   }
 
-  action {
+  action(position = -1) {
     if(is_active) {
-      if(worktime_tacts > 0) worktime_tacts -= 1
-      else active = false
+      if(worktime_tacts > 0) {
+        worktime_tacts -= 1
+        if(worktime_tacts == 0) active = false
+      } else active = false
     }
   }
 }

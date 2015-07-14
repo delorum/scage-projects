@@ -205,7 +205,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     }
   }*/
 
-  val earth = new Planet("Earth", mass = 5.9746E24, init_coord = DVec.dzero, init_velocity = DVec.zero, init_ang_vel = /*0.0*/360.0/(24l*60*60), radius = 6400000)
+  val earth = new Planet("Earth", mass = 5.9746E24, init_coord = DVec.dzero, init_velocity = DVec.zero, init_ang_vel = 0.0/*360.0/(24l*60*60)*/, radius = 6400000/*6314759.95726045*/)
 
   val moon_start_position = DVec(-269000000, 269000000)
   val moon_init_velocity = satelliteSpeed(moon_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
@@ -991,7 +991,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   }
   updateOrbits()
 
-  actionIgnorePause(1000) {
+  actionStaticPeriodIgnorePause(1000) {
     if(/*_rendering_enabled && */drawMapMode && (!onPause || _calculate_orbits)) {
       updateOrbits()
     }

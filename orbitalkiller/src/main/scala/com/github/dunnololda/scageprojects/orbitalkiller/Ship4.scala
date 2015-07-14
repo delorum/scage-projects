@@ -22,12 +22,12 @@ class Ship4(index:String,
 
   val draw_points = points :+ points.head
 
-  val four = Engine(position = Vec(-30.0, 0.0), force_dir = Vec(1.0, 0.0),   max_power = 1000000, default_power_percent = 1, this)
-  val six = Engine(position = Vec(30.0, 0.0), force_dir = Vec(-1.0, 0.0),    max_power = 1000000, default_power_percent = 1, this)
-  val seven = Engine(position = Vec(-10.0, 80.0), force_dir = Vec(1.0, 0.0), max_power = 10000,   default_power_percent = 100, this)
-  val nine = Engine(position = Vec(10.0, 80.0), force_dir = Vec(-1.0, 0.0),  max_power = 10000,   default_power_percent = 100, this)
-  val eight = Engine(position = Vec(0.0, 90.0), force_dir = Vec(0.0, -1.0),  max_power = 1000000, default_power_percent = 1, this)
-  val two = Engine(position = Vec(0.0, -30.0), force_dir = Vec(0.0, 1.0),    max_power = 1000000, default_power_percent = 1, this)
+  val four  = Engine(position = Vec(-30.0, 0.0),  force_dir = Vec( 1.0,  0.0), max_power = 1000000, default_power_percent = 1,   this)
+  val six   = Engine(position = Vec( 30.0, 0.0),  force_dir = Vec(-1.0,  0.0), max_power = 1000000, default_power_percent = 1,   this)
+  val seven = Engine(position = Vec(-10.0, 80.0), force_dir = Vec( 1.0,  0.0), max_power = 10000,   default_power_percent = 100, this)
+  val nine  = Engine(position = Vec( 10.0, 80.0), force_dir = Vec(-1.0,  0.0), max_power = 10000,   default_power_percent = 100, this)
+  val eight = Engine(position = Vec( 0.0,  90.0), force_dir = Vec( 0.0, -1.0), max_power = 1000000, default_power_percent = 1,   this)
+  val two   = Engine(position = Vec( 0.0, -30.0), force_dir = Vec( 0.0,  1.0), max_power = 1000000, default_power_percent = 1,   this)
 
   val engines = List(four, six, seven, nine, eight, two)
 
@@ -60,6 +60,7 @@ class Ship4(index:String,
   }
 
   private def maxPossiblePowerForLinearMovement(max_power:Double, force_dir:Double, mass:Double, to:Double, from:Double, max_diff:Double):Double = {
+    println("in maxPossiblePowerForLinearMovement")
     /*(99.99 to 0.01 by -0.01).map {
       case percent =>
         val power = max_power*0.01*percent
@@ -77,9 +78,18 @@ class Ship4(index:String,
         val (_, result_to) = howManyTacts(to, from, acc, dt)
         math.abs(to - result_to) < max_diff
     }.map(percent => max_power*0.01*percent).getOrElse(max_power*0.01)
+
+    /*(max_power to 1 by -1).find {
+      case power =>
+        val force = force_dir*power
+        val acc = force / mass
+        val (_, result_to) = howManyTacts(to, from, acc, dt)
+        math.abs(to - result_to) < max_diff
+    }.getOrElse(max_power*0.01)*/
   }
 
   private def maxPossiblePowerForRotation(max_power:Double, force_dir:DVec, position:DVec, I:Double, to:Double, from:Double, max_diff:Double):Double = {
+    println("in maxPossiblePowerForRotation")
     (99 to 1 by -1).find {
       case percent =>
         val power = max_power*0.01*percent
@@ -117,6 +127,7 @@ class Ship4(index:String,
   }
 
   override def preserveVelocity(vel: DVec) {
+    println(s"need to preserve velocity $vel")
     val n = DVec(0, 1).rotateDeg(rotation).n
     val p = n.p*(-1)
 
@@ -128,7 +139,8 @@ class Ship4(index:String,
 
       eight.power = power
       val acc = (eight.force / mass).y
-      val (tacts, _) = howManyTacts(ss_n, ship_velocity_n, acc, dt)
+      val (tacts, result_to) = howManyTacts(ss_n, ship_velocity_n, acc, dt)
+      println(s"my speed is $ship_velocity_n, need to have speed $ss_n, I decide to get engine power $power newtons for $tacts tacts, after that I will have speed $result_to")
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
       eight.active = true
@@ -137,7 +149,8 @@ class Ship4(index:String,
       val power = maxPossiblePowerForLinearMovement(two.max_power, two.force_dir.y, mass, ss_n, ship_velocity_n, linear_velocity_error)
       two.power = power
       val acc = (two.force / mass).y
-      val (tacts, _) = howManyTacts(ss_n, ship_velocity_n, acc, dt)
+      val (tacts, result_to) = howManyTacts(ss_n, ship_velocity_n, acc, dt)
+      println(s"my speed is $ship_velocity_n, need to have speed $ss_n, I decide to get engine power $power newtons for $tacts tacts, after that I will have speed $result_to")
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
       two.active = true
@@ -240,33 +253,41 @@ class Ship4(index:String,
           case Some((planet_state, planet)) =>
             val vertical_orientation = (coord - planet_state.coord).deg360(DVec(0,1))
             if(angleMinDiff(rotation, vertical_orientation) >= angle_error) {
+              println(s"[${((OrbitalKiller.tacts*base_dt)*1000).toLong} msec; ${engines.exists(_.active)}] I need to correct vertical orientation")
               preserveAngle(vertical_orientation)
             } else if (math.abs(angularVelocity) >= angular_velocity_error) {
+              println(s"[${((OrbitalKiller.tacts*base_dt)*1000).toLong} msec; ${engines.exists(_.active)}] I need to nullify angular velocity")
               preserveAngularVelocity(0)
             } else {
               val ship_vertical_speed = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).n
               val ship_above_ground_velocity = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).p
               val vertical_diff = math.abs(ship_vertical_speed - vertical_speed_msec)
               val horizontal_diff = math.abs(ship_above_ground_velocity - horizontal_speed_msec - planet.groundSpeedMsec)
-              if (vertical_diff > linear_velocity_error*3) {
-                if (horizontal_diff > linear_velocity_error*3) {
+              if (vertical_diff > linear_velocity_error) {
+                if (horizontal_diff > linear_velocity_error) {
                   if (vertical_diff > horizontal_diff) {
+                    println(s"[${((OrbitalKiller.tacts*base_dt)*1000).toLong} msec; ${engines.exists(_.active)}] I need to correct vertical diff")
                     preserveVelocity(
                       (planet_state.vel*(coord - planet_state.coord).n + vertical_speed_msec) * (coord - planet_state.coord).n +
                       (linearVelocity*(coord - planet_state.coord).p)   * (coord - planet_state.coord).p
                     )
                   } else {
+                    println(s"[${((OrbitalKiller.tacts*base_dt)*1000).toLong} msec; ${engines.exists(_.active)}] I need to correct horizontal diff")
                     preserveVelocity((planet.groundSpeedMsec + horizontal_speed_msec) * (coord - planet_state.coord).p + planet_state.vel)
                   }
                 } else {
+                  println(s"[${((OrbitalKiller.tacts*base_dt)*1000).toLong} msec; ${engines.exists(_.active)}] I need to correct vertical diff")
                   preserveVelocity(
                     (planet_state.vel*(coord - planet_state.coord).n + vertical_speed_msec) * (coord - planet_state.coord).n +
                     (linearVelocity*(coord - planet_state.coord).p)   * (coord - planet_state.coord).p
                   )
                 }
               } else {
-                if (horizontal_diff > linear_velocity_error*3) {
+                if (horizontal_diff > linear_velocity_error) {
+                  println(s"[${((OrbitalKiller.tacts*base_dt)*1000).toLong} msec; ${engines.exists(_.active)}] I need to correct horizontal diff")
                   preserveVelocity((planet.groundSpeedMsec + horizontal_speed_msec) * (coord - planet_state.coord).p + planet_state.vel)
+                } else {
+                  println(s"[${((OrbitalKiller.tacts*base_dt)*1000).toLong} msec; ${engines.exists(_.active)}] no correction needed")
                 }
               }
             }
