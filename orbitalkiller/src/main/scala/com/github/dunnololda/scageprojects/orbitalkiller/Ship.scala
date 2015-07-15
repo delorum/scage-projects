@@ -189,15 +189,13 @@ trait Ship {
 
   private val g = OrbitalKiller.earth.mass*G/(OrbitalKiller.earth.radius*OrbitalKiller.earth.radius)
 
-  def updatePilotG(time_msec:Long): Unit = {
+  def updateShipState(time_msec:Long): Unit = {
     val reactive_force = currentReactiveForce(0, currentState)
     val centrifugial_force = if(angularVelocity == 0) DVec.zero else pilot_mass*math.pow(angularVelocity.toRad, 2)*pilot_position.rotateDeg(rotation)
     val pilot_acc = (reactive_force/mass + centrifugial_force/pilot_mass + currentState.collisions_dacc).norma
     pilot_gs += ((pilot_acc/g, time_msec))
-    println(s"[$time_msec msec] reactive force is ${reactive_force.norma}; ${pilot_gs.head._2}")
     if(time_msec - pilot_gs.head._2 >= 1000) {
       pilot_average_g = pilot_gs.map(_._1).sum/pilot_gs.length
-      println(pilot_average_g)
       pilot_gs.clear()
     }
   }
