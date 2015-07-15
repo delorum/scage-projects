@@ -77,10 +77,10 @@ object InterfaceHolder {
       nearestShipInfo.hideByConstraint()
     } else nearestShipInfo.showByConstraint()
     if(ship.flightMode == 8) {
-      //enginesInfo.hideByConstraint()
+      enginesInfo.hideByConstraint()
       shipParamsWhenEginesOff.hideByConstraint()
     } else {
-      //enginesInfo.showByConstraint()
+      enginesInfo.showByConstraint()
       if(!ship.engines.exists(_.active) || ship.flightMode == 0) {
         shipParamsWhenEginesOff.hideByConstraint()
       } else {

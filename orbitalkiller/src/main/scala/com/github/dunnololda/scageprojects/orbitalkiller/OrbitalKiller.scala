@@ -84,7 +84,6 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       }
     },
     changeFunction =  (time, bodies) => {
-      ship.updatePilotG((time*base_dt*1000).toLong)
       (time, bodies.map {
         case b =>
           // зануляем угловую скорость, если она меньше 0.01
@@ -222,12 +221,13 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   def currentPlanetStates = planets.map(_.currentState)
   def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
 
-  val ship_start_position = earth.coord + DVec(0, earth.radius + 500)
-  val ship_init_velocity = earth.linearVelocity
-  //val ship_init_velocity = moon.linearVelocity/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  //val ship_start_position = earth.coord + DVec(0, earth.radius + 500)
+  //val ship_init_velocity = earth.linearVelocity
+  val ship_start_position = moon.coord + DVec(0, moon.radius + 500)
+  val ship_init_velocity = moon.linearVelocity/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 100000)
-  //val ship_start_position = moon.coord + DVec(0, moon.radius + 500)
+  //
   //val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = false)* 1.15
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
   val ship = new Ship4("ship",
@@ -307,6 +307,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       body_states.foreach(bs => {
         current_body_states(bs.index) = bs
       })
+      ship.updatePilotG((tacts*base_dt*1000).toLong)
       //skipped_points += 1
     /*}*/
   }
