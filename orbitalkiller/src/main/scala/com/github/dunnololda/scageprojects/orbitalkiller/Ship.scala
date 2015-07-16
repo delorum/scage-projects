@@ -100,7 +100,7 @@ trait Ship {
 
   /**
    * rotation и angle_deg оба в диапазоне 0 - 360
-   * @param angle_deg
+   * @param angle_deg - угол между ориентацией корабля и вектором DVec(0, 1), который необходимо поддерживать
    */
   def preserveAngle(angle_deg:Double) {
     if(rotation != angle_deg) {
