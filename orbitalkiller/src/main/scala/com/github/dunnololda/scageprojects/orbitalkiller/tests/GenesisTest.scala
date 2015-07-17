@@ -102,7 +102,8 @@ object GenesisTest extends ScageScreenApp("Genesis Test", 800, 600) {
   }
 
   (1 to 3000).foreach(i => {
-    planets += new Planet(1, randomCoord, Vec.zero)
+    val c = randomCoord
+    planets += new Planet(1, c, (c - windowCenter).n)
   })
 
   /*planets += new Planet(5, windowCenter +Vec(-10,0), Vec.zero)

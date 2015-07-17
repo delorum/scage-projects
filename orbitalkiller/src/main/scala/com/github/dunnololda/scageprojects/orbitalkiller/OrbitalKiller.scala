@@ -86,9 +86,12 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     changeFunction =  (time, bodies) => {
       (time, bodies.map {
         case b =>
-          // зануляем угловую скорость, если она меньше 0.01
-          if(b.ang_vel != 0 && math.abs(b.ang_vel) < 0.01 && ship_indices.contains(b.index)) b.copy(ang_vel = 0)
-          else b
+          // зануляем угловую скорость, если она меньше 0.01. Обновляем массу
+          if(ship_indexes.contains(b.index)) {
+            val b_updated_mass = shipByIndex(b.index).map(s => b.copy(mass = s.mass)).getOrElse(b)
+            if (b_updated_mass.ang_vel != 0 && math.abs(b_updated_mass.ang_vel) < 0.01) b_updated_mass.copy(ang_vel = 0)
+            else b_updated_mass
+          } else b
       })
     },
     enable_collisions = enable_collisions)((tacts, body_states))
@@ -221,10 +224,10 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   def currentPlanetStates = planets.map(_.currentState)
   def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
 
-  //val ship_start_position = earth.coord + DVec(0, earth.radius + 500)
-  //val ship_init_velocity = earth.linearVelocity
-  val ship_start_position = moon.coord + DVec(0, moon.radius + 500)
-  val ship_init_velocity = moon.linearVelocity/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  val ship_start_position = earth.coord + DVec(0, earth.radius + 31)
+  val ship_init_velocity = /*earth.linearVelocity*/DVec.zero
+  //val ship_start_position = moon.coord + DVec(0, moon.radius + 500)
+  //val ship_init_velocity = moon.linearVelocity/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 100000)
   //
@@ -245,7 +248,8 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   )
   
   val ships = List(ship, station)
-  val ship_indices = ships.map(_.index).toSet
+  val ship_indexes = ships.map(_.index).toSet
+  def shipByIndex(index:String):Option[Ship] = ships.find(_.index == index)
 
   private var real_system_evolution =
     futureSystemEvolutionFrom(dt, 0, List(

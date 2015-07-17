@@ -9,7 +9,15 @@ class SpaceStation(
              init_velocity:DVec = DVec.dzero,
              init_rotation:Double = 0.0
              ) extends PolygonShip(index, init_coord, init_velocity, init_rotation) {
-  val mass: Double = 10*1000.0
+  def mass:Double = _payload + _fuel_mass
+  private val _payload:Double = 5*1000
+  private var _fuel_mass:Double = 5*1000
+  override def fuelMass: Double = _fuel_mass
+
+  override def fuelMass_=(m: Double): Unit = {
+    _fuel_mass = m
+  }
+
 
   val points:List[DVec] = List(
     DVec(-50.0, 50.0),

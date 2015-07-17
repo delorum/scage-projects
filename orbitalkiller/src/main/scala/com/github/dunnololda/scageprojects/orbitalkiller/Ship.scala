@@ -33,6 +33,9 @@ trait Ship {
 
   def mass:Double
 
+  def fuelMass:Double
+  def fuelMass_=(m:Double):Unit
+
   def initState:BodyState
   def currentState:BodyState
 

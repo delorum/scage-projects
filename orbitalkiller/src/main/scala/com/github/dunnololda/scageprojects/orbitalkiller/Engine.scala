@@ -17,6 +17,14 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
     }
   }
 
+  /**
+   * Расход топлива в килограммах в секунду на полной мощности
+   *
+   * */
+  val dmass_full_power:Double = {
+    200
+  }
+
   def stopMomentTacts = stop_moment_tacts
 
   private var _power:Double = 0.0
@@ -43,15 +51,21 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
   def active = is_active
   def active_=(bool:Boolean) {
     if(is_active != bool) {
-      is_active = bool
-      if(is_active) {
-        if(power == 0) {
-          powerPercent = default_power_percent
+      if(bool) {
+        if(ship.fuelMass > dmass_full_power*(power/max_power)*base_dt) {
+          is_active = true
+          if(power == 0) {
+            powerPercent = default_power_percent
+          }
+          timeMultiplier = realtime
+          if(workTimeTacts == 0) workTimeTacts = 10
+          ship.selected_engine = Some(this)
+        } else {
+          is_active = false
+          ship.selected_engine = ship.engines.filter(_.active).lastOption
         }
-        timeMultiplier = realtime
-        if(workTimeTacts == 0) workTimeTacts = 10
-        ship.selected_engine = Some(this)
       } else {
+        is_active = false
         ship.selected_engine = ship.engines.filter(_.active).lastOption
       }
       //updateFutureTrajectory("engine active")
@@ -62,8 +76,14 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
   }
 
   action(position = -1) {
-    if(is_active && worktime_tacts == 0) {
-      active = false
+    if(is_active) {
+      if(worktime_tacts <= 0 || ship.fuelMass <= 0) {
+        active = false
+      } else {
+        if(ship.fuelMass - dmass_full_power*(power/max_power)*base_dt <= 0) {
+          active = false
+        }
+      }
     }
   }
 
@@ -71,7 +91,7 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
     if(is_active) {
       if(worktime_tacts > 0) {
         worktime_tacts -= 1
-        //if(worktime_tacts == 0) active = false
+        ship.fuelMass -= dmass_full_power*(power/max_power)*base_dt
       } else active = false
     }
   }
