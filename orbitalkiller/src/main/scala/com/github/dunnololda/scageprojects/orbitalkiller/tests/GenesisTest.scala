@@ -6,17 +6,17 @@ import com.github.dunnololda.scageprojects.orbitalkiller.AABB
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class Planet(var m:Double, var coord:Vec, var vel:Vec) {
+class PlanetPart(var m:Double, var coord:Vec, var vel:Vec) {
   val r:Float = 1/*+m*0.001*/
 
   def aabb:AABB = AABB(coord, r*2, r*2)
-  def isCollided(op:Planet):Boolean = coord.dist(op.coord) < r + op.r
+  def isCollided(op:PlanetPart):Boolean = coord.dist(op.coord) < r + op.r
 
   var new_coord = coord
 }
 
-class MySpace(val bodies:Seq[Planet], val center:Vec, val width:Double, val height:Double) {
-  def this(bodies:Seq[Planet], center:Vec) = {
+class MySpace(val bodies:Seq[PlanetPart], val center:Vec, val width:Double, val height:Double) {
+  def this(bodies:Seq[PlanetPart], center:Vec) = {
     this(bodies, center, {
       val (init_min_x, init_max_x) = {
         bodies.headOption.map(b => {
@@ -90,12 +90,12 @@ object GenesisTest extends ScageScreenApp("Genesis Test", 800, 600) {
   private val G:Double = 1
   private val dt = 0.1
 
-  private val to_remove = mutable.HashSet[Planet]()
-  private val to_add = mutable.HashSet[Planet]()
-  private val planets = ArrayBuffer[Planet]()
+  private val to_remove = mutable.HashSet[PlanetPart]()
+  private val to_add = mutable.HashSet[PlanetPart]()
+  private val planets = ArrayBuffer[PlanetPart]()
 
   private var _record_points = false
-  private val points = ArrayBuffer[(Vec, Planet)]()
+  private val points = ArrayBuffer[(Vec, PlanetPart)]()
 
   private def randomCoord:Vec = {
     Vec((math.random*800).toFloat, (math.random*600).toFloat)
@@ -103,7 +103,7 @@ object GenesisTest extends ScageScreenApp("Genesis Test", 800, 600) {
 
   (1 to 3000).foreach(i => {
     val c = randomCoord
-    planets += new Planet(1, c, (c - windowCenter).n)
+    planets += new PlanetPart(1, c, (c - windowCenter).n)
   })
 
   /*planets += new Planet(5, windowCenter +Vec(-10,0), Vec.zero)
@@ -209,7 +209,7 @@ object GenesisTest extends ScageScreenApp("Genesis Test", 800, 600) {
           val collided = collidedd.map(_._2).toSet
           to_remove += p
           to_remove ++= collided
-          val newp = new Planet(
+          val newp = new PlanetPart(
             p.m + collided.map(_.m).sum,
             (p.coord + collided.map(_.coord).sum) / (collided.size + 1),
             (p.m * p.vel + collided.map(op => op.m * op.vel).sum) / (p.m + collided.map(_.m).sum))

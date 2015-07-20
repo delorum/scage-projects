@@ -16,8 +16,24 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
       worktime_tacts = new_worktime_tacts
       stop_moment_tacts = tacts + worktime_tacts * timeMultiplier
       if(ship.fuelMassWhenEnginesOff < 0) {
-        worktime_tacts = prev
-        stop_moment_tacts = tacts + worktime_tacts * timeMultiplier
+        if(worktime_tacts > prev) {
+          (worktime_tacts to prev by -1).find {
+            case x =>
+              worktime_tacts = x
+              stop_moment_tacts = tacts + worktime_tacts * timeMultiplier
+              ship.fuelMassWhenEnginesOff > 0
+          } match {
+            case Some(x) =>
+              worktime_tacts = x
+              stop_moment_tacts = tacts + worktime_tacts * timeMultiplier
+            case None =>
+              worktime_tacts = prev
+              stop_moment_tacts = tacts + worktime_tacts * timeMultiplier
+          }
+        } else {
+          worktime_tacts = prev
+          stop_moment_tacts = tacts + worktime_tacts * timeMultiplier
+        }
       }
     }
   }
