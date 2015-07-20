@@ -85,13 +85,16 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     },
     changeFunction =  (time, bodies) => {
       (time, bodies.map {
-        case b =>
+        case bs =>
           // зануляем угловую скорость, если она меньше 0.01. Обновляем массу
-          if(ship_indexes.contains(b.index)) {
-            val b_updated_mass = shipByIndex(b.index).map(s => b.copy(mass = s.mass)).getOrElse(b)
-            if (b_updated_mass.ang_vel != 0 && math.abs(b_updated_mass.ang_vel) < 0.01) b_updated_mass.copy(ang_vel = 0)
-            else b_updated_mass
-          } else b
+          bs.index match {
+            case ship.index =>
+              bs.copy(
+                ang_vel = if(bs.ang_vel != 0 && math.abs(bs.ang_vel) < 0.01) 0 else bs.ang_vel,
+                mass = ship.currentMass(time, bs)
+              )
+            case _ => bs
+          }
       })
     },
     enable_collisions = enable_collisions)((tacts, body_states))
@@ -137,6 +140,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   //val trajectory_capacity = 100000
 
   private val future_trajectory = ArrayBuffer[(Long, List[BodyState])]()
+  def futureTrajectory:Seq[(Long, List[BodyState])] = future_trajectory
   //private val future_trajectory_map = mutable.HashMap[String, ArrayBuffer[(Long, BodyState)]]()
   private val future_trajectory_capacity = 10000
 
@@ -225,7 +229,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
 
   val ship_start_position = earth.coord + DVec(0, earth.radius + 31)
-  val ship_init_velocity = /*earth.linearVelocity*/DVec.zero
+  val ship_init_velocity = earth.linearVelocity/*DVec.zero*/
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 500)
   //val ship_init_velocity = moon.linearVelocity/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
@@ -431,73 +435,6 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     }
   }
 
-  def linearSpeedStrWhenEnginesOff:String = {
-    if(ship.flightMode != 1) "N/A"  // только в свободном режиме отображать инфу
-    else {
-      if(ship.engines.exists(_.active)) {
-        future_trajectory.find(_._1 >= ship.engines.map(_.stopMomentTacts).max) match {
-          case Some((t, lbs)) =>
-            lbs.find(_.index == ship.index) match {
-              case Some(bs) =>
-                val s = bs.vel
-                //f"${msecOrKmsec(s.norma)} (velx = ${msecOrKmsec(s.x)}, vely = ${msecOrKmsec(s.y)})"
-                f"${msecOrKmsec(s.norma)}"
-              case None => "N/A"
-            }
-          case None =>
-            continueFutureTrajectory("linearSpeedStrWhenEnginesOff")
-            "N/A"
-        }
-      } else {
-        //f"${msecOrKmsec(ship.linearVelocity.norma)} (velx = ${msecOrKmsec(ship.linearVelocity.x)}, vely = ${msecOrKmsec(ship.linearVelocity.y)})"
-        f"${msecOrKmsec(ship.linearVelocity.norma)}"
-      }
-    }
-  }
-
-  def angularSpeedStrWhenEnginesOff:String = {
-    if(ship.flightMode != 1) "N/A"  // только в свободном режиме отображать инфу
-    else {
-      if(ship.engines.exists(_.active)) {
-        future_trajectory.find(_._1 >= ship.engines.map(_.stopMomentTacts).max) match {
-          case Some((t, lbs)) =>
-            lbs.find(_.index == ship.index) match {
-              case Some(bs) =>
-                val s = bs.ang_vel
-                f" $s%.2f град/сек"
-              case None => "N/A"
-            }
-          case None =>
-            continueFutureTrajectory("angularSpeedStrWhenEnginesOff")
-            "N/A"
-        }
-      } else {
-        f" ${ship.angularVelocity}%.2f град/сек"
-      }
-    }
-  }
-
-  def orbitParametersStrWhenEnginesOff:String = {
-    if(ship.flightMode != 1) "N/A"  // только в свободном режиме отображать инфу
-    else {
-      if(ship.engines.exists(_.active)) {
-        future_trajectory.find(_._1 >= ship.engines.map(_.stopMomentTacts).max) match {
-          case Some((t, lbs)) =>
-            lbs.find(_.index == ship.index) match {
-              case Some(bs) =>
-                orbitStrInPointWithVelocity(bs.coord, bs.vel, bs.mass, lbs.filter(x => planet_indexes.contains(x.index)))
-              case None =>"N/A"
-            }
-          case None =>
-            continueFutureTrajectory("orbitParametersStrWhenEnginesOff")
-            "N/A"
-        }
-      } else {
-        orbitStrInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass, currentSystemState.filter(x => planet_indexes.contains(x.index)))
-      }
-    }
-  }
-
   /*private var disable_trajectory_drawing = false
   private var disable_future_trajectory_drawing = false*/
   private var disable_interface_drawing = false
@@ -622,6 +559,9 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       ship.horizontal_speed_msec += 1
     }
   }, onKeyUp = if(ship.flightMode != 8) updateFutureTrajectory("KEY_LEFT"))
+
+  private val engine_keys = List(KEY_UP, KEY_DOWN, KEY_RIGHT, KEY_LEFT)
+  def anyEngineKeyPressed = engine_keys.exists(k => keyPressed(k))
 
   keyIgnorePause(KEY_ADD, 100, onKeyDown = {
     timeMultiplier += realtime

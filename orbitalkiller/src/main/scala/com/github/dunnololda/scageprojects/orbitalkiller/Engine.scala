@@ -12,8 +12,13 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
   def workTimeTacts = worktime_tacts
   def workTimeTacts_=(new_worktime_tacts:Long) {
     if(new_worktime_tacts >= 0) {
+      val prev = worktime_tacts
       worktime_tacts = new_worktime_tacts
       stop_moment_tacts = tacts + worktime_tacts * timeMultiplier
+      if(ship.fuelMassWhenEnginesOff < 0) {
+        worktime_tacts = prev
+        stop_moment_tacts = tacts + worktime_tacts * timeMultiplier
+      }
     }
   }
 
@@ -21,8 +26,10 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
    * Расход топлива в килограммах в секунду на полной мощности
    *
    * */
-  val dmass_full_power:Double = {
-    200
+  val fuel_consumption_per_sec_at_full_power:Double = 200
+  
+  def fuelConsumptionPerTact:Double = {
+    fuel_consumption_per_sec_at_full_power*(_power/max_power)*base_dt*timeMultiplier
   }
 
   def stopMomentTacts = stop_moment_tacts
@@ -31,7 +38,11 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
   def power = _power
   def power_=(new_power:Double) {
     if(new_power >= 0 && new_power <= max_power && new_power != _power) {
+      val prev = _power
       _power = new_power
+      if(ship.fuelMassWhenEnginesOff < 0) {
+        _power = prev
+      }
     }
   }
 
@@ -39,8 +50,11 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
   def powerPercent_=(new_power_percent:Long) {
     if(new_power_percent >= 0 && new_power_percent <= 100) {
       val new_power = max_power*new_power_percent/100.0
-      //println(s"$new_power_percent : $new_power")
+      val prev = _power
       _power = new_power
+      if(ship.fuelMassWhenEnginesOff < 0) {
+        _power = prev
+      }
     }
   }
 
@@ -52,7 +66,7 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
   def active_=(bool:Boolean) {
     if(is_active != bool) {
       if(bool) {
-        if(ship.fuelMass > dmass_full_power*(power/max_power)*base_dt) {
+        if(ship.fuelMass > fuelConsumptionPerTact) {
           is_active = true
           if(power == 0) {
             powerPercent = default_power_percent
@@ -80,7 +94,7 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
       if(worktime_tacts <= 0 || ship.fuelMass <= 0) {
         active = false
       } else {
-        if(ship.fuelMass - dmass_full_power*(power/max_power)*base_dt <= 0) {
+        if(ship.fuelMass - fuelConsumptionPerTact <= 0) {
           active = false
         }
       }
@@ -91,7 +105,7 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
     if(is_active) {
       if(worktime_tacts > 0) {
         worktime_tacts -= 1
-        ship.fuelMass -= dmass_full_power*(power/max_power)*base_dt
+        ship.fuelMass -= fuelConsumptionPerTact
       } else active = false
     }
   }

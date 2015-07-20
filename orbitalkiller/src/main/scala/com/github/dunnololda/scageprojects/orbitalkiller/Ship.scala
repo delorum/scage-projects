@@ -57,6 +57,23 @@ trait Ship {
     }
   }
 
+  def fuelConsumptionPerTact:Double = {
+    engines.filter(e => e.active).foldLeft(0.0) {
+      case (sum, e) => sum + e.fuelConsumptionPerTact
+    }
+  }
+
+  def fuelMassWhenEnginesOff:Double = {
+    fuelMass - engines.filter(e => e.active).map(e => e.workTimeTacts*e.fuelConsumptionPerTact).sum
+  }
+
+  def currentMass(time:Long, bs:BodyState):Double = {
+    mass - engines.filter(e => e.active).foldLeft(0.0) {
+      case (sum, e) =>
+        sum + e.fuelConsumptionPerTact * (math.min(time, e.stopMomentTacts) - (e.stopMomentTacts - e.workTimeTacts))
+    }
+  }
+
   def currentTorque(time:Long, bs:BodyState):Double = {
     engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0.0) {
       case (sum, e) => sum + e.torque

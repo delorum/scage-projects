@@ -26,7 +26,7 @@ object InterfaceHolder {
 
   val linearVelocityInfo = new LinearVelocityInfo
   val angularVelocityInfo = new AngularVelocityInfo
-  val pilotStateInfo = new PilotStateInfo
+  val pilotStateInfo = new ShipAndCrewStateInfo
 
   val planetsInfluenceInfo = new PlanetsInfluenceInfo
   val satelliteEscapeVelocityInfo = new SatelliteEscapeVelocityInfo

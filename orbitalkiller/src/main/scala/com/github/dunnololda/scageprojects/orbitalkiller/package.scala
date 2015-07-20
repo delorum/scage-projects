@@ -747,11 +747,11 @@ package object orbitalkiller {
   }
 
   def mOrKm(meters:Number):String = {
-    if(math.abs(meters.floatValue()) < 1000) f"${meters.floatValue()}%.2f м" else f"${meters.floatValue()/1000}%.2f км"
+    if(math.abs(meters.doubleValue()) < 1000) f"${meters.doubleValue()}%.2f м" else f"${meters.doubleValue()/1000}%.2f км"
   }
 
   def msecOrKmsec(msec:Number):String = {
-    if(math.abs(msec.floatValue()) < 1000) f"${msec.floatValue()}%.2f м/сек" else f"${msec.floatValue()/1000}%.2f км/сек"
+    if(math.abs(msec.doubleValue()) < 1000) f"${msec.doubleValue()}%.2f м/сек" else s"${msec.doubleValue()/1000}%.2f км/сек"
   }
 
   /**
@@ -760,7 +760,7 @@ package object orbitalkiller {
    * @return
    */
   def msec2OrKmsec2(msec:Number):String = {
-    if(math.abs(msec.floatValue()) < 1000) f"${msec.floatValue()}%.2f м/сек^2" else f"${msec.floatValue()/1000}%.2f км/сек^2"
+    if(math.abs(msec.doubleValue()) < 1000) f"${msec.doubleValue()}%.2f м/сек^2" else f"${msec.doubleValue()/1000}%.2f км/сек^2"
   }
   
   sealed trait KeplerOrbit {
