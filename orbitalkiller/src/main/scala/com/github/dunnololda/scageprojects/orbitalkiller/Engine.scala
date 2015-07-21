@@ -16,20 +16,10 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
       worktime_tacts = new_worktime_tacts
       stop_moment_tacts = tacts + worktime_tacts * timeMultiplier
       if(ship.fuelMassWhenEnginesOff < 0) {
-        if(worktime_tacts > prev) {
-          (worktime_tacts to prev by -1).find {
-            case x =>
-              worktime_tacts = x
-              stop_moment_tacts = tacts + worktime_tacts * timeMultiplier
-              ship.fuelMassWhenEnginesOff > 0
-          } match {
-            case Some(x) =>
-              worktime_tacts = x
-              stop_moment_tacts = tacts + worktime_tacts * timeMultiplier
-            case None =>
-              worktime_tacts = prev
-              stop_moment_tacts = tacts + worktime_tacts * timeMultiplier
-          }
+        val possible_fuel_for_this_engine = ship.fuelMassWhenEnginesOffWithoutEngine(this)
+        if(worktime_tacts > prev && possible_fuel_for_this_engine > 0) {
+          worktime_tacts = (possible_fuel_for_this_engine / fuelConsumptionPerTact).toLong
+          stop_moment_tacts = tacts + worktime_tacts * timeMultiplier
         } else {
           worktime_tacts = prev
           stop_moment_tacts = tacts + worktime_tacts * timeMultiplier

@@ -193,110 +193,114 @@ class Ship4(index:String,
   }
 
   action {
-    flightMode match {
-      case 1 => // свободный режим
-      case 2 => // запрет вращения
-        if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
-          if (math.abs(angularVelocity) < angular_velocity_error) flightMode = 1
-          else preserveAngularVelocity(0)
-        }
-      case 3 => // ориентация по осям
-        if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
-          if (angleMinDiff(rotation, 0) < angle_error) flightMode = 2
-          else preserveAngle(0)
-        }
-      case 4 => // ориентация по траектории
-        if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
-          val angle = linearVelocity.deg360(DVec(0, 1))
-          if (angleMinDiff(rotation, angle) < angle_error) flightMode = 2
-          else preserveAngle(angle)
-        }
-      case 5 => // ориентация против траектории
-        if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
-          val angle = linearVelocity.deg360(DVec(0, -1))
-          if (angleMinDiff(rotation, angle) < angle_error) flightMode = 2
-          else preserveAngle(angle)
-        }
-      case 6 => // выход на орбиту
-        if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
-          if (math.abs(angularVelocity) < angular_velocity_error) {
-            insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
-              case Some((planet, planet_state)) =>
-                val ss = satelliteSpeed(coord, linearVelocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
-                if (linearVelocity.dist(ss) > linear_velocity_error) {
-                  preserveVelocity(ss)
-                } else flightMode = 1
-              case None =>
-                flightMode = 1
-            }
-          } else preserveAngularVelocity(0)
-        }
-      case 7 => // уравнять скорость с ближайшим кораблем
-        if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
-          if (math.abs(angularVelocity) < angular_velocity_error) {
-            otherShipsNear.headOption match {
-              case Some(s) =>
-                val ss = s.linearVelocity
-                if (linearVelocity.dist(ss) > linear_velocity_error) {
-                  preserveVelocity(ss)
-                } else {
+    if(fuelMass <= 0 && flightMode != 1) {
+      flightMode = 1
+    } else {
+      flightMode match {
+        case 1 => // свободный режим
+        case 2 => // запрет вращения
+          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
+            if (math.abs(angularVelocity) < angular_velocity_error) flightMode = 1
+            else preserveAngularVelocity(0)
+          }
+        case 3 => // ориентация по осям
+          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
+            if (angleMinDiff(rotation, 0) < angle_error) flightMode = 2
+            else preserveAngle(0)
+          }
+        case 4 => // ориентация по траектории
+          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
+            val angle = linearVelocity.deg360(DVec(0, 1))
+            if (angleMinDiff(rotation, angle) < angle_error) flightMode = 2
+            else preserveAngle(angle)
+          }
+        case 5 => // ориентация против траектории
+          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
+            val angle = linearVelocity.deg360(DVec(0, -1))
+            if (angleMinDiff(rotation, angle) < angle_error) flightMode = 2
+            else preserveAngle(angle)
+          }
+        case 6 => // выход на орбиту
+          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
+            if (math.abs(angularVelocity) < angular_velocity_error) {
+              insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
+                case Some((planet, planet_state)) =>
+                  val ss = satelliteSpeed(coord, linearVelocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
+                  if (linearVelocity.dist(ss) > linear_velocity_error) {
+                    preserveVelocity(ss)
+                  } else flightMode = 1
+                case None =>
                   flightMode = 1
-                }
-              case None =>
-                flightMode = 1
-            }
-          } else preserveAngularVelocity(0)
-        }
-      case 8 => // уравнять скорость с ближайшей планетой
-        (for {
-          planet_state <- currentPlanetStates.sortBy(_.coord.dist(coord)).headOption
-          planet <- planetByIndex(planet_state.index)
-        } yield (planet_state, planet)) match {
-          case Some((planet_state, planet)) =>
-            val vertical_orientation = (coord - planet_state.coord).deg360(DVec(0,1))
-            if(angleMinDiff(rotation, vertical_orientation) >= angle_error) {
-              preserveAngle(vertical_orientation)
-            } else if (math.abs(angularVelocity) >= angular_velocity_error) {
-              preserveAngularVelocity(0)
-            } else {
-              val ship_vertical_speed = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).n
-              val ship_above_ground_velocity = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).p
-              val vertical_diff = math.abs(ship_vertical_speed - vertical_speed_msec)
-              val horizontal_diff = math.abs(ship_above_ground_velocity - horizontal_speed_msec - planet.groundSpeedMsec)
-              if (vertical_diff > linear_velocity_error) {
-                if (horizontal_diff > linear_velocity_error) {
-                  if (vertical_diff > horizontal_diff) {
-                    preserveVelocity(
-                      (planet_state.vel*(coord - planet_state.coord).n + vertical_speed_msec) * (coord - planet_state.coord).n +
-                      (linearVelocity*(coord - planet_state.coord).p)   * (coord - planet_state.coord).p
-                    )
+              }
+            } else preserveAngularVelocity(0)
+          }
+        case 7 => // уравнять скорость с ближайшим кораблем
+          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
+            if (math.abs(angularVelocity) < angular_velocity_error) {
+              otherShipsNear.headOption match {
+                case Some(s) =>
+                  val ss = s.linearVelocity
+                  if (linearVelocity.dist(ss) > linear_velocity_error) {
+                    preserveVelocity(ss)
                   } else {
-                    preserveVelocity((planet.groundSpeedMsec + horizontal_speed_msec) * (coord - planet_state.coord).p + planet_state.vel)
+                    flightMode = 1
+                  }
+                case None =>
+                  flightMode = 1
+              }
+            } else preserveAngularVelocity(0)
+          }
+        case 8 => // уравнять скорость с ближайшей планетой
+          (for {
+            planet_state <- currentPlanetStates.sortBy(_.coord.dist(coord)).headOption
+            planet <- planetByIndex(planet_state.index)
+          } yield (planet_state, planet)) match {
+            case Some((planet_state, planet)) =>
+              val vertical_orientation = (coord - planet_state.coord).deg360(DVec(0, 1))
+              if (angleMinDiff(rotation, vertical_orientation) >= angle_error) {
+                preserveAngle(vertical_orientation)
+              } else if (math.abs(angularVelocity) >= angular_velocity_error) {
+                preserveAngularVelocity(0)
+              } else {
+                val ship_vertical_speed = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).n
+                val ship_above_ground_velocity = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).p
+                val vertical_diff = math.abs(ship_vertical_speed - vertical_speed_msec)
+                val horizontal_diff = math.abs(ship_above_ground_velocity - horizontal_speed_msec - planet.groundSpeedMsec)
+                if (vertical_diff > linear_velocity_error) {
+                  if (horizontal_diff > linear_velocity_error) {
+                    if (vertical_diff > horizontal_diff) {
+                      preserveVelocity(
+                        (planet_state.vel * (coord - planet_state.coord).n + vertical_speed_msec) * (coord - planet_state.coord).n +
+                          (linearVelocity * (coord - planet_state.coord).p) * (coord - planet_state.coord).p
+                      )
+                    } else {
+                      preserveVelocity((planet.groundSpeedMsec + horizontal_speed_msec) * (coord - planet_state.coord).p + planet_state.vel)
+                    }
+                  } else {
+                    preserveVelocity(
+                      (planet_state.vel * (coord - planet_state.coord).n + vertical_speed_msec) * (coord - planet_state.coord).n +
+                        (linearVelocity * (coord - planet_state.coord).p) * (coord - planet_state.coord).p
+                    )
                   }
                 } else {
-                  preserveVelocity(
-                    (planet_state.vel*(coord - planet_state.coord).n + vertical_speed_msec) * (coord - planet_state.coord).n +
-                    (linearVelocity*(coord - planet_state.coord).p)   * (coord - planet_state.coord).p
-                  )
-                }
-              } else {
-                if (horizontal_diff > linear_velocity_error) {
-                  preserveVelocity((planet.groundSpeedMsec + horizontal_speed_msec) * (coord - planet_state.coord).p + planet_state.vel)
-                } else {
+                  if (horizontal_diff > linear_velocity_error) {
+                    preserveVelocity((planet.groundSpeedMsec + horizontal_speed_msec) * (coord - planet_state.coord).p + planet_state.vel)
+                  } else {
+                  }
                 }
               }
-            }
-          case None =>
-        }
-      case 9 => // остановиться
-        if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
-          if (math.abs(angularVelocity) < angular_velocity_error) {
-            if (linearVelocity.dist(DVec.dzero) > linear_velocity_error) {
-              preserveVelocity(DVec.dzero)
-            } else flightMode = 1
-          } else preserveAngularVelocity(0)
-        }
-      case _ =>
+            case None =>
+          }
+        case 9 => // остановиться
+          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
+            if (math.abs(angularVelocity) < angular_velocity_error) {
+              if (linearVelocity.dist(DVec.dzero) > linear_velocity_error) {
+                preserveVelocity(DVec.dzero)
+              } else flightMode = 1
+            } else preserveAngularVelocity(0)
+          }
+        case _ =>
+      }
     }
   }
 

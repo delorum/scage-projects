@@ -67,6 +67,10 @@ trait Ship {
     fuelMass - engines.filter(e => e.active).map(e => e.workTimeTacts*e.fuelConsumptionPerTact).sum
   }
 
+  def fuelMassWhenEnginesOffWithoutEngine(ee:Engine):Double = {
+    fuelMass - engines.filter(e => e.active && e != ee).map(e => e.workTimeTacts*e.fuelConsumptionPerTact).sum
+  }
+
   def currentMass(time:Long, bs:BodyState):Double = {
     mass - engines.filter(e => e.active).foldLeft(0.0) {
       case (sum, e) =>
@@ -166,7 +170,14 @@ trait Ship {
     val prev_flight_mode = flight_mode
     flight_mode = new_flight_mode
     if(flight_mode == 0) {
-      engines.foreach(e => e.workTimeTacts = 226800)
+      engines.filterNot(_.active).foreach(e => e.workTimeTacts = 226800)     // 1 hour
+      val active_engines = engines.filter(_.active)
+      if(active_engines.map(ae => ae.fuelConsumptionPerTact*226800).sum <= fuelMass) {
+        active_engines.foreach(e => e.workTimeTacts = 226800)
+      } else {
+        val fuel_for_every_active_engine = fuelMass / active_engines.length
+        active_engines.foreach(e => e.workTimeTacts = (fuel_for_every_active_engine/e.fuelConsumptionPerTact).toLong)
+      }
     } else {
       if(flightMode == 1) {
         engines.foreach(e => e.active = false)

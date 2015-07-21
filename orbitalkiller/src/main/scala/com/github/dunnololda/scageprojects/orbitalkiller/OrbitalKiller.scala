@@ -229,7 +229,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
 
   val ship_start_position = earth.coord + DVec(0, earth.radius + 31)
-  val ship_init_velocity = earth.linearVelocity/*DVec.zero*/
+  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 500)
   //val ship_init_velocity = moon.linearVelocity/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
@@ -511,9 +511,18 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       e.workTimeTacts = 0
     }
   })})
-  keyIgnorePause(KEY_NUMPAD0, onKeyDown = {ship.engines.foreach(e => {
-    e.workTimeTacts = 226800 // 1 hour
-  })})
+
+  keyIgnorePause(KEY_NUMPAD0, onKeyDown = {
+    ship.engines.filterNot(_.active).foreach(e => e.workTimeTacts = 226800)     // 1 hour
+    val active_engines = ship.engines.filter(_.active)
+    if(active_engines.map(ae => ae.fuelConsumptionPerTact*226800).sum <= ship.fuelMass) {
+      active_engines.foreach(e => e.workTimeTacts = 226800)
+    } else {
+      val fuel_for_every_active_engine = ship.fuelMass / active_engines.length
+      active_engines.foreach(e => e.workTimeTacts = (fuel_for_every_active_engine/e.fuelConsumptionPerTact).toLong)
+    }
+  })
+
 
   private def repeatTime(code:Int):Long = {
     keyPress(code).map {
