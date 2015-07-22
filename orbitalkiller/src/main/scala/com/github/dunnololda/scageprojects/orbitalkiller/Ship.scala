@@ -211,7 +211,7 @@ trait Ship {
     case _ => ""
   }
 
-  def otherShipsNear:List[Ship] = ships.filter(s => s.index != ship.index && ship.coord.dist(s.coord) < 100000).sortBy(s => ship.coord.dist(s.coord))
+  def otherShipsNear:List[Ship] = ships.filter(s => s.index != ship.index/* && ship.coord.dist(s.coord) < 100000*/).sortBy(s => ship.coord.dist(s.coord))
 
   private val pilot_mass = 75
   private val pilot_position = DVec(0, 69)

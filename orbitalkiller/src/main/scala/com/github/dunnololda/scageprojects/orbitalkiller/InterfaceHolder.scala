@@ -73,9 +73,9 @@ object InterfaceHolder {
   }
 
   def constraints(): Unit = {
-    if(ship.otherShipsNear.isEmpty) {
+    /*if(ship.otherShipsNear.isEmpty) {
       nearestShipInfo.hideByConstraint()
-    } else nearestShipInfo.showByConstraint()
+    } else nearestShipInfo.showByConstraint()*/
     if(ship.flightMode == 8) {
       enginesInfo.hideByConstraint()
       shipParamsWhenEginesOff.hideByConstraint()
