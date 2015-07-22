@@ -21,7 +21,7 @@ class NearestShipInfo extends InterfaceElement {
           our_orbit_period = our_orbit.asInstanceOf[EllipseOrbit].t
           os_orbit_period = os_orbit.asInstanceOf[EllipseOrbit].t
         } yield {
-            val a = (ship.coord - our_orbit_planet_state.coord).signedDeg(os.coord - our_orbit_planet_state.coord)
+            val a = (ship.coord - our_orbit_planet_state.coord).deg360(os.coord - our_orbit_planet_state.coord)
             val t1 = a/360.0*os_orbit_period
             val t2 = (a + 360)/360.0*os_orbit_period
             (f"$a%.2f град.", s"${timeStr(t1.toLong*1000)}", s"${timeStr(t2.toLong*1000)}")
