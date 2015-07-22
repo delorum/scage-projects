@@ -925,22 +925,30 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   def renderingEnabled = _rendering_enabled*/
 
   private def updateOrbits() {
-    ship_orbit_render = if(ship.engines.exists(_.active)) {
-      // получаем состояние системы, когда двигатели отработали
-      val system_state_when_engines_off = getFutureState(ships.flatMap(_.engines.map(e => e.workTimeTacts)).max)
-      shipOrbitRender(ship.index, system_state_when_engines_off, PURPLE, RED)
+    if(ship.flightMode != 0) {
+      ship_orbit_render = if(ship.engines.exists(_.active)) {
+        // получаем состояние системы, когда двигатели отработали
+        val system_state_when_engines_off = getFutureState(ships.flatMap(_.engines.map(e => e.workTimeTacts)).max)
+        shipOrbitRender(ship.index, system_state_when_engines_off, PURPLE, RED)
+      } else {
+        // двигатели корабля не работают - можем работать с текущим состоянием
+        shipOrbitRender(ship.index, currentSystemState, ORANGE, YELLOW)
+        /*val one_week_evolution_after_engines_off = futureSystemEvolutionWithoutReactiveForcesFrom(
+          3600 * base_dt, _tacts, currentSystemState, enable_collisions = false)
+          .take(7* 24 * 63)
+          .zipWithIndex
+          .filter(_._2 % 5 == 0)
+          .map(_._1)
+          .map(_._2)
+          .toList
+        drawSlidingLines(one_week_evolution_after_engines_off.flatMap(x => x.find(_.index == ship.index)).map(_.coord * scale), ORANGE)*/
+      }
     } else {
-      // двигатели корабля не работают - можно работать с текущим состоянием
-      shipOrbitRender(ship.index, currentSystemState, ORANGE, YELLOW)
-      /*val one_week_evolution_after_engines_off = futureSystemEvolutionWithoutReactiveForcesFrom(
-        3600 * base_dt, _tacts, currentSystemState, enable_collisions = false)
-        .take(7* 24 * 63)
-        .zipWithIndex
-        .filter(_._2 % 5 == 0)
-        .map(_._1)
-        .map(_._2)
-        .toList
-      drawSlidingLines(one_week_evolution_after_engines_off.flatMap(x => x.find(_.index == ship.index)).map(_.coord * scale), ORANGE)*/
+      ship_orbit_render = if(ship.engines.exists(_.active)) {
+        shipOrbitRender(ship.index, currentSystemState, PURPLE, RED)
+      } else {
+        shipOrbitRender(ship.index, currentSystemState, ORANGE, YELLOW)
+      }
     }
     station_orbit_render = shipOrbitRender(station.index, currentSystemState, ORANGE, YELLOW)
     _calculate_orbits = false
