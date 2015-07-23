@@ -112,21 +112,21 @@ class Ship4(index:String,
     if(difference > angular_velocity_error) {
       val power = maxPossiblePowerForRotation(seven.max_power, seven.force_dir, seven.position, currentState.I, ang_vel_deg, angularVelocity, angular_velocity_error)
       seven.power = power
-      eight.power = power
+      six.power = power
       val ang_acc = (seven.torque / currentState.I).toDeg
       val (tacts, _) = howManyTacts(ang_vel_deg, angularVelocity, ang_acc, dt)
-      activateOnlyTheseEngines(seven, eight)
+      activateOnlyTheseEngines(seven, six)
       seven.workTimeTacts = tacts
-      eight.workTimeTacts = tacts
+      six.workTimeTacts = tacts
     } else if(difference < -angular_velocity_error) {
       val power = maxPossiblePowerForRotation(nine.max_power, nine.force_dir, nine.position, currentState.I, ang_vel_deg, angularVelocity, angular_velocity_error)
       nine.power = power
-      eight.power = power
+      four.power = power
       val ang_acc = (nine.torque / currentState.I).toDeg
       val (tacts, _) = howManyTacts(ang_vel_deg, angularVelocity, ang_acc, dt)
-      activateOnlyTheseEngines(nine, eight)
+      activateOnlyTheseEngines(nine, four)
       nine.workTimeTacts = tacts
-      eight.workTimeTacts = tacts
+      four.workTimeTacts = tacts
     }
     last_correction_or_check_moment = OrbitalKiller.tacts
   }

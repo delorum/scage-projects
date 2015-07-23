@@ -228,12 +228,12 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
   def currentPlanetStates = planets.map(_.currentState)
   def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
 
-  val ship_start_position = earth.coord + DVec(0, earth.radius + 31)
-  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  //val ship_start_position = earth.coord + DVec(0, earth.radius + 31)
+  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
   //val ship_start_position = earth.coord + DVec(0, earth.radius + 100000)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
-  //val ship_start_position = moon.coord + DVec(0, moon.radius + 500)
-  //val ship_init_velocity = moon.linearVelocity/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  val ship_start_position = moon.coord + DVec(0, moon.radius + 31)
+  val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 100000)
   //
@@ -245,7 +245,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     init_rotation = 0
   )
 
-  val station_start_position = earth.coord + DVec(0, -earth.radius - 100000)
+  val station_start_position = earth.coord + DVec(0, earth.radius + 200000)
   val station_init_velocity = satelliteSpeed(station_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
   val station = new SpaceStation2("station",
     init_coord = station_start_position,
@@ -966,7 +966,8 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       if(drawMapMode) {
         drawCircle(earth.coord*scale, earth.radius * scale, WHITE)
         drawCircle(earth.coord*scale, equalGravityRadius(earth.currentState, moon.currentState)*scale, color = DARK_GRAY)
-        openglLocalTransform {
+        drawLine(earth.coord*scale, (earth.coord*scale + DVec(0, earth.radius*scale)).rotateDeg(earth.currentState.ang), WHITE)
+        /*openglLocalTransform {
           openglMove(earth.coord*scale)
           val current_ang = earth.currentState.ang
           (0.0 to 359.0 by 600.0/globalScale).init.map(_.toInt).distinct.foreach {
@@ -983,11 +984,12 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                 )
               }
           }
-        }
+        }*/
 
         drawCircle(moon.coord*scale, moon.radius * scale, WHITE)
         drawCircle(moon.coord*scale, equalGravityRadius(moon.currentState, earth.currentState)*scale, color = DARK_GRAY)
         //drawCircle(moon.coord*scale, soi(moon.mass, earth.coord.dist(moon.coord), earth.mass)*scale, color = DARK_GRAY)
+        drawLine(moon.coord*scale, moon.coord * scale + DVec(0, moon.radius * scale).rotateDeg(moon.currentState.ang), WHITE)
         calculateOrbit(earth.mass, earth.coord, moon.mass, moon.coord, moon.linearVelocity, G) match {
           case moon_orbit:EllipseOrbit =>
             openglLocalTransform {
@@ -995,7 +997,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
               openglRotateDeg(Vec(-1,0).signedDeg(moon_orbit.f2-moon_orbit.f))
               drawEllipse(DVec.zero, moon_orbit.a * scale, moon_orbit.b * scale, GREEN)
             }
-            openglLocalTransform {
+            /*openglLocalTransform {
               openglMove(moon.coord*scale)
               val current_ang = moon.currentState.ang
               (0.0 to 359.0 by 6000.0/globalScale).init.map(_.toInt).distinct.foreach {
@@ -1012,7 +1014,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
                     )
                   }
               }
-            }
+            }*/
           case _ =>
         }
         drawFilledCircle(ship.coord*scale, earth.radius * scale / 2f / globalScale, WHITE)
