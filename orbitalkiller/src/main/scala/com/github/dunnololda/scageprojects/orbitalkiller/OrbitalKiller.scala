@@ -414,7 +414,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
           case moon.index => "Луна"
         }
         val orbit = calculateOrbit(planet_state.mass, planet_state.coord, mass, coord - planet_state.coord, velocity - planet_state.vel, G)
-        orbit.strDefinition(prefix, planetByIndex(planet_state.index).get.radius)
+        orbit.strDefinition(prefix, planetByIndex(planet_state.index).get.radius, planet_state.vel, coord, velocity)
       case None => "N/A"
     }
   }
@@ -494,6 +494,10 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     drawLine(from1, to1, color)
     drawLine(to1, arrow11, color)
     drawLine(to1, arrow12, color)
+  }
+
+  preinit {
+    addGlyphs("\u21b6\u21b7")
   }
 
   keyIgnorePause(KEY_NUMPAD1, onKeyDown = {ship.switchEngineActiveOrSelect(KEY_NUMPAD1)})
@@ -779,12 +783,12 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
 
   mouseWheelDownIgnorePause(onWheelDown = m => {
     if(globalScale > 0.01) {
-      if(globalScale.toInt > 100000) globalScale -= 100000
-      else if(globalScale.toInt > 10000) globalScale -= 10000
-      else if(globalScale.toInt > 1000) globalScale -= 1000
-      else if(globalScale.toInt > 100) globalScale -= 100
-      else if(globalScale.toInt > 10) globalScale -= 10
-      else if(globalScale.toInt > 1) globalScale -= 1
+      if(globalScale.toInt >= 200000) globalScale -= 100000
+      else if(globalScale.toInt >= 20000) globalScale -= 10000
+      else if(globalScale.toInt >= 2000) globalScale -= 1000
+      else if(globalScale.toInt >= 200) globalScale -= 100
+      else if(globalScale.toInt >= 20) globalScale -= 10
+      else if(globalScale.toInt >= 2) globalScale -= 1
       else if((globalScale*10).toInt > 1) globalScale -= 0.1
       else globalScale -= 0.01
       if(globalScale < 0.01) globalScale = 0.01
@@ -792,7 +796,8 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
     println(globalScale)
   })
   mouseWheelUpIgnorePause(onWheelUp = m => {
-    if(globalScale < (if(!drawMapMode) 5 else 1000000)) {
+    val _maxGlobalScale = if(!drawMapMode) 5 else 1000000
+    if(globalScale < _maxGlobalScale) {
       if(globalScale < 0.1) globalScale += 0.01
       else if(globalScale < 1) globalScale += 0.1
       else if(globalScale < 10) globalScale +=1
@@ -801,6 +806,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
       else if(globalScale < 10000) globalScale +=1000
       else if(globalScale < 100000) globalScale +=10000
       else globalScale += 100000
+      if(globalScale > _maxGlobalScale) globalScale = _maxGlobalScale
     }
     println(globalScale)
   })
@@ -823,14 +829,14 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
           h = math.abs(y.y - x.y)
           if h*globalScale > 10
         } {
-          globalScale = 750 / h
+          globalScale = math.min(1000000, 750 / h)
           _center = c
         }
-        left_up_corner = None
-        right_down_corner = None
       } else {
         InterfaceHolder.determineInterfaceElem(m).foreach(i => if(i.isMinimized) i.showByUser() else i.hideByUser())
       }
+      left_up_corner = None
+      right_down_corner = None
     }})
   leftMouseDragIgnorePause(onDrag = m => if(drawMapMode) {
     right_down_corner = Some(absCoord(m))
@@ -1089,6 +1095,16 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
             )
           }
         }
+
+        if(left_up_corner.isEmpty) {
+          val m = absCoord(mouseCoord)
+          val d = (ship.coord * scale).dist(m) / scale
+          drawArrow(ship.coord * scale, m, DARK_GRAY)
+          openglLocalTransform {
+            openglMove(m)
+            print(s"  ${mOrKm(d.toLong)}", Vec.zero, size = (max_font_size / globalScale).toFloat, DARK_GRAY)
+          }
+        }
       } else {
         val m = absCoord(mouseCoord)
         val d = ship.coord.dist(m)
@@ -1099,7 +1115,6 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", 1280, 768) {
           openglRotateDeg(-rotationAngleDeg)
           print(s"  ${mOrKm(d.toLong)}", Vec.zero, size = (max_font_size / globalScale).toFloat, DARK_GRAY)
         }
-
       }
     /*}*/
   }

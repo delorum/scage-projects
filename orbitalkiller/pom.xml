@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.github.dunnololda.scageprojects</groupId>
   <artifactId>orbitalkiller</artifactId>
-  <version>realworld-double-38</version>
+  <version>realworld-double-39</version>
   <inceptionYear>2011</inceptionYear>
 
   <name>Orbital Killer</name>
@@ -14,7 +14,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <scala.version>2.10.5</scala.version>
     <lwjgl.version>2.9.3</lwjgl.version>
-    <scage.version>11.2</scage.version>
+    <scage.version>11.3</scage.version>
     <src.dir>src</src.dir>
   </properties>
 

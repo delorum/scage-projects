@@ -769,7 +769,7 @@ package object orbitalkiller {
     def e:Double
     def f:DVec
     def center:DVec
-    def strDefinition(prefix:String, planet_radius:Double):String
+    def strDefinition(prefix:String, planet_radius:Double, planet_velocity:DVec, ship_coord:DVec, ship_velocity:DVec):String
   }
 
   case class EllipseOrbit(
@@ -784,7 +784,10 @@ package object orbitalkiller {
     f:DVec,              // координаты первого фокуса (координаты небесного тела, вокруг которого вращаемся)
     f2:DVec,              // координаты второго фокуса
     center:DVec) extends KeplerOrbit {        // координаты центра
-    def strDefinition(prefix:String, planet_radius:Double):String = f"$prefix, замкнутая, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, r_a = ${mOrKm(r_a - planet_radius)}, t = ${timeStr((t*1000l).toLong)}"
+    def strDefinition(prefix:String, planet_radius:Double, planet_velocity:DVec, ship_coord:DVec, ship_velocity:DVec):String = {
+      val dir = if((ship_coord - f).perpendicular*(ship_velocity - planet_velocity) >= 0) "\u21b6" else "\u21b7"
+      f"$prefix, замкнутая, $dir, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, r_a = ${mOrKm(r_a - planet_radius)}, t = ${timeStr((t*1000l).toLong)}"
+    }
   }          
 
   case class HyperbolaOrbit(
@@ -793,7 +796,11 @@ package object orbitalkiller {
      e:Double,             // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
      f:DVec,                            // координаты первого фокуса (координаты небесного тела, вокруг которого вращаемся)
      center:DVec) extends KeplerOrbit { // координаты центр
-  def strDefinition(prefix:String, planet_radius:Double):String = f"$prefix, незамкнутая, e = $e%.2f, r_p = ${mOrKm(a*(e-1) - planet_radius)}"
+    def strDefinition(prefix:String, planet_radius:Double, planet_velocity:DVec, ship_coord:DVec, ship_velocity:DVec):String = {
+      val dir = if((ship_coord - f).perpendicular*(ship_velocity - planet_velocity) >= 0) "\u21b6" else "\u21b7"
+      val r_p_approach = if((ship_coord - f)*(ship_velocity - planet_velocity) >= 0) "удаляемся" else "приближаемся"
+      f"$prefix, незамкнутая, $dir, $r_p_approach, e = $e%.2f, r_p = ${mOrKm(a*(e-1) - planet_radius)}"
+    }
   }
 
   /**
