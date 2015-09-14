@@ -5,8 +5,9 @@
    href="$outputFile">
  <information>
    <title>$project.Name</title>
-   <vendor>dunno<vendor/>
+   <vendor>$project.Name<vendor/>
    <description kind="one-line">$project.Description</description>
+   <offline-allowed/>
  </information>
 
  <security>
@@ -15,18 +16,18 @@
 
  <resources>
    <j2se href="http://java.sun.com/products/autodl/j2se" version="1.5+" max-heap-size="512m" />
-   <property name="scage.properties" value="$scageproperties" />
+   <property name="app.properties" value="$appproperties" />
    <property name="LWJGL_DISABLE_XRANDR" value="true" />
    $dependencies
  </resources>
  <resources os="Windows">
-    <nativelib href="natives/lwjgl-windows.jar"/>
+    <nativelib href="natives/lwjgl-natives.jar"/>
   </resources>
   <resources os="Linux">
-    <nativelib href="natives/lwjgl-linux.jar"/>
+    <nativelib href="natives/lwjgl-natives.jar"/>
   </resources>
   <resources os="Mac">
-    <nativelib href="natives/lwjgl-macosx.jar"/>  
+    <nativelib href="natives/lwjgl-natives.jar"/>
   </resources>
 
  <application-desc main-class="$mainClass" />
