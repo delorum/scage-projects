@@ -1,0 +1,50 @@
+Собрать проект для оффлайновой дистрибуции:
+mvn clean package -Pbuild
+Готовая сборка будет создана в target - папка или архив, в зависимости от настройки install.type в build.properties
+
+Если используется openjdk, а не oracle, то следует установить пакет icedtea-web и собирать с профилем openjdk:
+mvn clean package -Pbuild,openjdk
+
+Собрать проект для дистрибуции через Java Web Start:
+mvn clean package -Pwebstart
+Аналогично, в случае использования openjdk, добавьте профиль:
+mvn clean package -Pwebstart,openjdk
+
+Готовая сборка будет создана в target/jnlp.
+
+В pom.xml нужно заполнить тег url:
+<url>http://example.com</url>
+указав там адрес сайта. Если дистрибутив скопирован не в корневую директорию сайта, требуется путь до папки
+дистрибутива относительно корневой директории.
+
+Например, если дистрибутив скопирован в папку
+ftp://example.com/webstart
+нужно прописать путь http://example.com/webstart
+
+Во время генерации дистрибутива созданные jar-файлы подписываются цифровой подписью разработчика. В тестовом проекте
+ используется самоподписанный сертификат my_keystore, который лежит в корне проекта. Можно создать свой.
+
+Чтобы создать новый сертификат, из командной строки выполните команду:
+keytool -genkey -keystore <keystore_name> -alias <alias> -validity 36500
+(keytool - программа, входящая в jdk)
+<keystore_name>, <alias> - выберите свои.
+
+Программа попросит указать ряд дополнительных сведений, в том числе ввести пароли. Будет создан файл
+<keystore_name>. Путь до него, указанный при создании alias и пароли нужно прописать в local-build.properties - файл,
+который добавлен в .gitgnore и не должен быть публично доступен.
+
+Через этот файл реквизиты предоставляются сборщику, чтобы он мог использовать его для подписывания jar-файлов.
+В local-build.properties:
+keystore = /path/to/keystore
+keystore.alias = <alias>
+keystore.pass = <password>
+key.pass = <password>
+
+Нативные библиотеки opengl поставляются также в виде jar-файла (лежит в src/main/jnlp/resources/natives/). В случае
+использования своего сертификата, их следует переподписать вручную (они подписаны сертификатом my_keystore).
+
+Для этого откройте файл src/main/jnlp/resources/natives/lwjgl-natives.jar любым zip-архиватором и в папке META-INF
+удалите файлы MY_KEYST.DSA и MY_KEYST.SF, после чего выполните:
+jarsigner natives.jar <alias> -keystore /path/to/keystore
+
+Файл будет подписан вашим сертификатом, и его можно будет использовать для выкладывания приложения через WebStart.

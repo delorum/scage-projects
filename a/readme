@@ -1,0 +1,59 @@
+To create a runnable offline distribution type in console:
+
+  $ mvn clean package -Pbuild
+
+Or just
+
+  $ mvn clean package
+
+as the "build" profile is the default one. Add "-Dmaven.test.skip" if you want to skip tests.
+
+The distribution will be created in the "target" folder. It will be folder or zip-archive - depends on the "install.type" setting in
+the "build.properties" file. Inside the folder the run script - run.sh or run.bat - is located. Use that file to launch your app.
+
+To build the project for distribution via Java Web Start type, first you need to fill the "url" tag in pom.xml with the correct website url:
+<url>http://example.com</url>
+
+You need the http://<path> (or https://<path>) such that http://<path>/run.jnlp is a valid path to the run.jnlp file from the "jnlp"
+folder and this file would be downloaded.
+
+Then type in console:
+
+  $ mvn clean package -Pwebstart
+
+The distribution will be created in the "target/jnlp" folder. Copy this folder to your server where your website is situated.
+Then you can publish the link to the run.jnlp file to distribute your app via WebStart.
+
+In case you use openjdk instead of oracle jdk, install the package icedtea-web from repository (this is the name in Arch Linux,
+must be similar in Ubuntu), and use the maven profile "openjdk" in all "mvn"-invocations:
+
+  $ mvn clean package -Pbuild,openjdk
+  $ mvn clean package -Pwebstart,openjdk
+
+During the build process all jar-files must be signed. In this project the self-signed certificate "my_keystore" is used
+(you can find it in the project's root near this readme). You also can create and use your own.
+
+To create a new certificate, execute in console:
+
+  $ keytool -genkey -keystore <keystore_name> -alias <alias> -validity 36500
+
+(keytool is a program from jdk, <keystore_name>, <alias> - choose what you like)
+
+The program will ask some info about you and new passwords for the keystore and alias. After that the new file <keystore_name>
+will be created. Update local.build.properties with the path to this file, alias and passwords:
+keystore = /path/to/keystore
+keystore.alias = <alias>
+keystore.pass = <password>
+key.pass = <password>
+
+This info is needed by builder to sign the application's jar-files. Do not commit this file to the public repos!
+
+Native opengl libs are also shipped as a jar file src/main/jnlp/resources/natives/lwjgl-natives.jar. This jar is already signed
+ by default by my_keystore. You must re-sign this file too.
+
+To do this open src/main/jnlp/resources/natives/lwjgl-natives.jar using any zip-archiver. Remove the files MY_KEYST.DSA and MY_KEYST.SF
+from the META-INF folder. Then execute:
+
+  $ jarsigner natives.jar <alias> -keystore /path/to/keystore
+
+The file will be signed by your certificate and then you can use it to deploy your app via WebStart.
