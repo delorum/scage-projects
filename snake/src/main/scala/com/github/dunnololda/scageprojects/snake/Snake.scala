@@ -1,10 +1,10 @@
-package su.msk.dunno.scage.tutorials.snake
+package com.github.dunnololda.scageprojects.snake
 
-import net.scage.ScageLib._
-import com.weiglewilczek.slf4s.Logger
+import com.github.dunnololda.mysimplelogger.MySimpleLogger
+import com.github.dunnololda.scage.ScageLib._
 
 object Snake extends ScageScreenApp("Snake") {
-  private val log = Logger(this.getClass.getName)
+  private val log = MySimpleLogger(this.getClass.getName)
 
   val tracer = new ScageTracer[SnakePart](solid_edges = false) {
     render {
@@ -19,6 +19,7 @@ object Snake extends ScageScreenApp("Snake") {
   }
   
   private var count = 0
+
   interface {
     print(count, 20, windowHeight-20, GREEN)
   }
@@ -34,16 +35,18 @@ object Snake extends ScageScreenApp("Snake") {
   key(KEY_RIGHT, onKeyDown = dir = Vec(1,0))
   key(KEY_LEFT,  onKeyDown = dir = Vec(-1,0))
 
+  keyIgnorePause(KEY_Q, onKeyDown = if(keyPressed(KEY_LCONTROL) || keyPressed(KEY_RCONTROL)) stopApp())
+  keyIgnorePause(KEY_F2, onKeyDown = restart())
+
   val game_speed = property("game.speed", 100)
-  action(game_speed) {
+  actionStaticPeriod(game_speed) {
     tracer.tracesInPoint(tracer.outsidePoint(head.location + dir)).find(!_.wasTaken) match {
-      case Some(part_in_point) => {
+      case Some(part_in_point) =>
         part_in_point.changeState(head, new State("taken"))
         part_in_point.nextPart = head
         head = part_in_point
         count += 1
         deployNewPart()
-      }
       case _ =>
     }
     nextMove(head, head.location + dir)
@@ -66,7 +69,17 @@ object Snake extends ScageScreenApp("Snake") {
       } else log.info("wrong place! Will choose another one on next turn")
     }
   }
-  deployNewPart()
+
+  init {
+    count = 0
+    tracer.removeAllTraces()
+    dir = Vec(0, 1)
+    head = tracer.addTrace(Vec(tracer.N_x/2, tracer.N_y/2), new SnakePart {
+      is_head = true
+      was_taken = true
+    })
+    deployNewPart()
+  }
 }
 
 import Snake._

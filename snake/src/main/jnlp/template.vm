@@ -21,13 +21,13 @@
    $dependencies
  </resources>
  <resources os="Windows">
-    <nativelib href="natives/lwjgl-windows.jar"/>
+    <nativelib href="natives/lwjgl-natives.jar"/>
   </resources>
   <resources os="Linux">
-    <nativelib href="natives/lwjgl-linux.jar"/>
+    <nativelib href="natives/lwjgl-natives.jar"/>
   </resources>
   <resources os="Mac">
-    <nativelib href="natives/lwjgl-macosx.jar"/>  
+    <nativelib href="natives/lwjgl-natives.jar"/>
   </resources>
 
  <application-desc main-class="$mainClass" />
