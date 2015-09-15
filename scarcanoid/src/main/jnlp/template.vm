@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<jnlp
+   spec="1.0+"
+   codebase="$project.Url"
+   href="$outputFile">
+ <information>
+   <title>$project.Name</title>
+   <vendor>$project.Name<vendor/>
+   <description kind="one-line">$project.Description</description>
+   <offline-allowed/>
+ </information>
+
+ <security>
+    <all-permissions/>
+ </security>
+
+ <resources>
+   <j2se href="http://java.sun.com/products/autodl/j2se" version="1.5+" max-heap-size="512m" />
+   <property name="jnlp.app.properties" value="$scageproperties" />
+   <property name="LWJGL_DISABLE_XRANDR" value="true" />
+   $dependencies
+ </resources>
+ <resources os="Windows">
+    <nativelib href="natives/lwjgl-natives.jar"/>
+  </resources>
+  <resources os="Linux">
+    <nativelib href="natives/lwjgl-natives.jar"/>
+  </resources>
+  <resources os="Mac">
+    <nativelib href="natives/lwjgl-natives.jar"/>
+  </resources>
+
+ <application-desc main-class="$mainClass" />
+</jnlp>
+

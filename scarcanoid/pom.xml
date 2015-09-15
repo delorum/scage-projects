@@ -2,12 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.github.dunnololda.scageprojects</groupId>
-  <artifactId>snake</artifactId>
+  <artifactId>scarcanoid</artifactId>
   <version>1.0</version>
 
-  <name>Snake</name>
-  <description>Simple Snake clone</description>
-  <url>https://dunnololda.github.io/scageprojects/snake</url>
+  <name>Scarcanoid</name>
+  <description>Simple arcanoid clone</description>
+  <url>https://dunnololda.github.io/scageprojects/scarcanoid</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
