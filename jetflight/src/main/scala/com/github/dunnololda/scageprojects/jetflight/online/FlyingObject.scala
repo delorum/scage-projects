@@ -1,6 +1,6 @@
-package net.scage.tutorial.netflight
+package com.github.dunnololda.scageprojects.jetflight.online
 
-import net.scage.support.Vec
+import com.github.dunnololda.scage.support.Vec
 
 trait FlyingObject {
   protected var _speed = 5.0f

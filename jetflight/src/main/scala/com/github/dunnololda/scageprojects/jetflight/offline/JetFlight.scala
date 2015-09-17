@@ -1,11 +1,8 @@
-package net.scage.tutorial.jetflight
+package com.github.dunnololda.scageprojects.jetflight.offline
 
-import net.scage.ScageLib._
-import net.scage.support.tracer3.{Trace, CoordTracer}
-import net.scage.{Scage, ScageScreenApp}
-import net.scage.support.{ScageColor, State, Vec}
+import com.github.dunnololda.scage.ScageLib._
 
-object JetFlight extends ScageScreenApp(unit_name = "Jet Flight") {
+object JetFlight extends ScageScreenApp("Jet Flight") {
   val EXPLOSION_ANIMATION = animation("explosion_animation.png", 36, 35, 72, 69, 3)
   val LAND                = image("land.png", 800, 600, 0, 0, 800, 600)
 
@@ -26,8 +23,8 @@ object JetFlight extends ScageScreenApp(unit_name = "Jet Flight") {
     }
   }
 
-  keyNoPause(KEY_Y, onKeyDown = if(onPause) {restart(); pauseOff()})
-  keyNoPause(KEY_N, onKeyDown = if(onPause) Scage.stopApp())
+  keyIgnorePause(KEY_Y, onKeyDown = if(onPause) {restart(); pauseOff()})
+  keyIgnorePause(KEY_N, onKeyDown = if(onPause) stopApp())
 }
 
 trait FlyingObject {
@@ -67,7 +64,7 @@ object OurPlane extends Plane {
   key(KEY_RIGHT, 10, onKeyDown = rotation -= 0.2f*speed)
   key(KEY_UP,    10, onKeyDown = if(speed < 15) speed += 0.5f)
 
-  key(KEY_LCONTROL, onKeyDown = {
+  key(KEY_LCONTROL, 200, onKeyDown = {
     new Rocket(trace.id, tracer.outsideCoord(trace.location + step.n.rotate(math.Pi/2 * plane_side)*10), speed, rotation)
     plane_side *= -1
   })
@@ -122,13 +119,13 @@ object EnemyPlane extends Plane {
         other_trace.state.valueOrDefault("health", 0) > 0
       }
     )
-    if(!enemy_planes.isEmpty) {
+    if(enemy_planes.nonEmpty) {
       val plane = enemy_planes.head
       val planes_angle = (plane.location - trace.location) rad step
       val planes_side = math.signum((plane.location - trace.location) * step)
       if(planes_angle < math.Pi/12) {
         if(shoot_cooldown <= 0) {
-          new Rocket(trace.id, tracer.outsideCoord(trace.location + step.n.rotate(math.Pi/2 * plane_side)*10), speed, rotation);
+          new Rocket(trace.id, tracer.outsideCoord(trace.location + step.n.rotate(math.Pi/2 * plane_side)*10), speed, rotation)
           shoot_cooldown = 10
           plane_side *= -1
         } else shoot_cooldown -= 1
@@ -169,7 +166,7 @@ class Rocket(shooter_id:Int, init_coord:Vec, init_speed:Float, init_rotation:Flo
           other_trace.state.valueOrDefault("type", "unknown type") == "plane" &&
           other_trace.state.valueOrDefault("health", 0) > 0 &&
           (other_trace.location dist trace.location) < (10+30))
-      if(!target_planes.isEmpty) {
+      if(target_planes.nonEmpty) {
         val damage = (math.random*20).toInt
         target_planes.foreach(_.changeState(trace, State("damage" -> damage)))
         lazy val flying_word_color = shooter_id match {
@@ -199,14 +196,14 @@ class Rocket(shooter_id:Int, init_coord:Vec, init_speed:Float, init_rotation:Flo
       drawDisplayList(ROCKET_ANIMATION(next_frame), Vec.zero)
     } else {
       openglMove(trace.location)
-      drawDisplayList(EXPLOSION_ANIMATION(0), Vec.zero)
+      drawDisplayList(EXPLOSION_ANIMATION.head, Vec.zero)
       deleteSelf()
     }
   }
 }
 
 class FlyingWord(message:Any, color:ScageColor, init_coord:Vec, direction:Vec) extends FlyingObject {
-  private var lifetime = 60;
+  private var lifetime = 60
   private val dir = direction.n
   private var coord = init_coord
 
