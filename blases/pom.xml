@@ -1,20 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>net.scage</groupId>
+  <groupId>com.github.dunnololda.scageprojects</groupId>
   <artifactId>blases</artifactId>
-  <version>0.4</version>
-  <inceptionYear>2011</inceptionYear>
+  <version>1.0</version>
 
-  <name>Blases</name>
+  <name>Scage Project</name>
   <description>Simple Scage Project Stub</description>
-  <url>http://fzeulf.netris.ru/bor/${artifactId}</url>
+  <url>http://example.com</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <scala.version>2.9.1</scala.version>
-    <lwjgl.version>2.8.2</lwjgl.version>
-    <scage.version>0.9.2-SNAPSHOT</scage.version>
+    <scala.version>2.10.4</scala.version>
+    <lwjgl.version>2.9.3</lwjgl.version>
+    <scage.version>11.4</scage.version>
     <src.dir>src</src.dir>
   </properties>
 
@@ -26,21 +25,8 @@
     </repository>
 
     <repository>
-      <id>slick.cokeandcode.com</id>
-      <name>Slick Maven Repository</name>
-      <url>http://slick.cokeandcode.com/mavenrepo</url>
-    </repository>
-
-    <repository>
-      <id>lwjgl</id>
-      <name>lwjgl</name>
-      <url>http://adterrasperaspera.com/lwjgl</url>
-    </repository>
-
-    <repository>
-      <id>scage</id>
-      <name>Scage Maven Repo</name>
-      <url>http://scage.googlecode.com/svn/maven-repository</url>
+          <id>dunnololda's maven repo</id>
+          <url>https://raw.github.com/dunnololda/mvn-repo/master</url>
     </repository>
   </repositories>
 
@@ -72,8 +58,8 @@
     </dependency>
 
     <dependency>
-        <groupId>su.msk.dunno</groupId>
-        <artifactId>scage</artifactId>
+        <groupId>com.github.dunnololda</groupId>
+        <artifactId>scage_2.10</artifactId>
         <version>${scage.version}</version>
         <scope>compile</scope>
     </dependency>
@@ -83,11 +69,23 @@
     <sourceDirectory>${src.dir}/main/scala</sourceDirectory>
     <testSourceDirectory>${src.dir}/test/scala</testSourceDirectory>
 
+      <extensions>
+          <extension>
+              <groupId>org.apache.maven.wagon</groupId>
+              <artifactId>wagon-webdav</artifactId>
+              <version>1.0-beta-2</version>
+          </extension>
+          <extension>
+              <groupId>org.apache.maven.wagon</groupId>
+              <artifactId>wagon-ssh</artifactId>
+              <version>2.4</version>
+          </extension>
+      </extensions>
+
     <resources>
         <resource>
             <directory>${src.dir}/main/resources</directory>
             <includes>
-            	<include>log4j.properties</include>
                 <include>logback.xml</include>
                 <include>maven.properties</include>
             </includes>
@@ -96,7 +94,6 @@
         <resource>
             <directory>${src.dir}/main/resources</directory>
             <excludes>
-            	<exclude>log4j.properties</exclude>
                 <exclude>logback.xml</exclude>
                 <exclude>maven.properties</exclude>
             </excludes>
@@ -145,7 +142,11 @@
         <configuration>
           <scalaVersion>${scala.version}</scalaVersion>
           <args>
-            <arg>-optimise</arg>
+              <!--<arg>-optimise</arg>-->
+              <arg>-unchecked</arg>
+              <arg>-deprecation</arg>
+              <arg>-feature</arg>
+              <arg>-Yinline-warnings</arg>
           </args>
         </configuration>
       </plugin>
@@ -172,7 +173,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
-                  <execution>
+                  <!--<execution>
                     <id>unpack</id>
                     <phase>generate-resources</phase>
                     <goals>
@@ -190,7 +191,7 @@
                         </artifactItem>
                       </artifactItems>
                     </configuration>
-                  </execution>
+                  </execution>-->
                   <execution>
                     <id>copy-dependencies</id>
                     <phase>package</phase>
@@ -203,6 +204,20 @@
                   </execution>
                 </executions>
       </plugin>
+        <plugin>
+            <groupId>com.googlecode.mavennatives</groupId>
+            <artifactId>maven-nativedependencies-plugin</artifactId>
+            <version>0.0.5</version>
+            <executions>
+                <execution>
+                    <id>unpacknatives</id>
+                    <phase>generate-resources</phase>
+                    <goals>
+                        <goal>copy</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
 
       <plugin>
             <groupId>org.apache.maven.plugins</groupId>
@@ -210,7 +225,7 @@
             <version>2.7.2</version>
             <configuration>
                 <argLine>
-                    -Dscage.properties=scageapp.properties -Djava.library.path=${project.build.directory}/native/${os.type} -DLWJGL_DISABLE_XRANDR=true -Dfile.encoding=UTF-8
+                    -Dscage.properties=${scageproperties} -Djava.library.path=${project.build.directory}/natives -DLWJGL_DISABLE_XRANDR=true -Dfile.encoding=UTF-8
                 </argLine>
             </configuration>
       </plugin>
@@ -224,7 +239,6 @@
                           <manifest>
                              <addClasspath>true</addClasspath>
                              <mainClass>${jar.mainclass}</mainClass>
-                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                           </manifest>
                        </archive>
                     </configuration>
@@ -233,6 +247,18 @@
   </build>
 
   <profiles>
+      <profile>
+          <id>openjdk</id>
+          <dependencies>
+              <dependency>
+                  <groupId>javax.jnlp</groupId>
+                  <artifactId>jnlp-api</artifactId>
+                  <version>5.0</version>
+                  <scope>system</scope>
+                  <systemPath>/usr/bin/javaws</systemPath>
+              </dependency>
+          </dependencies>
+      </profile>
       <profile>
           <id>build</id>
           <activation>
