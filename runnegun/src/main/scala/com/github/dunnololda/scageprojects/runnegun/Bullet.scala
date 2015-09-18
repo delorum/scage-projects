@@ -1,8 +1,7 @@
-package su.msk.dunno.runnegun
+package com.github.dunnololda.scageprojects.runnegun
 
-import su.msk.dunno.runnegun.Runnegun._
-import net.scage.support.Vec
-import net.scage.support.State
+import com.github.dunnololda.scage.ScageLib._
+import Runnegun._
 
 class Bullet(start:Vec, val direction:Vec, val speed:Int = 2, val shooter_type:String) {
   private val trace = tracer.addTrace(start, new GameObject {

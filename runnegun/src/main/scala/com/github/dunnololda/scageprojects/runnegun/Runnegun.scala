@@ -1,15 +1,14 @@
-package su.msk.dunno.runnegun
+package com.github.dunnololda.scageprojects.runnegun
 
-import collection.mutable.ArrayBuffer
-import net.scage.ScageScreenApp
-import net.scage.ScageLib
-import net.scage.support.tracer3.{TraceTrait, CoordTracer}
+import com.github.dunnololda.scage.ScageLib._
+
+import scala.collection.mutable.ArrayBuffer
 
 trait GameObject extends TraceTrait {
   type ChangerType = GameObject
 }
 
-object Runnegun extends ScageScreenApp("Runnegun") with ScageLib {
+object Runnegun extends ScageScreenApp("Runnegun") {
   val tracer = new CoordTracer[GameObject](solid_edges = false)
 
   val bullet_radius = property("bullet.radius", 2)
@@ -38,13 +37,14 @@ object Runnegun extends ScageScreenApp("Runnegun") with ScageLib {
     enemies.clear()
   }
 
-  keyNoPause(KEY_SPACE, onKeyDown = {switchPause()})
+  keyIgnorePause(KEY_SPACE, onKeyDown = {switchPause()})
+  keyIgnorePause(KEY_Q, onKeyDown = if(keyPressed(KEY_LCONTROL) || keyPressed(KEY_RCONTROL)) stopApp())
 
-  keyPause(KEY_Y, onKeyDown = {
+  keyOnPause(KEY_Y, onKeyDown = {
     restart()
     pauseOff()
   })
-  keyPause(KEY_N, onKeyDown = stop())
+  keyOnPause(KEY_N, onKeyDown = stop())
 
   backgroundColor = WHITE
   interface {

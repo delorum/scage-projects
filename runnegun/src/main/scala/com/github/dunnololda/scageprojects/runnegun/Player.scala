@@ -1,7 +1,7 @@
-package su.msk.dunno.runnegun
+package com.github.dunnololda.scageprojects.runnegun
 
-import su.msk.dunno.runnegun.Runnegun._
-import net.scage.support.{State, Vec}
+import com.github.dunnololda.scage.ScageLib._
+import Runnegun._
 
 object Player {
   private val trace = new GameObject {
@@ -33,6 +33,7 @@ object Player {
   init {
     is_alive = true
     tracer.updateLocation(trace, windowCenter)
+    Unit
   }
 
   render {

@@ -1,9 +1,12 @@
-package su.msk.dunno.runnegun
+package com.github.dunnololda.scageprojects.runnegun
 
-import su.msk.dunno.runnegun.Runnegun._
-import net.scage.support.{State, Vec}
+import com.github.dunnololda.scage.ScageLib._
+import Runnegun._
 
 class Enemy {
+  private var is_alive = true
+  def isAlive = is_alive
+
   private val trace = tracer.addTrace(tracer.randomCoord(), new GameObject {
     val state = new State("enemy")
     def changeState(changer:GameObject, s:State) {
@@ -12,6 +15,9 @@ class Enemy {
       }
     }
   })
+
+  private var direction = randomDirection
+  private var steps = randomCount(100)
 
   private var count = randomCount(1000)
   private val action_id = action {
@@ -43,16 +49,11 @@ class Enemy {
 
   private def randomDirection = Vec(math.random.toFloat, math.random.toFloat).n
   private def randomCount(max_count:Int = 100) = (math.random*max_count).toInt
-  private var direction = randomDirection
-  private var steps = randomCount(100)
 
   private val render_id = render {
     /*if(is_alive) */drawCircle(trace.location, 10, BLACK)
     /*else /*deleteSelf()*/drawCircle(trace.location, 10, BLUE)*/
   }
-
-  private var is_alive = true
-  def isAlive = is_alive
 
   private def remove() {
     delOperations(action_id, render_id, clear_id)
