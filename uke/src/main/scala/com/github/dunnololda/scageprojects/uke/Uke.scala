@@ -1,10 +1,11 @@
-package su.msk.dunno.scage.uke
+package com.github.dunnololda.scageprojects.uke
 
-import org.newdawn.slick.util.ResourceLoader
-import org.newdawn.slick.openal.{SoundStore, AudioLoader}
+import com.github.dunnololda.mysimplelogger.MySimpleLogger
 import com.github.dunnololda.scage.ScageLib._
-import com.github.dunnololda.cli.MySimpleLogger
-import collection.mutable.ArrayBuffer
+import org.newdawn.slick.openal.{AudioLoader, SoundStore}
+import org.newdawn.slick.util.ResourceLoader
+
+import scala.collection.mutable.ArrayBuffer
 
 object World extends ScageScreenApp("Uke", 800, 600) {
   private val log = MySimpleLogger(this.getClass.getName)
@@ -22,6 +23,7 @@ object World extends ScageScreenApp("Uke", 800, 600) {
     val oggStream = AudioLoader.getStreamingAudio("OGG", ResourceLoader.getResource("resources/sounds/badapple.ogg"))
     init {
       oggStream.playAsMusic(1.0f, 1.0f, true)
+      Unit
     }
 
     actionIgnorePause {
@@ -47,6 +49,7 @@ object World extends ScageScreenApp("Uke", 800, 600) {
         deleteSelf()
       }
     }
+    Unit
   }
 
   action {
@@ -58,7 +61,7 @@ object World extends ScageScreenApp("Uke", 800, 600) {
     }
   }
 
-  action(5000) {
+  actionStaticPeriod(5000) {
     if(uke_speed < 50) {
       log.info("increasing speed:" + uke_speed)
       uke_speed += 3
@@ -74,6 +77,7 @@ object World extends ScageScreenApp("Uke", 800, 600) {
   })
 
   keyIgnorePause(KEY_P, onKeyDown = if(!lost) switchPause())
+  keyIgnorePause(KEY_Q, onKeyDown = if(keyPressed(KEY_LCONTROL) || keyPressed(KEY_RCONTROL)) stopApp())
 
   interface {
     print("Z to jump (Z twice to double jump)\n" +
@@ -97,18 +101,18 @@ object World extends ScageScreenApp("Uke", 800, 600) {
   pause()
 }
 
-import World._
+import com.github.dunnololda.scageprojects.uke.World._
 
-object Uke extends DynaBall(Vec(20, windowHeight/2-70), radius = 30, 1, true) {
+object Uke extends DynaBall(Vec(20, windowHeight/2-70), radius = 30, mass = 1.0f, true) {
   val uke_stand = image("uke-stand.png", 56, 70, 96, 0, 160, 200)         // 48, 60
   val uke_animation = animation("uke-animation.png", 56, 70, 160, 200, 6)
 
   private var frame = 0
 
-  private var max_jump    = 10
-  private var max_jump2   = 10
-  private var max_forward = 10
-  private var forward_force = 3000
+  private val max_jump = 10
+  private val max_jump2 = 10
+  private val max_forward = 10
+  private val forward_force = 3000
 
   private var num_jump    = 0
   private var num_jump2   = 0
@@ -142,7 +146,7 @@ object Uke extends DynaBall(Vec(20, windowHeight/2-70), radius = 30, 1, true) {
 
   key(KEY_DOWN, onKeyDown = addForce(Vec(0, -3000)))
 
-  action(100) {
+  actionStaticPeriod(100) {
     frame += 1
     if(frame >= 6) frame = 0
 
@@ -174,7 +178,7 @@ object Uke extends DynaBall(Vec(20, windowHeight/2-70), radius = 30, 1, true) {
 }
 
 object LevelBuilder {
-  private val log = MySimpleLogger(this.getClass.getName)
+  //private val log = MySimpleLogger(this.getClass.getName)
 
   private val _platforms = ArrayBuffer[Physical]()
   def platforms = _platforms
@@ -233,15 +237,15 @@ object LevelBuilder {
 
   def upperPlatform(points:List[Vec]) = {
     val upper_platform_points =
-      ((for(point <- points) yield (point + Vec(0, Uke.radius*6))).toList :::
-      (for(point <- points) yield (point + Vec(0, Uke.radius*5))).toList.reverse).reverse
+      ((for (point <- points) yield point + Vec(0, Uke.radius * 6)) :::
+      (for (point <- points) yield point + Vec(0, Uke.radius * 5)).reverse).reverse
     new Platform(upper_platform_points:_*)
   }
 
   def infiniteUpperPlatform(points:List[Vec]) = {
     val upper_platform_points =
       (List(Vec(points.head.x, points.head.y + windowHeight), Vec(points.last.x, points.last.y + windowHeight)) :::
-      (for(point <- points) yield (point + Vec(0, Uke.radius*5))).toList.reverse).reverse
+      (for (point <- points) yield point + Vec(0, Uke.radius * 5)).reverse).reverse
     new Platform(upper_platform_points:_*)
   }
 }
@@ -257,7 +261,7 @@ class Platform(platform_points:Vec*) extends StaticPolygon(platform_points:_*) {
   }
 }
 
-class Obstacle(init_coord:Vec) extends DynaBox(init_coord, 70, 70, box_mass = 1000, true) {
+class Obstacle(init_coord:Vec) extends DynaBox(init_coord, 70f, 70f, box_mass = 1000f, true) {
   val obstacle_color = randomColor
   render {
     if(physics.containsPhysical(this)) {

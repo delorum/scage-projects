@@ -1,8 +1,8 @@
-package su.msk.dunno.scage.uke
+package com.github.dunnololda.scageprojects.uke
 
-import org.newdawn.slick.util.ResourceLoader
-import org.newdawn.slick.openal.{SoundStore, AudioLoader}
 import com.github.dunnololda.scage.ScageLib._
+import org.newdawn.slick.openal.{AudioLoader, SoundStore}
+import org.newdawn.slick.util.ResourceLoader
 
 object SoundMapCreator extends ScageScreenApp("Sound Map Creator", 800, 600) {
   val oggStream = AudioLoader.getStreamingAudio("OGG", ResourceLoader.getResource("resources/sounds/badapple.ogg"))
