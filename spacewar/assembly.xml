@@ -7,8 +7,8 @@
     </formats>
     <fileSets>
         <fileSet>
-            <directory>${project.build.directory}/native/${os.type}</directory>
-            <outputDirectory>native</outputDirectory>
+            <directory>${project.build.directory}/natives</directory>
+            <outputDirectory>natives</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>${project.build.directory}/lib</directory>

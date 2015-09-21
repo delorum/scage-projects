@@ -1,8 +1,6 @@
-package net.scageprojects.spacewar
+package com.github.dunnololda.scageprojects.spacewar
 
-import net.scage.ScageScreenApp
-import net.scage.ScageLib._
-import net.scage.support.{Vec, ScageColor}
+import com.github.dunnololda.scage.ScageLib._
 import collection.mutable.ArrayBuffer
 import collection.mutable
 
@@ -81,7 +79,7 @@ object SpaceWar extends ScageScreenApp("Space War", 800, 600) {
   // enemy AI
   // attack phase: find nearest planet and send a fleet to it
   // defence phase: find some planet, player is nearest to and send a fleet to it
-  action(1000) {
+  actionStaticPeriod(1000) {
     val enemy_planets = planets.filter(_.commander == enemy)
     (msecsFromInit / 1000) % 3 match {
       case 0 =>
@@ -140,7 +138,7 @@ object SpaceWar extends ScageScreenApp("Space War", 800, 600) {
     game_state = NobodyWin
   }
 
-  action(1000) {
+  actionStaticPeriod(1000) {
     game_state =
       if(     planets.forall(_.commander != enemy)  && space_flights_from_planet.values.flatten.forall(_.fleet.commander != enemy))  PlayerWin
       else if(planets.forall(_.commander != player) && space_flights_from_planet.values.flatten.forall(_.fleet.commander != player)) EnemyWin
@@ -156,8 +154,9 @@ object SpaceWar extends ScageScreenApp("Space War", 800, 600) {
     }
   }
 
-  keyNoPause(KEY_SPACE, onKeyDown = switchPause())
-  keyNoPause(KEY_F2, onKeyDown = {restart(); pauseOff()})
+  keyIgnorePause(KEY_SPACE, onKeyDown = switchPause())
+  keyIgnorePause(KEY_F2, onKeyDown = {restart(); pauseOff()})
+  keyIgnorePause(KEY_Q, onKeyDown = if(keyPressed(KEY_LCONTROL) || keyPressed(KEY_RCONTROL)) stopApp())
 
   private var selected_planet:Option[Planet] = None
   init {
@@ -204,7 +203,7 @@ class Planet(val coord:Vec, val size:Int = 10 + (math.random*3).toInt*10, init_s
 
   def fleetArrival(other_fleet:Fleet) {
     if(_commander != other_fleet.commander) {
-      (_ships - other_fleet.amount) match {
+      _ships - other_fleet.amount match {
         case i if i >=  0 => _ships = i
         case i if i <  0 => _ships = -i; _commander = other_fleet.commander   // maybe memory leak?
       }
@@ -223,7 +222,7 @@ class Planet(val coord:Vec, val size:Int = 10 + (math.random*3).toInt*10, init_s
     case _  => 3000
   }
 
-  private val action_id = action(production_period) {
+  private val action_id = actionStaticPeriod(production_period) {
     if(_commander.name != "nobody") _ships += 1
   }
 
@@ -272,14 +271,14 @@ class SpaceFlight(val fleet:Fleet, val from_planet:Planet, val to_planet:Planet)
   private var current_coord = from_planet.coord + dir*from_planet.size
   def currentCoord = current_coord
 
-  private val action_id = action(10) {
+  private val action_id = actionStaticPeriod(10) {
     if(current_coord.dist(to_planet.coord) < to_planet.size) {
       to_planet.fleetArrival(fleet)
       remove()
     } else {
       flightsToFrom(from_planet, to_planet).find(sp => sp.fleet.commander != fleet.commander && sp.currentCoord.dist(current_coord) < 5) match {
         case Some(enemy_space_flight) =>
-          (fleet.amount - enemy_space_flight.fleet.amount) match {
+          fleet.amount - enemy_space_flight.fleet.amount match {
             case i if i > 0 =>
               fleet.amount = i
               enemy_space_flight.remove()
