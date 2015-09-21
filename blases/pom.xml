@@ -5,9 +5,9 @@
   <artifactId>blases</artifactId>
   <version>1.0</version>
 
-  <name>Scage Project</name>
+  <name>Blases</name>
   <description>Simple Scage Project Stub</description>
-  <url>http://example.com</url>
+  <url>https://dunnololda.github.io/scageprojects/blases</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -185,6 +185,22 @@ object SpaceWar extends ScageScreenApp("Space War", 800, 600) {
       case None => selected_planet = planets.find(p => p.coord.dist(m) < p.size && p.commander.name == player.name)
     }
   })
+
+  rightMouse(onBtnDown = {m =>
+    selected_planet match {
+      case Some(planet) =>
+        planets.find(p => p.coord.dist(m) < p.size) match {
+          case some_other_planet @ Some(other_planet) =>
+            if(routeExists(planet, other_planet)) {
+              planet.setOrUnsetStableRoute(other_planet)
+              selected_planet = None
+            } else if(other_planet.commander == player) selected_planet = some_other_planet
+            else selected_planet = None
+          case None => selected_planet = None
+        }
+      case None => selected_planet = planets.find(p => p.coord.dist(m) < p.size && p.commander.name == player.name)
+    }
+  })
 }
 
 case class Commander(name:String = "nobody", color:ScageColor = GRAY)
@@ -204,8 +220,12 @@ class Planet(val coord:Vec, val size:Int = 10 + (math.random*3).toInt*10, init_s
   def fleetArrival(other_fleet:Fleet) {
     if(_commander != other_fleet.commander) {
       _ships - other_fleet.amount match {
-        case i if i >=  0 => _ships = i
-        case i if i <  0 => _ships = -i; _commander = other_fleet.commander   // maybe memory leak?
+        case i if i >=  0 =>
+          _ships = i
+        case i if i <  0 =>
+          _ships = -i
+          _commander = other_fleet.commander   // maybe memory leak?
+          stable_route_to_planet = None
       }
     } else _ships += other_fleet.amount
   }
@@ -213,6 +233,22 @@ class Planet(val coord:Vec, val size:Int = 10 + (math.random*3).toInt*10, init_s
   def sendFleet(to_planet:Planet) {
     new SpaceFlight(Fleet(_ships, _commander), this, to_planet)
     _ships = 0
+  }
+  
+  private var stable_route_to_planet:Option[Planet] = None
+  def stableRoute = stable_route_to_planet
+  
+  def setOrUnsetStableRoute(to_planet:Planet): Unit = {
+    stable_route_to_planet match {
+      case Some(x) =>
+        if(x == to_planet) {
+          stable_route_to_planet = None
+        } else {
+          stable_route_to_planet = Some(to_planet)
+        }
+      case None =>
+        stable_route_to_planet = Some(to_planet)
+    }
   }
 
   val production_period = size match {
@@ -222,8 +258,14 @@ class Planet(val coord:Vec, val size:Int = 10 + (math.random*3).toInt*10, init_s
     case _  => 3000
   }
 
-  private val action_id = actionStaticPeriod(production_period) {
+  private val production_action_id = actionStaticPeriod(production_period) {
     if(_commander.name != "nobody") _ships += 1
+  }
+
+  private val stable_route_action_id = actionStaticPeriod(5000) {
+    if(stable_route_to_planet.nonEmpty && commander == player) {
+      sendFleet(stable_route_to_planet.get)
+    }
   }
 
   private val render_id = render {
@@ -232,16 +274,21 @@ class Planet(val coord:Vec, val size:Int = 10 + (math.random*3).toInt*10, init_s
   }
 
   clear {
-    delOperations(action_id, render_id, currentOperation)
+    delOperations(production_action_id, stable_route_action_id, render_id, currentOperation)
   }
 }
 
 class SpaceRoute(from_planet:Planet, to_planet:Planet) {
   val dir = (to_planet.coord - from_planet.coord).n
   val dashed_line = dashedLine(from_planet.coord + dir*from_planet.size, to_planet.coord - dir*to_planet.size, 10)
+  val double_dashed_line = doubleDashedLine(from_planet.coord + dir*from_planet.size, to_planet.coord - dir*to_planet.size, 10)
   private val render_id = render {
     val route_color = if(from_planet.commander.name == to_planet.commander.name) from_planet.commander.color else GRAY
-    drawLines(dashed_line, route_color)
+    if(from_planet.stableRoute.exists(_ == to_planet) || to_planet.stableRoute.exists(_ == from_planet)) {
+      drawLines(double_dashed_line, route_color)
+    } else {
+      drawLines(dashed_line, route_color)
+    }
   }
 
   clear {
@@ -252,14 +299,23 @@ class SpaceRoute(from_planet:Planet, to_planet:Planet) {
   def dashedLine(from:Vec, to:Vec, dash_size:Int) = {
     val dir = (to - from).n
     val dashes = math.round((to - from).norma/dash_size/2)
-    val pew = for {
+    (for {
       i <- 0 until dashes
       start = from + (i*dash_size*2)*dir
       stop  = from + (i*dash_size*2 + dash_size)*dir
-    } yield (start, stop)
-    pew.flatMap {
-      case (start, stop) => Seq(start, stop)
-    }
+    } yield Seq(start, stop)).flatten
+  }
+
+  def doubleDashedLine(from:Vec, to:Vec, dash_size:Int) = {
+    val dir = (to - from).n
+    val dashes = math.round((to - from).norma/dash_size/2)
+    (for {
+      i <- 0 until dashes
+      start1 = from + (i*dash_size*2)*dir + dir.rotateDeg(90)*2
+      stop1  = from + (i*dash_size*2 + dash_size)*dir + dir.rotateDeg(90)*2
+      start2 = from + (i*dash_size*2)*dir + dir.rotateDeg(-90)*2
+      stop2  = from + (i*dash_size*2 + dash_size)*dir + dir.rotateDeg(-90)*2
+    } yield Seq(start1, stop1, start2, stop2)).flatten
   }
 }
 
