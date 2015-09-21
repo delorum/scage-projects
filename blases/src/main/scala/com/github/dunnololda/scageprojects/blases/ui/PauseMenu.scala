@@ -1,5 +1,11 @@
 package com.github.dunnololda.scageprojects.blases.ui
 
+import com.github.dunnololda.scage.ScageLib._
+import com.github.dunnololda.scageprojects.blases.Blases
+import com.github.dunnololda.scageprojects.blases.Blases._
+import com.github.dunnololda.scageprojects.blases.LevelSelector._
+import com.github.dunnololda.scageprojects.blases.Relatives._
+
 object PauseMenu {
   private val continue_level_button = new Button(xml("button.continue"), Vec(512, 384) + Vec(-60, 40), 100, Blases, {
     hide()
@@ -19,7 +25,7 @@ object PauseMenu {
     stop()
   }, RED, false)
   private val exit_button = new Button(xml("button.exit"), Vec(512, 384) + Vec(-60, -120), 100, Blases, {
-    Scage.stopApp()
+    stopApp()
   }, RED, false)
   private val play_game_again_button = new Button(xml("button.playallagain"), Vec(512, 384) + Vec(-60, 40), 100, Blases, {
     score = 0

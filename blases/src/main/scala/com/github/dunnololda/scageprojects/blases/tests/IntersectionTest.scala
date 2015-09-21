@@ -1,5 +1,7 @@
 package com.github.dunnololda.scageprojects.blases.tests
 
+import com.github.dunnololda.scage.ScageLib._
+
 object IntersectionTest extends ScageScreenApp("Intersection Test") {
   val polygon_points = Array(Vec(415, 538), Vec(523, 621), Vec(737, 364), Vec(639, 284))
 

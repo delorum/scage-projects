@@ -1,5 +1,7 @@
 package com.github.dunnololda.scageprojects.blases.tests
 
+import com.github.dunnololda.scage.ScageLib._
+
 object EventsTest extends ScageApp("Events Test") {
   /*private val my_events = new HashMap[String, ArrayBuffer[PartialFunction[Any, Unit]]]()
   
@@ -29,9 +31,11 @@ class Foo {
   }
 }
 
+import EventsTest._
+
 class Bar {
   private var i = 0
-  action(1000) {
+  actionStaticPeriod(1000) {
     println("I Bar!")
     callEvent("I Bar", i)
     i += 1

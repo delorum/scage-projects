@@ -1,5 +1,7 @@
 package com.github.dunnololda.scageprojects.blases.tests
 
+import com.github.dunnololda.scage.ScageLib._
+
 class Button(message: String, message_coord: Vec, width: Int, screen: Screen, onBtnPressed: => Any) {
   val vertices = List(Vec(message_coord) + Vec(-5, 20),
     Vec(message_coord) + Vec(-5 + width, 20),

@@ -1,5 +1,8 @@
 package com.github.dunnololda.scageprojects.blases.ui
 
+import com.github.dunnololda.scage.ScageLib._
+import com.github.dunnololda.scageprojects.blases.Relatives._
+
 object HelpMenu extends /*Scage*/Screen("Help Menu") with MultiController {
   preinit {
     backgroundColor = WHITE

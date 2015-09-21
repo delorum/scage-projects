@@ -2,6 +2,8 @@ package com.github.dunnololda.scageprojects.blases.levelbuilder
 
 import java.io.FileOutputStream
 
+import com.github.dunnololda.scage.ScageLib._
+
 import scala.collection.mutable.ArrayBuffer
 
 case class LevelElement(element_type:String, coords:List[Vec]) {
@@ -39,8 +41,8 @@ object LevelBuilder2 extends ScageScreenApp("Level Builder 2") {
       val traces = tracer.tracesNearCoord(m, -1 to 1, condition = {
         trace => trace.location.dist(m) < 10
       })
-      if (!traces.isEmpty) {
-        polygons += LevelElement("Obstacle", tracer.tracesList.map(_.location).toList)
+      if (traces.nonEmpty) {
+        polygons += LevelElement("Obstacle", tracer.tracesList.map(_.location))
         tracer.removeAllTraces()
         last_vertice = Vec.zero
       } else {
@@ -137,7 +139,7 @@ object LevelBuilder2 extends ScageScreenApp("Level Builder 2") {
       }
     }
 
-    val trace_coords = tracer.tracesList.map(_.location).toList
+    val trace_coords = tracer.tracesList.map(_.location)
     drawPolygon(trace_coords, RED)
     for (coord <- trace_coords) {
       drawCircle(coord, 10, RED)

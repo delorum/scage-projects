@@ -1,5 +1,7 @@
 package com.github.dunnololda.scageprojects.blases.tests
 
+import com.github.dunnololda.scage.ScageLib._
+
 object StaticPolygonTest extends ScageScreenApp("Static Polygon Test", 640, 480) {
   val physics = new ScagePhysics()
   action {

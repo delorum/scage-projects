@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects.blases.levels
 import com.github.dunnololda.scageprojects.blases.{Relatives, BonusLevel}
 import com.github.dunnololda.scageprojects.blases.levelparts.{Star, SpikesPolygon, SpeedPolygon, SimpleObstacle}
 import Relatives._
+import com.github.dunnololda.scage.ScageLib._
 
 object BonusLevel1 extends BonusLevel {
   def bonusCondition = (Level1.blases_shot_on_level +

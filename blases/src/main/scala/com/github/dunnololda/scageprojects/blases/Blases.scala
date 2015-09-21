@@ -7,6 +7,7 @@ import Relatives._
 import com.github.dunnololda.scageprojects.blases.ui.PauseMenu
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.language.reflectiveCalls
 
 object LevelSelector {
   private var current_level_num = 0
@@ -112,7 +113,7 @@ object Blases extends /*Scage*/Screen("Blases Game") with MultiController {
   private[blases] var blases_shot = 0
   private[blases] var blases_shot_on_level = 0
 
-  action(1000) {
+  actionStaticPeriod(1000) {
     if(is_game_started) score_for_level -= 50
   }
   

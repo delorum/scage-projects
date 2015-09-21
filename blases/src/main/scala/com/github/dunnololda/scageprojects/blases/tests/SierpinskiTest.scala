@@ -1,5 +1,7 @@
 package com.github.dunnololda.scageprojects.blases.tests
 
+import com.github.dunnololda.scage.ScageLib._
+
 case class Triangle(a:Vec, b:Vec, c:Vec)
 
 object SierpinskiTest extends ScageScreenApp("Sierpinski", 640, 480) {
@@ -13,7 +15,7 @@ object SierpinskiTest extends ScageScreenApp("Sierpinski", 640, 480) {
 
   def generateTriangles(triangles:List[Triangle], levels:Int):List[Triangle] = {
     if(levels == 0) triangles
-    else generateTriangles(triangles.map(subTriangles(_)).flatten, levels - 1)
+    else generateTriangles(triangles.map(subTriangles).flatten, levels - 1)
   }
 
   def equilateralTriangle(center:Vec, size:Int):Triangle = {

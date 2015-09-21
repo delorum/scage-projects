@@ -1,8 +1,12 @@
 package com.github.dunnololda.scageprojects.blases.tests
 
 import net.phys2d.raw.FixedJoint
+import com.github.dunnololda.scage.ScageLib._
 
 object JointsTest extends ScageScreenApp("Joints Test", 640, 480) {
+  val physics = ScagePhysics()
+  physics.addPhysicals(ball1, box1)
+
   val ball1 = new DynaBall(Vec(200, 100), 10)
 
   val box1 = new StaticBox(Vec(200, 200), 20, 20) {
@@ -32,11 +36,9 @@ object JointsTest extends ScageScreenApp("Joints Test", 640, 480) {
   val joint1:FixedJoint = new FixedJoint(ball1.body, box1.body)
   //val joint2 = new FixedAngleJoint(ball1.body, box1.body, ball1.coord.toPhys2dVec, box1.coord.toPhys2dVec, (ball1.coord - box1.coord).rad(Vec(0,1)))
 
-
-  val physics = ScagePhysics()
-  physics.addPhysicals(ball1, box1)
-  physics.world.add(joint1)
   //physics.world.add(joint2)
+
+  physics.world.add(joint1)
 
   action {
     physics.step()

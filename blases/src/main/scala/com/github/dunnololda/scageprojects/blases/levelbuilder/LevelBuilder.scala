@@ -1,5 +1,7 @@
 package com.github.dunnololda.scageprojects.blases.levelbuilder
 
+import com.github.dunnololda.scage.ScageLib._
+
 import scala.collection.mutable.ArrayBuffer
 
 object LevelBuilder extends ScageScreenApp("LevelBuilder") {

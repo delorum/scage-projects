@@ -41,14 +41,20 @@ object World extends ScageScreenApp("Uke", 800, 600) {
     lost = false
     farthest_coord = LevelBuilder.continueLevel(Vec(0, windowHeight/2-100), 0, 1000)
 
-    action {
+    val action_id = action {
       if(loseCondition) {
         log.info("uke.velocity = " + Uke.velocity)
         lost = true
         pause()
-        deleteSelf()
+        deleteSelfNoWarn()
       }
     }
+
+    clear {
+      delOperationNoWarn(action_id)
+      deleteSelfNoWarn()
+    }
+
     Unit
   }
 
@@ -65,7 +71,7 @@ object World extends ScageScreenApp("Uke", 800, 600) {
     if(uke_speed < 50) {
       log.info("increasing speed:" + uke_speed)
       uke_speed += 3
-    } else deleteSelf()
+    } else deleteSelfNoWarn()
   }
 
   backgroundColor = WHITE
@@ -94,7 +100,7 @@ object World extends ScageScreenApp("Uke", 800, 600) {
           else print("Pause (Press P)", windowWidth/2, windowHeight/2)
         }
       }
-      deleteSelf()
+      deleteSelfNoWarn()
     }
   }
 
@@ -161,7 +167,7 @@ object Uke extends DynaBall(Vec(20, windowHeight/2-70), radius = 30, mass = 1.0f
     else if(velocity.norma2 > (required_speed+5)*(required_speed+5)) velocity -= velocity.n
   }
 
-  render {
+  render(-2) {
     if(velocity.x != 0 && isTouching) {
       drawDisplayList(uke_animation(frame), coord)
     } else drawDisplayList(uke_stand, coord)
@@ -251,29 +257,39 @@ object LevelBuilder {
 }
 
 class Platform(platform_points:Vec*) extends StaticPolygon(platform_points:_*) {
-  val platform_color = randomColor
-  render {
+  //private val platform_color = randomColor
+  private val render_id = render {
     if(physics.containsPhysical(this)) drawPolygon(points, /*platform_color*/BLACK)
     else {
-      println("youo")
-      deleteSelf()
+      //println("youo")
+      deleteSelfNoWarn()
     }
+  }
+
+  clear {
+    delOperationNoWarn(render_id)
+    deleteSelfNoWarn()
   }
 }
 
 class Obstacle(init_coord:Vec) extends DynaBox(init_coord, 70f, 70f, box_mass = 1000f, true) {
-  val obstacle_color = randomColor
-  render {
+  //private val obstacle_color = randomColor
+  private val render_id = render(-1) {
     if(physics.containsPhysical(this)) {
       drawPolygon(points, /*obstacle_color*/BLACK)
       //drawCircle(coord, 100, obstacle_color)
-    } else deleteSelf()
+    } else deleteSelfNoWarn()
   }
 
-  action {
+  private val action_id = action {
     if(coord.dist(Uke.coord) < 100 && Uke.isForward) {
       physics.removePhysicals(this)
-      deleteSelf()
+      deleteSelfNoWarn()
     }
+  }
+
+  clear {
+    delOperationsNoWarn(action_id, render_id)
+    deleteSelfNoWarn()
   }
 }

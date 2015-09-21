@@ -1,5 +1,7 @@
 package com.github.dunnololda.scageprojects.blases.tests
 
+import com.github.dunnololda.scage.ScageLib._
+
 import scala.collection.mutable.ArrayBuffer
 
 object Reflections extends ScageScreenApp("Reflections", 640, 480) {
@@ -55,18 +57,18 @@ object Reflections extends ScageScreenApp("Reflections", 640, 480) {
 
   val ellipse =
     (for {
-      x <- (-5f to 5f by 0.1f)
-    } yield (Vec(x, math.sqrt(100f - 4f * x * x)))) ++
+      x <- -5f to 5f by 0.1f
+    } yield Vec(x, math.sqrt(100f - 4f * x * x))) ++
       (for {
-        x <- (5f to -5f by -0.1f)
-      } yield (Vec(x, -math.sqrt(100f - 4f * x * x))))
+        x <- 5f to -5f by -0.1f
+      } yield Vec(x, -math.sqrt(100f - 4f * x * x)))
 
   center = Vec.zero
   globalScale = 15
 
-  val beams_i = reflections(List(DVec(1.4, -9.6), DVec(0.0, 10.1))).reverse.iterator
+  val beams_i = reflections(List(DVec(1.4, -9.6), DVec(0.0, 10.1))).reverseIterator
   val beams = ArrayBuffer[Vec](beams_i.next().toVec, beams_i.next().toVec)
-  action(100) {
+  actionStaticPeriod(100) {
     if (beams_i.hasNext) beams += beams_i.next().toVec
     else {
       println(beams.length)

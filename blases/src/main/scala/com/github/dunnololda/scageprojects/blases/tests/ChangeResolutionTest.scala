@@ -1,12 +1,14 @@
 package com.github.dunnololda.scageprojects.blases.tests
 
+import com.github.dunnololda.scage.ScageLib._
+
 object ChangeResolutionTest extends ScageScreenApp("Resolution Change Test", 800, 600) {
   render {
     print("Press C to change resolution", windowCenter + Vec(0, 40), WHITE)
   }
 
   private var ang = 0f
-  action(100) {
+  actionStaticPeriod(100) {
     ang += 5
   }
 
