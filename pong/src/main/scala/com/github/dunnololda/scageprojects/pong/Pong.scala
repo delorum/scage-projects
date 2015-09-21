@@ -1,12 +1,8 @@
-package net.scage.projects.pong
+package com.github.dunnololda.scageprojects.pong
 
-import net.scage.ScageScreenApp
-import net.scage.support.Vec
-import net.scage.support.physics.ScagePhysics
-import net.scage.ScageLib._
-import net.scage.support.physics.objects.{StaticLine, StaticBox, DynaBall}
+import com.github.dunnololda.scage.ScageLib._
 
-object Pong extends ScageScreenApp("Pong", 800, 600, "Pong") {
+object Pong extends ScageScreenApp("Pong", 800, 600) {
   val physics = ScagePhysics()
 
   val right_edge = new StaticLine(Vec(0,0), Vec(0, windowHeight), true)
@@ -19,6 +15,8 @@ object Pong extends ScageScreenApp("Pong", 800, 600, "Pong") {
   init {
     count = 0
   }
+
+  keyIgnorePause(KEY_Q, onKeyDown = if(keyPressed(KEY_LCONTROL) || keyPressed(KEY_RCONTROL)) stopApp())
 
   val paddle1 = new Paddle(Vec(100-25, windowHeight/2))
   val paddle2 = new Paddle(Vec(windowWidth-100-25, windowHeight/2))
@@ -42,7 +40,7 @@ object Pong extends ScageScreenApp("Pong", 800, 600, "Pong") {
   }
 }
 
-import Pong._
+import com.github.dunnololda.scageprojects.pong.Pong._
 
 object Ball extends DynaBall(windowCenter, 10, restitution = true) {
   var ball_speed = 50f
