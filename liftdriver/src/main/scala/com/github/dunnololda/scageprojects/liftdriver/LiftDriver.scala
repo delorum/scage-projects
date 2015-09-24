@@ -1,6 +1,6 @@
-package net.scageprojects.liftdriver
+package com.github.dunnololda.scageprojects.liftdriver
 
-import net.scage.ScageLib._
+import com.github.dunnololda.scage.ScageLib._
 import collection.mutable.ArrayBuffer
 
 object ElevatorConstants {
@@ -89,7 +89,7 @@ object LiftDriver extends Screen with MultiController {
       new LiftDriverAI(building1, this)
     }
 
-    val action_func = action(1000) {
+    val action_func = actionStaticPeriod(1000) {
       if(num_issued_passengers >= passengersAmount) deleteSelf()
       else {
         if(math.random < 0.4) {
@@ -122,6 +122,7 @@ object LiftDriver extends Screen with MultiController {
   keyIgnorePause(KEY_F2, onKeyDown = {
     if(onPause || num_transported >= passengersAmount) restart()
   })
+  keyIgnorePause(KEY_Q, onKeyDown = if(keyPressed(KEY_LCONTROL) || keyPressed(KEY_RCONTROL)) stopApp())
   keyIgnorePause(KEY_ESCAPE, onKeyDown = {
     if(onPause || num_transported >= passengersAmount) stop()
   })
@@ -131,7 +132,7 @@ object LiftDriver extends Screen with MultiController {
     else if(num_transported >= passengersAmount)  print(xml("restarttext"), windowCenter, YELLOW, align = "center")
     currentColor = WHITE
     if(best_transport_time < Long.MaxValue && worst_transport_time > 0) {
-      print(xml("stats", num_transported, passengersAmount, (best_transport_time/1000), (worst_transport_time/1000), (average_transport_time/1000)), 20, windowHeight-20)
+      print(xml("stats", num_transported, passengersAmount, best_transport_time / 1000, worst_transport_time / 1000, average_transport_time / 1000), 20, windowHeight-20)
     } else {
       print(xml("stats.init", passengersAmount), 20, windowHeight-20)
     }
@@ -177,7 +178,7 @@ class Building(val left_up_corner: Vec, val num_floors: Int, screen: Screen with
     _elevators += e
   }
 
-  def buildingWidth = 2*floor_width + floor_width*_elevators.length + 10*(_elevators.length)
+  def buildingWidth = 2*floor_width + floor_width*_elevators.length + 10* _elevators.length
 
   private val render_func = screen.render {
     currentColor = WHITE
@@ -194,7 +195,7 @@ class Building(val left_up_corner: Vec, val num_floors: Int, screen: Screen with
     })
   }
 
-  private val action_func = screen.action(10) {
+  private val action_func = screen.actionStaticPeriod(10) {
     _elevators.withFilter(e => !e.isMoving && e.availableSpace > 0 && _floors(e.currentFloor).length > 0).foreach(e => {
       val e_floor = e.currentFloor
       _floors(e_floor) --= e.enter(_floors(e_floor))
@@ -260,6 +261,9 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, s
     }
   }
 
+  private var target_floor_pos = pos
+  private var moving_step      = Vec.zero
+
   private val render_func = screen.render {
     currentColor = WHITE
     drawRect(left_up_corner, floor_width, elevator_height)
@@ -280,7 +284,12 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, s
   }
 
   private val left_mouse = screen.leftMouseOnRect(left_up_corner, floor_width, elevator_height, onBtnDown = mouse => {
-    if(MainMenu.manualMode) moveToFloor(floorForCoord(mouse))
+    if(MainMenu.manualMode) {
+      val need_floor = floorForCoord(mouse)
+      if(currentFloor != need_floor) {
+        moveToFloor(need_floor)
+      }
+    }
   })
 
   def posForFloor(floor:Int):Vec = {
@@ -294,9 +303,6 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, s
       case x                      => x.toInt
     }
   }
-
-  private var target_floor_pos = pos
-  private var moving_step      = Vec.zero
 
   def isMoving     = moving_step.notZero
   def isMovingDown = moving_step.y < 0
@@ -367,7 +373,7 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, s
 }
 
 class LiftDriverAI(building:Building, screen:Screen) {
-  private val action_func = screen.action(100) {
+  private val action_func = screen.actionStaticPeriod(100) {
     // находим пассажиров, к которым ни один лифт еще не едет
     val waiting_passengers = building.passengers.filter(p => {
       building.elevators.forall(l => l.targetFloor != p.floor)
