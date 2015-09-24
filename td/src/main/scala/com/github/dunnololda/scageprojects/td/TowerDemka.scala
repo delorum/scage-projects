@@ -1,16 +1,12 @@
-package net.scageprojects.td
+package com.github.dunnololda.scageprojects.td
 
-import net.scage.ScageScreenApp
-import net.scage.ScageLib._
-import net.scage.support.{ScageColor, State, Vec}
-import net.scage.support.tracer3.{DefaultTrace, Trace, CoordTracer}
-import collection.mutable.ArrayBuffer
-import net.scage.support.messages.ScageMessage
-import Tower._
-import Wall._
+import com.github.dunnololda.scage.ScageLib._
+import com.github.dunnololda.scageprojects.td.Tower._
+import com.github.dunnololda.scageprojects.td.Wall._
+import scala.collection.mutable.ArrayBuffer
 
 object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
-  windowTitle += " - "+app_version
+  windowTitle += " - "+appVersion
   val tracer = CoordTracer.create[Trace with HaveType with HaveHitPoints with SelfRemovable](
     field_from_x = 10,
     field_to_x   = 790,
@@ -33,7 +29,7 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
   key(KEY_1, onKeyDown = which_building = PLACE_TOWER)
   key(KEY_2, onKeyDown = which_building = PLACE_WALL)
 
-  keyNoPause(KEY_SPACE, onKeyDown = switchPause())
+  keyIgnorePause(KEY_SPACE, onKeyDown = switchPause())
 
   leftMouse(onBtnDown = {m =>
     val p = tracer.point(m)
@@ -97,7 +93,7 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
     all_enemies_dead = false
     first_wave_started = true
     val enemies = ArrayBuffer[Enemy]()
-    val respawn_action_id = action(500) {
+    val respawn_action_id = actionStaticPeriod(500) {
       if(enemies.length < enemy_amount) {
         val start_point = Vec(0, (math.random*tracer.N_y).toInt)
         if(tracer.tracesInPoint(start_point).isEmpty) {
@@ -107,7 +103,7 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
         }
       } else {
         deleteSelf()
-        val alive_check_action_id = action(1000) {
+        val alive_check_action_id = actionStaticPeriod(1000) {
           all_enemies_dead = enemies.forall(_.hp <= 0)
           if(all_enemies_dead) {
             enemy_amount += enemy_increase_amount
@@ -131,7 +127,7 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
 
   def nextWaveCountdown(period:Int) {
     count = period
-    val countdown_action_id = action(1000) {
+    val countdown_action_id = actionStaticPeriod(1000) {
       count -= 1
       if(count <= 0) {
         spawnEnemies()
@@ -172,8 +168,8 @@ object TowerDemka extends ScageScreenApp("Tower Demka", 800, 600) {
   interface {
     print(_resource, 10, windowHeight-20, WHITE)
     print(
-      (if(all_enemies_dead) "Next Wave: "+count
-      else "Wave "+wave_number),
+      if (all_enemies_dead) "Next Wave: " + count
+      else "Wave " + wave_number,
       windowWidth/2, windowHeight-20, WHITE, align = "xcenter"
     )
     print(
@@ -257,7 +253,7 @@ trait BaseType extends BuildingType {
   def isBase     = true
 }
 
-import TowerDemka._
+import com.github.dunnololda.scageprojects.td.TowerDemka._
 
 trait SelfInsertable {
   this: Trace with HaveType with HaveHitPoints with SelfRemovable =>

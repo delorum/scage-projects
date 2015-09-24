@@ -1,9 +1,7 @@
-package net.scageprojects.td
+package com.github.dunnololda.scageprojects.td
 
-import net.scage.ScageLib._
-import net.scageprojects.td.TowerDemka._
-import net.scage.support.Vec
-import net.scage.support.tracer3.DefaultTrace
+import com.github.dunnololda.scage.ScageLib._
+import TowerDemka._
 
 object Base extends SelfHitPoints with BaseType {
   hp = property("base.hp", 50f)

@@ -1,9 +1,7 @@
-package net.scageprojects.td
+package com.github.dunnololda.scageprojects.td
 
-import net.scage.ScageLib._
-import net.scageprojects.td.TowerDemka._
-import net.scage.support.tracer3.{Trace, DefaultTrace}
-import net.scage.support.{State, Vec}
+import com.github.dunnololda.scage.ScageLib._
+import TowerDemka._
 
 class Enemy(val init_coord:Vec, val end_coord:Vec) extends DefaultTrace with SelfHitPoints with EnemyType with SelfRemovable with SelfInsertable {
   hp = property("enemy.hp", 30f)
@@ -15,13 +13,13 @@ class Enemy(val init_coord:Vec, val end_coord:Vec) extends DefaultTrace with Sel
   val dir = (end_coord - init_coord).n
 
   private val action_id = if(attack_radius > 0) {
-    action(10) {
+    actionStaticPeriod(10) {
       val next_coord = location + dir*(tracer.h_x/100f)*(speed/10f)
       val buildings_in_radius = tracer.tracesInPoint(tracer.point(next_coord + Vec(20, 0) + Vec(attack_radius*tracer.h_x, 0)), condition = _.isBuilding)
       if(buildings_in_radius.nonEmpty) shoot(buildings_in_radius.head)
       else tracer.updateLocation(this, next_coord)
     }
-  } else action(10) {
+  } else actionStaticPeriod(10) {
     val next_coord = location + dir*(tracer.h_x/200f)*(speed/10f)
     val buildings_on_next_coord = tracer.tracesInPoint(tracer.point(next_coord + Vec(20, 0)), condition = _.isBuilding)
     if(buildings_on_next_coord.nonEmpty) hit(buildings_on_next_coord.head)

@@ -1,10 +1,7 @@
-package net.scageprojects.td
+package com.github.dunnololda.scageprojects.td
 
-import net.scage.ScageLib._
-import net.scageprojects.td.TowerDemka._
-import net.scage.support.tracer3.{Trace, DefaultTrace}
-import net.scage.support.{State, Vec}
-import net.scage.support.messages.ScageMessage
+import TowerDemka._
+import com.github.dunnololda.scage.ScageLib._
 
 object Tower {
   val tower_price = property("tower.price", 7)
@@ -19,7 +16,7 @@ object Tower {
   val tower_attack_radius = property("tower.attack.radius", 1)
 }
 
-import Tower._
+import com.github.dunnololda.scageprojects.td.Tower._
 
 class Tower(init_point:Vec) extends DefaultTrace with SelfHitPoints with TowerType with SelfRemovable with Damageable with SelfInsertable {
   hp =  tower_max_hp

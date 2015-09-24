@@ -1,9 +1,7 @@
-package net.scageprojects.td
+package com.github.dunnololda.scageprojects.td
 
-import net.scage.ScageLib._
-import net.scageprojects.td.TowerDemka._
-import net.scage.support.tracer3.{Trace, DefaultTrace}
-import net.scage.support.{State, Vec}
+import com.github.dunnololda.scage.ScageLib._
+import TowerDemka._
 
 object Wall {
   val wall_price = property("wall.price", 7)
@@ -11,7 +9,7 @@ object Wall {
   val wall_repair_price = property("wall.repair.price", 10)
 }
 
-import Wall._
+import com.github.dunnololda.scageprojects.td.Wall._
 
 class Wall(init_point:Vec) extends DefaultTrace with SelfHitPoints with WallType with SelfRemovable with Damageable with SelfInsertable {
   hp = wall_max_hp

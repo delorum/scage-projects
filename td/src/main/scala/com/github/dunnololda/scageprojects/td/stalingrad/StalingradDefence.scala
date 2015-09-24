@@ -1,11 +1,9 @@
-package net.scageprojects.td.stalingrad
+package com.github.dunnololda.scageprojects.td.stalingrad
 
-import net.scage.ScageScreenApp
-import net.scage.ScageLib._
-import org.newdawn.slick.util.pathfinding.{Mover, PathFindingContext, TileBasedMap, AStarPathFinder}
-import net.scage.support.tracer3.{CoordTracer, ScageTracer, Trace}
-import collection.mutable.{ArrayBuffer, Stack}
-import net.scage.support.{PathFinder, ScageColor, State, Vec}
+import com.github.dunnololda.scage.ScageLib._
+import org.newdawn.slick.util.pathfinding.Mover
+
+import scala.collection.mutable.ArrayBuffer
 
 object StalingradDefence extends ScageScreenApp("Stalingrad Defence", 800, 600) {
   val tracer = CoordTracer(
@@ -17,6 +15,8 @@ object StalingradDefence extends ScageScreenApp("Stalingrad Defence", 800, 600) 
     init_h_y = 20
   )
   val path_finder = PathFinder(tracer.N_x, tracer.N_y, is_blocked = (x, y) => tracer.tracesInPoint(x, y).exists(trace => trace.state.contains("impassable")))
+
+  keyIgnorePause(KEY_Q, onKeyDown = if(keyPressed(KEY_LCONTROL) || keyPressed(KEY_RCONTROL)) stopApp())
 
   render {
     drawTraceGrid(tracer, DARK_GRAY)
@@ -41,7 +41,7 @@ object StalingradDefence extends ScageScreenApp("Stalingrad Defence", 800, 600) 
       new Enemy(start, end)
     }
 
-    action(1000) {
+    actionStaticPeriod(1000) {
       all_nazis_dead = enemies.forall(_.hp <= 0)
       if(all_nazis_dead) {
         spawnNextWaveIn20Sec()
@@ -52,7 +52,7 @@ object StalingradDefence extends ScageScreenApp("Stalingrad Defence", 800, 600) 
 
   private var count = 20+1
   def spawnNextWaveIn20Sec() {
-    action(1000) {
+    actionStaticPeriod(1000) {
       count -= 1
       if(count <= 0) {
         wave(50)
@@ -69,7 +69,7 @@ object StalingradDefence extends ScageScreenApp("Stalingrad Defence", 800, 600) 
     corpses += corpse_coord
     if(corpses.size > corpses_limit) corpses --= corpses.take(40)
   }
-  render {
+  render(2) {
     for(corpse_coord <- corpses) drawCircle(corpse_coord, 10, BLUE)
   }
 
@@ -116,8 +116,8 @@ class Tower(upper_left_point:Vec) {
     val enemies = tracer.tracesInPointRange(
       upper_left_point.ix - 2 to upper_left_point.ix + 3,
       upper_left_point.iy - 3 to upper_left_point.iy + 2,
-      condition = {trace => trace.state.contains("enemy") && trace.state.value[Int]("hp") > 0})
-    if(!enemies.isEmpty) {
+      condition = {trace => trace.state.contains("enemy") && trace.state.value[Int]("hp").exists(_ > 0)})
+    if(enemies.nonEmpty) {
       val nearest_enemy = enemies.foldLeft(enemies.head) {
         case (current_nearest, next_enemy) => if(next_enemy.location.dist(tower_center) < current_nearest.location.dist(tower_center)) next_enemy else current_nearest
       }
@@ -125,7 +125,7 @@ class Tower(upper_left_point:Vec) {
     }
   }
   
-  render {
+  render(1) {
     drawRectCentered(tower_center, tracer.h_x*2, tracer.h_y*2, WHITE)
   }
 
@@ -138,16 +138,16 @@ class Enemy(init_point:Vec, end_point:Vec) extends Trace with Mover {
 
   tracer.addTrace(tracer.pointCenter(init_point), this)
 
-  private var path = path_finder.findPath(init_point, end_point).map(tracer.pointCenter(_))
+  private var path = path_finder.findPath(init_point, end_point).map(tracer.pointCenter)
   private var next_coord = tracer.pointCenter(init_point)
   private val event_id = onEvent("New Tower Placed") {
-    path = path_finder.findPath(tracer.point(location), end_point).map(tracer.pointCenter(_))
-    if(!path.isEmpty) next_coord = path.pop()
+    path = path_finder.findPath(tracer.point(location), end_point).map(tracer.pointCenter)
+    if(path.nonEmpty) next_coord = path.pop()
   }
 
-  private val action_id = action(10) {
+  private val action_id = actionStaticPeriod(10) {
     if((location dist next_coord) < 3) {
-      if(!path.isEmpty) next_coord = path.pop()
+      if(path.nonEmpty) next_coord = path.pop()
       else {
         // do some damage to the player
         callEvent("Stalingrad Reached")
@@ -189,15 +189,15 @@ class Bullet(start_coord:Vec, target:Trace) {
   private var coord = start_coord
 
 
-  action(10) {
-    if(target.state.value[Int]("hp") <= 0) delOperations(render_id, currentOperation)
+  actionStaticPeriod(10) {
+    if(target.state.value[Int]("hp").exists(_ <= 0)) delOperations(render_id, currentOperation)
     else {
       coord += (target.location - coord).n*speed
       if(coord.dist(target.location) < 3) {
         val damage = (math.random*20).toInt
         target.changeState(null, State("damage" -> damage))
         delOperations(render_id, currentOperation)
-        new FlyingWord(damage, RED, coord, (target.location - coord))
+        new FlyingWord(damage, RED, coord, target.location - coord)
       } else {
         lifetime -= 1
         if(lifetime <= 0) {
@@ -215,11 +215,11 @@ class Bullet(start_coord:Vec, target:Trace) {
 }
 
 class FlyingWord(message:Any, color:ScageColor, init_coord:Vec, direction:Vec) {
-  private var lifetime = 100;
+  private var lifetime = 100
   private val dir = direction.n
   private var coord = init_coord
 
-  action(10) {
+  actionStaticPeriod(10) {
     if(lifetime > 0) {
       coord += dir
       lifetime -= 1

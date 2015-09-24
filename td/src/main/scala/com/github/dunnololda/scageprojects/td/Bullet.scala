@@ -1,9 +1,7 @@
-package net.scageprojects.td
+package com.github.dunnololda.scageprojects.td
 
-import net.scage.support.tracer3.Trace
-import net.scageprojects.td.TowerDemka._
-import net.scage.support.{State, ScageColor, Vec}
-import net.scage.ScageLib._
+import com.github.dunnololda.scage.ScageLib._
+import TowerDemka._
 
 class Bullet(start_coord:Vec, target:Trace with HaveHitPoints, damage_amount:Float, bullet_color:ScageColor) extends SelfRemovable {
   val bullet_speed = 6f   // maybe we need an option for this
@@ -12,14 +10,14 @@ class Bullet(start_coord:Vec, target:Trace with HaveHitPoints, damage_amount:Flo
   private var coord = start_coord
 
 
-  private val action_id = action(10) {
+  private val action_id = actionStaticPeriod(10) {
     if(target.hp <= 0) remove()
     else {
       coord += (target.location - coord).n*3*(bullet_speed/6f)
       if(coord.dist(target.location) < 3) {
         target.changeState(null, State("damage" -> damage_amount))
         remove()
-        new FlyingWord(damage_amount.formatted("%.1f"), bullet_color, coord, (target.location - coord))
+        new FlyingWord(f"$damage_amount%.1f", bullet_color, coord, target.location - coord)
       } else {
         lifetime -= 1
         if(lifetime <= 0) {

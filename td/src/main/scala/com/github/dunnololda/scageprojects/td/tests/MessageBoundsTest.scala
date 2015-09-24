@@ -1,7 +1,6 @@
-package net.scageprojects.td.tests
+package com.github.dunnololda.scageprojects.td.tests
 
-import net.scage.ScageScreenApp
-import net.scage.ScageLib._
+import com.github.dunnololda.scage.ScageLib._
 
 object MessageBoundsTest extends ScageScreenApp("Message Bounds Test", 640 ,480) {
   val pew = "HP: 45"+"\n"+"A: 6.6"+"\n"+"Upgrade"+"\n"+"Repair"
