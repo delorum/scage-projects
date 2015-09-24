@@ -7,8 +7,8 @@
     </formats>
     <fileSets>
         <fileSet>
-            <directory>${project.build.directory}/native/${os.type}</directory>
-            <outputDirectory>native</outputDirectory>
+            <directory>${project.build.directory}/natives</directory>
+            <outputDirectory>natives</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>${project.build.directory}/lib</directory>
@@ -23,7 +23,7 @@
     </fileSets>
     <files>
         <file>
-            <source>${project.build.directory}/lightcycles-0.1.jar</source>
+            <source>${project.build.directory}/${project.artifactId}-${project.version}.jar</source>
             <outputDirectory>lib</outputDirectory>
         </file>
     </files>

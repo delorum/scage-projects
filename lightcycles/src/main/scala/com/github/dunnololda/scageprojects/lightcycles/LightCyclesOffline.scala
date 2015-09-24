@@ -1,10 +1,11 @@
-package net.scageprojects.lightcycles
+package com.github.dunnololda.scageprojects.lightcycles
 
-import com.github.dunnololda.scage.ScageScreenApp
 import com.github.dunnololda.scage.ScageLib._
+import com.github.dunnololda.scage.ScageScreenApp
+import com.github.dunnololda.scage.support.tracer3.{CoordTracer, DefaultTrace}
 import com.github.dunnololda.scage.support.{ScageColor, Vec}
-import collection.mutable.ArrayBuffer
-import com.github.dunnololda.scage.support.tracer3.{DefaultTrace, CoordTracer}
+
+import scala.collection.mutable.ArrayBuffer
 
 object LightCyclesOffline extends ScageScreenApp("Light Cycles", 640, 480) {
   val tracer = CoordTracer.create[LightCycleTrace](
@@ -25,26 +26,26 @@ object LightCyclesOffline extends ScageScreenApp("Light Cycles", 640, 480) {
   }
 
   val borders = List(Vec(tracer.field_from_x, tracer.field_from_y),
-                     Vec(tracer.field_from_x, tracer.field_to_y-1),
-                     Vec(tracer.field_to_x-1, tracer.field_to_y-1),
-                     Vec(tracer.field_to_x-1, tracer.field_from_y),
-                     Vec(tracer.field_from_x, tracer.field_from_y)).sliding(2).map {
+    Vec(tracer.field_from_x, tracer.field_to_y-1),
+    Vec(tracer.field_to_x-1, tracer.field_to_y-1),
+    Vec(tracer.field_to_x-1, tracer.field_from_y),
+    Vec(tracer.field_from_x, tracer.field_from_y)).sliding(2).map {
     case List(a, b) => (a, b)
   }.toList
   def otherLines(cycle_id:Int):List[(Vec, Vec)] = {
     val other_cycles = tracer.tracesList.filter(oc => oc.id != cycle_id)
     val our_cycle = tracer.tracesList.filter(oc => oc.id == cycle_id && oc.prevLocations.length > 2)
     borders ++
-    other_cycles.flatMap {
-      c => (c.prevLocations.toList ++ List(c.location)).sliding(2).map {
-        case List(a, b) => (a, b)
+      other_cycles.flatMap {
+        c => (c.prevLocations.toList ++ List(c.location)).sliding(2).map {
+          case List(a, b) => (a, b)
+        }
+      } ++
+      our_cycle.flatMap {
+        c => c.prevLocations.init.toList.sliding(2).map {
+          case List(a, b) => (a, b)
+        }
       }
-    } ++
-    our_cycle.flatMap {
-      c => c.prevLocations.init.toList.sliding(2).map {
-        case List(a, b) => (a, b)
-      }
-    }
   }
 
   def interpoint(v1:Vec, v2:Vec, v3:Vec, v4:Vec):Vec = {
@@ -191,6 +192,8 @@ object UserCycleOffline extends LightCycleTrace(RED) {
   key(KEY_S, onKeyDown = if(!is_crashed && dir != Vec( 0,  1)) dir = Vec( 0,-1))
   key(KEY_D, onKeyDown = if(!is_crashed && dir != Vec(-1,  0)) dir = Vec( 1, 0))
 
+  keyIgnorePause(KEY_Q, onKeyDown = {if(keyPressed(KEY_LCONTROL)) stopApp()})
+
   render {
     if(!is_crashed) {
       drawSlidingLines(prev_locations, color)
@@ -247,9 +250,9 @@ abstract class EnemyCycle(val max_warning_distance:Int,
         (otherLines(id).exists {
           case (a1, a2) => areLinesIntersect(a1, a2, location, location + Vec(1,0)*check_distance)
         },
-        otherLines(id).exists {
-          case (a1, a2) => areLinesIntersect(a1, a2, location, location + Vec(-1,0)*check_distance)
-        }) match {
+          otherLines(id).exists {
+            case (a1, a2) => areLinesIntersect(a1, a2, location, location + Vec(-1,0)*check_distance)
+          }) match {
           case (true,  false) => Vec(-1,0)
           case (false, true)  => Vec( 1,0)
           case (true,  true)  =>
@@ -257,7 +260,7 @@ abstract class EnemyCycle(val max_warning_distance:Int,
             if(min_right > min_left) Vec(1,0) else Vec(-1,0)
           case (false, false) =>
             if(!UserCycleOffline.isCrashed && math.random < aggression_factor) {   // turn to the player
-              val player_side = math.signum((UserCycleOffline.location - location).x)
+            val player_side = math.signum((UserCycleOffline.location - location).x)
               if(player_side != 0) Vec(player_side, 0)
               else if(math.random > 0.5) Vec(1,0) else Vec(-1,  0)
             } else if(math.random > 0.5) Vec(1,0) else Vec(-1,  0)
@@ -266,9 +269,9 @@ abstract class EnemyCycle(val max_warning_distance:Int,
         (otherLines(id).exists {
           case (a1, a2) => areLinesIntersect(a1, a2, location, location + Vec(0,1)*check_distance)
         },
-        otherLines(id).exists {
-          case (a1, a2) => areLinesIntersect(a1, a2, location, location + Vec(0,-1)*check_distance)
-        }) match {
+          otherLines(id).exists {
+            case (a1, a2) => areLinesIntersect(a1, a2, location, location + Vec(0,-1)*check_distance)
+          }) match {
           case (true,  false) => Vec( 0,-1)
           case (false, true)  => Vec( 0, 1)
           case (true,  true)  =>
@@ -276,7 +279,7 @@ abstract class EnemyCycle(val max_warning_distance:Int,
             if(min_up > min_down) Vec(0,1) else Vec(0,-1)
           case (false, false) =>
             if(math.random < aggression_factor) {   // turn to the player
-              val player_side = math.signum((UserCycleOffline.location - location).y)
+            val player_side = math.signum((UserCycleOffline.location - location).y)
               if(player_side != 0) Vec(0, player_side)
               else if(math.random > 0.5) Vec(0,1) else Vec(0,-1)
             } else if(math.random > 0.5) Vec(0,1) else Vec(0,-1)
