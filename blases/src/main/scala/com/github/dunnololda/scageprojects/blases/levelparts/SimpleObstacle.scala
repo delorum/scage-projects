@@ -20,7 +20,16 @@ class SimpleObstacle(obstacle_vertices: Vec*) extends StaticPolygon(obstacle_ver
     }
   }
 
-  private val control_id = leftMouse(onBtnDown = {m => forEachBlaseInside {blase => blase.burst(); blases_shot -= 1}})
+  private val control_id = leftMouse(onBtnDown = m => {
+    forEachBlaseInside {
+      case blase =>
+        /*println("in SimpleObstacle.leftMouse")
+        println(s"blase.location = Vec(${blase.location.x}, ${blase.location.y})")
+        println(s"intersectableVertices = ${intersectableVertices.map(x => s"Vec(${x.x}, ${x.y})").mkString("List(", ", ", ")")}")*/
+        blase.burst()
+        blases_shot -= 1
+    }
+  })
 
   private val render_id = render {
     drawPolygon(points, rColor(WHITE))

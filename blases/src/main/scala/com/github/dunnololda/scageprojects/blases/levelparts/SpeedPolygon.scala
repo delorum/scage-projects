@@ -31,7 +31,7 @@ class SpeedPolygon(val intersectableVertices: List[Vec], direction: Vec = Vec.ze
       if !containsCoord(blase.location)
     } {
       speeded_blases -= blase
-      after_speed_blases += (blase ->(initial_velocity, blase.velocity, System.currentTimeMillis()))
+      after_speed_blases += {println(s"AFTER_SPEED: $blase");(blase ->(initial_velocity, blase.velocity, System.currentTimeMillis()))}
     }
     for {
       (blase, (initial_velocity, polygon_velocity, start_time)) <- after_speed_blases
@@ -47,12 +47,14 @@ class SpeedPolygon(val intersectableVertices: List[Vec], direction: Vec = Vec.ze
     forEachBlaseInside {blase =>
       if (!speeded_blases.contains(blase)) {
         if (blase.velocity * dir < 0) {
-          val one = dir.n * (blase.velocity * dir.n)
+          /*val one = dir.n * (blase.velocity * dir.n)
           val two = blase.velocity - one
-          blase.velocity = one * (-1) + two
+          blase.velocity = one * (-1) + two*/
+          blase.velocity = blase.velocity*(-1)
         } else {
           speeded_blases += (blase -> blase.velocity)
-          blase.velocity += dir
+          //blase.velocity += dir
+          blase.velocity = dir
         }
       }
     }

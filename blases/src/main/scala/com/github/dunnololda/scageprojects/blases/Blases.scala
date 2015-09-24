@@ -184,6 +184,7 @@ object Blases extends /*Scage*/Screen("Blases Game") with MultiController {
       if(blases.nonEmpty) {
         selectedBlase = blases.head
       } else if(!noBlaseSelected) {
+        //println("in Blases.leftMouse")
         val new_blase_position = (mouse_coord - selectedBlase.location).n*rInt(45) + selectedBlase.location
         val new_blase = new Blase(new_blase_position, mouse_coord - selectedBlase.location)
         if(!is_shift_pressed) selectedBlase = new_blase
