@@ -15,12 +15,14 @@ import ElevatorConstants._
 // Новая Игра, Демонстрация, Помощь, Выход
 // Внизу сбоку - выбор языка, ru и en, по умолчанию en
 object MainMenu extends ScreenApp(xml("liftdriver"), 800, 600) with MultiController {
+  private val main_title_printer = new ScageMessage(max_font_size = 50)
   interface {
-    print(xml("newgame"), windowCenter,              align = "center")
-    print(xml("demo"),    windowCenter - Vec(0, 30), align = "center")
-    print(xml("help"),    windowCenter - Vec(0, 60), align = "center")
-    print(xml("exit"),    windowCenter - Vec(0, 90), align = "center")
-    print(xml("lang"),    Vec(windowWidth-10, 10),   align = "bottom-right")
+    main_title_printer.print(xml("liftdriver"), windowCenter + Vec(0, 50), align = "center")
+    print(xml("newgame"),    windowCenter,              align = "center")
+    print(xml("demo"),       windowCenter - Vec(0, 30), align = "center")
+    print(xml("help"),       windowCenter - Vec(0, 60), align = "center")
+    print(xml("exit"),       windowCenter - Vec(0, 90), align = "center")
+    print(xml("lang"),       Vec(windowWidth-10, 10),   align = "bottom-right")
   }
 
   private var manual_mode = true
@@ -285,10 +287,7 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, s
 
   private val left_mouse = screen.leftMouseOnRect(left_up_corner, floor_width, elevator_height, onBtnDown = mouse => {
     if(MainMenu.manualMode) {
-      val need_floor = floorForCoord(mouse)
-      if(currentFloor != need_floor) {
-        moveToFloor(need_floor)
-      }
+      moveToFloor(floorForCoord(mouse))
     }
   })
 
@@ -315,7 +314,7 @@ class Elevator(val left_up_corner: Vec, val num_floors: Int, val capacity:Int, s
          (moving_step.y >= 0 && new_target_floor_pos.y > pos.y && new_target_floor_pos.y < target_floor_pos.y)) {
         target_floor_pos = new_target_floor_pos
       }
-    } else {
+    } else if(currentFloor != floor) {
       target_floor_pos = posForFloor(floor)
       moving_step = Vec(0, math.signum(target_floor_pos.y - pos.y)*elevator_speed)
       screen.action {
