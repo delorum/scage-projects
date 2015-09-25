@@ -63,7 +63,7 @@ object Rubic extends ScageScreenApp("Rubic Cube", 1024, 768) {
   keyIgnorePause(KEY_9, onKeyDown = commands ++= "EIEIEIEIOEIEIEIEIL")
   keyIgnorePause(KEY_0, onKeyDown = commands ++= "EIEIEIEILEIEIEIEIO")
 
-  actionIgnorePause(100) {
+  actionStaticPeriodIgnorePause(100) {
     if(commands.nonEmpty) {
       val command = commands.remove(0)
       rubic.command(command)
