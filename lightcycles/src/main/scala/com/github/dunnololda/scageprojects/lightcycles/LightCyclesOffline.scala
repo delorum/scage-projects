@@ -100,7 +100,7 @@ object LightCyclesOffline extends ScageScreenApp("Light Cycles", 640, 480) {
   init {
     result = -1
   }
-  action(10) {
+  actionStaticPeriod(10) {
     tracer.tracesList.length match {
       case 0 =>
         result = 4
@@ -183,7 +183,7 @@ object UserCycleOffline extends LightCycleTrace(RED) {
     dir = randomDir
   }
 
-  action(10) {
+  actionStaticPeriod(10) {
     if(!is_crashed) tracer.updateLocation(id, location + dir)
   }
 
@@ -304,12 +304,11 @@ object Program1CycleOffline extends EnemyCycle(
   // simple ai:
   // 1. trace a little further and check for obstacles
   // 2. make turns at random monets
-  action(10) {
-    if(!is_crashed) ai()
-  }
-
-  action(10) {
-    if(!is_crashed) tracer.updateLocation(id, location + dir)
+  actionStaticPeriod(10) {
+    if(!is_crashed) {
+      ai()
+      tracer.updateLocation(id, location + dir)
+    }
   }
 
   render {
@@ -347,12 +346,11 @@ object Program2CycleOffline extends EnemyCycle(
   // simple ai:
   // 1. trace a little further and check for obstacles
   // 2. make turns at random moments
-  action(10) {
-    if(!is_crashed) ai()
-  }
-
-  action(10) {
-    if(!is_crashed) tracer.updateLocation(id, location + dir)
+  actionStaticPeriod(10) {
+    if(!is_crashed) {
+      ai()
+      tracer.updateLocation(id, location + dir)
+    }
   }
 
   render {
@@ -390,12 +388,11 @@ object Program3CycleOffline extends EnemyCycle(
   // simple ai:
   // 1. trace a little further and check for obstacles
   // 2. make turns at random monets
-  action(10) {
-    if(!is_crashed) ai()
-  }
-
-  action(10) {
-    if(!is_crashed) tracer.updateLocation(id, location + dir)
+  actionStaticPeriod(10) {
+    if(!is_crashed) {
+      ai()
+      tracer.updateLocation(id, location + dir)
+    }
   }
 
   render {
