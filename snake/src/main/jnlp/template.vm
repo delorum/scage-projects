@@ -16,7 +16,7 @@
 
  <resources>
    <j2se href="http://java.sun.com/products/autodl/j2se" version="1.5+" max-heap-size="512m" />
-   <property name="scage.properties" value="$scageproperties" />
+   <property name="jnlp.app.properties" value="$scageproperties" />
    <property name="LWJGL_DISABLE_XRANDR" value="true" />
    $dependencies
  </resources>
