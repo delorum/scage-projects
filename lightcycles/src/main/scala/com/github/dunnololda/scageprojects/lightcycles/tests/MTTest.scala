@@ -28,15 +28,17 @@ object MTTest extends ScageScreenAppMT("MT Test", 640, 480){
   leftMouse(onBtnDown = m => {
     if(coordOnRectCentered(m, Vec(windowWidth/2, 30), 100, 40)) {
       if(windowSize == Vec(640,480)) {
-        ControllerActorSystem.stopCheckControls()
+        ControllerActorSystem.shutdownControllerActor()
         Display.destroy()
+        ControllerActorSystem.createControllerActor()
         ControllerActorSystem.initGLAndReleaseContext(800, 600, "MT Test")
         Display.makeCurrent()
         ScageMessage.reloadFont()
         ControllerActorSystem.startCheckControls()
       } else if(windowSize == Vec(800,600)) {
-        ControllerActorSystem.stopCheckControls()
+        ControllerActorSystem.shutdownControllerActor()
         Display.destroy()
+        ControllerActorSystem.createControllerActor()
         ControllerActorSystem.initGLAndReleaseContext(640, 480, "MT Test")
         Display.makeCurrent()
         ScageMessage.reloadFont()
