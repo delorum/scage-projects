@@ -1,6 +1,7 @@
 package com.github.dunnololda.scageprojects.lightcycles.tests
 
 import com.github.dunnololda.scage.ScageLib._
+import com.github.dunnololda.scage.handlers.DisplayListsHolder
 import com.github.dunnololda.scage.handlers.controller3.ControllerActorSystem
 import com.github.dunnololda.scage.support.messages.ScageMessage
 import org.lwjgl.opengl.Display
@@ -28,21 +29,9 @@ object MTTest extends ScageScreenAppMT("MT Test", 640, 480){
   leftMouse(onBtnDown = m => {
     if(coordOnRectCentered(m, Vec(windowWidth/2, 30), 100, 40)) {
       if(windowSize == Vec(640,480)) {
-        ControllerActorSystem.shutdownControllerActor()
-        Display.destroy()
-        ControllerActorSystem.createControllerActor()
-        ControllerActorSystem.initGLAndReleaseContext(800, 600, "MT Test")
-        Display.makeCurrent()
-        ScageMessage.reloadFont()
-        ControllerActorSystem.startCheckControls()
+        windowSizeMT = (800, 600)
       } else if(windowSize == Vec(800,600)) {
-        ControllerActorSystem.shutdownControllerActor()
-        Display.destroy()
-        ControllerActorSystem.createControllerActor()
-        ControllerActorSystem.initGLAndReleaseContext(640, 480, "MT Test")
-        Display.makeCurrent()
-        ScageMessage.reloadFont()
-        ControllerActorSystem.startCheckControls()
+        windowSizeMT = (640, 480)
       }
     } else {
       mouse_buf += m
