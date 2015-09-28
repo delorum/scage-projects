@@ -23,6 +23,7 @@ object MTTest extends ScageScreenAppMT("MT Test", 640, 480){
   key(KEY_Q, onKeyDown = if(keyPressed(KEY_RCONTROL) || keyPressed(KEY_LCONTROL)) stopApp())
 
   leftMouse(onBtnDown = m => {
+    println("SCREEN1 LEFTMOUSE")
     if(coordOnRectCentered(m, Vec(windowWidth/2, 30), 100, 40)) {
       if(windowSize == Vec(640,480)) {
         windowSizeMT = (800, 600)
@@ -65,7 +66,7 @@ object MTTest extends ScageScreenAppMT("MT Test", 640, 480){
   }
 }
 
-object Screen2 extends Screen with ActorSingleController {
+object Screen2 extends Screen("Screen 2") with ActorSingleController {
   private val keys_buf = ArrayBuffer[Int]()
   private val keys_buf_len = 30
   private val mouse_buf = ArrayBuffer[Vec]()
@@ -84,6 +85,7 @@ object Screen2 extends Screen with ActorSingleController {
   key(KEY_Q, onKeyDown = if(keyPressed(KEY_RCONTROL) || keyPressed(KEY_LCONTROL)) stopApp())
 
   leftMouse(onBtnDown = m => {
+    println("SCREEN2 LEFTMOUSE")
     if(coordOnRectCentered(m, Vec(windowWidth/2, 30), 100, 40)) {
       if(windowSize == Vec(640,480)) {
         windowSizeMT = (800, 600)
