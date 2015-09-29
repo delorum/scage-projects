@@ -22,8 +22,9 @@ object MTTest extends ScageScreenAppMT("MT Test", 640, 480){
   
   key(KEY_Q, onKeyDown = if(keyPressed(KEY_RCONTROL) || keyPressed(KEY_LCONTROL)) stopApp())
 
+  private var run_screen2 = false
+
   leftMouse(onBtnDown = m => {
-    println("SCREEN1 LEFTMOUSE")
     if(coordOnRectCentered(m, Vec(windowWidth/2, 30), 100, 40)) {
       if(windowSize == Vec(640,480)) {
         windowSizeMT = (800, 600)
@@ -31,7 +32,9 @@ object MTTest extends ScageScreenAppMT("MT Test", 640, 480){
         windowSizeMT = (640, 480)
       }
     } else if(coordOnRectCentered(m, Vec(windowWidth/2 + 120, 30), 100, 40)) {
+      //run_screen2 = true
       Screen2.run()
+      backgroundColor = BLACK
     } else {
       mouse_buf += m
       if (mouse_buf.length > 10) mouse_buf.remove(0)
@@ -39,8 +42,15 @@ object MTTest extends ScageScreenAppMT("MT Test", 640, 480){
   })
 
   action {
+    /*if(run_screen2) {
+      Screen2.run()
+      backgroundColor = BLACK
+      run_screen2 = false
+    }*/
     Thread.sleep(100)
   }
+
+  backgroundColor = BLACK
 
   render {
     print(keys_buf.mkString(" "), Vec(20, windowHeight/2), WHITE)
@@ -71,6 +81,10 @@ object Screen2 extends Screen("Screen 2") with ActorSingleController {
   private val keys_buf_len = 30
   private val mouse_buf = ArrayBuffer[Vec]()
 
+  init {
+    backgroundColor = WHITE
+  }
+
   key(KEY_1, 100, onKeyDown = {keys_buf += 1; if(keys_buf.length > keys_buf_len) keys_buf.remove(0)})
   key(KEY_2, onKeyDown = {keys_buf += 2; if(keys_buf.length > keys_buf_len) keys_buf.remove(0)})
   key(KEY_3, onKeyDown = {keys_buf += 3; if(keys_buf.length > keys_buf_len) keys_buf.remove(0)})
@@ -85,7 +99,6 @@ object Screen2 extends Screen("Screen 2") with ActorSingleController {
   key(KEY_Q, onKeyDown = if(keyPressed(KEY_RCONTROL) || keyPressed(KEY_LCONTROL)) stopApp())
 
   leftMouse(onBtnDown = m => {
-    println("SCREEN2 LEFTMOUSE")
     if(coordOnRectCentered(m, Vec(windowWidth/2, 30), 100, 40)) {
       if(windowSize == Vec(640,480)) {
         windowSizeMT = (800, 600)
@@ -105,25 +118,25 @@ object Screen2 extends Screen("Screen 2") with ActorSingleController {
   }
 
   render {
-    print(keys_buf.mkString(" "), Vec(20, windowHeight/2), WHITE)
+    print(keys_buf.mkString(" "), Vec(20, windowHeight/2), BLACK)
     mouse_buf.foreach(m => {
-      drawFilledCircle(m, 3, WHITE)
+      drawFilledCircle(m, 3, BLACK)
     })
     print(s"FPS/Ticks $fps/$ticks", windowWidth - 20, windowHeight - 40, align = "top-right", color = DARK_GRAY)
     print(f"Render/Action ${averageRenderTimeMsec*fps/(averageRenderTimeMsec*fps+averageActionTimeMsec*ticks)*100}%.2f%%/${1*averageActionTimeMsec*ticks/(averageRenderTimeMsec*fps+averageActionTimeMsec*ticks)*100}%.2f%%", windowWidth - 20, windowHeight - 60, align = "top-right", color = DARK_GRAY)
     print(f"Render/Action $averageRenderTimeMsec%.2f msec/$averageActionTimeMsec%.2f msec", windowWidth - 20, windowHeight - 80, align = "top-right", color = DARK_GRAY)
     print(s"Render/Action $currentRenderTimeMsec msec/$currentActionTimeMsec msec", windowWidth - 20, windowHeight - 100, align = "top-right", color = DARK_GRAY)
 
-    print("Screen 2", Vec(windowWidth/2, windowHeight-20), WHITE, align = "center")
+    print("Screen 2", Vec(windowWidth/2, windowHeight-20), BLACK, align = "center")
 
-    drawRectCentered(Vec(windowWidth/2, 30), 100, 40, WHITE)
+    drawRectCentered(Vec(windowWidth/2, 30), 100, 40, BLACK)
     if(windowSize == Vec(640,480)) {
-      print("800x600", Vec(windowWidth/2, 30), WHITE, align = "center")
+      print("800x600", Vec(windowWidth/2, 30), BLACK, align = "center")
     } else if(windowSize == Vec(800,600)) {
-      print("640x480", Vec(windowWidth/2, 30), WHITE, align = "center")
+      print("640x480", Vec(windowWidth/2, 30), BLACK, align = "center")
     }
 
-    drawRectCentered(Vec(windowWidth/2 + 120, 30), 100, 40, WHITE)
-    print("screen1", Vec(windowWidth/2 + 120, 30), WHITE, align = "center")
+    drawRectCentered(Vec(windowWidth/2 + 120, 30), 100, 40, BLACK)
+    print("screen1", Vec(windowWidth/2 + 120, 30), BLACK, align = "center")
   }
 }
