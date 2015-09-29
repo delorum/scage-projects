@@ -51,7 +51,7 @@ object MTTest extends ScageScreenAppMT("MT Test", 640, 480){
       backgroundColor = BLACK
       run_screen2 = false
     }*/
-    Thread.sleep(100)
+    //Thread.sleep(100)
   }
 
   backgroundColor = BLACK
