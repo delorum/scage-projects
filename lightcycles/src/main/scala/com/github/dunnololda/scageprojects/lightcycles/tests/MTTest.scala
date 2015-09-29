@@ -19,10 +19,14 @@ object MTTest extends ScageScreenAppMT("MT Test", 640, 480){
   key(KEY_8, onKeyDown = {keys_buf += 8; if(keys_buf.length > keys_buf_len) keys_buf.remove(0)})
   key(KEY_9, onKeyDown = {keys_buf += 9; if(keys_buf.length > keys_buf_len) keys_buf.remove(0)})
   key(KEY_0, onKeyDown = {keys_buf += 0; if(keys_buf.length > keys_buf_len) keys_buf.remove(0)})
-  
+  key(KEY_X, onKeyDown = {
+    Screen2.run()
+    backgroundColor = BLACK
+  })
+
   key(KEY_Q, onKeyDown = if(keyPressed(KEY_RCONTROL) || keyPressed(KEY_LCONTROL)) stopApp())
 
-  private var run_screen2 = false
+  //private var run_screen2 = false
 
   leftMouse(onBtnDown = m => {
     if(coordOnRectCentered(m, Vec(windowWidth/2, 30), 100, 40)) {
@@ -95,6 +99,9 @@ object Screen2 extends Screen("Screen 2") with ActorSingleController {
   key(KEY_8, onKeyDown = {keys_buf += 8; if(keys_buf.length > keys_buf_len) keys_buf.remove(0)})
   key(KEY_9, onKeyDown = {keys_buf += 9; if(keys_buf.length > keys_buf_len) keys_buf.remove(0)})
   key(KEY_0, onKeyDown = {keys_buf += 0; if(keys_buf.length > keys_buf_len) keys_buf.remove(0)})
+  key(KEY_X, onKeyDown = {
+    stop()
+  })
 
   key(KEY_Q, onKeyDown = if(keyPressed(KEY_RCONTROL) || keyPressed(KEY_LCONTROL)) stopApp())
 
