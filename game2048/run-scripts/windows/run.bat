@@ -1,0 +1,1 @@
+java -Dscage.properties=${scageproperties} -Djava.library.path=natives -Dfile.encoding=UTF-8 -jar lib/${artifactId}-${version}.jar
