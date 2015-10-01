@@ -61,7 +61,7 @@ object Snake extends ScageScreenApp("Snake") {
   }
 
   def deployNewPart() {
-    action(game_speed) {
+    actionStaticPeriod(game_speed) {
       val random_point = tracer.randomPoint()
       if(tracer.tracesInPoint(random_point).isEmpty) {
         tracer.addTrace(random_point, new SnakePart)

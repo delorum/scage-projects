@@ -12,10 +12,10 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <scala.version>2.10.1</scala.version>
-    <lwjgl.version>2.8.2</lwjgl.version>
+    <scala.version>2.10.4</scala.version>
+    <lwjgl.version>2.9.3</lwjgl.version>
     <scage.scala.version>2.10</scage.scala.version>
-    <scage.version>1.0</scage.version>
+    <scage.version>11.4</scage.version>
     <src.dir>src</src.dir>
   </properties>
 

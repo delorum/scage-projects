@@ -166,7 +166,7 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
   }
 
   // AI машины, корректирующий траекторию. Вызывается каждые 100 мсек
-  screen.action(100) {
+  screen.actionStaticPeriod(100) {
     val moment = AICarTestArea.msecsFromAppStart
     if(_path.nonEmpty) {
       val need_rotation = def_vector.signedDeg(_path.head - car_center)
@@ -425,7 +425,7 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
   }
 
   // повороты руля
-  screen.action(5) {
+  screen.actionStaticPeriod(5) {
     if(_front_wheels_rotation < need_wheels_rotation &&
       need_wheels_rotation - _front_wheels_rotation > 1) {
       frontWheelsRotation += 1
@@ -438,12 +438,12 @@ class AICar(val index:String, start_pos:Vec, start_rotation:Float, screen:Screen
   }
 
   // если требуется увеличить скорость
-  screen.action(50) {
+  screen.actionStaticPeriod(50) {
     if(_speed < need_speed) _speed += 0.5f
   }
 
   // если требуется торможение
-  screen.action(25) {
+  screen.actionStaticPeriod(25) {
     if(_speed > need_speed) {
       _speed -= 1
       //if(_speed < 0) _speed = 0

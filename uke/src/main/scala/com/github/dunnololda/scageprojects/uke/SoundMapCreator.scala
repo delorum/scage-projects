@@ -14,7 +14,7 @@ object SoundMapCreator extends ScageScreenApp("Sound Map Creator", 800, 600) {
     pauseOff()
   }
 
-  action(100) {
+  actionStaticPeriod(100) {
     time += 100
     SoundStore.get().poll(0)
   }

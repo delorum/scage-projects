@@ -7,7 +7,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
-  private val map_name = "map2.txt"
+  private val map_name = "protvino.txt"
   loadMap(map_name)
 
   //val seconds = 5
@@ -91,7 +91,7 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
   rotationPoint = ai_car.carCenter
   rotationAngleDeg = -ai_car.rotation
 
-  action(1000) {
+  actionStaticPeriod(1000) {
     cars.foreach(generatePathForCar)
   }
   
@@ -114,7 +114,7 @@ object AICarTestArea extends ScageScreenApp("AI Car Test Area", 800, 600) {
   }
   updateStates()
   
-  action(100) {
+  actionStaticPeriod(100) {
     updateStates()
 
     cars.combinations(2).foreach {
