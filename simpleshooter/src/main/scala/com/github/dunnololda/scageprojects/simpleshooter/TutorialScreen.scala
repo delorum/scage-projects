@@ -275,7 +275,7 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
   })
 
   // update state
-  action(10) {
+  actionStaticPeriod(10) {
     players.values.foreach(p => {
       p.ds.headOption.foreach(d => {
         if(d.dist2(p.coord) > human_speed*human_speed) {

@@ -12,9 +12,9 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <scala.version>2.10.1</scala.version>
-    <lwjgl.version>2.8.2</lwjgl.version>
-    <scage.version>10.2</scage.version>
+    <scala.version>2.10.4</scala.version>
+    <lwjgl.version>2.9.3</lwjgl.version>
+    <scage.version>11.4</scage.version>
     <src.dir>src</src.dir>
   </properties>
 
@@ -48,8 +48,8 @@
   <dependencies>
     <dependency>
       <groupId>com.github.dunnololda</groupId>
-      <artifactId>simple-net</artifactId>
-      <version>1.4</version>
+      <artifactId>simple-net_2.10</artifactId>
+      <version>2.1</version>
     </dependency>
 
     <dependency>

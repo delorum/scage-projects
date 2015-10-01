@@ -1,12 +1,26 @@
 package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.scage.ScageLib._
+import play.api.libs.json._
 import collection.mutable
 import com.github.dunnololda.simplenet._
 import scala.collection.mutable.ArrayBuffer
 
+case class TacticShooterClientData(cps_infos_received:Option[Boolean],
+                                   gs_update_received:Option[Boolean],
+                                   gameslist:Option[Boolean],
+                                   join:Option[JoinGameData],
+                                   create:Option[Boolean],
+                                   startgame:Option[Boolean],
+                                   pn:Option[Int],
+                                   d:Option[Vec],
+                                   pov:Option[Vec], 
+                                   sendmap:Option[Boolean], 
+                                   cleardest:Option[Boolean],
+                                   ft:Option[Int])
+
 class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simple Shooter Client") {
-  private val client = UdpNetClient(address = host, port = port, ping_timeout= 1000, check_timeout = 5000)
+  private val client = UdpNetClient(address = host, port = port, ping_timeout= 1000, check_if_offline_timeout = 5000)
 
   private val states = mutable.ArrayBuffer[TacticServerData]()
 
@@ -14,7 +28,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   private var game_stats_pause_interface = ArrayBuffer[() => String]()
   private var skip_stats_rows = 0
 
-  private val builder = State.newBuilder
+  private val fields = ArrayBuffer[(String, JsValue)]()
 
   private var new_destination:Option[Vec] = None
   private var new_pov:Option[Vec] = None
@@ -150,7 +164,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
     map.walls.isEmpty ||
     clear_destinations ||
     send_fire_toggle.nonEmpty ||
-    builder.nonEmpty
+    fields.nonEmpty
   }
 
   private def selectPlayer(number:Int) {
@@ -257,55 +271,77 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
     if(!pov_fixed) new_pov = Some(absCoord(m))
   })
 
+  implicit val VecJson_reader = {
+    case class VecJson(x:Float, y:Float)
+    import play.api.libs.functional.syntax._
+    (
+      (__ \ "x").read[Float] and
+      (__ \ "y").read[Float]
+    )(VecJson.apply _).map(z => Vec(z.x, z.y))
+  }
+  implicit val ControlPointData_reader = Json.reads[ControlPointData]
+  implicit val GameInfoData_reader = Json.reads[GameInfoData]
+  implicit val Wall_reader = Json.reads[Wall]
+  implicit val GameMapData_reader = Json.reads[GameMapData]
+  implicit val TacticServerPlayerData_reader = Json.reads[TacticServerPlayerData]
+  implicit val TacticServerBulletData_reader = Json.reads[TacticServerBulletData]
+  implicit val PlayerStatsData_reader = Json.reads[PlayerStatsData]
+  implicit val TeamStatsData_reader = Json.reads[TeamStatsData]
+  implicit val GameStatsData_reader = Json.reads[GameStatsData]
+  implicit val TacticShooterServerData_reader = Json.reads[TacticShooterServerData]
+
   // receive data
-  actionIgnorePause(10) {
+  actionStaticPeriodIgnorePause(10) {
     client.newEvent {
-      case NewUdpServerData(message) =>
-        //println(message.toJsonString)
-        //println(game_stats)
-        if(message.contains("gameentered")) is_game_entered = true
-        if(message.contains("fire_toggle_set")) send_fire_toggle = None
-        if(message.contains("dests_cleared")) clear_destinations = false
-        message.value[State]("map").foreach(m => {
-          //println(m)
-          map = gameMap(m)
-          val walls_dl = displayList {
-            map.walls.foreach(wall => {
-              drawLine(wall.from, wall.to)
-              /*drawCircle(wall.from, near_wall_area, GRAY)
-              drawCircle(wall.to, near_wall_area, GRAY)*/
+      case NewUdpServerData(received_data) =>
+        received_data.validate[TacticShooterServerData] match {
+          case JsSuccess(data, _) =>
+            if(data.gameentered.exists(x => x)) is_game_entered = true
+            if(data.fire_toggle_set.exists(x => x)) send_fire_toggle = None
+            if(data.dests_cleared.exists(x => x)) clear_destinations = false
+            data.map.foreach(m => {
+              //println(m)
+              map = gameMap(m)
+              val walls_dl = displayList {
+                map.walls.foreach(wall => {
+                  drawLine(wall.from, wall.to)
+                  /*drawCircle(wall.from, near_wall_area, GRAY)
+                  drawCircle(wall.to, near_wall_area, GRAY)*/
+                })
+              }
+              val safe_zones_dl = displayList {
+                map.safe_zones.foreach(sz => {
+                  drawSlidingLines(sz)
+                })
+              }
+              val edges_dl = displayList {
+                drawSlidingLines(map_edges)
+              }
+              map_display_lists = Some(List((walls_dl, () => checkPausedColor(WHITE)),
+                (safe_zones_dl, () => checkPausedColor(GREEN)),
+                (edges_dl, () => checkPausedColor(GRAY))))
             })
-          }
-          val safe_zones_dl = displayList {
-            map.safe_zones.foreach(sz => {
-              drawSlidingLines(sz)
+            data.gs.foreach(m => {
+              game_stats = Some(gameStats(m))
+              if(!is_game_started && game_stats.map(_.game_start_moment_sec).getOrElse(None).nonEmpty) is_game_started = true
+              //println(game_stats.get)
+              buildGameStatsPauseInterface()
+              fields += ("gs_update_received" -> JsBoolean(value = true))
             })
-          }
-          val edges_dl = displayList {
-            drawSlidingLines(map_edges)
-          }
-          map_display_lists = Some(List((walls_dl, () => checkPausedColor(WHITE)),
-                                        (safe_zones_dl, () => checkPausedColor(GREEN)),
-                                        (edges_dl, () => checkPausedColor(GRAY))))
-        })
-        message.value[State]("gs").foreach(m => {
-          game_stats = Some(gameStats(m))
-          if(!is_game_started && game_stats.map(_.game_start_moment_sec).getOrElse(None).nonEmpty) is_game_started = true
-          //println(game_stats.get)
-          buildGameStatsPauseInterface()
-          builder += ("gs_update_received" -> true)
-        })
-        if(message.contains("cps_infos")) {
-          controlPointInfos(message).foreach {
-            case ControlPointInfo(number, team, control_time) => map.control_points.get(number).foreach(x => {
-              x.team = team
-              x.control_start_time_sec = control_time
-            })
-          }
-          builder += ("cps_infos_received" -> true)
+            if(data.cps_infos.nonEmpty) {
+              controlPointInfos(data.cps_infos.get).foreach {
+                case ControlPointInfo(number, team, control_time) => map.control_points.get(number).foreach(x => {
+                  x.team = team
+                  x.control_start_time_sec = control_time
+                })
+              }
+              fields += ("cps_infos_received" -> JsBoolean(value = true))
+            }
+            val sd = tacticServerData(data, System.currentTimeMillis())
+            states += sd
+          case JsError(error) =>
+            println(s"[client] failed to parse server data $received_data: $error")
         }
-        val sd = tacticServerData(message, System.currentTimeMillis())
-        states += sd
       case UdpServerConnected =>
         is_connected = true
       case UdpServerDisconnected =>
@@ -314,7 +350,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   }
 
   // update state
-  actionIgnorePause(10) {
+  actionStaticPeriodIgnorePause(10) {
     current_state = optInterpolatedState
     if(dir.notZero) {
       val new_center = _center + dir.n*5f
@@ -325,7 +361,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
 
 
 
-  actionIgnorePause(1000) {
+  actionStaticPeriodIgnorePause(1000) {
     if(!is_game_over) {
       game_stats match {
         case Some(GameStats(_, Some(game_start_moment_sec), _)) =>
@@ -346,33 +382,33 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   }
 
   // send data
-  actionIgnorePause(50) {
+  actionStaticPeriodIgnorePause(50) {
     if(!is_game_entered) {
       join_game match {
         case Some(jg) =>
-          client.send(State("join" -> jg.netState))
+          client.send(Json.obj("join" -> jg.netState))
         case None =>
-          client.send(State("create" -> true))
+          client.send(Json.obj("create" -> true))
       }
     } else {
-      if(!is_game_started && want_start_game) builder += ("startgame" -> true)
+      if(!is_game_started && want_start_game) fields += ("startgame" -> JsBoolean(value = true))
       if(inputChanged) {
-        builder += ("pn" -> selected_player)
+        fields += ("pn" -> JsNumber(selected_player))
         new_destination.foreach(nd => {
-          builder += ("d" -> State("x" -> nd.x, "y" -> nd.y))
+          fields += ("d" -> Json.obj("x" -> nd.x, "y" -> nd.y))
           new_destination = None
         })
         new_pov.foreach(nd => {
-          builder += ("pov" -> State("x" -> nd.x, "y" -> nd.y))
+          fields += ("pov" -> Json.obj("x" -> nd.x, "y" -> nd.y))
           new_pov = None
         })
-        if(map.isEmpty) builder += ("sendmap" -> true)
+        if(map.isEmpty) fields += ("sendmap" -> JsBoolean(value = true))
         if(clear_destinations) {
-          builder += ("cleardest" -> true)
+          fields += ("cleardest" -> JsBoolean(value = true))
         }
-        send_fire_toggle.foreach(ft => builder += ("ft" -> ft))
-        client.send(builder.toState)
-        builder.clear()
+        send_fire_toggle.foreach(ft => fields += ("ft" -> JsNumber(ft)))
+        client.send(JsObject(fields.toList))
+        fields.clear()
       }
     }
   }

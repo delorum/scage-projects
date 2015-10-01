@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects
 import java.io.FileOutputStream
 
 import com.github.dunnololda.scage.ScageLib._
+import play.api.libs.json._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -54,13 +55,13 @@ package object simpleshooter {
   }
 
   case class Client(id:Long, var coord:Vec, var health:Int, var wins:Int, var deaths:Int, var visible:Boolean) {
-    def netState:State = State("id" -> id,
-      "x"  -> coord.x,
-      "y"  -> coord.y,
-      "hp" -> health,
-      "w"  -> wins,
-      "d"  -> deaths,
-      "v" -> visible)
+    def netState:JsObject = Json.obj(
+      "id" -> id,
+      "coord" -> Json.obj("x" -> coord.x, "y" -> coord.y),
+      "health" -> health,
+      "wins"  -> wins,
+      "deaths"  -> deaths,
+      "visible" -> visible)
   }
 
   def client(message:State):Client = {
@@ -96,10 +97,21 @@ package object simpleshooter {
     ServerData(you, others, your_bullets, other_bullets)
   }
 
+  def serverData(data:ShooterServerData):Option[ServerData] = {
+    for {
+      you <- data.you
+      others <- data.others
+      your_bullets <- data.your_bulltes
+      other_bullets <- data.other_bullets
+    } yield ServerData(you, others, your_bullets, other_bullets)
+  }
+
   case class Bullet(dir:Vec, shooter:Client, var coord:Vec) {
     var count:Int = bullet_count
-    def netState = State("x" -> coord.x, "y" -> coord.y)
+    def netState = Json.obj("x" -> coord.x, "y" -> coord.y)
   }
+
+  case class TacticServerPlayerData(id:Long, n:Int, t:Int, nit:Int, c:Vec, ds:List[Vec], p:Vec, bs:Int, r:Boolean, hp:Int, w:Int, d:Int)
 
   case class TacticServerPlayer(
                           id:Long,
@@ -143,21 +155,19 @@ package object simpleshooter {
     def isDead = health <= 0
     def isAlive = health > 0
 
-    def netState:State = State(
-      "id" -> id,
-      "n" -> number,
-      "t" -> team,
-      "nit" -> number_in_team,
-      "x"  -> coord.x,
-      "y"  -> coord.y,
-      "ds"  -> ds.toList.map(d => State("x" -> d.x, "y" -> d.y)),
-      "px" -> pov.x,
-      "py" -> pov.y,
-      "bs" -> _bullets,
-      "r" -> isReloading,
-      "hp" -> health,
-      "w"  -> wins,
-      "d"  -> deaths)
+    def netState:JsObject = Json.obj(
+      "id"    -> id,
+      "n"     -> number,
+      "t"     -> team,
+      "nit"   -> number_in_team,
+      "c" -> Json.obj("x"  -> coord.x, "y"  -> coord.y),
+      "ds"    -> ds.toList.map(d => Json.obj("x" -> d.x, "y" -> d.y)),
+      "p"     -> Json.obj("x" -> pov.x, "y" -> pov.y),
+      "bs"    -> _bullets,
+      "r"     -> isReloading,
+      "hp"    -> health,
+      "w"     -> wins,
+      "d"     -> deaths)
   }
 
   case class TacticClientPlayer(
@@ -195,6 +205,23 @@ package object simpleshooter {
     )
   }
 
+  def tacticClientPlayer(message:TacticServerPlayerData):TacticClientPlayer = {
+    TacticClientPlayer(
+      id = message.id,
+      number = message.n,
+      team = message.t,
+      number_in_team = message.nit,
+      coord = message.c,
+      destinations = message.ds,
+      pov = message.p,
+      bullets = message.bs,
+      is_reloading = message.r,
+      health = message.hp,
+      wins = message.w,
+      deaths = message.d
+    )
+  }
+
   case class TacticClientData(player_num:Int, destination:Option[Vec], pov: Option[Vec], fire_toggle:Option[Int], clear_destinations:Boolean)
 
   def tacticClientData(message:State):TacticClientData = {
@@ -204,6 +231,22 @@ package object simpleshooter {
       pov = message.value[State]("pov").map(x => vec(x, "x", "y")),
       fire_toggle = message.value[Int]("ft"),
       clear_destinations = message.value[Boolean]("cleardest").getOrElse(false)
+    )
+  }
+
+  def tacticClientData(message:TacticShooterClientData):Option[TacticClientData] = {
+    for {
+      player_num <- message.pn
+      destination = message.d
+      pov = message.pov
+      fire_toggle = message.ft
+      clear_destinations = message.cleardest.getOrElse(false)
+    } yield TacticClientData(
+      player_num,
+      destination,
+      pov,
+      fire_toggle,
+      clear_destinations
     )
   }
 
@@ -223,8 +266,16 @@ package object simpleshooter {
     TacticServerData(yours, others, your_bullets, other_bullets, receive_moment)
   }
 
+  def tacticServerData(message:TacticShooterServerData, receive_moment:Long):TacticServerData = {
+    val yours = message.yours.getOrElse(Nil).map(m => tacticClientPlayer(m))
+    val others = message.others.getOrElse(Nil).map(m => tacticClientPlayer(m))
+    val your_bullets = message.your_bullets.getOrElse(Nil).map(m => tacticClientBullet(m))
+    val other_bullets = message.other_bullets.getOrElse(Nil).map(m => tacticClientBullet(m))
+    TacticServerData(yours, others, your_bullets, other_bullets, receive_moment)
+  }
+
   case class Wall(from:Vec, to:Vec) {
-    val netState = State("fromx" -> from.x, "fromy" -> from.y, "tox" -> to.x, "toy" -> to.y)
+    val netState = Json.obj("from" -> Json.obj("x" -> from.x, "y" -> from.y), "to" -> Json.obj("x" -> to.x, "y" -> to.y))
   }
 
   def wall(message:State):Wall = {
@@ -235,15 +286,16 @@ package object simpleshooter {
     message.value[List[State]]("walls").get.map(x => wall(x))
   }
 
+  case class TacticServerBulletData(id:Long, pid:Long, pn:Int, pt:Int, c:Vec)
+
   case class TacticServerBullet(id:Long, dir:Vec, shooter:TacticServerPlayer, var prev_coord:Vec, var coord:Vec) {
     var count:Int = bullet_count
-    def netState = State(
+    def netState = Json.obj(
       "id" -> id,
       "pid" -> shooter.id,
       "pn" -> shooter.number,
       "pt" -> shooter.team,
-      "x" -> coord.x,
-      "y" -> coord.y
+      "c" -> Json.obj("x" -> coord.x, "y" -> coord.y)
     )
   }
 
@@ -258,8 +310,19 @@ package object simpleshooter {
       coord = vec(message, "x", "y"))
   }
 
+  def tacticClientBullet(message:TacticServerBulletData):TacticClientBullet = {
+    TacticClientBullet(
+      id = message.id,
+      player_id = message.pid,
+      player_number = message.pn,
+      player_team = message.pt,
+      coord = message.c)
+  }
+
+  case class PlayerStatsData(t:Int, nit:Int, n:Int, w:Int, d:Int)
+
   case class PlayerStats(team:Int, number_in_team:Int, number:Int, wins:Int, deaths:Int) {
-    val netState = State(
+    val netState = Json.obj(
       "t"   -> team,
       "nit" -> number_in_team,
       "n"   -> number,
@@ -278,8 +341,20 @@ package object simpleshooter {
     )
   }
 
+  def playerStats(message:PlayerStatsData):PlayerStats = {
+    PlayerStats(
+      team           = message.t,
+      number_in_team = message.nit,
+      number         = message.n,
+      wins           = message.w,
+      deaths         = message.d
+    )
+  }
+
+  case class TeamStatsData(t:Int, tp:Int, ps:List[PlayerStatsData])
+
   case class TeamStats(team:Int, team_points:Int, players_stats:List[PlayerStats]) {
-    val netState = State(
+    val netState = Json.obj(
       "t" -> team,
       "tp" -> team_points,
       "ps" -> players_stats.map(_.netState)
@@ -294,12 +369,22 @@ package object simpleshooter {
     )
   }
 
+  def teamStats(message:TeamStatsData):TeamStats = {
+    TeamStats(
+      team = message.t,
+      team_points = message.tp,
+      players_stats = message.ps.map(x => playerStats(x))
+    )
+  }
+
+  case class GameStatsData(ts:List[TeamStatsData], gs:Option[Long], yt:Int)
+
   case class GameStats(teams_stats:List[TeamStats], game_start_moment_sec:Option[Long], your_team:Int) {
-    private val builder = State.newBuilder
-    builder += ("ts" -> teams_stats.map(_.netState))
-    game_start_moment_sec.foreach(gs => builder += ("gs" -> gs))
-    builder += ("yt" -> your_team)
-    val netState = builder.toState
+    private val fields = ArrayBuffer[(String, JsValue)]()
+    fields += ("ts" -> JsArray(teams_stats.map(_.netState)))
+    game_start_moment_sec.foreach(gs => fields += ("gs" -> JsNumber(gs)))
+    fields += ("yt" -> JsNumber(your_team))
+    val netState = JsObject(fields)
   }
 
   def gameStats(message:State):GameStats = {
@@ -307,6 +392,14 @@ package object simpleshooter {
       teams_stats = message.value[List[State]]("ts").getOrElse(Nil).map(x => teamStats(x)),
       game_start_moment_sec = message.value[Long]("gs"),
       your_team = message.value[Int]("yt").get
+    )
+  }
+
+  def gameStats(message:GameStatsData):GameStats = {
+    GameStats(
+      teams_stats = message.ts.map(x => teamStats(x)),
+      game_start_moment_sec = message.gs,
+      your_team = message.yt
     )
   }
 
@@ -346,21 +439,25 @@ package object simpleshooter {
     }
   }
 
+  case class GameInfoData(gid:Int, t1p:Int, t2p:Int)
+
   case class GameInfo(game_id:Int, team1_players:Int, team2_players:Int) {
     val players = team1_players+team2_players
-    val netState = State(
+    val netState = Json.obj(
       "gid" -> game_id,
       "t1p" -> team1_players,
       "t2p" -> team2_players
     )
   }
 
+  case class JoinGameData(gid:Int, t:Option[Int])
+
   case class JoinGame(game_id:Int, team:Option[Int]) {
     val netState = {
-      val builder = State.newBuilder
-      builder += ("gid" -> game_id)
-      team.foreach(t => builder += ("t" -> t))
-      builder.toState
+      val fields = ArrayBuffer[(String, JsValue)]()
+      fields += ("gid" -> JsNumber(game_id))
+      team.foreach(t => fields += ("t" -> JsNumber(t)))
+      JsObject(fields)
     }
   }
 
@@ -371,15 +468,32 @@ package object simpleshooter {
     )
   }
 
+  def joinGame(message:JoinGameData):JoinGame = {
+    JoinGame(
+      game_id = message.gid,
+      team    =  message.t
+    )
+  }
+
   def gameInfo(message:State):GameInfo = {
     GameInfo(message.value[Int]("gid").get,
              message.value[Int]("t1p").get,
              message.value[Int]("t2p").get)
   }
 
+  def gameInfo(message:GameInfoData):GameInfo = {
+    GameInfo(message.gid, message.t1p, message.t2p)
+  }
+
   def gamesList(message:State):List[GameInfo] = {
     message.value[List[State]]("gameslist").getOrElse(Nil).map(m => gameInfo(m))
   }
+
+  def gamesList(message:TacticShooterServerData):List[GameInfo] = {
+    message.gameslist.map(gs => gs.map(m => gameInfo(m))).getOrElse(Nil)
+  }
+  
+  case class ControlPointData(n:Int, t:Option[Int], cst:Long, area:List[Vec])
 
   case class ControlPoint(number:Int, var team:Option[Int], var control_start_time_sec:Long, area:List[Vec]) {
     val area_center = Vec(area.map(_.x).sum/area.length, area.map(_.y).sum/area.length)
@@ -392,20 +506,12 @@ package object simpleshooter {
     }
 
     def netState = {
-      val builder = State.newBuilder
-      builder += ("n" -> number)
-      if(team.nonEmpty) builder += ("t" -> team.get)
-      builder += ("cst" -> control_start_time_sec)
-      builder += ("a" -> area.map(p => State("x" -> p.x, "y" -> p.y)))
-      builder.toState
-    }
-
-    def infoState = {
-      val builder = State.newBuilder
-      builder += ("n" -> number)
-      if(team.nonEmpty) builder += ("t" -> team.get)
-      builder += ("cst" -> control_start_time_sec)
-      builder.toState
+      val fields = ArrayBuffer[(String, JsValue)]()
+      fields += ("n" -> JsNumber(number))
+      if(team.nonEmpty) fields += ("t" -> JsNumber(team.get))
+      fields += ("cst" -> JsNumber(control_start_time_sec))
+      fields += ("area" -> JsArray(area.map(p => Json.obj("x" -> p.x, "y" -> p.y))))
+      JsObject(fields)
     }
   }
 
@@ -418,6 +524,15 @@ package object simpleshooter {
     )
   }
 
+  def controlPoint(message:ControlPointData):ControlPoint = {
+    ControlPoint(
+      number = message.n,
+      team = message.t,
+      control_start_time_sec = message.cst,
+      area = message.area
+    )
+  }
+
   case class ControlPointInfo(number:Int, team:Option[Int], control_start_time:Long)
 
   def controlPointInfos(message:State):List[ControlPointInfo] = {
@@ -426,6 +541,16 @@ package object simpleshooter {
         number = x.value[Int]("n").get,
         team = x.value[Int]("t"),
         control_start_time = x.value[Long]("cst").get
+      )
+    })
+  }
+
+  def controlPointInfos(message:List[ControlPointData]):List[ControlPointInfo] = {
+    message.map(x => {
+      ControlPointInfo(
+        number = x.n,
+        team = x.t,
+        control_start_time = x.cst
       )
     })
   }
@@ -464,6 +589,20 @@ package object simpleshooter {
       path_buffer.toList
     }
   }
+
+  case class TacticShooterServerData(gameslist:Option[List[GameInfoData]],
+                                     gameentered:Option[Boolean],
+                                     map:Option[GameMapData],
+                                     dests_cleared:Option[Boolean],
+                                     fire_toggle_set:Option[Boolean],
+                                     yours:Option[List[TacticServerPlayerData]],
+                                     others:Option[List[TacticServerPlayerData]], 
+                                     your_bullets:Option[List[TacticServerBulletData]], 
+                                     other_bullets:Option[List[TacticServerBulletData]],
+                                     cps_infos:Option[List[ControlPointData]],
+                                     gs:Option[GameStatsData])
+
+  case class GameMapData(ws:List[Wall], szs:List[List[Vec]], cps:List[ControlPointData])
 
   case class GameMap(walls:List[Wall] = Nil, safe_zones:List[List[Vec]] = Nil, control_points:Map[Int, ControlPoint] = Map()) {
     def isEmpty:Boolean = walls.isEmpty && safe_zones.isEmpty && control_points.isEmpty
@@ -507,7 +646,7 @@ package object simpleshooter {
       } else if(safe_zones.length == 0) {
         randomHumanCoordInsideArea(safe_zones.head)
       } else {
-        val team1_area = safe_zones(0)
+        val team1_area = safe_zones.head
         val team2_area = safe_zones(1)
         team match {
           case 1 => randomHumanCoordInsideArea(team1_area)
@@ -557,9 +696,9 @@ package object simpleshooter {
       }
     }
 
-    val netState = State(
-      "ws" -> walls.map(w => w.netState).toList,
-      "szs" -> safe_zones.map(sz => sz.map(p => State("x" -> p.x, "y" -> p.y))),
+    val netState = Json.obj(
+      "ws" -> walls.map(w => w.netState),
+      "szs" -> safe_zones.map(sz => sz.map(p => Json.obj("x" -> p.x, "y" -> p.y))),
       "cps" -> control_points.map(cp => cp._2.netState)
     )
   }
@@ -658,6 +797,27 @@ package object simpleshooter {
       control_points = message.value[List[State]]("cps").getOrElse(Nil).map(m => {
         val cp = controlPoint(m)
         (cp.number, cp)
+      }).toMap
+    )
+  }
+
+  def gameMap(mapData:MapData):GameMap = {
+    GameMap(
+      walls = mapData.ws,
+      safe_zones = mapData.szs,
+      control_points = mapData.cps.map(cp => {
+        (cp.number, cp)
+      }).toMap
+    )
+  }
+
+  def gameMap(mapData:GameMapData):GameMap = {
+    GameMap(
+      walls = mapData.ws,
+      safe_zones = mapData.szs,
+      control_points = mapData.cps.map(cpd => {
+        val cp = controlPoint(cpd)
+        (cp.number,  cp)
       }).toMap
     )
   }
