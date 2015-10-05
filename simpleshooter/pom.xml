@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.github.dunnololda.scageprojects</groupId>
   <artifactId>simpleshooter</artifactId>
-  <version>1.6</version>
+  <version>1.7</version>
   <inceptionYear>2013</inceptionYear>
 
   <name>Simple Shooter</name>
@@ -141,6 +141,7 @@
                 <arg>-deprecation</arg>
                 <arg>-feature</arg>
                 <arg>-Yinline-warnings</arg>
+                <!--<arg>-target:jvm-1.7</arg>-->
             </args>
         </configuration>
       </plugin>

@@ -2,7 +2,7 @@ package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.scage.ScageLib._
 import play.api.libs.json._
-import collection.mutable
+import scala.collection.mutable
 import com.github.dunnololda.simplenet._
 import scala.collection.mutable.ArrayBuffer
 
@@ -46,6 +46,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   private var map_display_lists:Option[List[(Int, () => ScageColor)]] = None
 
   private var current_state:Option[TacticServerData] = None
+  private val others_last_seen = mutable.HashMap[(Int, Int, Int), Vec]()  // team, number of group in team, number of member in group
 
   private val fire_toggles = mutable.HashMap[Int, Int]()
   private def fireToggle = fire_toggles.getOrElseUpdate(selected_player, 0)
@@ -90,7 +91,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
     val TacticServerData(third_yours, third_others, third_your_bullets, third_other_bullets, third_receive_moment) = third
     val TacticServerData(second_yours, second_others, second_your_bullets, second_other_bullets, _) = second
     val result_yours = third_yours.map(ty => {
-      second_yours.find(_.number == ty.number) match {
+      second_yours.find(_.number_of_fighter_in_group == ty.number_of_fighter_in_group) match {
         case Some(sy) =>
           ty.copy(
             coord = ty.coord + (sy.coord - ty.coord)*(System.currentTimeMillis() - third_receive_moment)/100f
@@ -99,7 +100,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
       }
     })
     val result_others = third_others.map(to => {
-      second_others.find(x => x.id == to.id && x.number == to.number) match {
+      second_others.find(x => x.id == to.id && x.number_of_fighter_in_group == to.number_of_fighter_in_group) match {
         case Some(so) =>
           to.copy(
             coord = to.coord + (so.coord - to.coord)*(System.currentTimeMillis() - third_receive_moment)/100f
@@ -147,15 +148,20 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
 
   private def ourPlayerColor(player:TacticClientPlayer, is_selected:Boolean):ScageColor = {
     if(on_pause) DARK_GRAY
-    else if(player.isDead) GRAY
+    else if(player.isDead) WHITE
     else if(is_selected) YELLOW
     else GREEN
   }
 
   private def enemyPlayerColor(player:TacticClientPlayer):ScageColor = {
     if(on_pause) DARK_GRAY
-    else if(player.isDead) GRAY
+    else if(player.isDead) WHITE
     else RED
+  }
+
+  private def lastSeenEnemyPlayerColor:ScageColor = {
+    if(on_pause) DARK_GRAY
+    else GRAY
   }
 
   private def inputChanged:Boolean = {
@@ -352,6 +358,13 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   // update state
   actionStaticPeriodIgnorePause(10) {
     current_state = optInterpolatedState
+    current_state.foreach {
+      case cs =>
+        cs.others.withFilter(player => player.team != cs.yours.head.team).foreach {
+          case enemy =>
+            others_last_seen((enemy.team, enemy.number_of_group_in_team, enemy.number_of_fighter_in_group)) = enemy.coord
+        }
+    }
     if(dir.notZero) {
       val new_center = _center + dir.n*5f
       if(isCoordInsideMapBorders(new_center)) _center = new_center
@@ -443,10 +456,10 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
           }
 
           yours.foreach(you => {
-            if(you.number == selected_player) {
+            if(you.number_of_fighter_in_group == selected_player) {
               val color = ourPlayerColor(you, is_selected = true)
               drawCircle(you.coord, human_size/2, color)
-              print(s"${you.team}.${you.number_in_team+1}.${you.number+1} ${if(you.is_reloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
+              print(s"${you.team}.${you.number_of_group_in_team+1}.${you.number_of_fighter_in_group+1} ${if(you.is_reloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
               you.destinations.foreach(d => drawFilledCircle(d, 3, color))
               if(you.destinations.length > 0) {
                 (you.coord :: you.destinations).sliding(2).foreach {
@@ -496,7 +509,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
               if(map.hitChanceModification(pov_point, you.coord)) {
                 drawCircle(you.coord, human_size/2+3, color)
               }
-              print(s"${you.team}.${you.number_in_team+1}.${you.number+1}  ${if(you.is_reloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
+              print(s"${you.team}.${you.number_of_group_in_team+1}.${you.number_of_fighter_in_group+1}  ${if(you.is_reloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
               you.destinations.foreach(d => drawFilledCircle(d, 3, color))
               if(you.destinations.length > 0) {
                 (you.coord :: you.destinations).sliding(2).foreach {
@@ -527,9 +540,9 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
                 drawCircle(player.coord, human_size/2+3, player_color)
               }
               val info = if(player.team == yours.head.team) {
-                s"${player.team}.${player.number_in_team+1}.${player.number+1} ${if(player.is_reloading) "перезарядка" else player.bullets}"
+                s"${player.team}.${player.number_of_group_in_team+1}.${player.number_of_fighter_in_group+1} ${if(player.is_reloading) "перезарядка" else player.bullets}"
               } else {
-                s"${player.team}.${player.number_in_team+1}.${player.number+1} ${if(player.is_reloading) "перезарядка" else player.bullets} ${
+                s"${player.team}.${player.number_of_group_in_team+1}.${player.number_of_fighter_in_group+1} ${if(player.is_reloading) "перезарядка" else player.bullets} ${
                   (map.chanceToHit(you.coord, you.pov, you.isMoving, player.coord, player.isMoving, player.pov)*100).toInt
                 }%"
               }
@@ -542,6 +555,14 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
               drawLine(player.coord, pov_point2, DARK_GRAY)
               drawCircle(player.coord, human_audibility_radius, DARK_GRAY)
               drawCircle(player.coord, bullet_audibility_radius, DARK_GRAY)
+          }
+          val others_set = others.map(o => (o.team, o.number_of_group_in_team, o.number_of_fighter_in_group)).toSet
+
+          others_last_seen.filterNot(kv => others_set.contains(kv._1)).foreach {
+            case ((team, group, number), last_seen_position) =>
+              drawCircle(last_seen_position, human_size/2, lastSeenEnemyPlayerColor)
+              val info = s"$team.${group+1}.${number+1}"
+              print(info, last_seen_position+number_place, max_font_size/globalScale, lastSeenEnemyPlayerColor, align = "center")
           }
 
           your_bullets.foreach(b => {

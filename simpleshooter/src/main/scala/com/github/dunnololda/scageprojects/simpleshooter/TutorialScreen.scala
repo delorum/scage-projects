@@ -1,8 +1,7 @@
 package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.scage.ScageLib._
-import scala.collection.mutable
-import scala.Some
+
 import scala.collection.mutable.ArrayBuffer
 
 class TutorialScreen extends ScageScreen("Tutorial Screen") {
