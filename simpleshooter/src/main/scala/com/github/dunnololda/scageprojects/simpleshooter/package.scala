@@ -39,7 +39,7 @@ package object simpleshooter {
   lazy val default_window_height = 480
 
   val bullet_size = 3f
-  val pov_angle = 50
+  val pov_angle = 90
   val single_fire_pace = 600 // 600 msec/bullet = 60000 msec / 100 bullet = 100 bullet/min -> AK, single mode
   val rapid_fire_pace = 100 // 100 msec/bullet = 60000 msec / 600 bullet = 600 bullet/min -> AK, rapid mode
   val reload_time = 5000  // 5 sec to swap magazines

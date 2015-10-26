@@ -18,7 +18,7 @@ abstract class PolygonShip(
     math.max(x,y)
   }
 
-  def initState:BodyState = BodyState(
+  val initState:BodyState = BodyState(
     index,
     mass,
     acc = DVec.zero,
@@ -30,5 +30,5 @@ abstract class PolygonShip(
     shape = PolygonShape(points),
     is_static = false)
 
-  def currentState:BodyState = currentBodyState(index).getOrElse(initState)
+  def currentState:MutableBodyState = initState.toMutableBodyState
 }

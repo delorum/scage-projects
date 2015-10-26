@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.{DynamicShape => Phys2dShape, Body => Phys2dBody, StaticBody => Phys2dStaticBody, Collider => Phys2dCollider, BodyList => Phys2dBodyList, _}
+import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.{Body => Phys2dBody, BodyList => Phys2dBodyList, Collider => Phys2dCollider, DynamicShape => Phys2dShape, StaticBody => Phys2dStaticBody, _}
 
 import scala.collection.mutable
 import scala.language.reflectiveCalls
@@ -135,18 +135,18 @@ package object orbitalkiller {
     }
   }
 
-  class Space(val bodies:List[MutableBodyState], val center:DVec, val width:Double, val height:Double) {
-    def this(bodies:List[MutableBodyState], center:DVec) = {
+  class Space(val bodies:Seq[MutableBodyState], val center:DVec, val width:Double, val height:Double) {
+    def this(bodies:Seq[MutableBodyState], center:DVec) = {
       this(bodies, center, {
         val (init_min_x, init_max_x) = {
           bodies.headOption.map(b => {
-            val AABB(c, w, _) = b.body.aabb
+            val AABB(c, w, _) = b.init_aabb
             (c.x - w/2, c.x+w/2)
           }).getOrElse((0.0, 0.0))
         }
         val (min_x, max_x) = bodies.foldLeft((init_min_x, init_max_x)) {
           case ((res_min_x, res_max_x), b) =>
-            val AABB(c, w, _) = b.body.aabb
+            val AABB(c, w, _) = b.init_aabb
             val new_min_x = c.x - w/2
             val new_max_x = c.x + w/2
             (
@@ -158,13 +158,13 @@ package object orbitalkiller {
       }, {
         val (init_min_y, init_max_y) = {
           bodies.headOption.map(b => {
-            val AABB(c, _, h) = b.body.aabb
+            val AABB(c, _, h) = b.init_aabb
             (c.y-h/2, c.y+h/2)
           }).getOrElse((0.0, 0.0))
         }
         val (min_y, max_y) = bodies.foldLeft(init_min_y, init_max_y) {
           case ((res_min_y, res_max_y), b) =>
-            val AABB(c, _, h) = b.body.aabb
+            val AABB(c, _, h) = b.init_aabb
             val new_min_y = c.y - h/2
             val new_max_y = c.y + h/2
             (
@@ -184,19 +184,19 @@ package object orbitalkiller {
 
       val c1 = c + DVec(-w/4, -h/4)
       val aabb1 = AABB(c1, w/2, h/2)
-      val bodies1 = bodies.filter(b => b.body.aabb.aabbCollision(aabb1))
+      val bodies1 = bodies.filter(b => b.init_aabb.aabbCollision(aabb1))
 
       val c2 = c + DVec(-w/4, h/4)
       val aabb2 = AABB(c2, w/2, h/2)
-      val bodies2 = bodies.filter(b => b.body.aabb.aabbCollision(aabb2))
+      val bodies2 = bodies.filter(b => b.init_aabb.aabbCollision(aabb2))
 
       val c3 = c + DVec(w/4, h/4)
       val aabb3 = AABB(c3, w/2, h/2)
-      val bodies3 = bodies.filter(b => b.body.aabb.aabbCollision(aabb3))
+      val bodies3 = bodies.filter(b => b.init_aabb.aabbCollision(aabb3))
 
       val c4 = c + DVec(w/4, -h/4)
       val aabb4 = AABB(c4, w/2, h/2)
-      val bodies4 = bodies.filter(b => b.body.aabb.aabbCollision(aabb4))
+      val bodies4 = bodies.filter(b => b.init_aabb.aabbCollision(aabb4))
 
       List(
         new Space(bodies1, c1, w/2, h/2),
@@ -225,7 +225,7 @@ package object orbitalkiller {
       /*val a_prev_vel = a.vel
       val b_prev_vel = b.vel*/
 
-      val e = /*1*//*0.9*/math.min(a.body.restitution, b.body.restitution)
+      val e = /*1*//*0.9*/math.min(a.restitution, b.restitution)
 
       // radii from centers of masses to contact
       val ra = contact_point - a.coord
@@ -238,7 +238,7 @@ package object orbitalkiller {
         val raCrossN = ra */ normal
         val rbCrossN = rb */ normal
 
-        val invMassSum = a.body.invMass + b.body.invMass + (raCrossN*raCrossN)*a.body.invI + (rbCrossN*rbCrossN)*b.body.invI
+        val invMassSum = a.invMass + b.invMass + (raCrossN*raCrossN)*a.invI + (rbCrossN*rbCrossN)*b.invI
         val  j = (-(1.0f + e) * contactVel)/invMassSum///contact_points.length
         val impulse = normal * j
         a.applyCollisionImpulse(-impulse, ra, _dt)
@@ -248,10 +248,10 @@ package object orbitalkiller {
         val jt = (-(rv*t))/invMassSum///contact_points.length
         if(math.abs(jt) > 0.0001) {
           // Coulumb's law
-          val tangentImpulse = if(math.abs(jt) < j*a.body.staticFriction) {
+          val tangentImpulse = if(math.abs(jt) < j*a.staticFriction) {
             t * jt
           } else {
-            t*j*(-a.body.dynamicFriction)
+            t*j*(-a.dynamicFriction)
           }
           a.applyCollisionImpulse(-tangentImpulse, ra, _dt)
           b.applyCollisionImpulse(tangentImpulse, rb, _dt)
@@ -267,9 +267,9 @@ package object orbitalkiller {
     }
     
     def positionalCorrection() {
-      val correction = math.max(separation - 0.05, 0)/(a.body.invMass + b.body.invMass)*0.4
-      if(!a.body.is_static) a.coord += normal*(-a.body.invMass*correction)
-      if(!b.body.is_static) b.coord += normal*b.body.invMass*correction
+      val correction = math.max(separation - 0.05, 0)/(a.invMass + b.invMass)*0.4
+      if(!a.is_static) a.coord += normal*(-a.invMass*correction)
+      if(!b.is_static) b.coord += normal*b.invMass*correction
     }
 
     def toImmutableForA = Contact(a.toImmutableBodyState,
@@ -317,9 +317,9 @@ package object orbitalkiller {
         }
       }
     }
-    body1.body.shape match {
+    body1.shape match {
       case c1:CircleShape =>
-        body2.body.shape match {
+        body2.shape match {
           case c2:CircleShape =>
             collide(body1.phys2dBody, body2.phys2dBody, circle_circle_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
           case l2:LineShape =>
@@ -331,7 +331,7 @@ package object orbitalkiller {
           case _ => None
         }
       case l1:LineShape =>
-        body2.body.shape match {
+        body2.shape match {
           case c2:CircleShape =>
             collide(body1.phys2dBody, body2.phys2dBody, line_circle_collider).map(gcd => MutableContact(body2, body1, gcd.contact_point, gcd.normal, gcd.separation))
           case l2:LineShape =>
@@ -343,7 +343,7 @@ package object orbitalkiller {
           case _ => None
         }
       case b1:BoxShape =>
-        body2.body.shape match {
+        body2.shape match {
           case c2:CircleShape =>
             collide(body1.phys2dBody, body2.phys2dBody, box_circle_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
           case l2:LineShape =>
@@ -355,7 +355,7 @@ package object orbitalkiller {
           case _ => None
         }
       case p1:PolygonShape =>
-        body2.body.shape match {
+        body2.shape match {
           case c2:CircleShape =>
             collide(body1.phys2dBody, body2.phys2dBody, polygon_circle_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
           case l2:LineShape =>
@@ -396,7 +396,21 @@ package object orbitalkiller {
     def toMutableBodyState = new MutableBodyState(this)
   }
 
-  class MutableBodyState(val body:BodyState) {
+  class MutableBodyState(body:BodyState) {
+    val init_aabb = body.aabb
+    val restitution = body.restitution
+    val invMass = body.invMass
+    val invI = body.invI
+    val staticFriction = body.staticFriction
+    val dynamicFriction = body.dynamicFriction
+    val is_static = body.is_static
+    val shape = body.shape
+    val index = body.index
+    var mass = body.mass
+    val I = body.I
+
+    // ===========================================
+
     var acc:DVec = DVec.zero
     var vel:DVec = body.vel
     var coord:DVec = body.coord
@@ -404,6 +418,20 @@ package object orbitalkiller {
     var ang_acc:Double = 0.0
     var ang_vel:Double = body.ang_vel
     var ang:Double = body.ang
+
+    var dacc:DVec = DVec.zero
+    var dvel:DVec = DVec.zero
+    var d_ang_acc:Double = 0.0
+    var d_ang_vel:Double = 0.0
+
+    def init(): Unit = {
+      acc = DVec.zero
+      ang_acc = 0.0
+      dacc = DVec.zero
+      dvel = DVec.zero
+      d_ang_acc = 0.0
+      d_ang_vel = 0.0
+    }
 
     def aabb = body.shape.aabb(coord, ang)
 
@@ -424,11 +452,6 @@ package object orbitalkiller {
         x
       }
     }
-
-    var dacc:DVec = DVec.zero
-    var dvel:DVec = DVec.zero
-    var d_ang_acc:Double = 0.0
-    var d_ang_vel:Double = 0.0
 
     def applyCollisionImpulse(impulse:DVec, contactVector:DVec, dt:Double) {
       if(!body.is_static) {
@@ -587,6 +610,61 @@ package object orbitalkiller {
     separation:Double,
     contacts:List[net.phys2d.raw.Contact], new_velocity:DVec, new_angular_velocity:Double)
 
+  def mutableSystemEvolution(mutable_system:Seq[(MutableBodyState, Seq[MutableBodyState])],
+                             steps:Int,           // в секундах, может быть больше либо равно base_dt - обеспечивается ускорение времени
+                             base_dt:Double,          // в секундах
+                             force: (MutableBodyState, Seq[MutableBodyState]) => DVec = (body, other_bodies) => DVec.dzero,
+                             torque: (MutableBodyState, Seq[MutableBodyState]) => Double = (body, other_bodies) => 0.0,
+                             enable_collisions:Boolean = true): Unit = {
+    (1 to steps).foreach(i => {
+      mutable_system.foreach(_._1.init())
+
+      val collisions = if(enable_collisions) {for {
+        space <- splitSpace(new Space(mutable_system.map(_._1), DVec.zero), 5, 10)
+        if space.bodies.length > 1
+        (b1, idx) <- space.bodies.zipWithIndex.init
+        b2 <- space.bodies.drop(idx+1)
+        if !b1.is_static || !b2.is_static
+        c <- maybeCollision(b1, b2)
+      } yield c} else Nil
+
+      mutable_system.foreach {case (mb, other_mutable_bodies) =>
+        if(!mb.is_static) {
+          val next_force = force(mb, other_mutable_bodies)
+          val next_acc = next_force * mb.invMass
+          val next_torque = torque(mb, other_mutable_bodies)
+          val next_ang_acc = (next_torque * mb.invI).toDeg // in degrees
+          mb.acc = next_acc
+          mb.vel += next_acc * base_dt * 0.5
+          mb.ang_acc = next_ang_acc
+          mb.ang_vel += next_ang_acc * base_dt * 0.5
+        }
+      }
+
+      // Solve collisions
+      if(collisions.nonEmpty) collisions.foreach(c => c.solveCollision(base_dt))
+
+      // Integrate velocities and forces last part
+      mutable_system.foreach{ case (mb2, other_mutable_bodies2) =>
+        if(!mb2.is_static) {
+          mb2.coord += mb2.vel*base_dt
+          mb2.ang = correctAngle((mb2.ang + mb2.ang_vel*base_dt) % 360)
+          val next_force2 = force(mb2, other_mutable_bodies2)
+          val next_acc2 = next_force2 * mb2.invMass
+          val next_torque2 = torque(mb2, other_mutable_bodies2)
+          val next_ang_acc2 = (next_torque2 * mb2.invI).toDeg // in degrees
+          mb2.acc += next_acc2
+          mb2.vel += next_acc2 * base_dt * 0.5
+          mb2.ang_acc += next_ang_acc2
+          mb2.ang_vel += next_ang_acc2 * base_dt * 0.5
+        }
+      }
+
+      // Correct positions
+      if(collisions.nonEmpty) collisions.foreach(c => c.positionalCorrection())
+    })
+  }
+
   def systemEvolutionFrom(dt: => Double,           // в секундах, может быть больше либо равно base_dt - обеспечивается ускорение времени
                           maxMultiplier: => Int = 1,
                           base_dt:Double,          // в секундах
@@ -611,7 +689,7 @@ package object orbitalkiller {
         if space.bodies.length > 1
         (b1, idx) <- space.bodies.zipWithIndex.init
         b2 <- space.bodies.drop(idx+1)
-        if !b1.body.is_static || !b2.body.is_static
+        if !b1.is_static || !b2.is_static
         c <- maybeCollision(b1, b2)
       } yield c} else Nil
       
@@ -622,13 +700,13 @@ package object orbitalkiller {
       
       // Integrate forces first part
       mb_and_others.foreach {case (mb, other_mutable_bodies) =>
-        if(!mb.body.is_static) {
+        if(!mb.is_static) {
           val b = mb.toImmutableBodyState
           val other_bodies = other_mutable_bodies.map(_.toImmutableBodyState)
           val next_force = force(tacts, b, other_bodies)
-          val next_acc = next_force * mb.body.invMass
+          val next_acc = next_force * mb.invMass
           val next_torque = torque(tacts, b, other_bodies)
-          val next_ang_acc = (next_torque * mb.body.invI).toDeg // in degrees
+          val next_ang_acc = (next_torque * mb.invI).toDeg // in degrees
           mb.acc = next_acc
           mb.vel += next_acc * _dt * 0.5
           mb.ang_acc = next_ang_acc
@@ -641,7 +719,7 @@ package object orbitalkiller {
 
       // Integrate velocities and forces last part
       mb_and_others.foreach{ case (mb2, other_mutable_bodies2) =>
-        if(!mb2.body.is_static) {
+        if(!mb2.is_static) {
           val b2 = mb2.toImmutableBodyState
           mb2.coord += mb2.vel*_dt
           mb2.ang = correctAngle((mb2.ang + mb2.ang_vel*_dt) % 360)
@@ -660,11 +738,11 @@ package object orbitalkiller {
       // Correct positions
       if(collisions.nonEmpty) collisions.foreach(c => c.positionalCorrection())
 
-      val x = collisions.groupBy(mc => mc.a.body.index).map(kv => (kv._1, kv._2.map(_.toImmutableForA)))
-      val y = collisions.groupBy(mc => mc.b.body.index).map(kv => (kv._1, kv._2.map(_.toImmutableForB)))
+      val x = collisions.groupBy(mc => mc.a.index).map(kv => (kv._1, kv._2.map(_.toImmutableForA)))
+      val y = collisions.groupBy(mc => mc.b.index).map(kv => (kv._1, kv._2.map(_.toImmutableForB)))
       val z = (x.keySet ++ y.keySet).map(body_index => (body_index, x.getOrElse(body_index, Nil) ::: y.getOrElse(body_index, Nil))).toMap
 
-      val next_bodies = mutable_bodies.map(mb => mb.toImmutableBodyState.copy(collisions = z.getOrElse(mb.body.index, Nil)))
+      val next_bodies = mutable_bodies.map(mb => mb.toImmutableBodyState.copy(collisions = z.getOrElse(mb.index, Nil)))
 
       (next_tacts, next_bodies)
     }
@@ -902,6 +980,12 @@ package object orbitalkiller {
   }
 
   def equalGravityRadius(planet1:BodyState, planet2:BodyState):Double = {
+    val A = planet1.coord.dist(planet2.coord)
+    val X = planet1.mass/planet2.mass
+    A*math.sqrt(X)/(math.sqrt(X) + 1)
+  }
+
+  def equalGravityRadius(planet1:MutableBodyState, planet2:MutableBodyState):Double = {
     val A = planet1.coord.dist(planet2.coord)
     val X = planet1.mass/planet2.mass
     A*math.sqrt(X)/(math.sqrt(X) + 1)

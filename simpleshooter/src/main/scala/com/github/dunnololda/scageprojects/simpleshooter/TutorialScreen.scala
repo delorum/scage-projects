@@ -109,6 +109,7 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
     "Боец открывает огонь если противник в поле зрения, оружие снято\n" +
       "с предохранителя и ни противник, ни боец не находятся в зоне\n" +
       "возрождения",
+    "Поле зрения бойца - вся область перед ним",
     "Левый шифт и левый контрол переключают режимы стрельбы",
     "Одиночный огонь: пули летят с частотой 100 выстрелов/мин",
     "Автоматический огонь: пули летят с частотой 600 выстрелов/мин",
@@ -408,22 +409,22 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
           drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), color)
           drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), color)
           if(pov_fixed) drawCircle(pov_point, 7, color)
-          val pov_point1 = you.coord + you.pov.rotateDeg(pov_angle) * pov_distance
+          /*val pov_point1 = you.coord + you.pov.rotateDeg(pov_angle) * pov_distance
           val pov_point2 = you.coord + you.pov.rotateDeg(-pov_angle) * pov_distance
           drawLine(you.coord, pov_point1, DARK_GRAY)
-          drawLine(you.coord, pov_point2, DARK_GRAY)
+          drawLine(you.coord, pov_point2, DARK_GRAY)*/
         } else {
           val pov_point = you.coord + you.pov*100f
           drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), color)
           drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), color)
           if(pov_fixed) drawCircle(pov_point, 7, color)
-          val pov_point1 = you.coord + you.pov.rotateDeg(pov_angle) * pov_distance
+          /*val pov_point1 = you.coord + you.pov.rotateDeg(pov_angle) * pov_distance
           val pov_point2 = you.coord + you.pov.rotateDeg(-pov_angle) * pov_distance
           drawLine(you.coord, pov_point1, DARK_GRAY)
-          drawLine(you.coord, pov_point2, DARK_GRAY)
+          drawLine(you.coord, pov_point2, DARK_GRAY)*/
         }
-        drawCircle(you.coord, human_audibility_radius, DARK_GRAY)
-        drawCircle(you.coord, bullet_audibility_radius, DARK_GRAY)
+        //drawCircle(you.coord, human_audibility_radius, DARK_GRAY)
+        //drawCircle(you.coord, bullet_audibility_radius, DARK_GRAY)
         drawLine(you.coord, render_mouse, DARK_GRAY)
         val r = render_mouse.dist(you.coord)
         print(f"${r/human_size}%.2f m", render_mouse, max_font_size/globalScale, DARK_GRAY)
@@ -446,12 +447,12 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
         drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), color)
         drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), color)
         drawCircle(pov_point, 7, color)
-        val pov_point1 = you.coord + you.pov.rotateDeg(pov_angle) * pov_distance
+        /*val pov_point1 = you.coord + you.pov.rotateDeg(pov_angle) * pov_distance
         val pov_point2 = you.coord + you.pov.rotateDeg(-pov_angle) * pov_distance
         drawLine(you.coord, pov_point1, DARK_GRAY)
-        drawLine(you.coord, pov_point2, DARK_GRAY)
-        drawCircle(you.coord, human_audibility_radius, DARK_GRAY)
-        drawCircle(you.coord, bullet_audibility_radius, DARK_GRAY)
+        drawLine(you.coord, pov_point2, DARK_GRAY)*/
+        //drawCircle(you.coord, human_audibility_radius, DARK_GRAY)
+        //drawCircle(you.coord, bullet_audibility_radius, DARK_GRAY)
       }
     })
 
@@ -477,12 +478,12 @@ class TutorialScreen extends ScageScreen("Tutorial Screen") {
           print(info, player.coord+number_place, max_font_size/globalScale, player_color, align = "center")
           drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), player_color)
           drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), player_color)
-          val pov_point1 = player.coord + player.pov.rotateDeg(pov_angle) * pov_distance
+          /*val pov_point1 = player.coord + player.pov.rotateDeg(pov_angle) * pov_distance
           val pov_point2 = player.coord + player.pov.rotateDeg(-pov_angle) * pov_distance
           drawLine(player.coord, pov_point1, DARK_GRAY)
-          drawLine(player.coord, pov_point2, DARK_GRAY)
-          drawCircle(player.coord, human_audibility_radius, DARK_GRAY)
-          drawCircle(player.coord, bullet_audibility_radius, DARK_GRAY)
+          drawLine(player.coord, pov_point2, DARK_GRAY)*/
+          //drawCircle(player.coord, human_audibility_radius, DARK_GRAY)
+          //drawCircle(player.coord, bullet_audibility_radius, DARK_GRAY)
       }
 
     val (your_bullets, other_bullets) = bullets.partition(_.shooter.team == you.team)

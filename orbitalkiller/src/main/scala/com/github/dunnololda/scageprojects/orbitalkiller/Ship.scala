@@ -37,7 +37,7 @@ trait Ship {
   def fuelMass_=(m:Double):Unit
 
   def initState:BodyState
-  def currentState:BodyState
+  def currentState:MutableBodyState
 
   def linearAcceleration = currentState.acc
 
@@ -52,6 +52,12 @@ trait Ship {
   def rotation = currentState.ang
 
   def currentReactiveForce(time:Long, bs:BodyState):DVec = {
+    engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(DVec.dzero) {
+      case (sum, e) => sum + e.force.rotateDeg(bs.ang)
+    }
+  }
+
+  def currentReactiveForce(time:Long, bs:MutableBodyState):DVec = {
     engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(DVec.dzero) {
       case (sum, e) => sum + e.force.rotateDeg(bs.ang)
     }
@@ -78,7 +84,26 @@ trait Ship {
     }
   }
 
+  def currentMass(time:Long):Double = {
+    mass - engines.filter(e => e.active).foldLeft(0.0) {
+      case (sum, e) =>
+        sum + e.fuelConsumptionPerTact * (math.min(time, e.stopMomentTacts) - (e.stopMomentTacts - e.workTimeTacts))
+    }
+  }
+
   def currentTorque(time:Long, bs:BodyState):Double = {
+    engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0.0) {
+      case (sum, e) => sum + e.torque
+    }
+  }
+
+  def currentTorque(time:Long, bs:MutableBodyState):Double = {
+    engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0.0) {
+      case (sum, e) => sum + e.torque
+    }
+  }
+
+  def currentTorque(time:Long):Double = {
     engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0.0) {
       case (sum, e) => sum + e.torque
     }
@@ -223,7 +248,7 @@ trait Ship {
   def updateShipState(time_msec:Long): Unit = {
     val reactive_force = currentReactiveForce(0, currentState)
     val centrifugial_force = if(angularVelocity == 0) DVec.zero else pilot_mass*math.pow(angularVelocity.toRad, 2)*pilot_position.rotateDeg(rotation)
-    val pilot_acc = (reactive_force/mass + centrifugial_force/pilot_mass + currentState.collisions_dacc).norma
+    val pilot_acc = (reactive_force/mass + centrifugial_force/pilot_mass + currentState.dacc).norma
     pilot_gs += ((pilot_acc/g, time_msec))
     if(time_msec - pilot_gs.head._2 >= 1000) {
       pilot_average_g = pilot_gs.map(_._1).sum/pilot_gs.length

@@ -59,7 +59,7 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
           case Some((t, lbs)) =>
             lbs.find(_.index == ship.index) match {
               case Some(bs) =>
-                orbitStrInPointWithVelocity(bs.coord, bs.vel, bs.mass, lbs.filter(x => planet_indexes.contains(x.index)))
+                orbitStrInPointWithVelocity_imm(bs.coord, bs.vel, bs.mass, lbs.filter(x => planet_indexes.contains(x.index)))
               case None =>"N/A"
             }
           case None =>
@@ -67,7 +67,7 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
             "N/A"
         }
       } else {
-        orbitStrInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass, currentSystemState.filter(x => planet_indexes.contains(x.index)))
+        orbitStrInPointWithVelocity_imm(ship.coord, ship.linearVelocity, ship.mass, currentSystemState.filter(x => planet_indexes.contains(x.index)))
       }
     }
   }
