@@ -54,9 +54,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
   private var _tacts = 0l
   def tacts:Long = _tacts
 
-  private val current_body_states = mutable.HashMap[String, BodyState]()
-  def currentBodyState(index:String):Option[BodyState] = current_body_states.get(index)
-  def currentSystemState = current_body_states.values.toList
+  private val current_body_states = mutable.HashMap[String, MutableBodyState]()
+  def currentBodyState(index:String):Option[BodyState] = current_body_states.get(index).map(_.toImmutableBodyState)
+  def currentSystemState = current_body_states.values.toList.map(_.toImmutableBodyState)
 
   def futureSystemEvolutionFrom(dt: => Double, tacts:Long, body_states:List[BodyState], enable_collisions:Boolean) = systemEvolutionFrom(
     dt, maxTimeMultiplier, base_dt,
@@ -235,7 +235,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
   val ship_start_position = moon.coord + DVec(0, moon.radius + 31)
   val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
-  //val ship_start_position = moon.coord + DVec(0, moon.radius + 100000)
+  //val ship_start_position = moon.coord + DVec(0, moon.radius + 3000)
   //
   //val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = false)* 1.15
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
@@ -269,6 +269,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
     station.currentState,
     moon.currentState,
     earth.currentState))
+
+  mutable_system.foreach(x => current_body_states(x._1.index) = x._1)
 
   def realMutableSystemEvolution(steps:Int) {
     mutableSystemEvolution(
@@ -1280,7 +1282,7 @@ trait CelestialBody {
   def radius:Double
   def initState:BodyState
 
-  def currentState:MutableBodyState = initState.toMutableBodyState
+  val currentState:MutableBodyState = initState.toMutableBodyState
   val ground_length_km = (2*math.Pi*radius/1000).toInt
   def groundSpeedMsec = currentState.ang_vel.toRad*radius
 }
