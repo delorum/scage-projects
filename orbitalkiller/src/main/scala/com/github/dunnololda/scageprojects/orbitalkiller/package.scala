@@ -480,6 +480,22 @@ package object orbitalkiller {
       collisions_dvel = dvel,
       collisions_d_ang_acc = d_ang_acc,
       collisions_d_ang_vel = d_ang_vel)
+
+    def copy:MutableBodyState = {
+      val mb = new MutableBodyState(body)
+      mb.mass = mass
+      mb.acc = acc
+      mb.vel = vel
+      mb.coord = coord
+      mb.ang_acc = ang_acc
+      mb.ang_vel = ang_vel
+      mb.ang = ang
+      mb.dacc = dacc
+      mb.dvel = dvel
+      mb.d_ang_acc = d_ang_acc
+      mb.d_ang_vel = d_ang_vel
+      mb
+    }
   }
 
   implicit class Phys2dBody2BodyState(pb:Phys2dBody) {
@@ -611,12 +627,13 @@ package object orbitalkiller {
     contacts:List[net.phys2d.raw.Contact], new_velocity:DVec, new_angular_velocity:Double)
 
   def mutableSystemEvolution(mutable_system:Seq[(MutableBodyState, Seq[MutableBodyState])],
-                             steps:Int,           // в секундах, может быть больше либо равно base_dt - обеспечивается ускорение времени
+                             steps:Long,           // в секундах, может быть больше либо равно base_dt - обеспечивается ускорение времени
                              base_dt:Double,          // в секундах
                              force: (MutableBodyState, Seq[MutableBodyState]) => DVec = (body, other_bodies) => DVec.dzero,
                              torque: (MutableBodyState, Seq[MutableBodyState]) => Double = (body, other_bodies) => 0.0,
                              enable_collisions:Boolean = true): Unit = {
-    (1 to steps).foreach(i => {
+    var step = 1l
+    while(step <= steps) {
       mutable_system.foreach(_._1.init())
 
       val collisions = if(enable_collisions) {for {
@@ -662,7 +679,9 @@ package object orbitalkiller {
 
       // Correct positions
       if(collisions.nonEmpty) collisions.foreach(c => c.positionalCorrection())
-    })
+
+      step += 1l
+    }
   }
 
   def systemEvolutionFrom(dt: => Double,           // в секундах, может быть больше либо равно base_dt - обеспечивается ускорение времени

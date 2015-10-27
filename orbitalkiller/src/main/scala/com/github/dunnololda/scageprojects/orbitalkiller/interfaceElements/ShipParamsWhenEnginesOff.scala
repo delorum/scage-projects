@@ -9,18 +9,12 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
     if(ship.flightMode != 1 || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
       if(ship.engines.exists(_.active)) {
-        futureTrajectory.find(_._1 >= ship.engines.map(_.stopMomentTacts).max) match {
-          case Some((t, lbs)) =>
-            lbs.find(_.index == ship.index) match {
-              case Some(bs) =>
-                val s = bs.vel
-                //f"${msecOrKmsec(s.norma)} (velx = ${msecOrKmsec(s.x)}, vely = ${msecOrKmsec(s.y)})"
-                msecOrKmsec(s.norma)
-              case None => "N/A"
-            }
-          case None =>
-            continueFutureTrajectory("linearSpeedStrWhenEnginesOff")
-            "N/A"
+        getFutureState(ship.engines.map(_.stopMomentTacts).max).find(_.index == ship.index) match {
+          case Some(bs) =>
+            val s = bs.vel
+            //f"${msecOrKmsec(s.norma)} (velx = ${msecOrKmsec(s.x)}, vely = ${msecOrKmsec(s.y)})"
+            msecOrKmsec(s.norma)
+          case None => "N/A"
         }
       } else {
         //f"${msecOrKmsec(ship.linearVelocity.norma)} (velx = ${msecOrKmsec(ship.linearVelocity.x)}, vely = ${msecOrKmsec(ship.linearVelocity.y)})"
@@ -33,19 +27,13 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
     if(ship.flightMode != 1 || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
       if(ship.engines.exists(_.active)) {
-        futureTrajectory.find(_._1 >= ship.engines.map(_.stopMomentTacts).max) match {
-          case Some((t, lbs)) =>
-            lbs.find(_.index == ship.index) match {
-              case Some(bs) =>
-                val s = bs.ang_vel
-                f" $s%.2f град/сек"
-              case None => "N/A"
-            }
-          case None =>
-            continueFutureTrajectory("angularSpeedStrWhenEnginesOff")
-            "N/A"
-        }
-      } else {
+        getFutureState(ship.engines.map(_.stopMomentTacts).max).find(_.index == ship.index) match {
+            case Some(bs) =>
+              val s = bs.ang_vel
+              f" $s%.2f град/сек"
+            case None => "N/A"
+          }
+        } else {
         f" ${ship.angularVelocity}%.2f град/сек"
       }
     }
@@ -55,18 +43,13 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
     if(ship.flightMode != 1 || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
       if(ship.engines.exists(_.active)) {
-        futureTrajectory.find(_._1 >= ship.engines.map(_.stopMomentTacts).max) match {
-          case Some((t, lbs)) =>
-            lbs.find(_.index == ship.index) match {
-              case Some(bs) =>
-                orbitStrInPointWithVelocity_imm(bs.coord, bs.vel, bs.mass, lbs.filter(x => planet_indexes.contains(x.index)))
-              case None =>"N/A"
-            }
-          case None =>
-            continueFutureTrajectory("orbitParametersStrWhenEnginesOff")
-            "N/A"
-        }
-      } else {
+        val lbs = getFutureState(ship.engines.map(_.stopMomentTacts).max)
+        lbs.find(_.index == ship.index) match {
+            case Some(bs) =>
+              orbitStrInPointWithVelocity_imm(bs.coord, bs.vel, bs.mass, lbs.filter(x => planet_indexes.contains(x.index)))
+            case None => "N/A"
+          }
+        } else {
         orbitStrInPointWithVelocity_imm(ship.coord, ship.linearVelocity, ship.mass, currentSystemState.filter(x => planet_indexes.contains(x.index)))
       }
     }
