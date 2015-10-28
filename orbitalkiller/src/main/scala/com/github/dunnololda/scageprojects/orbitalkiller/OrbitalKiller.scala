@@ -1051,11 +1051,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
   def renderingEnabled = _rendering_enabled*/
 
   private def updateOrbits() {
+    println("updateOrbits")
     if(ship.flightMode != 0) {
       ship_orbit_render = if(ship.engines.exists(_.active)) {
-        // получаем состояние системы, когда двигатели отработали
-        val system_state_when_engines_off = getFutureState(ship.engines.map(_.stopMomentTacts).max)
-        shipOrbitRender(ship.index, system_state_when_engines_off, PURPLE, RED)
+        if(!onPause) {
+          shipOrbitRender(ship.index, currentSystemState, PURPLE, RED)
+        } else {
+          // получаем состояние системы, когда двигатели отработали
+          val system_state_when_engines_off = getFutureState(ship.engines.map(_.stopMomentTacts).max)
+          shipOrbitRender(ship.index, system_state_when_engines_off, PURPLE, RED)
+        }
       } else {
         // двигатели корабля не работают - можем работать с текущим состоянием
         shipOrbitRender(ship.index, currentSystemState, ORANGE, YELLOW)
@@ -1259,7 +1264,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
 
     /*if(!disable_interface_drawing) {*/
       /*if(_rendering_enabled) {*/
-        openglLocalTransform {
+        /*openglLocalTransform {
           val z = windowHeight/2f-40f
           openglMove(windowCenter)
           openglRotateDeg(rotationAngleDeg)
@@ -1267,7 +1272,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
           print("y", Vec(0, z), DARK_GRAY)
           drawArrow(DVec(-z, 0), DVec(z, 0), DARK_GRAY, 1)
           print("x", Vec(z, 0), DARK_GRAY)
-        }
+        }*/
       /*}*/
 
       InterfaceHolder.update()
