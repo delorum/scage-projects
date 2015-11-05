@@ -306,7 +306,7 @@ class Ship4(index:String,
 
   render {
     /*if(renderingEnabled) {*/
-      if(!drawMapMode) {
+      if(!drawMapMode && !shipRemoved) {
         openglLocalTransform {
           openglMove(coord - base)
           drawFilledCircle(DVec.zero, 2, GREEN)                                 // mass center
@@ -317,7 +317,7 @@ class Ship4(index:String,
           drawArrow(Vec.zero, (moon.coord - coord).n * 100, GREEN)        // direction to moon
 
           openglRotateDeg(rotation)
-          drawSlidingLines(draw_points, WHITE)
+          drawSlidingLines(draw_points, if(ship.pilotIsAlive) WHITE else RED)
 
           engines.foreach {
             case e =>

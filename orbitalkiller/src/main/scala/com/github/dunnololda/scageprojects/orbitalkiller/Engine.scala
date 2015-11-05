@@ -33,6 +33,7 @@ case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power
    *
    * */
   val fuel_consumption_per_sec_at_full_power:Double = 0.002
+  //val fuel_consumption_per_sec_at_full_power:Double = 200
   
   def fuelConsumptionPerTact:Double = {
     fuel_consumption_per_sec_at_full_power*(_power/max_power)*base_dt*timeMultiplier

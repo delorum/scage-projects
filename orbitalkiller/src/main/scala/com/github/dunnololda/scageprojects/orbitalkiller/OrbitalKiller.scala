@@ -155,9 +155,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
       }*/
       system_cache.getOrElseUpdate(tacts, {
         println("adding to system_cache")
-        val system = makeThisAndOthers(mutable_system.map(_._1.copy))
-        realMutableSystemEvolution(system, (tacts - _tacts).toInt)
-        system.map(_._1.toImmutableBodyState).toList
+        val system_copy = makeThisAndOthers(mutable_system.map(_._1.copy))
+        realMutableSystemEvolution(system_copy, (tacts - _tacts).toInt)
+        system_copy.map(_._1.toImmutableBodyState).toList
       })
     } else Nil
   }
@@ -237,12 +237,12 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
   def currentPlanetStates = planets.map(_.currentState)
   def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
 
-  //val ship_start_position = earth.coord + DVec(0, earth.radius + 31)
-  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  val ship_start_position = earth.coord + DVec(0, earth.radius + 31)
+  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
   //val ship_start_position = earth.coord + DVec(0, earth.radius + 100000)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
-  val ship_start_position = moon.coord + DVec(0, moon.radius + 31)
-  val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  //val ship_start_position = moon.coord + DVec(0, moon.radius + 31)
+  //val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 3000)
   //
@@ -266,14 +266,14 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
   val ship_indexes = ships.map(_.index).toSet
   def shipByIndex(index:String):Option[Ship] = ships.find(_.index == index)
 
-  private def makeThisAndOthers[A](s:Seq[A]):Seq[(A, Seq[A])] = {
+  private def makeThisAndOthers[A](s:mutable.Buffer[A]):mutable.Buffer[(A, mutable.Buffer[A])] = {
     s.zipWithIndex.map {
       case (b, idx) =>
         (b, s.take(idx) ++ s.drop(idx+1))
     }
   }
 
-  private val mutable_system = makeThisAndOthers(List(
+  val mutable_system = makeThisAndOthers(ArrayBuffer[MutableBodyState](
     ship.currentState,
     station.currentState,
     moon.currentState,
@@ -596,25 +596,29 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
     addGlyphs("\u21b6\u21b7")
   }
 
-  keyIgnorePause(KEY_NUMPAD1, onKeyDown = {ship.switchEngineActiveOrSelect(KEY_NUMPAD1)})
-  keyIgnorePause(KEY_NUMPAD2, onKeyDown = {ship.switchEngineActiveOrSelect(KEY_NUMPAD2)})
-  keyIgnorePause(KEY_NUMPAD3, onKeyDown = {ship.switchEngineActiveOrSelect(KEY_NUMPAD3)})
-  keyIgnorePause(KEY_NUMPAD4, onKeyDown = {ship.switchEngineActiveOrSelect(KEY_NUMPAD4)})
-  keyIgnorePause(KEY_NUMPAD6, onKeyDown = {ship.switchEngineActiveOrSelect(KEY_NUMPAD6)})
-  keyIgnorePause(KEY_NUMPAD7, onKeyDown = {ship.switchEngineActiveOrSelect(KEY_NUMPAD7)})
-  keyIgnorePause(KEY_NUMPAD8, onKeyDown = {ship.switchEngineActiveOrSelect(KEY_NUMPAD8)})
-  keyIgnorePause(KEY_NUMPAD9, onKeyDown = {ship.switchEngineActiveOrSelect(KEY_NUMPAD9)})
+  keyIgnorePause(KEY_NUMPAD1, onKeyDown = {if(ship.pilotIsAlive) ship.switchEngineActiveOrSelect(KEY_NUMPAD1)})
+  keyIgnorePause(KEY_NUMPAD2, onKeyDown = {if(ship.pilotIsAlive) ship.switchEngineActiveOrSelect(KEY_NUMPAD2)})
+  keyIgnorePause(KEY_NUMPAD3, onKeyDown = {if(ship.pilotIsAlive) ship.switchEngineActiveOrSelect(KEY_NUMPAD3)})
+  keyIgnorePause(KEY_NUMPAD4, onKeyDown = {if(ship.pilotIsAlive) ship.switchEngineActiveOrSelect(KEY_NUMPAD4)})
+  keyIgnorePause(KEY_NUMPAD6, onKeyDown = {if(ship.pilotIsAlive) ship.switchEngineActiveOrSelect(KEY_NUMPAD6)})
+  keyIgnorePause(KEY_NUMPAD7, onKeyDown = {if(ship.pilotIsAlive) ship.switchEngineActiveOrSelect(KEY_NUMPAD7)})
+  keyIgnorePause(KEY_NUMPAD8, onKeyDown = {if(ship.pilotIsAlive) ship.switchEngineActiveOrSelect(KEY_NUMPAD8)})
+  keyIgnorePause(KEY_NUMPAD9, onKeyDown = {if(ship.pilotIsAlive) ship.switchEngineActiveOrSelect(KEY_NUMPAD9)})
 
-  keyIgnorePause(KEY_NUMPAD5, onKeyDown = {ship.engines.foreach(e => {
-    if(e.active || e.power > 0) {
-      e.active = false
-      e.power = 0
-    } else {
-      e.workTimeTacts = 0
+  keyIgnorePause(KEY_NUMPAD5, onKeyDown = {
+    if(ship.pilotIsAlive) {
+      ship.engines.foreach(e => {
+        if (e.active || e.power > 0) {
+          e.active = false
+          e.power = 0
+        } else {
+          e.workTimeTacts = 0
+        }
+      })
     }
-  })})
+  })
 
-  keyIgnorePause(KEY_NUMPAD0, onKeyDown = {
+  /*keyIgnorePause(KEY_NUMPAD0, onKeyDown = {
     ship.engines.filterNot(_.active).foreach(e => e.workTimeTacts = 226800)     // 1 hour
     val active_engines = ship.engines.filter(_.active)
     if(active_engines.map(ae => ae.fuelConsumptionPerTact*226800).sum <= ship.fuelMass) {
@@ -623,7 +627,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
       val fuel_for_every_active_engine = ship.fuelMass / active_engines.length
       active_engines.foreach(e => e.workTimeTacts = (fuel_for_every_active_engine/e.fuelConsumptionPerTact).toLong)
     }
-  })
+  })*/
 
 
   private def repeatTime(code:Int):Long = {
@@ -635,41 +639,51 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
   }
 
   keyIgnorePause(KEY_UP,      repeatTime(KEY_UP),    onKeyDown = {
-    if(ship.flightMode != 8) {
-      ship.selected_engine.foreach(e => e.powerPercent += 1)
-    } else {
-      ship.vertical_speed_msec += 1
+    if(ship.pilotIsAlive) {
+      if (ship.flightMode != 8) {
+        ship.selected_engine.foreach(e => e.powerPercent += 1)
+      } else {
+        ship.vertical_speed_msec += 1
+      }
     }
-  }, onKeyUp = if(ship.flightMode != 8) updateFutureTrajectory("KEY_UP"))
+  }, onKeyUp = if(ship.pilotIsAlive && ship.flightMode != 8) updateFutureTrajectory("KEY_UP"))
   keyIgnorePause(KEY_DOWN,    repeatTime(KEY_DOWN),  onKeyDown = {
-    if(ship.flightMode != 8) {
-      ship.selected_engine.foreach(e => e.powerPercent -= 1)
-    } else {
-      ship.vertical_speed_msec -= 1
+    if(ship.pilotIsAlive) {
+      if (ship.flightMode != 8) {
+        ship.selected_engine.foreach(e => e.powerPercent -= 1)
+      } else {
+        ship.vertical_speed_msec -= 1
+      }
     }
-  }, onKeyUp = if(ship.flightMode != 8) updateFutureTrajectory("KEY_DOWN"))
+  }, onKeyUp = if(ship.pilotIsAlive && ship.flightMode != 8) updateFutureTrajectory("KEY_DOWN"))
   keyIgnorePause(KEY_RIGHT,   repeatTime(KEY_RIGHT), onKeyDown = {
-    if(ship.flightMode != 8) {
-      ship.selected_engine.foreach(e => {
-        e.workTimeTacts += 1
-        //updateFutureTrajectory()
-      })
-    } else {
-      ship.horizontal_speed_msec -= 1
+    if(ship.pilotIsAlive) {
+      if (ship.flightMode != 8) {
+        ship.selected_engine.foreach(e => {
+          e.workTimeTacts += 1
+          //updateFutureTrajectory()
+        })
+      } else {
+        ship.horizontal_speed_msec -= 1
+      }
     }
-  }, onKeyUp = if(ship.flightMode != 8) updateFutureTrajectory("KEY_RIGHT"))
+  }, onKeyUp = if(ship.pilotIsAlive && ship.flightMode != 8) updateFutureTrajectory("KEY_RIGHT"))
   keyIgnorePause(KEY_LEFT,    repeatTime(KEY_LEFT),  onKeyDown = {
-    if(ship.flightMode != 8) {
-      ship.selected_engine.foreach(e => {
-        /*if(e.worktimeTacts > 0) {*/
-        e.workTimeTacts -= 1
-        //updateFutureTrajectory()
-        /*}*/
-      })
-    } else {
-      ship.horizontal_speed_msec += 1
+    if(ship.pilotIsAlive) {
+      if (ship.flightMode != 8) {
+        ship.selected_engine.foreach(e => {
+          /*if(e.worktimeTacts > 0) {*/
+          e.workTimeTacts -= 1
+          //updateFutureTrajectory()
+          /*}*/
+        })
+      } else {
+        ship.horizontal_speed_msec += 1
+      }
     }
-  }, onKeyUp = if(ship.flightMode != 8) updateFutureTrajectory("KEY_LEFT"))
+  }, onKeyUp = {
+    if(ship.pilotIsAlive && ship.flightMode != 8) updateFutureTrajectory("KEY_LEFT")
+  })
 
   private val engine_keys = List(KEY_UP, KEY_DOWN, KEY_RIGHT, KEY_LEFT)
   def anyEngineKeyPressed = engine_keys.exists(k => keyPressed(k))
@@ -718,16 +732,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
     }
   })
 
-  keyIgnorePause(KEY_1, onKeyDown = ship.flightMode = 1)
-  keyIgnorePause(KEY_2, onKeyDown = ship.flightMode = 2)
-  keyIgnorePause(KEY_3, onKeyDown = ship.flightMode = 3)
-  keyIgnorePause(KEY_4, onKeyDown = ship.flightMode = 4)
-  keyIgnorePause(KEY_5, onKeyDown = ship.flightMode = 5)
-  keyIgnorePause(KEY_6, onKeyDown = ship.flightMode = 6)
-  keyIgnorePause(KEY_7, onKeyDown = ship.flightMode = 7)
-  keyIgnorePause(KEY_8, onKeyDown = ship.flightMode = 8)
-  keyIgnorePause(KEY_9, onKeyDown = ship.flightMode = 9)
-  keyIgnorePause(KEY_0, onKeyDown = ship.flightMode = 0)
+  keyIgnorePause(KEY_1, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = 1)
+  keyIgnorePause(KEY_2, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = 2)
+  keyIgnorePause(KEY_3, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = 3)
+  keyIgnorePause(KEY_4, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = 4)
+  keyIgnorePause(KEY_5, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = 5)
+  keyIgnorePause(KEY_6, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = 6)
+  keyIgnorePause(KEY_7, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = 7)
+  keyIgnorePause(KEY_8, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = 8)
+  keyIgnorePause(KEY_9, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = 9)
+  keyIgnorePause(KEY_0, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = 0)
 
   keyIgnorePause(KEY_P, onKeyDown = switchPause())
 
@@ -1063,7 +1077,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
         }
       } else {
         // двигатели корабля не работают - можем работать с текущим состоянием
-        shipOrbitRender(ship.index, currentSystemState, ORANGE, YELLOW)
+        shipOrbitRender(ship.index, currentSystemState, if(ship.pilotIsAlive) ORANGE else RED, if(ship.pilotIsAlive) YELLOW else RED)
         /*val one_week_evolution_after_engines_off = futureSystemEvolutionWithoutReactiveForcesFrom(
           3600 * base_dt, _tacts, currentSystemState, enable_collisions = false)
           .take(7* 24 * 63)
@@ -1078,7 +1092,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
       ship_orbit_render = if(ship.engines.exists(_.active)) {
         shipOrbitRender(ship.index, currentSystemState, PURPLE, RED)
       } else {
-        shipOrbitRender(ship.index, currentSystemState, ORANGE, YELLOW)
+        shipOrbitRender(ship.index, currentSystemState, if(ship.pilotIsAlive) ORANGE else RED, if(ship.pilotIsAlive) YELLOW else RED)
       }
     }
     station_orbit_render = shipOrbitRender(station.index, currentSystemState, ORANGE, YELLOW)
@@ -1148,8 +1162,10 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
             }*/
           case _ =>
         }
-        drawFilledCircle(ship.coord*scale, earth.radius * scale / 2f / globalScale, WHITE)
-        ship_orbit_render()
+        if(!ship.shipRemoved) {
+          drawFilledCircle(ship.coord * scale, earth.radius * scale / 2f / globalScale, WHITE)
+          ship_orbit_render()
+        }
         // если у корабля активны двигатели
         /*if(ship.engines.exists(_.active)) {
           // получаем состояние системы, когда двигатели отработали
@@ -1231,14 +1247,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
           }
         }
       } else {
-        val m = absCoord(mouseCoord)
-        val d = ship.coord.dist(m)
-        openglLocalTransform {
-          openglMove(ship.coord - base)
-          drawArrow(DVec.zero, m-ship.coord, DARK_GRAY)
-          openglMove(m-ship.coord)
-          openglRotateDeg(-rotationAngleDeg)
-          print(s"  ${mOrKm(d.toLong)}", Vec.zero, size = (max_font_size / globalScale).toFloat, DARK_GRAY)
+        if(!ship.shipRemoved) {
+          val m = absCoord(mouseCoord)
+          val d = ship.coord.dist(m)
+          openglLocalTransform {
+            openglMove(ship.coord - base)
+            drawArrow(DVec.zero, m - ship.coord, DARK_GRAY)
+            openglMove(m - ship.coord)
+            openglRotateDeg(-rotationAngleDeg)
+            print(s"  ${mOrKm(d.toLong)}", Vec.zero, size = (max_font_size / globalScale).toFloat, DARK_GRAY)
+          }
         }
       }
     /*}*/
@@ -1277,7 +1295,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
 
       InterfaceHolder.update()
       InterfaceHolder.strings.zipWithIndex.foreach {
-        case (str, idx) => print(str, 20, (InterfaceHolder.strings.length+2 - idx)*20, YELLOW)
+        case (str, idx) => print(str, 20, (InterfaceHolder.strings.length+2 - idx)*20, if(ship.pilotIsAlive) YELLOW else RED)
       }
       //print(InterfaceHolder.minimizedStrings.map(_._1).mkString(" "), 20, 20, DARK_GRAY)
       InterfaceHolder.minimizedStrings.zipWithIndex.foreach {

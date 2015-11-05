@@ -6,6 +6,7 @@ import com.github.dunnololda.scage.ScageLibD._
 import scala.collection.mutable.ArrayBuffer
 
 trait Ship {
+  def index:String
   var selected_engine:Option[Engine] = None
 
   def isSelectedEngine(e:Engine):Boolean = {
@@ -124,7 +125,7 @@ trait Ship {
   }
 
   def engineColor(e:Engine):ScageColor = {
-    if(e.active) RED else WHITE
+    if(pilot_is_dead || e.active) RED else WHITE
   }
 
   def engineActiveSize(e:Engine):Double = {
@@ -243,22 +244,50 @@ trait Ship {
   private var pilot_average_g:Double = 0.0
   private val pilot_gs = ArrayBuffer[(Double, Long)]()
 
+  private var pilot_is_dead = false
+  private var pilot_death_reason = ""
+  def pilotIsDead = pilot_is_dead
+  def pilotIsAlive = !pilot_is_dead
+
+  private var ship_removed = false
+  def shipRemoved = ship_removed
+
   private val g = OrbitalKiller.earth.mass*G/(OrbitalKiller.earth.radius*OrbitalKiller.earth.radius)
 
   def updateShipState(time_msec:Long): Unit = {
-    val reactive_force = currentReactiveForce(0, currentState)
-    val centrifugial_force = if(angularVelocity == 0) DVec.zero else pilot_mass*math.pow(angularVelocity.toRad, 2)*pilot_position.rotateDeg(rotation)
-    val pilot_acc = (reactive_force/mass + centrifugial_force/pilot_mass + currentState.dacc).norma
-    pilot_gs += ((pilot_acc/g, time_msec))
-    if(time_msec - pilot_gs.head._2 >= 1000) {
-      pilot_average_g = pilot_gs.map(_._1).sum/pilot_gs.length
-      pilot_gs.clear()
+    if(!pilot_is_dead) {
+      val dvel = currentState.dvel.norma
+      if (dvel > 10) { // crash tolerance = 10 m/s
+        pilot_is_dead = true
+        pilot_death_reason = f"Корабль уничтожен в результате столкновения (${dvel/OrbitalKiller.base_dt/g}%.2fg)"
+        flightMode = 1
+        if(dvel > 100) {
+          OrbitalKiller.mutable_system.find(_._1.index == index).foreach(x => {
+            println("removed ship from mutable system")
+            OrbitalKiller.mutable_system -= x
+            ship_removed = true
+          })
+        }
+      } else {
+        val reactive_force = currentReactiveForce(0, currentState)
+        val centrifugial_force = if (angularVelocity == 0) DVec.zero else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.rotateDeg(rotation)
+        val pilot_acc = (reactive_force / mass + centrifugial_force / pilot_mass + currentState.dacc).norma
+        pilot_gs += ((pilot_acc / g, time_msec))
+        if (time_msec - pilot_gs.head._2 >= 1000) {
+          pilot_average_g = pilot_gs.map(_._1).sum / pilot_gs.length
+          pilot_gs.clear()
+        }
+      }
     }
   }
 
   def pilotStateStr:String = {
-    if(pilot_average_g < 0.1) "Пилот в состоянии невесомости"
-    else if(pilot_average_g <= 1) f"Пилот испытывает силу тяжести $pilot_average_g%.1fg"
-    else f"Пилот испытывает перегрузку $pilot_average_g%.1fg"
+    if(!pilot_is_dead) {
+      if (pilot_average_g < 0.1) "Пилот в состоянии невесомости"
+      else if (pilot_average_g <= 1) f"Пилот испытывает силу тяжести $pilot_average_g%.1fg"
+      else f"Пилот испытывает перегрузку $pilot_average_g%.1fg"
+    } else {
+      pilot_death_reason
+    }
   }
 }
