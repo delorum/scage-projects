@@ -249,8 +249,10 @@ trait Ship {
   def pilotIsDead = pilot_is_dead
   def pilotIsAlive = !pilot_is_dead
 
+  def colorIfAliveOrRed(color:ScageColor) = if(!pilot_is_dead) color else RED
+
   private var ship_removed = false
-  def shipRemoved = ship_removed
+  def isRemoved = ship_removed
 
   private val g = OrbitalKiller.earth.mass*G/(OrbitalKiller.earth.radius*OrbitalKiller.earth.radius)
 

@@ -70,8 +70,8 @@ class SpaceStation2(
           openglMove(coord - base)
           drawFilledCircle(DVec.zero, 2, GREEN)                                // mass center
           drawArrow(DVec.zero, linearVelocity.n * 100, CYAN)             // current velocity
-          drawArrow(DVec.zero, (earth.coord - coord).n * 100, YELLOW)    // direction to earth
-          drawArrow(DVec.zero, (moon.coord - coord).n * 100, GREEN)      // direction to moon
+          //drawArrow(DVec.zero, (earth.coord - coord).n * 100, YELLOW)    // direction to earth
+          //drawArrow(DVec.zero, (moon.coord - coord).n * 100, GREEN)      // direction to moon
 
           openglRotateDeg(rotation)
           drawSlidingLines(draw_points, WHITE)

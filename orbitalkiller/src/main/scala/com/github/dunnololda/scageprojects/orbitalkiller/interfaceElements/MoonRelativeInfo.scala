@@ -1,6 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interfaceElements
 
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scage.support.ScageColor
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 
@@ -16,6 +17,7 @@ class MoonRelativeInfo extends InterfaceElement {
   }
 
   override def data: Seq[String] = strings
+  override def color = ScageColor.GREEN
 
   override val shortDescr: String = "M"
 }

@@ -1,6 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interfaceElements
 
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scage.support.ScageColor
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import OrbitalKiller._
 
@@ -16,6 +17,7 @@ class EarthRelativeInfo extends InterfaceElement {
   }
 
   override def data: Seq[String] = strings
+  override def color = ScageColor.ORANGE
 
   override val shortDescr: String = "E"
 }

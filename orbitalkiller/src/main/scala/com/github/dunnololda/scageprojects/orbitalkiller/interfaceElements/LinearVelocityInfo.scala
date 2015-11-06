@@ -1,5 +1,6 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interfaceElements
 
+import com.github.dunnololda.scage.support.ScageColor
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import OrbitalKiller._
 
@@ -10,6 +11,7 @@ class LinearVelocityInfo extends InterfaceElement {
   }
 
   override def data: Seq[String] = strings
+  override def color = ScageColor.CYAN
 
   override val shortDescr: String = "LV"
 }

@@ -1077,7 +1077,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
         }
       } else {
         // двигатели корабля не работают - можем работать с текущим состоянием
-        shipOrbitRender(ship.index, currentSystemState, if(ship.pilotIsAlive) ORANGE else RED, if(ship.pilotIsAlive) YELLOW else RED)
+        shipOrbitRender(ship.index, currentSystemState, ship.colorIfAliveOrRed(ORANGE), ship.colorIfAliveOrRed(YELLOW))
         /*val one_week_evolution_after_engines_off = futureSystemEvolutionWithoutReactiveForcesFrom(
           3600 * base_dt, _tacts, currentSystemState, enable_collisions = false)
           .take(7* 24 * 63)
@@ -1092,7 +1092,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
       ship_orbit_render = if(ship.engines.exists(_.active)) {
         shipOrbitRender(ship.index, currentSystemState, PURPLE, RED)
       } else {
-        shipOrbitRender(ship.index, currentSystemState, if(ship.pilotIsAlive) ORANGE else RED, if(ship.pilotIsAlive) YELLOW else RED)
+        shipOrbitRender(ship.index, currentSystemState, ship.colorIfAliveOrRed(ORANGE), ship.colorIfAliveOrRed(YELLOW))
       }
     }
     station_orbit_render = shipOrbitRender(station.index, currentSystemState, ORANGE, YELLOW)
@@ -1162,7 +1162,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
             }*/
           case _ =>
         }
-        if(!ship.shipRemoved) {
+        if(!ship.isRemoved) {
           drawFilledCircle(ship.coord * scale, earth.radius * scale / 2f / globalScale, WHITE)
           ship_orbit_render()
         }
@@ -1247,7 +1247,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
           }
         }
       } else {
-        if(!ship.shipRemoved) {
+        if(!ship.isRemoved) {
           val m = absCoord(mouseCoord)
           val d = ship.coord.dist(m)
           openglLocalTransform {
@@ -1295,7 +1295,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
 
       InterfaceHolder.update()
       InterfaceHolder.strings.zipWithIndex.foreach {
-        case (str, idx) => print(str, 20, (InterfaceHolder.strings.length+2 - idx)*20, if(ship.pilotIsAlive) YELLOW else RED)
+        case (str, idx) => print(str._1, 20, (InterfaceHolder.strings.length+2 - idx)*20, ship.colorIfAliveOrRed(str._2))
       }
       //print(InterfaceHolder.minimizedStrings.map(_._1).mkString(" "), 20, 20, DARK_GRAY)
       InterfaceHolder.minimizedStrings.zipWithIndex.foreach {

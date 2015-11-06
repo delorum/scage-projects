@@ -89,8 +89,8 @@ object InterfaceHolder {
     }
   }
 
-  private val _strings = ArrayBuffer[String]()
-  def strings:Seq[String] = _strings
+  private val _strings = ArrayBuffer[(String, ScageColor)]()
+  def strings:Seq[(String, ScageColor)] = _strings
 
   private val _minimized_strings = ArrayBuffer[(InterfaceElement, ScageColor)]()
   def minimizedStrings:Seq[(InterfaceElement, ScageColor)] = _minimized_strings
@@ -111,7 +111,7 @@ object InterfaceHolder {
           case i =>
             if(!i.isMinimized) {
               non_minimized_exists = true
-              _strings ++= i.data
+              _strings ++= i.data.map(x => (x, i.color))
              _interface_elems_positions += ((i, offset))
               offset += i.data.length*20
             } else {
@@ -123,7 +123,7 @@ object InterfaceHolder {
             }
         }
       if(non_minimized_exists) {
-        _strings += ""
+        _strings += (("", YELLOW))
         offset += 20
       }
     }

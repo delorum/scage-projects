@@ -306,18 +306,29 @@ class Ship4(index:String,
 
   render {
     /*if(renderingEnabled) {*/
-      if(!drawMapMode && !shipRemoved) {
+      if(!drawMapMode && !isRemoved) {
         openglLocalTransform {
           openglMove(coord - base)
-          drawFilledCircle(DVec.zero, 2, GREEN)                                 // mass center
+          drawFilledCircle(DVec.zero, 2, GREEN)                             // mass center
 
-          drawArrow(DVec.zero, linearVelocity.n * 100, CYAN)              // current velocity
+          if(!InterfaceHolder.linearVelocityInfo.isMinimized) {             // current velocity
+            drawArrow(DVec.zero, linearVelocity.n * 100, colorIfAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
+          }
           //drawArrow(DVec.zero, linearAcceleration.n * 100, ORANGE)        // current acceleration
-          drawArrow(Vec.zero, (earth.coord - coord).n * 100, YELLOW)      // direction to earth
-          drawArrow(Vec.zero, (moon.coord - coord).n * 100, GREEN)        // direction to moon
+          if(!InterfaceHolder.earthRelativeInfo.isMinimized) {              // direction to earth
+            drawArrow(Vec.zero, (earth.coord - coord).n * 100, colorIfAliveOrRed(InterfaceHolder.earthRelativeInfo.color))
+          }
+          if(!InterfaceHolder.moonRelativeInfo.isMinimized) {               // direction to moon
+            drawArrow(Vec.zero, (moon.coord - coord).n * 100, colorIfAliveOrRed(InterfaceHolder.moonRelativeInfo.color))
+          }
+          if(!InterfaceHolder.nearestShipInfo.isMinimized) {                // direction to nearest ship
+            otherShipsNear.headOption.foreach(x => {
+              drawArrow(Vec.zero, (x.coord - coord).n * 100, colorIfAliveOrRed(InterfaceHolder.nearestShipInfo.color))
+            })
+          }
 
           openglRotateDeg(rotation)
-          drawSlidingLines(draw_points, if(ship.pilotIsAlive) WHITE else RED)
+          drawSlidingLines(draw_points, colorIfAliveOrRed(WHITE))
 
           engines.foreach {
             case e =>

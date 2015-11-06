@@ -1,5 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
+import com.github.dunnololda.scage.support.ScageColor
+
 abstract class InterfaceElement {
   def shortDescr:String
 
@@ -41,6 +43,7 @@ abstract class InterfaceElement {
   }
 
   def data:Seq[String]
+  def color:ScageColor = ScageColor.YELLOW
 
   override def toString = shortDescr
 }

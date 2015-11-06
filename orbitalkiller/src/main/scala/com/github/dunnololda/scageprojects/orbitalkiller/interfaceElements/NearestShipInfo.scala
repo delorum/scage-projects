@@ -1,5 +1,6 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interfaceElements
 
+import com.github.dunnololda.scage.support.ScageColor
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import OrbitalKiller._
 
@@ -34,6 +35,7 @@ class NearestShipInfo extends InterfaceElement {
     }
   }
   override def data: Seq[String] = strings
+  override def color = ScageColor.MAGENTA
 
   override val shortDescr: String = "NS"
 }
