@@ -3,7 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import OrbitalKiller._
 import com.github.dunnololda.scage.ScageLibD._
 
-case class Engine(position:DVec, force_dir:DVec, max_power:Double, default_power_percent:Int, ship:Ship) {
+case class Engine(index:String, position:DVec, force_dir:DVec, max_power:Double, default_power_percent:Int, ship:Ship) {
   private var worktime_tacts = 0l
   private var stop_moment_tacts = 0l
 

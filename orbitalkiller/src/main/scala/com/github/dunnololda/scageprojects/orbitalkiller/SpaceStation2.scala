@@ -35,12 +35,12 @@ class SpaceStation2(
     DVec(-50.0, -30.0)
   )
 
-  val four  = Engine(position = Vec(-130.0, 0.0),   force_dir = Vec(1.0, 0.0),  max_power = 10, default_power_percent = 1, this)
-  val six   = Engine(position = Vec(130.0, 0.0),    force_dir = Vec(-1.0, 0.0), max_power = 10, default_power_percent = 1, this)
-  val eight = Engine(position = Vec(0.0, 30.0),     force_dir = Vec(0.0, -1.0), max_power = 10, default_power_percent = 1, this)
-  val two   = Engine(position = Vec(0.0, -30.0),    force_dir = Vec(0.0, 1.0),  max_power = 10, default_power_percent = 1, this)
-  val one   = Engine(position = Vec(-120.0, -10.0), force_dir = Vec(0.0, 1.0),  max_power = 10, default_power_percent = 1, this)
-  val three = Engine(position = Vec(120.0, -10.0),  force_dir = Vec(0.0, 1.0),  max_power = 10, default_power_percent = 1, this)
+  val four  = Engine("4", position = Vec(-130.0, 0.0),   force_dir = Vec(1.0, 0.0),  max_power = 10, default_power_percent = 1, this)
+  val six   = Engine("6", position = Vec(130.0, 0.0),    force_dir = Vec(-1.0, 0.0), max_power = 10, default_power_percent = 1, this)
+  val eight = Engine("8", position = Vec(0.0, 30.0),     force_dir = Vec(0.0, -1.0), max_power = 10, default_power_percent = 1, this)
+  val two   = Engine("2", position = Vec(0.0, -30.0),    force_dir = Vec(0.0, 1.0),  max_power = 10, default_power_percent = 1, this)
+  val one   = Engine("1", position = Vec(-120.0, -10.0), force_dir = Vec(0.0, 1.0),  max_power = 10, default_power_percent = 1, this)
+  val three = Engine("3", position = Vec(120.0, -10.0),  force_dir = Vec(0.0, 1.0),  max_power = 10, default_power_percent = 1, this)
 
   val engines = List(four, six, eight, two, one, three)
 
@@ -69,9 +69,9 @@ class SpaceStation2(
         openglLocalTransform {
           openglMove(coord - base)
           drawFilledCircle(DVec.zero, 2, GREEN)                                // mass center
-          drawArrow(DVec.zero, linearVelocity.n * 100, CYAN)             // current velocity
-          //drawArrow(DVec.zero, (earth.coord - coord).n * 100, YELLOW)    // direction to earth
-          //drawArrow(DVec.zero, (moon.coord - coord).n * 100, GREEN)      // direction to moon
+          if(OrbitalKiller.globalScale >= 0.3) {
+            drawArrow(DVec.zero, relativeLinearVelocity.n * 100, CYAN) // current velocity
+          }
 
           openglRotateDeg(rotation)
           drawSlidingLines(draw_points, WHITE)

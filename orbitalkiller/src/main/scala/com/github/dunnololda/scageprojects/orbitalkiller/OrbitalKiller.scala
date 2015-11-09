@@ -13,7 +13,7 @@ import scala.collection.mutable
 sealed trait ViewMode
 sealed trait FlightMode
 
-object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
+object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("screen.width", 1280), property("screen.height", 768)) {
   val k:Double = 1 // доля секунды симуляции, которая обрабатывается за одну реальную секунду, если не применяется ускорение
 
   // движок делает вызов обработчика примерно 60 раз в секунду, за каждый вызов будет обрабатывать вот такую порцию симуляции
@@ -237,12 +237,12 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
   def currentPlanetStates = planets.map(_.currentState)
   def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
 
-  val ship_start_position = earth.coord + DVec(0, earth.radius + 31)
-  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  //val ship_start_position = earth.coord + DVec(0, earth.radius + 31)
+  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
   //val ship_start_position = earth.coord + DVec(0, earth.radius + 100000)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
-  //val ship_start_position = moon.coord + DVec(0, moon.radius + 31)
-  //val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  val ship_start_position = moon.coord + DVec(0, moon.radius + 31)
+  val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 3000)
   //
@@ -778,7 +778,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
     fos.close()
     _show_game_saved_message = true
     val start = System.currentTimeMillis()
-    actionIgnorePause(1000) {
+    actionStaticPeriodIgnorePause(1000) {
       if(System.currentTimeMillis() - start > 2000) {
         _show_game_saved_message = false
         deleteSelf()
@@ -881,7 +881,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
     }
     if(_show_game_loaded_message) {
       val start = System.currentTimeMillis()
-      actionIgnorePause(1000) {
+      actionStaticPeriodIgnorePause(1000) {
         if(System.currentTimeMillis() - start > 2000) {
           _show_game_loaded_message = false
           deleteSelf()
@@ -890,7 +890,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
     } else {
       _show_game_failed_to_load_message = true
       val start = System.currentTimeMillis()
-      actionIgnorePause(1000) {
+      actionStaticPeriodIgnorePause(1000) {
         if(System.currentTimeMillis() - start > 2000) {
           _show_game_failed_to_load_message = false
           deleteSelf()
@@ -1103,6 +1103,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", 1280, 768) {
   actionStaticPeriodIgnorePause(1000) {
     if(/*_rendering_enabled && */drawMapMode && (!onPause || _calculate_orbits)) {
       updateOrbits()
+    }
+  }
+
+  actionStaticPeriodIgnorePause(10000) {
+    if(OrbitalKiller.k > 1f/63*OrbitalKiller.ticks) {
+      println("updating timeMultiplier")
+      OrbitalKiller.timeMultiplier = (OrbitalKiller.timeMultiplier*1f/63*OrbitalKiller.ticks).toInt
     }
   }
 

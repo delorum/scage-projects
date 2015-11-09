@@ -1,8 +1,8 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interfaceElements
 
 import com.github.dunnololda.scage.support.ScageColor
+import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._
-import OrbitalKiller._
 
 class LinearVelocityInfo extends InterfaceElement {
   private val strings = Array(f"Линейная скорость: ${msecOrKmsec(ship.linearVelocity.norma)}")

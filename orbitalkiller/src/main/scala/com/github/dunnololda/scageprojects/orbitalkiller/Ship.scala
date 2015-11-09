@@ -2,6 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import OrbitalKiller._
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scage.support.DVec
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -43,6 +44,10 @@ trait Ship {
   def linearAcceleration = currentState.acc
 
   def linearVelocity = currentState.vel
+
+  def relativeLinearVelocity = {
+    linearVelocity - insideSphereOfInfluenceOfCelestialBody(coord, mass, OrbitalKiller.currentPlanetStates).map(_._2.vel).getOrElse(DVec.zero)
+  }
 
   def coord = currentState.coord
 
@@ -196,6 +201,7 @@ trait Ship {
     val prev_flight_mode = flight_mode
     flight_mode = new_flight_mode
     if(flight_mode == 0) {
+      engines.foreach(e => e.power = e.max_power*0.5)
       engines.filterNot(_.active).foreach(e => e.workTimeTacts = 226800)     // 1 hour
       val active_engines = engines.filter(_.active)
       if(active_engines.map(ae => ae.fuelConsumptionPerTact*226800).sum <= fuelMass) {
