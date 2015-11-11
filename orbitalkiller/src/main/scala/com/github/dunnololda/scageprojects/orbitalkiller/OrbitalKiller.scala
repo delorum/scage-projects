@@ -239,10 +239,10 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   //val ship_start_position = earth.coord + DVec(0, earth.radius + 31)
   //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
-  //val ship_start_position = earth.coord + DVec(0, earth.radius + 100000)
-  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
-  val ship_start_position = moon.coord + DVec(0, moon.radius + 31)
-  val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  val ship_start_position = earth.coord + DVec(0, earth.radius + 1000000)
+  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
+  //val ship_start_position = moon.coord + DVec(0, moon.radius + 31)
+  //val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 3000)
   //
@@ -1107,7 +1107,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   }
 
   actionStaticPeriodIgnorePause(10000) {
-    if(OrbitalKiller.k > 1f/63*OrbitalKiller.ticks) {
+    if(OrbitalKiller.timeMultiplier != realtime && OrbitalKiller.timeMultiplier > 1f*OrbitalKiller.timeMultiplier/63*OrbitalKiller.ticks + 20) {
       println("updating timeMultiplier")
       OrbitalKiller.timeMultiplier = (OrbitalKiller.timeMultiplier*1f/63*OrbitalKiller.ticks).toInt
     }

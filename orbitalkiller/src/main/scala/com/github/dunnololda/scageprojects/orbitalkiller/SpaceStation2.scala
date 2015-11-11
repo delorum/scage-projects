@@ -69,7 +69,7 @@ class SpaceStation2(
         openglLocalTransform {
           openglMove(coord - base)
           drawFilledCircle(DVec.zero, 2, GREEN)                                // mass center
-          if(OrbitalKiller.globalScale >= 0.3) {
+          if(OrbitalKiller.globalScale >= 0.2) {
             drawArrow(DVec.zero, relativeLinearVelocity.n * 100, CYAN) // current velocity
           }
 
