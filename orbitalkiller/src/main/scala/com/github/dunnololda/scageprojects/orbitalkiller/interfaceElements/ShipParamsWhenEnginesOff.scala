@@ -9,7 +9,7 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
     if(ship.flightMode != 1 || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
       if(ship.engines.exists(_.active)) {
-        getFutureState(ship.engines.map(_.stopMomentTacts).max).find(_.index == ship.index) match {
+        getFutureState(ship.engines.map(_.stopMomentTacts).max).get(ship.index) match {
           case Some(bs) =>
             val s = bs.vel
             //f"${msecOrKmsec(s.norma)} (velx = ${msecOrKmsec(s.x)}, vely = ${msecOrKmsec(s.y)})"
@@ -27,7 +27,7 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
     if(ship.flightMode != 1 || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
       if(ship.engines.exists(_.active)) {
-        getFutureState(ship.engines.map(_.stopMomentTacts).max).find(_.index == ship.index) match {
+        getFutureState(ship.engines.map(_.stopMomentTacts).max).get(ship.index) match {
             case Some(bs) =>
               val s = bs.ang_vel
               f" $s%.2f град/сек"
@@ -44,13 +44,13 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
     else {
       if(ship.engines.exists(_.active)) {
         val lbs = getFutureState(ship.engines.map(_.stopMomentTacts).max)
-        lbs.find(_.index == ship.index) match {
+        lbs.get(ship.index) match {
             case Some(bs) =>
-              orbitStrInPointWithVelocity_imm(bs.coord, bs.vel, bs.mass, lbs.filter(x => planet_indexes.contains(x.index)))
+              orbitStrInPointWithVelocity(bs.coord, bs.vel, bs.mass, lbs.filter(x => planet_indexes.contains(x._1)))
             case None => "N/A"
           }
         } else {
-        orbitStrInPointWithVelocity_imm(ship.coord, ship.linearVelocity, ship.mass, currentSystemState.filter(x => planet_indexes.contains(x.index)))
+        orbitStrInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass, current_body_states.filter(x => planet_indexes.contains(x._1)))
       }
     }
   }

@@ -253,7 +253,7 @@ class Ship4(index:String,
           }
         case 8 => // уравнять скорость с ближайшей планетой
           (for {
-            planet_state <- currentPlanetStates.sortBy(_.coord.dist(coord)).headOption
+            planet_state <- currentPlanetStates.values.toSeq.sortBy(_.coord.dist(coord)).headOption
             planet <- planetByIndex(planet_state.index)
           } yield (planet_state, planet)) match {
             case Some((planet_state, planet)) =>
