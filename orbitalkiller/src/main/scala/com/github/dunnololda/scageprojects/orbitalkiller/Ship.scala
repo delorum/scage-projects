@@ -270,9 +270,9 @@ trait Ship {
         pilot_death_reason = f"Корабль уничтожен в результате столкновения (${dvel/OrbitalKiller.base_dt/g}%.2fg)"
         flightMode = 1
         if(dvel > 100) {
-          OrbitalKiller.mutable_system.find(_._1.index == index).foreach(x => {
+          OrbitalKiller.our_mutable_system.find(_._1.index == index).foreach(x => {
             println("removed ship from mutable system")
-            OrbitalKiller.mutable_system -= x
+            OrbitalKiller.our_mutable_system -= x
             ship_removed = true
           })
         }

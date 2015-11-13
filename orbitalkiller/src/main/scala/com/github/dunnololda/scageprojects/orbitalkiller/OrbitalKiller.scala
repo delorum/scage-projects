@@ -155,8 +155,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       }*/
       system_cache.getOrElseUpdate(tacts, {
         println("adding to system_cache")
-        val system_copy = makeThisAndOthers(mutable_system.map(_._1.copy))
-        realMutableSystemEvolution(system_copy, (tacts - _tacts).toInt)
+        val system_copy = makeThisAndOthers(our_mutable_system.map(_._1.copy))
+        ourMutableSystemEvolution(system_copy, (tacts - _tacts).toInt)
         mutable.Map(system_copy.map(x => (x._1.index, x._1)):_*)
       })
     } else collection.mutable.Map()
@@ -273,15 +273,15 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }
 
-  val mutable_system = makeThisAndOthers(ArrayBuffer[MutableBodyState](
+  val our_mutable_system = makeThisAndOthers(ArrayBuffer[MutableBodyState](
     ship.currentState,
     station.currentState,
     moon.currentState,
     earth.currentState))
 
-  mutable_system.foreach(x => current_body_states(x._1.index) = x._1)
+  our_mutable_system.foreach(x => current_body_states(x._1.index) = x._1)
 
-  def realMutableSystemEvolution(system:Seq[(MutableBodyState, Seq[MutableBodyState])], steps:Long) {
+  def ourMutableSystemEvolution(system:Seq[(MutableBodyState, Seq[MutableBodyState])], steps:Long) {
     mutableSystemEvolution(
       system, steps, base_dt,
       force = (bs, other_bodies) => {
@@ -333,7 +333,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
     ship.currentState.mass = ship.currentMass(_tacts)
     val steps = math.max((dt/base_dt).toInt, 1)
-    realMutableSystemEvolution(mutable_system, steps)
+    ourMutableSystemEvolution(our_mutable_system, steps)
 
     /*if(_stop_after_number_of_tacts > 0) {
       _stop_after_number_of_tacts -= (t - _tacts)
@@ -465,7 +465,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     s"${mOrKm(curvatureRadiusInPoint(body_state))}"
   }
 
-  def orbitStrInPointWithVelocity_imm(coord:DVec, velocity:DVec, mass:Double, planet_states:Seq[BodyState]):String = {
+  /*def orbitStrInPointWithVelocity_imm(coord:DVec, velocity:DVec, mass:Double, planet_states:Seq[BodyState]):String = {
     insideSphereOfInfluenceOfCelestialBody_imm(coord, mass, planet_states) match {
       case Some((planet, planet_state)) =>
         val prefix = planet.index match {
@@ -476,7 +476,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         orbit.strDefinition(prefix, planetByIndex(planet_state.index).get.radius, planet_state.vel, coord, velocity)
       case None => "N/A"
     }
-  }
+  }*/
 
   def orbitStrInPointWithVelocity(coord:DVec, velocity:DVec, mass:Double, planet_states:mutable.Map[String, MutableBodyState]):String = {
     insideSphereOfInfluenceOfCelestialBody(coord, mass, planet_states) match {
@@ -556,7 +556,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }
 
-  def insideSphereOfInfluenceOfCelestialBody_imm(ship_coord:DVec, ship_mass:Double, planet_states:Seq[BodyState]):Option[(CelestialBody, BodyState)] = {
+  /*def insideSphereOfInfluenceOfCelestialBody_imm(ship_coord:DVec, ship_mass:Double, planet_states:Seq[BodyState]):Option[(CelestialBody, BodyState)] = {
     for {
       moon_state <- planet_states.find(_.index == moon.index)
       earth_state <- planet_states.find(_.index == earth.index)
@@ -568,7 +568,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         (moon, moon_state)
       } else (earth, earth_state)*/
     }
-  }
+  }*/
 
   def insideSphereOfInfluenceOfCelestialBody(ship_coord:DVec, ship_mass:Double, planet_states:collection.mutable.Map[String, MutableBodyState]):Option[(CelestialBody, MutableBodyState)] = {
     for {
@@ -1025,7 +1025,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         // смотрим, где он находится
         insideSphereOfInfluenceOfCelestialBody(bs.coord, bs.mass, some_system_state.filter(x => planet_indexes.contains(x._1))) match {
           case Some((planet, planet_state)) =>
-            // корабль находится внутри гравитационного радиуса какой-то планеты (земли или луны)
+            // корабль находится внутри гравитационного радиуса какой-то планеты (Земли или Луны)
             val orbit = calculateOrbit(
               planet_state.mass,
               planet_state.coord,
@@ -1033,20 +1033,58 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
               bs.coord - planet_state.coord,
               bs.vel - planet_state.vel, G)
             orbit match {
-              case hyperbola:HyperbolaOrbit =>
-                val axis = (hyperbola.center - hyperbola.f).n
-                val yy = (-math.acos(-1.0/hyperbola.e)+0.1 to math.acos(-1.0/hyperbola.e)-0.1 by 0.1).map(true_anomaly => {
-                  val r = hyperbola.a*(hyperbola.e*hyperbola.e-1)/(1 + hyperbola.e*math.cos(true_anomaly))
-                  (hyperbola.f + (axis*r).rotateRad(true_anomaly))*scale
+              case h:HyperbolaOrbit =>
+                val axis = (h.center - h.f).n
+                val yy = (-math.acos(-1.0/h.e)+0.1 to math.acos(-1.0/h.e)-0.1 by 0.1).map(true_anomaly => {
+                  val r = h.a*(h.e*h.e-1)/(1 + h.e*math.cos(true_anomaly))
+                  (h.f + (axis*r).rotateRad(true_anomaly))*scale
                 }).toList
                 result += (() => {
                   drawSlidingLines(yy, color1)
                 })
-              case ellipse:EllipseOrbit =>
-                result += (() => openglLocalTransform {
-                  openglMove(ellipse.center*scale)
-                  openglRotateDeg(Vec(-1,0).signedDeg(ellipse.f2-ellipse.f))
-                  drawEllipse(DVec.zero, ellipse.a * scale, ellipse.b * scale, color2)
+              case e:EllipseOrbit =>
+                result += (() => {
+                  openglLocalTransform {
+                    openglMove(e.center * scale)
+                    openglRotateDeg(Vec(-1, 0).signedDeg(e.f2 - e.f))
+                    drawEllipse(DVec.zero, e.a * scale, e.b * scale, color2)
+                  }
+                  if(ship_index == ship.index) {
+                    val x = absCoord(mouseCoord) / scale
+                    def _ro(m:DVec) = {
+                      e.p/(1 - e.e*math.cos((m - e.f).signedRad(e.f2 - e.f)))
+                    }
+                    val ro = _ro(x)
+                    drawLine(e.f*scale, absCoord(mouseCoord), DARK_GRAY)
+                    val location = e.f + (x - e.f).n * ro
+                    drawFilledCircle(location*scale, 3 / globalScale, color2)
+                    val teta = (x - e.f).rad(e.f - e.f2)
+                    val mu = (planet_state.mass + bs.mass)*G
+                    val vr = math.sqrt(mu/e.p)*e.e*math.sin(teta)
+                    val vt = math.sqrt(mu/e.p)*(1 + e.e*math.cos(teta))
+                    val v = math.sqrt(vr*vr + vt*vt)
+                    val r1 = (bs.coord - e.f).norma
+                    def mydeg360(v1:DVec, v2:DVec):Double = {
+                      val scalar = v2*v1.perpendicular
+                      if(scalar >= 0) v2.deg(v1) else 360 - v2.deg(v1)
+                    }
+                    val t1 = mydeg360(e.f - e.f2, bs.coord - e.f)
+                    val r2 = (location - e.f).norma
+                    val t2 = mydeg360(e.f - e.f2, location - e.f)
+                    val s = bs.coord.dist(location)
+                    val xl1 = math.acos(1 - (r1+r2+s)/(2*e.a))
+                    val xl2 = math.acos(1 - (r1+r2-s)/(2*e.a))
+                    def _detectCase(t1:Double, xt2:Double, l1:Double, l2:Double):(Double, Double, String) = {
+                      (l1, l2, "None")
+                    }
+                    val (l1, l2, variant) = _detectCase(t1, t2, xl1, xl2)
+                    val n_1 = e.a*math.sqrt(e.a/mu)
+                    val flight_time = s"${timeStr((n_1*((l1 - math.sin(l1)) - (l2 - math.sin(l2)))).toLong*1000)}"
+                    openglLocalTransform {
+                      openglMove(e.f * scale + (x - e.f).n * ro * scale)
+                      print(s"  $flight_time : $variant : ${msecOrKmsec(v)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
+                    }
+                  }
                 })
             }
           case None =>

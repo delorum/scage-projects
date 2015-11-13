@@ -24,19 +24,22 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640
     }
   }
 
-  private var _m:DVec = DVec.zero
-
-  private var mr1:Option[DVec] = None
-  private var mr2:Option[DVec] = None
-  //private var flight_time:Option[List[String]] = None
-  private var flight_time:Option[String] = None
-
   val o = Orbit2(
     a = 1.0922509227094337E7,
     b = 1.0338913703140972E7,
     t = 11358.125220688678,
     center = DVec(6.595622340768156E-4, 3522509.227094339)
   )
+
+  private var _m:DVec = DVec.zero
+
+  //private var mr1:Option[DVec] = Some(o.f1 + (o.f1 - o.f2).n.rotateDeg(45)*ro(o.f1 + (o.f1 - o.f2).n.rotateDeg(45)))
+  private var mr1:Option[DVec] = Some(o.f1 + (o.f1 - o.f2).n*o.r_p)
+  private var mr2:Option[DVec] = None
+  //private var flight_time:Option[List[String]] = None
+  private var flight_time:Option[String] = None
+
+
 
   val G:Double = 6.6742867E-11
   val earth_mass = 5.9746E24
@@ -75,62 +78,48 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640
 
   keyIgnorePause(KEY_Q, onKeyDown = {if(keyPressed(KEY_LCONTROL)) stopApp()})
 
-  leftMouseIgnorePause(onBtnDown = m => {
+  val polygon_step = 50
+
+  def calculateTime(): Unit = {
+    val r1 = (mr1.get - o.f1).norma
+    val t1 = (o.f1-o.f2).deg360(mr1.get - o.f1)
+    //println(t1)
+    val r2 = (mr2.get - o.f1).norma
+    val t2 = (o.f1-o.f2).deg360(mr2.get - o.f1)
+    //println(t2)
+    //println(t2 - t1)
+    val s = mr1.get.dist(mr2.get)
+    val xl1 = math.acos(1 - (r1+r2+s)/(2*o.a))
+    val xl2 = math.acos(1 - (r1+r2-s)/(2*o.a))
+
+    def _detectCase(t1:Double, xt2:Double, l1:Double, l2:Double):(Double, Double, String) = {
+      (l1, l2, "None")
+    }
+    val (l1, l2, variant) = _detectCase(t1, t2, xl1, xl2)
+    /*def _printTimes:List[String] = {
+      List((xl1, xl2), (2*math.Pi - xl1, -xl2), (xl1, -xl2), (2*math.Pi-xl1, xl2)).map {
+        case (x1, x2) =>
+          timeStr((n_1*((x1 - math.sin(x1)) - (x2 - math.sin(x2)))).toLong*1000)
+      }
+    }*/
+    flight_time = Some(s"${timeStr((n_1*((l1 - math.sin(l1)) - (l2 - math.sin(l2)))).toLong*1000)}, $variant")
+    //flight_time = Some(_printTimes ::: List(variant))
+  }
+
+  /*leftMouseIgnorePause(onBtnDown = m => {
     val mm = absCoord(m)/scale
     if(mr1.isEmpty) {
       mr1 = Some(o.f1 + (mm - o.f1).n*ro(mm))
     } else if(mr2.isEmpty) {
-      mr2 = Some(o.f1 + (mm - o.f1).n*ro(mm))
-      val r1 = (mr1.get - o.f1).norma
-      val t1 = (o.f1-o.f2).deg360(mr1.get - o.f1)
-      //println(t1)
-      val r2 = (mr2.get - o.f1).norma
-      val t2 = (o.f1-o.f2).deg360(mr2.get - o.f1)
-      //println(t2)
-      //println(t2 - t1)
-      val s = mr1.get.dist(mr2.get)
-      val xl1 = math.acos(1 - (r1+r2+s)/(2*o.a))
-      val xl2 = math.acos(1 - (r1+r2-s)/(2*o.a))
-
-      def _detectCase(t1:Double, xt2:Double, l1:Double, l2:Double):(Double, Double, String) = {
-        val t2 = if(xt2 < t1) xt2 + 360 else xt2
-        val polygon = (t1 to t2 by 1).map(deg => {
-          val mm = o.f1 + DVec(1, 0).rotateDeg(deg)
-          val v = o.f1 + (mm - o.f1).n * ro(mm)
-          v
-        }).toList
-        if (coordOnArea(o.f1, polygon)) {
-          if (coordOnArea(o.f2, polygon)) {
-            (2 * math.Pi - l1, -l2, "F & A")
-          } else {
-            (l1, -l2, "A")
-          }
-        } else {
-          if (coordOnArea(o.f2, polygon)) {
-            (2 * math.Pi - l1, l2, "F")
-          } else {
-            (l1, l2, "None")
-          }
-        }
-      }
-      val (l1, l2, variant) = _detectCase(t1, t2, xl1, xl2)
-      /*def _printTimes:List[String] = {
-        List((xl1, xl2), (2*math.Pi - xl1, -xl2), (xl1, -xl2), (2*math.Pi-xl1, xl2)).map {
-          case (x1, x2) =>
-            timeStr((n_1*((x1 - math.sin(x1)) - (x2 - math.sin(x2)))).toLong*1000)
-        }
-      }*/
-      flight_time = Some(s"${timeStr((n_1*((l1 - math.sin(l1)) - (l2 - math.sin(l2)))).toLong*1000)}, $variant")
-      //flight_time = Some(_printTimes ::: List(variant))
-    } else {
-      mr1 = None
-      mr2 = None
-      flight_time = None
+      mr2 = Some(o.f1 + (mm - o.f1).n * ro(mm))
     }
-  })
+  })*/
 
   mouseMotion(onMotion = m => {
     _m = absCoord(m)
+    val mm = _m/scale
+    mr2 = Some(o.f1 + (mm - o.f1).n * ro(mm))
+    calculateTime()
     //println(ro(_m/scale))
   })
 
@@ -173,11 +162,20 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640
       val t1 = (o.f1-o.f2).deg360(mr1.get - o.f1)
       val xt2 = (o.f1-o.f2).deg360(mr2.get - o.f1)
       val t2 = if(xt2 < t1) xt2 + 360 else xt2
-      drawFilledPolygon((t1 to t2 by 1).map(deg => {
+      val l = if((t2-t1) % polygon_step == 0) (t1 to t2 by polygon_step).toList else  (t1 to t2 by polygon_step).toList ::: List(t2)
+      val polygon = l.map(deg => {
         val mm = o.f1 + DVec(1,0).rotateDeg(deg)
         val v = o.f1 + (mm - o.f1).n*ro(mm)
         v*scale
-      }).toList, YELLOW)
+      }) ::: List({
+        val mm = o.f1 + DVec(1, 0).rotateDeg(t1)
+        val v = o.f1 + (mm - o.f1).n * ro(mm)
+        v*scale
+      })
+      drawFilledPolygon(polygon.init, YELLOW)
+      val x = polygon.init.last + (polygon.last - polygon.init.last)/2
+      drawLine(o.f1*scale, x, RED)
+      drawLine(o.f2*scale, x, RED)
     }
     drawFilledCircle(o.f1*scale, 3, RED)
     drawFilledCircle(o.f2*scale, 3, RED)
