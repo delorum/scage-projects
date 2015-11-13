@@ -884,7 +884,7 @@ package object orbitalkiller {
     def strDefinition(prefix:String, planet_radius:Double, planet_velocity:DVec, ship_coord:DVec, ship_velocity:DVec):String = {
       val dir = if((ship_coord - f).perpendicular*(ship_velocity - planet_velocity) >= 0) "\u21b6" else "\u21b7"
       if(r_p - planet_radius < 0) {
-        f"$prefix, суборбитальная, $dir, r_a = ${mOrKm(r_a - planet_radius)}"
+        f"$prefix, суборбитальная, $dir, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, r_a = ${mOrKm(r_a - planet_radius)}"
       } else {
         f"$prefix, замкнутая, $dir, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, r_a = ${mOrKm(r_a - planet_radius)}, t = ${timeStr((t*1000l).toLong)}"
       }

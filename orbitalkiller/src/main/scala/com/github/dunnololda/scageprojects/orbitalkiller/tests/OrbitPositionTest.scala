@@ -34,7 +34,8 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640
   private var _m:DVec = DVec.zero
 
   //private var mr1:Option[DVec] = Some(o.f1 + (o.f1 - o.f2).n.rotateDeg(45)*ro(o.f1 + (o.f1 - o.f2).n.rotateDeg(45)))
-  private var mr1:Option[DVec] = Some(o.f1 + (o.f1 - o.f2).n*o.r_p)
+  //private var mr1:Option[DVec] = Some(o.f1 + (o.f1 - o.f2).n*o.r_p)
+  private var mr1:Option[DVec] = Some(o.f2 + (o.f2 - o.f1).n*o.r_p)
   private var mr2:Option[DVec] = None
   //private var flight_time:Option[List[String]] = None
   private var flight_time:Option[String] = None
@@ -78,7 +79,7 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640
 
   keyIgnorePause(KEY_Q, onKeyDown = {if(keyPressed(KEY_LCONTROL)) stopApp()})
 
-  val polygon_step = 50
+  val polygon_step = 1
 
   def calculateTime(): Unit = {
     val r1 = (mr1.get - o.f1).norma
@@ -93,7 +94,31 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640
     val xl2 = math.acos(1 - (r1+r2-s)/(2*o.a))
 
     def _detectCase(t1:Double, xt2:Double, l1:Double, l2:Double):(Double, Double, String) = {
-      (l1, l2, "None")
+      val res1 = areLinesIntersect(o.f2 + (o.f2 - o.f1).n*o.r_p, o.f2, mr1.get, mr2.get)
+      val res2 = areLinesIntersect(o.f2, o.f1, mr1.get, mr2.get)
+      val res3 = areLinesIntersect(o.f1, o.f1 + (o.f1 - o.f2).n*o.r_p, mr1.get, mr2.get)
+      if(t1 == 0) {
+        if(t2 < 180) (l1, l2, "None")
+        else (2*math.Pi - l1, -l2, "F & A")
+      } else {
+        if (!res1 && !res2 && !res3) {
+          if (t2 > t1) (l1, l2, "None")
+          else (2 * math.Pi - l1, -l2, "F & A")
+        } else {
+          if (res1) {
+            if (t2 > t1) (l1, l2, "None")
+            else (2 * math.Pi - l1, -l2, "F & A")
+          } else if (res3) {
+            if (t1 > t2) (l1, l2, "None")
+            else (2 * math.Pi - l1, -l2, "F & A")
+          } else if (res2) {
+            if (t2 > t1) (2 * math.Pi - l1, l2, "F")
+            else (l1, -l2, "A")
+          } else {
+            (l1, l2, "None")
+          }
+        }
+      }
     }
     val (l1, l2, variant) = _detectCase(t1, t2, xl1, xl2)
     /*def _printTimes:List[String] = {
@@ -106,14 +131,15 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640
     //flight_time = Some(_printTimes ::: List(variant))
   }
 
-  /*leftMouseIgnorePause(onBtnDown = m => {
+  leftMouseIgnorePause(onBtnDown = m => {
     val mm = absCoord(m)/scale
-    if(mr1.isEmpty) {
+    mr1 = Some(o.f1 + (mm - o.f1).n*ro(mm))
+    /*if(mr1.isEmpty) {
       mr1 = Some(o.f1 + (mm - o.f1).n*ro(mm))
     } else if(mr2.isEmpty) {
       mr2 = Some(o.f1 + (mm - o.f1).n * ro(mm))
-    }
-  })*/
+    }*/
+  })
 
   mouseMotion(onMotion = m => {
     _m = absCoord(m)
@@ -167,30 +193,25 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640
         val mm = o.f1 + DVec(1,0).rotateDeg(deg)
         val v = o.f1 + (mm - o.f1).n*ro(mm)
         v*scale
-      }) ::: List({
-        val mm = o.f1 + DVec(1, 0).rotateDeg(t1)
-        val v = o.f1 + (mm - o.f1).n * ro(mm)
-        v*scale
       })
-      drawFilledPolygon(polygon.init, YELLOW)
-      val x = polygon.init.last + (polygon.last - polygon.init.last)/2
-      drawLine(o.f1*scale, x, RED)
-      drawLine(o.f2*scale, x, RED)
+      drawFilledPolygon(polygon, YELLOW)
     }
     drawFilledCircle(o.f1*scale, 3, RED)
     drawFilledCircle(o.f2*scale, 3, RED)
   }
 
   interface {
-    print(f"teta = ${(o.f1-o.f2).deg360(_m/scale - o.f1)}%.2f", 20, 20, WHITE)
-    val teta = (_m/scale - o.f1).rad(o.f1-o.f2)
-    val vr = math.sqrt(mu/o.p)*o.e*math.sin(teta)
-    val vt = math.sqrt(mu/o.p)*(1 + o.e*math.cos(teta))
-    val v = math.sqrt(vr*vr + vt*vt)
-    print(s"${msecOrKmsec(v)}", 20, 40, WHITE)
+    print(f"mr1 angle = ${(o.f1-o.f2).deg360(mr1.get - o.f1)}%.2f", 20, 20, WHITE)
+    if(mr2.nonEmpty) print(f"mr2 angle = ${(o.f1-o.f2).deg360(mr2.get - o.f1)}%.2f", 20, 40, WHITE)
+    if(mr1.nonEmpty && mr2.nonEmpty) {
+      val t1 = (o.f1-o.f2).deg360(mr1.get - o.f1)
+      val xt2 = (o.f1-o.f2).deg360(mr2.get - o.f1)
+      val t2 = if(xt2 < t1) xt2 + 360 else xt2
+      print(f"diff = ${t2 - t1}%.2f", 20, 60, WHITE)
+    }
     if(flight_time.nonEmpty) {
       //print(s"${flight_time.get.mkString(" : ")}", 20, 60, WHITE)
-      print(s"${flight_time.get}", 20, 60, WHITE)
+      print(s"${flight_time.get}", 20, 80, WHITE)
     }
   }
 

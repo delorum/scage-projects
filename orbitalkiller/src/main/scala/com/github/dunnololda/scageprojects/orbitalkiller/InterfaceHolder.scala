@@ -118,7 +118,7 @@ object InterfaceHolder {
               if(i.isMinimizedByConstraint) {
                 _minimized_strings += ((i, DARK_GRAY))
               } else {
-                _minimized_strings += ((i, YELLOW))
+                _minimized_strings += ((i, i.color))
               }
             }
         }

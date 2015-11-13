@@ -239,14 +239,14 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   //val ship_start_position = earth.coord + DVec(0, earth.radius + 31)
   //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
-  val ship_start_position = earth.coord + DVec(0, earth.radius + 1000000)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
+  //val ship_start_position = earth.coord + DVec(0, earth.radius + 1000000)
+  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 31)
   //val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
-  //val ship_start_position = moon.coord + DVec(0, moon.radius + 3000)
+  val ship_start_position = moon.coord + DVec(0, moon.radius + 3000)
   //
-  //val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = false)* 1.15
+  val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = true)*1.05
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
   val ship = new Ship4("ship",
     init_coord = ship_start_position,
@@ -318,7 +318,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         earth.currentState),
       enable_collisions = true).iterator*/
 
-  private var _stop_after_number_of_tacts:Long = 0//56700
+  var _stop_after_number_of_tacts:Long = 56700
 
   //private var skipped_points = 0
   private var ship_states_with_different_max_multipliers:List[(Int, Double)] = Nil
@@ -335,8 +335,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     val steps = math.max((dt/base_dt).toInt, 1)
     ourMutableSystemEvolution(our_mutable_system, steps)
 
-    /*if(_stop_after_number_of_tacts > 0) {
-      _stop_after_number_of_tacts -= (t - _tacts)
+    if(_stop_after_number_of_tacts > 0) {
+      _stop_after_number_of_tacts -= steps
       if(_stop_after_number_of_tacts <= 0) {
         if (timeMultiplier != realtime) {
           timeMultiplier = realtime
@@ -347,7 +347,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       }
     }
 
-    if(timeMultiplier == xx) {
+    /*if(timeMultiplier == xx) {
       val system_state = currentSystemState
       val mults = List(50,100,150,200,250,300,350,400).takeWhile(x => x <= timeMultiplier)
       ship_states_with_different_max_multipliers = mults.flatMap {
@@ -948,9 +948,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   private var left_up_corner:Option[DVec] = None
   private var right_down_corner:Option[DVec] = None
+  private var set_stop_moment = false
   leftMouseIgnorePause(onBtnDown = m => {
-    if(drawMapMode) left_up_corner = Some(absCoord(m))
-    else {
+    if(drawMapMode) {
+      left_up_corner = Some(absCoord(m))
+    } else {
       InterfaceHolder.determineInterfaceElem(m).foreach(i => if(i.isMinimized) i.showByUser() else i.hideByUser())
     }
   }, onBtnUp = m => {
@@ -967,7 +969,12 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           _center = c
         }
       } else {
-        InterfaceHolder.determineInterfaceElem(m).foreach(i => if(i.isMinimized) i.showByUser() else i.hideByUser())
+        InterfaceHolder.determineInterfaceElem(m) match {
+          case Some(i) =>
+            if(i.isMinimized) i.showByUser() else i.hideByUser()
+          case None =>
+            set_stop_moment = true
+        }
       }
       left_up_corner = None
       right_down_corner = None
@@ -1052,6 +1059,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                   if(ship_index == ship.index) {
                     val x = absCoord(mouseCoord) / scale
                     def _ro(m:DVec) = {
+                      // уравнение эллипса в полярных координатах - так находим радиус-вектор в зависимости от угла
                       e.p/(1 - e.e*math.cos((m - e.f).signedRad(e.f2 - e.f)))
                     }
                     val ro = _ro(x)
@@ -1060,9 +1068,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                     drawFilledCircle(location*scale, 3 / globalScale, color2)
                     val teta = (x - e.f).rad(e.f - e.f2)
                     val mu = (planet_state.mass + bs.mass)*G
+                    // https://en.wikipedia.org/wiki/Lambert%27s_problem
+                    // https://en.wikipedia.org/wiki/Kepler_orbit
+                    // The radial and tangential velocity components
                     val vr = math.sqrt(mu/e.p)*e.e*math.sin(teta)
                     val vt = math.sqrt(mu/e.p)*(1 + e.e*math.cos(teta))
-                    val v = math.sqrt(vr*vr + vt*vt)
+                    /*val vnorm = math.sqrt(vr*vr + vt*vt)*/
+                    val v = (location - e.f).rotateDeg(90).n*math.sqrt(vr*vr + vt*vt) + planet_state.vel
                     val r1 = (bs.coord - e.f).norma
                     def mydeg360(v1:DVec, v2:DVec):Double = {
                       val scalar = v2*v1.perpendicular
@@ -1074,15 +1086,45 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                     val s = bs.coord.dist(location)
                     val xl1 = math.acos(1 - (r1+r2+s)/(2*e.a))
                     val xl2 = math.acos(1 - (r1+r2-s)/(2*e.a))
-                    def _detectCase(t1:Double, xt2:Double, l1:Double, l2:Double):(Double, Double, String) = {
-                      (l1, l2, "None")
+                    // Балк М.Б. Элементы динамики космического полета, Формула Ламберта
+                    def _detectCase(l1:Double, l2:Double):(Double, Double, String) = {
+                      val res1 = areLinesIntersect(e.f2 + (e.f2 - e.f).n*e.r_p, e.f2, bs.coord, location)
+                      val res2 = areLinesIntersect(e.f2, e.f, bs.coord, location)
+                      val res3 = areLinesIntersect(e.f, e.f + (e.f - e.f2).n*e.r_p, bs.coord, location)
+                      if(t1 == 0) {
+                        if(t2 < 180) (l1, l2, "None")
+                        else (2*math.Pi - l1, -l2, "F & A")
+                      } else {
+                        if (!res1 && !res2 && !res3) {
+                          if (t2 > t1) (l1, l2, "None")
+                          else (2 * math.Pi - l1, -l2, "F & A")
+                        } else {
+                          if (res1) {
+                            if (t2 > t1) (l1, l2, "None")
+                            else (2 * math.Pi - l1, -l2, "F & A")
+                          } else if (res3) {
+                            if (t1 > t2) (l1, l2, "None")
+                            else (2 * math.Pi - l1, -l2, "F & A")
+                          } else if (res2) {
+                            if (t2 > t1) (2 * math.Pi - l1, l2, "F")
+                            else (l1, -l2, "A")
+                          } else {
+                            (l1, l2, "None")
+                          }
+                        }
+                      }
                     }
-                    val (l1, l2, variant) = _detectCase(t1, t2, xl1, xl2)
+                    val (l1, l2, _) = _detectCase(xl1, xl2)
                     val n_1 = e.a*math.sqrt(e.a/mu)
+                    // Балк М.Б. Элементы динамики космического полета, Формула Ламберта
                     val flight_time = s"${timeStr((n_1*((l1 - math.sin(l1)) - (l2 - math.sin(l2)))).toLong*1000)}"
+                    if(set_stop_moment) {
+                      _stop_after_number_of_tacts = ((n_1*((l1 - math.sin(l1)) - (l2 - math.sin(l2))))/base_dt).toLong
+                      set_stop_moment = false
+                    }
                     openglLocalTransform {
                       openglMove(e.f * scale + (x - e.f).n * ro * scale)
-                      print(s"  $flight_time : $variant : ${msecOrKmsec(v)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
+                      print(s"  $flight_time : ${msecOrKmsec(v.norma)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
                     }
                   }
                 })
@@ -1103,7 +1145,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def renderingEnabled = _rendering_enabled*/
 
   private def updateOrbits() {
-    println("updateOrbits")
+    //println("updateOrbits")
     if(ship.flightMode != 0) {
       ship_orbit_render = if(ship.engines.exists(_.active)) {
         if(!onPause) {
