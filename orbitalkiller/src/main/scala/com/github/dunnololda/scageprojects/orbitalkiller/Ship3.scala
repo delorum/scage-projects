@@ -189,11 +189,11 @@ class Ship3(
           if(math.abs(rotation) < 0.1) flightMode = 2
           else preserveAngle(0)
         case 4 => // ориентация по траектории
-          val angle = linearVelocity.deg360(DVec(0,1))
+          val angle = DVec(0,1).deg360(linearVelocity)
           if(math.abs(rotation - angle) < 0.1) flightMode = 2
           else preserveAngle(angle)
         case 5 => // ориентация против траектории
-          val angle = correctAngle(linearVelocity.deg360(DVec(0,1)) + 180)
+          val angle = correctAngle(DVec(0,1).deg360(linearVelocity) + 180)
           if(math.abs(rotation - angle) < 0.1) flightMode = 2
           else preserveAngle(angle)
         case 6 => // выход на орбиту

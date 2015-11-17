@@ -239,15 +239,18 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   //val ship_start_position = earth.coord + DVec(0, earth.radius + 31)
   //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+
   //val ship_start_position = earth.coord + DVec(0, earth.radius + 1000000)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
-  //val ship_start_position = moon.coord + DVec(0, moon.radius + 31)
-  //val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+
+  val ship_start_position = moon.coord + DVec(0, moon.radius + 31)
+  val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
-  val ship_start_position = moon.coord + DVec(0, moon.radius + 3000)
-  //
-  val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = true)*1.05
+
+  //val ship_start_position = moon.coord + DVec(0, moon.radius + 3000)
+  //val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = true)*1.05
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
+
   val ship = new Ship4("ship",
     init_coord = ship_start_position,
     init_velocity = ship_init_velocity,
@@ -1058,31 +1061,31 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                     drawEllipse(DVec.zero, e.a * scale, e.b * scale, color2)
                   }
                   if(ship_index == ship.index) {
-                    val x = absCoord(mouseCoord) / scale
-                    val ro = orbitPointByDir(x, e)
-                    drawLine(e.f*scale, absCoord(mouseCoord), DARK_GRAY)
-                    val orbital_point = e.f + (x - e.f).n * ro
+                    val mouse_point = absCoord(mouseCoord) / scale
+                    drawLine(e.f*scale, mouse_point*scale, DARK_GRAY)
+                    val orbital_point = e.orbitalPointInPoint(mouse_point)
                     drawFilledCircle(orbital_point*scale, 3 / globalScale, color2)
-                    /*if(_stop_after_number_of_tacts > 0) {*/
-                      drawFilledCircle((e.f - (e.f - e.f2).rotateRad(-_stop_in_orbit_true_anomaly).n * orbitPointByTrueAnomaly(_stop_in_orbit_true_anomaly, e))*scale, 3 / globalScale, RED)
-                    /*}*/
-                    val teta = (e.f - e.f2).signedRad(x - e.f)
-                    val mu = (planet_state.mass + bs.mass)*G
-                    val flight_time_msec = travelTimeOnOrbitMsec(bs.coord, orbital_point, mu, e)
+                    if(_stop_after_number_of_tacts > 0) {
+                      drawFilledCircle(e.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)*scale, 3 / globalScale, RED)
+                    }
+                    val true_anomaly_rad = e.tetaRad2PiInPoint(mouse_point)
+                    val flight_time_msec = e.travelTimeOnOrbitMsec(bs.coord, orbital_point)
                     val flight_time = s"${timeStr(flight_time_msec)}"
                     if(set_stop_moment) {
                       _stop_after_number_of_tacts = (flight_time_msec/1000/base_dt).toLong
-                      _stop_in_orbit_true_anomaly = (x - e.f).signedRad(e.f2 - orbit.f)
+                      _stop_in_orbit_true_anomaly = true_anomaly_rad
                       set_stop_moment = false
                     }
-                    val (vt, vr) = orbitalVelocityByTrueAnomaly(teta, mu ,e)
+                    /*val (vt, vr) = e.orbitalVelocityByTrueAnomalyRad(true_anomaly_rad)
                     val basis_r = (orbital_point - e.f).n
-                    val basis_t = basis_r.p
+                    val basis_t = basis_r.p*/
                     /*val vnorm = math.sqrt(vr*vr + vt*vt)*/
-                    val v = vr*basis_r + vt*basis_t + planet_state.vel
+                    //val v = vr*basis_r + vt*basis_t + planet_state.vel
                     openglLocalTransform {
-                      openglMove(e.f * scale + (x - e.f).n * ro * scale)
-                      print(s"  $flight_time : ${msecOrKmsec(v.norma)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
+                      openglMove(orbital_point * scale)
+                      print(s"  $flight_time", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
+                      //print(s"  $flight_time : ${msecOrKmsec(v.norma)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
+                      //print(f"  ${e.tetaDeg360InPoint(x)}%.2f", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
                     }
                   }
                 })
@@ -1419,7 +1422,7 @@ class Planet(
         ang <- -alpha to alpha by 0.01
         point = to_viewpoint.rotateDeg(ang)
       } yield point
-      ground_position_ang = correctAngle(to_viewpoint.deg360(Vec(0, 1)) - currentState.ang)
+      ground_position_ang = correctAngle(DVec(0, 1).deg360(to_viewpoint) - currentState.ang)
       ground_position_km = {
         val x = ground_position_ang / 360.0 * 2 * math.Pi * radius / 1000
         if(x - half_render_length_km < 0) x + ground_length_km else x

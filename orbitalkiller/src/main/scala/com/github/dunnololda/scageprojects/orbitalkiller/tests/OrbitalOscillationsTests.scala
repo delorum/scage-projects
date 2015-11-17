@@ -145,7 +145,7 @@ object OrbitalOscillationsTests extends ScageApp {
 
     val cen_acc = station_state.acc* station_state.vel.p
 
-    val EllipseOrbit(_, _, e, _, _, r_p, r_a, t, _, _, _) = calculateOrbit(earth_state.mass, earth_state.coord, station_state.mass, station_state.coord - earth_state.coord, station_state.vel - earth_state.vel, G)
+    val e = calculateOrbit(earth_state.mass, earth_state.coord, station_state.mass, station_state.coord - earth_state.coord, station_state.vel - earth_state.vel, G)
 
     //println(f"e = $e%.2f, r_p = ${mOrKm(r_p - earth.radius)}, r_a = ${mOrKm(r_a - earth.radius)}, t = ${timeStr((t*1000l).toLong)}")
 

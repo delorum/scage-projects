@@ -211,13 +211,13 @@ class Ship4(index:String,
           }
         case 4 => // ориентация по траектории
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
-            val angle = relativeLinearVelocity.deg360(DVec(0, 1))
+            val angle = DVec(0, 1).deg360(relativeLinearVelocity)
             if (angleMinDiff(rotation, angle) < angle_error) flightMode = 2
             else preserveAngle(angle)
           }
         case 5 => // ориентация против траектории
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
-            val angle = relativeLinearVelocity.deg360(DVec(0, -1))
+            val angle = DVec(0, -1).deg360(relativeLinearVelocity)
             if (angleMinDiff(rotation, angle) < angle_error) flightMode = 2
             else preserveAngle(angle)
           }
@@ -257,7 +257,7 @@ class Ship4(index:String,
             planet <- planetByIndex(planet_state.index)
           } yield (planet_state, planet)) match {
             case Some((planet_state, planet)) =>
-              val vertical_orientation = (coord - planet_state.coord).deg360(DVec(0, 1))
+              val vertical_orientation = DVec(0, 1).deg360(coord - planet_state.coord)
               if (angleMinDiff(rotation, vertical_orientation) >= angle_error) {
                 preserveAngle(vertical_orientation)
               } else if (math.abs(angularVelocity) >= angular_velocity_error) {
