@@ -318,7 +318,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         earth.currentState),
       enable_collisions = true).iterator*/
 
-  var _stop_after_number_of_tacts:Long = 56700
+  var _stop_after_number_of_tacts:Long = 0
+  var _stop_in_orbit_true_anomaly:Double = 0
 
   //private var skipped_points = 0
   private var ship_states_with_different_max_multipliers:List[(Int, Double)] = Nil
@@ -1058,70 +1059,27 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                   }
                   if(ship_index == ship.index) {
                     val x = absCoord(mouseCoord) / scale
-                    def _ro(m:DVec) = {
-                      // уравнение эллипса в полярных координатах - так находим радиус-вектор в зависимости от угла
-                      e.p/(1 - e.e*math.cos((m - e.f).signedRad(e.f2 - e.f)))
-                    }
-                    val ro = _ro(x)
+                    val ro = orbitPointByDir(x, e)
                     drawLine(e.f*scale, absCoord(mouseCoord), DARK_GRAY)
-                    val location = e.f + (x - e.f).n * ro
-                    drawFilledCircle(location*scale, 3 / globalScale, color2)
-                    val teta = (x - e.f).rad(e.f - e.f2)
+                    val orbital_point = e.f + (x - e.f).n * ro
+                    drawFilledCircle(orbital_point*scale, 3 / globalScale, color2)
+                    /*if(_stop_after_number_of_tacts > 0) {*/
+                      drawFilledCircle((e.f - (e.f - e.f2).rotateRad(-_stop_in_orbit_true_anomaly).n * orbitPointByTrueAnomaly(_stop_in_orbit_true_anomaly, e))*scale, 3 / globalScale, RED)
+                    /*}*/
+                    val teta = (e.f - e.f2).signedRad(x - e.f)
                     val mu = (planet_state.mass + bs.mass)*G
-                    // https://en.wikipedia.org/wiki/Lambert%27s_problem
-                    // https://en.wikipedia.org/wiki/Kepler_orbit
-                    // The radial and tangential velocity components
-                    val vr = math.sqrt(mu/e.p)*e.e*math.sin(teta)
-                    val vt = math.sqrt(mu/e.p)*(1 + e.e*math.cos(teta))
-                    /*val vnorm = math.sqrt(vr*vr + vt*vt)*/
-                    val v = (location - e.f).rotateDeg(90).n*math.sqrt(vr*vr + vt*vt) + planet_state.vel
-                    val r1 = (bs.coord - e.f).norma
-                    def mydeg360(v1:DVec, v2:DVec):Double = {
-                      val scalar = v2*v1.perpendicular
-                      if(scalar >= 0) v2.deg(v1) else 360 - v2.deg(v1)
-                    }
-                    val t1 = mydeg360(e.f - e.f2, bs.coord - e.f)
-                    val r2 = (location - e.f).norma
-                    val t2 = mydeg360(e.f - e.f2, location - e.f)
-                    val s = bs.coord.dist(location)
-                    val xl1 = math.acos(1 - (r1+r2+s)/(2*e.a))
-                    val xl2 = math.acos(1 - (r1+r2-s)/(2*e.a))
-                    // Балк М.Б. Элементы динамики космического полета, Формула Ламберта
-                    def _detectCase(l1:Double, l2:Double):(Double, Double, String) = {
-                      val res1 = areLinesIntersect(e.f2 + (e.f2 - e.f).n*e.r_p, e.f2, bs.coord, location)
-                      val res2 = areLinesIntersect(e.f2, e.f, bs.coord, location)
-                      val res3 = areLinesIntersect(e.f, e.f + (e.f - e.f2).n*e.r_p, bs.coord, location)
-                      if(t1 == 0) {
-                        if(t2 < 180) (l1, l2, "None")
-                        else (2*math.Pi - l1, -l2, "F & A")
-                      } else {
-                        if (!res1 && !res2 && !res3) {
-                          if (t2 > t1) (l1, l2, "None")
-                          else (2 * math.Pi - l1, -l2, "F & A")
-                        } else {
-                          if (res1) {
-                            if (t2 > t1) (l1, l2, "None")
-                            else (2 * math.Pi - l1, -l2, "F & A")
-                          } else if (res3) {
-                            if (t1 > t2) (l1, l2, "None")
-                            else (2 * math.Pi - l1, -l2, "F & A")
-                          } else if (res2) {
-                            if (t2 > t1) (2 * math.Pi - l1, l2, "F")
-                            else (l1, -l2, "A")
-                          } else {
-                            (l1, l2, "None")
-                          }
-                        }
-                      }
-                    }
-                    val (l1, l2, _) = _detectCase(xl1, xl2)
-                    val n_1 = e.a*math.sqrt(e.a/mu)
-                    // Балк М.Б. Элементы динамики космического полета, Формула Ламберта
-                    val flight_time = s"${timeStr((n_1*((l1 - math.sin(l1)) - (l2 - math.sin(l2)))).toLong*1000)}"
+                    val flight_time_msec = travelTimeOnOrbitMsec(bs.coord, orbital_point, mu, e)
+                    val flight_time = s"${timeStr(flight_time_msec)}"
                     if(set_stop_moment) {
-                      _stop_after_number_of_tacts = ((n_1*((l1 - math.sin(l1)) - (l2 - math.sin(l2))))/base_dt).toLong
+                      _stop_after_number_of_tacts = (flight_time_msec/1000/base_dt).toLong
+                      _stop_in_orbit_true_anomaly = (x - e.f).signedRad(e.f2 - orbit.f)
                       set_stop_moment = false
                     }
+                    val (vt, vr) = orbitalVelocityByTrueAnomaly(teta, mu ,e)
+                    val basis_r = (orbital_point - e.f).n
+                    val basis_t = basis_r.p
+                    /*val vnorm = math.sqrt(vr*vr + vt*vt)*/
+                    val v = vr*basis_r + vt*basis_t + planet_state.vel
                     openglLocalTransform {
                       openglMove(e.f * scale + (x - e.f).n * ro * scale)
                       print(s"  $flight_time : ${msecOrKmsec(v.norma)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
