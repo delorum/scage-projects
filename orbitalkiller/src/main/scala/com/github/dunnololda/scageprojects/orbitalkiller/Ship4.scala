@@ -28,7 +28,7 @@ class Ship4(index:String,
     DVec(3.5, -3.5)
   )
 
-  val draw_points = (points :+ points.head).map(_ * zoom)
+  val draw_points = points :+ points.head
 
   val four  = Engine("4",  position = Vec(-3.5, 0.0), force_dir = Vec(1.0, 0.0),  max_power = 1000000, default_power_percent = 1,   this)
   val six   = Engine("6",  position = Vec(3.5, 0.0),  force_dir = Vec(-1.0, 0.0), max_power = 1000000, default_power_percent = 1,   this)
@@ -309,28 +309,28 @@ class Ship4(index:String,
     /*if(renderingEnabled) {*/
       if(!drawMapMode && !isRemoved) {
         openglLocalTransform {
-          openglMove(coord*zoom - base)
-          drawFilledCircle(DVec.zero, 0.3*zoom, GREEN)                             // mass center
+          openglMove(coord - base)
+          drawFilledCircle(DVec.zero, 0.3, GREEN)                             // mass center
 
           if(OrbitalKiller.globalScale >= 0.8) {
             if (!InterfaceHolder.linearVelocityInfo.isMinimized) {
 
               // current velocity
-              drawArrow(DVec.zero, relativeLinearVelocity.n * 20*zoom, colorIfAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
+              drawArrow(DVec.zero, relativeLinearVelocity.n * 20, colorIfAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
             }
             //drawArrow(DVec.zero, linearAcceleration.n * 100, ORANGE)        // current acceleration
             if (!InterfaceHolder.earthRelativeInfo.isMinimized) {
               // direction to earth
-              drawArrow(Vec.zero, (earth.coord - coord).n * 20*zoom, colorIfAliveOrRed(InterfaceHolder.earthRelativeInfo.color))
+              drawArrow(Vec.zero, (earth.coord - coord).n * 20, colorIfAliveOrRed(InterfaceHolder.earthRelativeInfo.color))
             }
             if (!InterfaceHolder.moonRelativeInfo.isMinimized) {
               // direction to moon
-              drawArrow(Vec.zero, (moon.coord - coord).n * 20*zoom, colorIfAliveOrRed(InterfaceHolder.moonRelativeInfo.color))
+              drawArrow(Vec.zero, (moon.coord - coord).n * 20, colorIfAliveOrRed(InterfaceHolder.moonRelativeInfo.color))
             }
             if (!InterfaceHolder.nearestShipInfo.isMinimized) {
               // direction to nearest ship
               otherShipsNear.headOption.foreach(x => {
-                drawArrow(Vec.zero, (x.coord - coord).n * 20*zoom, colorIfAliveOrRed(InterfaceHolder.nearestShipInfo.color))
+                drawArrow(Vec.zero, (x.coord - coord).n * 20, colorIfAliveOrRed(InterfaceHolder.nearestShipInfo.color))
               })
             }
           }
@@ -341,10 +341,10 @@ class Ship4(index:String,
           engines.foreach {
             case e =>
               e.force_dir match {
-                case DVec(0, -1) => drawEngine(e, e.position*zoom + DVec(0, 0.125)*zoom,  0.5*zoom, 0.25*zoom,  is_vertical = false)
-                case DVec(0, 1)  => drawEngine(e, e.position*zoom + DVec(0, -0.125)*zoom, 0.5*zoom, 0.25*zoom,  is_vertical = false)
-                case DVec(-1, 0) => drawEngine(e, e.position*zoom + DVec(0.125, 0)*zoom,  0.25*zoom,  0.5*zoom, is_vertical = true)
-                case DVec(1, 0)  => drawEngine(e, e.position*zoom + DVec(-0.125, 0)*zoom, 0.25*zoom,  0.5*zoom, is_vertical = true)
+                case DVec(0, -1) => drawEngine(e, e.position + DVec(0, 0.125),  0.5, 0.25,  is_vertical = false)
+                case DVec(0, 1)  => drawEngine(e, e.position + DVec(0, -0.125), 0.5, 0.25,  is_vertical = false)
+                case DVec(-1, 0) => drawEngine(e, e.position + DVec(0.125, 0),  0.25,  0.5, is_vertical = true)
+                case DVec(1, 0)  => drawEngine(e, e.position + DVec(-0.125, 0), 0.25,  0.5, is_vertical = true)
                 case _ =>
               }
           }
