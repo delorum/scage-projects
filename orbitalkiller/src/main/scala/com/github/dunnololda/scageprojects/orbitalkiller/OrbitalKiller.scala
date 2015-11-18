@@ -414,9 +414,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         base = DVec.zero
         view_mode = 0
       case 1 => // фиксация на корабле
-        center = ship.coord + _ship_offset
-        base = /*if(ship.coord.norma < 100000) DVec.zero else */ship.coord
-        rotationCenter = ship.coord
+        center = ship.coord*zoom + _ship_offset*zoom
+        base = /*if(ship.coord.norma < 100000) DVec.zero else */ship.coord*zoom
+        rotationCenter = ship.coord*zoom
         rotationAngleDeg = -ship.rotation
         view_mode = 1
       case 2 => // посадка на планету
@@ -431,7 +431,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         view_mode = 2
       case 3 => // фиксация на корабле, абсолютная ориентация
         center = ship.coord + _ship_offset
-        base = if(ship.coord.norma < 100000) DVec.zero else ship.coord
+        base = if(ship.coord.norma < 100000) DVec.zero else ship.coord*zoom
         rotationAngle = 0
         view_mode = 3
       case 4 => // в режиме карты зафиксировать центр орбиты в центре экрана
@@ -945,7 +945,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     println(globalScale)
   })
   mouseWheelUpIgnorePause(onWheelUp = m => {
-    val _maxGlobalScale = if(!drawMapMode) 30 else 1000000
+    val _maxGlobalScale = if(!drawMapMode) 5 else 1000000
     if(globalScale < _maxGlobalScale) {
       if(globalScale < 0.1) globalScale += 0.01
       else if(globalScale < 1) globalScale += 0.1
@@ -1308,11 +1308,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       } else {
         if(!ship.isRemoved) {
           val m = absCoord(mouseCoord)
-          val d = ship.coord.dist(m)
+          val d = (ship.coord*zoom).dist(m)/zoom
           openglLocalTransform {
-            openglMove(ship.coord - base)
-            drawArrow(DVec.zero, m - ship.coord, DARK_GRAY)
-            openglMove(m - ship.coord)
+            openglMove(ship.coord*zoom - base)
+            drawArrow(DVec.zero, m - ship.coord*zoom, DARK_GRAY)
+            openglMove(m - ship.coord*zoom)
             openglRotateDeg(-rotationAngleDeg)
             print(s"  ${mOrKm(d.toLong)}", Vec.zero, size = (max_font_size / globalScale).toFloat, DARK_GRAY)
           }
@@ -1461,7 +1461,7 @@ class Planet(
   render {
     if(data_initialized && /*renderingEnabled &&*/ !drawMapMode && viewpoint_dist < 50000) {
       /*openglLocalTransform {*/
-        openglMove((coord - base)*zoom)
+        openglMove(coord*zoom - base)
         drawSlidingLines(points, WHITE)
         //points.foreach(p => drawFilledCircle(p, 0.3, WHITE))
         //println(ship.coord.dist(coord) - radius)
