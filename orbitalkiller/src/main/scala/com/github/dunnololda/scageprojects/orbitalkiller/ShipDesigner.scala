@@ -55,12 +55,14 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
     Vec(x, y)
   }*/
 
-  key(KEY_E, onKeyDown = {if(mode == 0) mode = 1 else mode = 0})
-  key(KEY_UP, onKeyDown = {if(mode != 1) mode = 1 else mode = 0})
-  key(KEY_DOWN, onKeyDown = {if(mode != 2) mode = 2 else mode = 0})
+  keyIgnorePause(KEY_Q, onKeyDown = {if(keyPressed(KEY_LCONTROL)) stopApp()})
+
+  key(KEY_E,     onKeyDown = {if(mode == 0) mode = 1 else mode = 0})
+  key(KEY_UP,    onKeyDown = {if(mode != 1) mode = 1 else mode = 0})
+  key(KEY_DOWN,  onKeyDown = {if(mode != 2) mode = 2 else mode = 0})
   key(KEY_RIGHT, onKeyDown = {if(mode != 3) mode = 3 else mode = 0})
-  key(KEY_LEFT, onKeyDown = {if(mode != 4) mode = 4 else mode = 0})
-  key(KEY_M, onKeyDown = {if(mode != 5) mode = 5 else mode = 0})
+  key(KEY_LEFT,  onKeyDown = {if(mode != 4) mode = 4 else mode = 0})
+  key(KEY_M,     onKeyDown = {if(mode != 5) mode = 5 else mode = 0})
   
   key(KEY_NUMPAD8, onKeyDown = engines_mapping(selected_engine) = KEY_NUMPAD8)
   key(KEY_NUMPAD2, onKeyDown = engines_mapping(selected_engine) = KEY_NUMPAD2)
@@ -85,9 +87,9 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
       println()
       engines.zipWithIndex.foreach {case (e, idx) =>
         val mapping = engines_mapping.getOrElse(idx, 0)
-        val (_, val_name, _) = engineMappingStr(mapping)
+        val (index, val_name, _) = engineMappingStr(mapping)
         val position = e.coord - mass_center
-        println(s"val $val_name = Engine(position = Vec(${position.x}, ${position.y}), force_dir = Vec(${e.force_dir.x}, ${e.force_dir.y}), max_power = 10, default_power_percent = 1, this)")
+        println(s"""val $val_name = Engine("$index", position = Vec(${position.x}, ${position.y}), force_dir = Vec(${e.force_dir.x}, ${e.force_dir.y}), max_power = 10, default_power_percent = 1, this)""")
       }
       println()
       println(engines.zipWithIndex.map {case (e, idx) =>
@@ -112,39 +114,39 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
     mode match {
       case 0 =>
         val ssm = absCoord(m)
-        if(points.forall(p => p.dist2(ssm) > 100)) {
-          val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 20),
-                       nearestDot(ssm.y, -windowHeight/2, 20))
+        if(points.forall(p => p.dist2(ssm) > 1)) {
+          val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 1).toInt,
+                       nearestDot(ssm.y, -windowHeight/2, 1).toInt)
           points.insert(selected_point, sm)
         }
       case 1 => // engines up
         val ssm = absCoord(m)
-        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 20) + 10,
-                     nearestDot(ssm.y, -windowHeight/2, 20))
+        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 1) + 0.5f,
+                     nearestDot(ssm.y, -windowHeight/2, 1))
         engines += EngineData(sm, Vec(0, -1))
         selected_engine = engines.length-1
       case 2 => // engines down
         val ssm = absCoord(m)
-        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 20) + 10,
-                     nearestDot(ssm.y, -windowHeight/2, 20))
+        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 1) + 0.5f,
+                     nearestDot(ssm.y, -windowHeight/2, 1))
         engines += EngineData(sm, Vec(0, 1))
         selected_engine = engines.length-1
       case 3 => // engines right
         val ssm = absCoord(m)
-        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 20),
-                     nearestDot(ssm.y, -windowHeight/2, 20) + 10)
+        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 1),
+                     nearestDot(ssm.y, -windowHeight/2, 1) + 0.5f)
         engines += EngineData(sm, Vec(-1, 0))
         selected_engine = engines.length-1
       case 4 => // engines left
         val ssm = absCoord(m)
-        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 20),
-                     nearestDot(ssm.y, -windowHeight/2, 20) + 10)
+        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 1),
+                     nearestDot(ssm.y, -windowHeight/2, 1) + 0.5f)
         engines += EngineData(sm, Vec(1, 0))
         selected_engine = engines.length-1
       case 5 => // mass center set
         val ssm = absCoord(m)
-        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 20)+10,
-                     nearestDot(ssm.y, -windowHeight/2, 20)+10)
+        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 1)+0.5f,
+                     nearestDot(ssm.y, -windowHeight/2, 1)+0.5f)
         mass_center = sm
       case _ =>
     }
@@ -152,8 +154,8 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
     mode match {
       case 0 =>
         val ssm = absCoord(m)
-        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 20),
-                     nearestDot(ssm.y, -windowHeight/2, 20))
+        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 1),
+                     nearestDot(ssm.y, -windowHeight/2, 1))
         points(selected_point) = sm
       case _ =>
     }
@@ -162,11 +164,15 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
   rightMouse(onBtnDown = m => {
     mode match {
       case 0 =>
-        points.remove(selected_point)
+        if(points.length > 0) {
+          points.remove(selected_point)
+        }
         if(points.length > 0) selected_point = points.length-1
         else selected_point = 0
       case x if x > 0 && x < 5 =>
-        engines.remove(selected_engine)
+        if(engines.length > 0) {
+          engines.remove(selected_engine)
+        }
         if(engines.length > 0) selected_engine = engines.length-1
         else selected_engine = 0
       case _ =>
@@ -201,7 +207,7 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
     mode match {
       case 0 =>
         val ssm = absCoord(m)
-        points.zipWithIndex.find(p => p._1.dist2(ssm) < 300).foreach(p => {
+        points.zipWithIndex.find(p => p._1.dist2(ssm) < 1).foreach(p => {
           selected_point = p._2
           points(selected_point) = ssm
         })
@@ -209,31 +215,33 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
     }
   })
 
+  globalScale = 20
+
   render {
-    (0 to windowWidth by 20).foreach(x => drawLine(Vec(x, 0), Vec(x, windowHeight), DARK_GRAY))
-    (0 to windowHeight by 20).foreach(y => drawLine(Vec(0, y), Vec(windowWidth, y), DARK_GRAY))
+    (0 to windowWidth  by 1).foreach(x => drawLine(Vec(x, 0), Vec(x, windowHeight), DARK_GRAY))
+    (0 to windowHeight by 1).foreach(y => drawLine(Vec(0, y), Vec(windowWidth,  y), DARK_GRAY))
 
     if(points.length > 0) {
-      points.zipWithIndex.foreach(p => drawFilledCircle(p._1, 3, if(p._2 == selected_point) RED else WHITE))
+      points.zipWithIndex.foreach(p => drawFilledCircle(p._1, 0.3f, if(p._2 == selected_point) RED else WHITE))
       drawSlidingLines(points.:+(points.head), WHITE)
     }
 
     /*if(points.length > 1) {*/
     //val mass_center = polygonCentroid(points)
-    drawCircle(mass_center, 3, GREEN)
+    drawCircle(mass_center, 0.3f, GREEN)
     /*}*/
 
     if(engines.length > 0) {
       engines.zipWithIndex.foreach {
         case (EngineData(coord, force_dir), idx) =>
           force_dir match {
-            case Vec(0, -1) => drawRectCentered(coord + Vec(0, 2.5f), 10, 5, if(idx == selected_engine) RED else WHITE)
-            case Vec(0, 1) => drawRectCentered(coord + Vec(0, -2.5f), 10, 5, if(idx == selected_engine) RED else WHITE)
-            case Vec(-1, 0) => drawRectCentered(coord + Vec(2.5f, 0), 5, 10, if(idx == selected_engine) RED else WHITE)
-            case Vec(1, 0) => drawRectCentered(coord + Vec(-2.5f, 0), 5, 10, if(idx == selected_engine) RED else WHITE)
+            case Vec(0, -1) => drawRectCentered(coord + Vec(0, 0.125f),  0.5f,  0.25f, if(idx == selected_engine) RED else WHITE)
+            case Vec(0, 1)  => drawRectCentered(coord + Vec(0, -0.125f), 0.5f,  0.25f, if(idx == selected_engine) RED else WHITE)
+            case Vec(-1, 0) => drawRectCentered(coord + Vec(0.125f, 0),  0.25f, 0.5f,  if(idx == selected_engine) RED else WHITE)
+            case Vec(1, 0)  => drawRectCentered(coord + Vec(-0.125f, 0), 0.25f, 0.5f,  if(idx == selected_engine) RED else WHITE)
             case _ =>
           }
-          print(engineMappingStr(engines_mapping.getOrElse(idx, 0))._1, coord, if(idx == selected_engine) RED else WHITE)
+          print(engineMappingStr(engines_mapping.getOrElse(idx, 0))._1, coord, max_font_size/globalScale, if(idx == selected_engine) RED else WHITE)
       }
     }
   }

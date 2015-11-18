@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import java.io.FileOutputStream
 
 import com.github.dunnololda.scage.ScageLibD._
+import org.lwjgl.opengl.GL11
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -16,10 +17,13 @@ sealed trait FlightMode
 object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("screen.width", 1280), property("screen.height", 768)) {
   val k:Double = 1 // доля секунды симуляции, которая обрабатывается за одну реальную секунду, если не применяется ускорение
 
-  // движок делает вызов обработчика примерно 60 раз в секунду, за каждый вызов будет обрабатывать вот такую порцию симуляции
+  // движок делает вызов обработчика примерно 63 раза в секунду, за каждый вызов будет обрабатывать вот такую порцию симуляции
   // то есть, мы хотим, чтобы за одну реальную секунду обрабатывалось k секунд симуляции, поэтому за один такт движка (которых 60 в секунду)
   // будем обрабатывать k/60
   val base_dt:Double = 1.0/63*k
+
+  // какой длины в пикселях на экране будет реальная длина в 1 метр
+  val zoom:Double = 10
 
   val realtime = (1.0/k).toInt // 1/k соответствует реальному течению времени
 
@@ -220,7 +224,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }*/
 
-  val earth = new Planet("Earth", mass = 5.9746E24, init_coord = DVec.dzero, init_velocity = DVec.zero, init_ang_vel = /*0.0*/360.0/(24l*60*60), radius = 6400000/*6314759.95726045*/)
+  val earth = new Planet(
+    "Earth",
+    mass = 5.9746E24,
+    init_coord = DVec.dzero,
+    init_velocity = DVec.zero,
+    init_ang_vel = /*0.0*/360.0/(24l*60*60),
+    radius = 6400000/*6314759.95726045*/)
 
   val moon_start_position = DVec(-269000000, 269000000)
   val moon_init_velocity = satelliteSpeed(moon_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
@@ -237,14 +247,14 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def currentPlanetStates = current_body_states.filter(x => planet_indexes.contains(x._1))
   def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
 
-  //val ship_start_position = earth.coord + DVec(0, earth.radius + 31)
-  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
+  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
-  //val ship_start_position = earth.coord + DVec(0, earth.radius + 1000000)
-  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
+  //val ship_start_position = earth.coord + DVec(100, earth.radius + 200000)
+  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
 
-  val ship_start_position = moon.coord + DVec(0, moon.radius + 31)
-  val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
+  //val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
 
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 3000)
@@ -291,8 +301,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         bs.index match {
           case ship.index =>
             gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G) +
-              other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(DVec.dzero) +
-              ship.currentReactiveForce(tacts, bs)
+            other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(DVec.dzero) +
+            ship.currentReactiveForce(tacts, bs)/* +
+            airResistance(bs.vel - (bs.coord - earth.coord).p*(earth.currentState.ang_vel.toRad*bs.coord.dist(earth.coord)), bs.coord.dist(earth.coord) - earth.radius)*/
           case station.index =>
             gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G) +
               other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(DVec.dzero) +
@@ -404,7 +415,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         view_mode = 0
       case 1 => // фиксация на корабле
         center = ship.coord + _ship_offset
-        base = if(ship.coord.norma < 100000) DVec.zero else ship.coord
+        base = /*if(ship.coord.norma < 100000) DVec.zero else */ship.coord
         rotationCenter = ship.coord
         rotationAngleDeg = -ship.rotation
         view_mode = 1
@@ -934,7 +945,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     println(globalScale)
   })
   mouseWheelUpIgnorePause(onWheelUp = m => {
-    val _maxGlobalScale = if(!drawMapMode) 5 else 1000000
+    val _maxGlobalScale = if(!drawMapMode) 30 else 1000000
     if(globalScale < _maxGlobalScale) {
       if(globalScale < 0.1) globalScale += 0.01
       else if(globalScale < 1) globalScale += 0.1
@@ -1417,11 +1428,12 @@ class Planet(
   private def updateRenderData() {
     viewpoint_dist = math.abs((ship.coord + shipOffset).dist(coord) - radius)
     if(viewpoint_dist < 50000) {
+      //val before_to_viewpoint = (ship.coord + shipOffset - coord).n*(radius - 1000)
       to_viewpoint = (ship.coord + shipOffset - coord).n * radius
       points = for {
-        ang <- -alpha to alpha by 0.01
+        ang <- -alpha to alpha by 0.01/zoom
         point = to_viewpoint.rotateDeg(ang)
-      } yield point
+      } yield point*zoom
       ground_position_ang = correctAngle(DVec(0, 1).deg360(to_viewpoint) - currentState.ang)
       ground_position_km = {
         val x = ground_position_ang / 360.0 * 2 * math.Pi * radius / 1000
@@ -1448,15 +1460,17 @@ class Planet(
 
   render {
     if(data_initialized && /*renderingEnabled &&*/ !drawMapMode && viewpoint_dist < 50000) {
-      openglLocalTransform {
-        openglMove(coord - base)
+      /*openglLocalTransform {*/
+        openglMove((coord - base)*zoom)
         drawSlidingLines(points, WHITE)
+        //points.foreach(p => drawFilledCircle(p, 0.3, WHITE))
+        //println(ship.coord.dist(coord) - radius)
         ground_features_near.foreach { case (p, w, h) =>
-          drawLine(p + p.p*w/2, p + p.n*h, WHITE)
-          drawLine(p - p.p*w/2, p + p.n*h, WHITE)
-          drawLine(p, p + p.n*h, WHITE)
+          drawLine(p*zoom + p.p*w/2*zoom, p*zoom + p.n*h*zoom, WHITE)
+          drawLine(p*zoom - p.p*w/2*zoom, p*zoom + p.n*h*zoom, WHITE)
+          drawLine(p*zoom,                p*zoom + p.n*h*zoom, WHITE)
         }
-      }
+      /*}*/
     }
   }
 }

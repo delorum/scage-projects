@@ -133,20 +133,20 @@ trait Ship {
     if(pilot_is_dead || e.active) RED else WHITE
   }
 
-  def engineActiveSize(e:Engine):Double = {
-    10.0*e.power/e.max_power
+  def engineActiveSize(e:Engine, max_size:Double):Double = {
+    max_size*e.power/e.max_power
   }
 
   def drawEngine(e:Engine, center:DVec, width:Double, height:Double, is_vertical:Boolean) {
     drawRectCentered(center, width, height, color = engineColor(e))
     if(e.active && e.power > 0) {
       if(is_vertical) {
-        drawFilledRectCentered(center, width, engineActiveSize(e), color = engineColor(e))
+        drawFilledRectCentered(center, width, engineActiveSize(e, width), color = engineColor(e))
       } else {
-        drawFilledRectCentered(center, engineActiveSize(e), height, color = engineColor(e))
+        drawFilledRectCentered(center, engineActiveSize(e, height), height, color = engineColor(e))
       }
       //if(globalScale > 2) print(s"${e.powerPercent}% : ${e.workTimeTacts}", center.toVec, size = (max_font_size/globalScale).toFloat)
-      if(isSelectedEngine(e)) drawRectCentered(center, width+2, height+2, color = engineColor(e))
+      if(isSelectedEngine(e)) drawRectCentered(center, width*1.5, height*1.5, color = engineColor(e))
     }
   }
 

@@ -461,6 +461,7 @@ package object orbitalkiller {
         vel += x
         dvel += x
 
+
         val y = (body.invI * (contactVector */ impulse)).toDeg
         ang_acc += y/dt
         d_ang_acc += y/dt
@@ -794,6 +795,15 @@ package object orbitalkiller {
 
   def gravityForce(body1_coord:DVec, body1_mass:Double, body2_coord:DVec, body2_mass:Double, G:Double):DVec = {
     (body1_coord - body2_coord).n*G*body1_mass*body2_mass/body1_coord.dist2(body2_coord)
+  }
+
+  def airResistance(v:DVec, h:Double):DVec = {
+    val F = 0.045*v.norma2*1.225*math.exp(-5.6E-5*h)*math.Pi*30*30
+    -v.n*F
+  }
+
+  def airPressurePascale(h:Double):Double = {
+    101325*math.exp(-1.1855831477936685E-4*h)
   }
 
   def satelliteSpeed(body_coord:DVec, planet_coord:DVec, planet_velocity:DVec, planet_mass:Double, G:Double, counterclockwise:Boolean):DVec = {
