@@ -348,6 +348,10 @@ class Ship4(index:String,
                 case _ =>
               }
           }
+
+          val pa = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*70000
+          val pb = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*(-70000)
+          drawLine(pa, pb, WHITE)
         }
       }
     /*}*/

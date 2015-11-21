@@ -229,7 +229,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     mass = 5.9746E24,
     init_coord = DVec.dzero,
     init_velocity = DVec.zero,
-    init_ang_vel = /*0.0*/360.0/(24l*60*60),
+    //init_ang_vel = 0.0,
+    init_ang_vel = 360.0/(24l*60*60),
     radius = 6400000/*6314759.95726045*/)
 
   val moon_start_position = DVec(-269000000, 269000000)
@@ -945,7 +946,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     println(globalScale)
   })
   mouseWheelUpIgnorePause(onWheelUp = m => {
-    val _maxGlobalScale = if(!drawMapMode) 5 else 1000000
+    val _maxGlobalScale = if(!drawMapMode) 30 else 1000000
     if(globalScale < _maxGlobalScale) {
       if(globalScale < 0.1) globalScale += 0.01
       else if(globalScale < 1) globalScale += 0.1
@@ -1431,7 +1432,7 @@ class Planet(
       //val before_to_viewpoint = (ship.coord + shipOffset - coord).n*(radius - 1000)
       to_viewpoint = (ship.coord + shipOffset - coord).n * radius
       points = for {
-        ang <- -alpha to alpha by 0.01
+        ang <- -alpha to alpha by 0.0001
         point = to_viewpoint.rotateDeg(ang)
       } yield point
       ground_position_ang = correctAngle(DVec(0, 1).deg360(to_viewpoint) - currentState.ang)
@@ -1462,11 +1463,23 @@ class Planet(
     if(data_initialized && /*renderingEnabled &&*/ !drawMapMode && viewpoint_dist < 50000) {
       /*openglLocalTransform {*/
         openglMove(coord - base)
-        drawSlidingLines(points, WHITE)
+        //drawSlidingLines(points, WHITE)
         //points.foreach(p => drawFilledCircle(p, 0.3, WHITE))
         //val x = points.sortBy(p => p.dist(ship.coord)).take(2)
         //println(x.mkString(" : "))
         //println(ship.coord.dist(coord) - radius)
+        /*val two_points = points.sortBy(p => p.dist(ship.coord)).take(2)
+        val p1 = two_points.head
+        val p2 = two_points.last
+        val A = p1.y - p2.y
+        val B = p2.x - p1.x
+        val C = p1.x*p2.y - p2.x*p1.y
+        val d = math.abs(A*ship.coord.x + B*ship.coord.y + C)/math.sqrt(A*A + B*B)*/
+        //println(f"${ship.coord.dist(coord) - radius}%.2f : $d")
+        /*val pa = ship.coord + (coord - ship.coord).n*(ship.coord.dist(coord) - radius) + (coord - ship.coord).p*500
+        val pb = ship.coord + (coord - ship.coord).n*(ship.coord.dist(coord) - radius) + (coord - ship.coord).p*(-500)
+        drawLine(pa, pb, WHITE)*/
+
         ground_features_near.foreach { case (p, w, h) =>
           drawLine(p + p.p*w/2, p + p.n*h, WHITE)
           drawLine(p - p.p*w/2, p + p.n*h, WHITE)
