@@ -335,23 +335,23 @@ class Ship4(index:String,
             }
           }
 
+          /*val pa = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*70000
+          val pb = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*(-70000)
+          drawLine(pa, pb, WHITE)*/
+
           openglRotateDeg(rotation)
           drawSlidingLines(draw_points, colorIfAliveOrRed(WHITE))
 
           engines.foreach {
             case e =>
               e.force_dir match {
-                case DVec(0, -1) => drawEngine(e, e.position + DVec(0, 0.125),  0.5, 0.25,  is_vertical = false)
-                case DVec(0, 1)  => drawEngine(e, e.position + DVec(0, -0.125), 0.5, 0.25,  is_vertical = false)
-                case DVec(-1, 0) => drawEngine(e, e.position + DVec(0.125, 0),  0.25,  0.5, is_vertical = true)
-                case DVec(1, 0)  => drawEngine(e, e.position + DVec(-0.125, 0), 0.25,  0.5, is_vertical = true)
+                case DVec(0, -1) => drawEngine(e, e.position + DVec(0, 0.25),  1, 0.5,  is_vertical = false)
+                case DVec(0, 1)  => drawEngine(e, e.position + DVec(0, -0.25), 1, 0.5,  is_vertical = false)
+                case DVec(-1, 0) => drawEngine(e, e.position + DVec(0.25, 0),  0.5,  1, is_vertical = true)
+                case DVec(1, 0)  => drawEngine(e, e.position + DVec(-0.25, 0), 0.5,  1, is_vertical = true)
                 case _ =>
               }
           }
-
-          val pa = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*70000
-          val pb = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*(-70000)
-          drawLine(pa, pb, WHITE)
         }
       }
     /*}*/

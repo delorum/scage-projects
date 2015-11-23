@@ -3,7 +3,6 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import java.io.FileOutputStream
 
 import com.github.dunnololda.scage.ScageLibD._
-import org.lwjgl.opengl.GL11
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -231,7 +230,66 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     init_velocity = DVec.zero,
     //init_ang_vel = 0.0,
     init_ang_vel = 360.0/(24l*60*60),
-    radius = 6400000/*6314759.95726045*/)
+    radius = 6400000/*6314759.95726045*/) {
+
+    val T0 = 288     // temperature at sea level, K
+    val L = 0.0065   // temperature lapse rate, K/m
+    val P0 = 101325  // pressure at sea level, N/m^2
+    val M = 0.02896  // molar mass or air, kg/mole
+    val R = 8.314    // ideal gas constant, Joules/(K*mole)
+
+    def altitude(ship_coord:DVec):Double = ship_coord.dist(coord) - radius
+    
+    def velocityRelativeToAir(ship_coord:DVec, ship_velocity:DVec):DVec = {
+      ship_velocity - (ship_coord - coord).p*(currentState.ang_vel.toRad*ship_coord.dist(coord))
+    }
+    
+    def temperature(h:Double) = {
+      T0 - L*h
+    }
+
+    /*def airPressurePascale(h:Double):Double = {
+      val T = temperature(h)
+      if(T <= 0) 0
+      else {
+        P0 * math.pow(T / T0, g * M / (R * L))
+      }
+    }*/
+
+    def airPressureMmHg(h:Double):Double = {
+      airPressurePascale(h)/133.3
+    }
+
+    // A - Reference area (of the front of the ship)
+    // C - Drag coefficient
+    def airResistance(v:DVec, h:Double, A:Double, C:Double):DVec = {
+      val T = temperature(h)
+      if(T <= 0) DVec.zero
+      else {
+        val P = airPressurePascale(h)
+        -0.5*P*M/(R*T)*A*C*v.norma2*v.n
+      }
+    }
+
+    def airResistance(ship_coord:DVec, ship_velocity:DVec, A:Double, C:Double):DVec = {
+      airResistance(velocityRelativeToAir(ship_coord, ship_velocity), altitude(ship_coord)/*, A, C*/)
+    }
+
+    def airPressureMmHg(coord:DVec):Double = {
+      airPressureMmHg(altitude(coord))
+    }
+
+    // another model
+
+    def airResistance(v:DVec, h:Double):DVec = {
+      val F = 0.045*v.norma2*1.225*math.exp(-5.6E-5*h)*math.Pi*6*6
+      -v.n*F
+    }
+
+    def airPressurePascale(h:Double):Double = {
+      101325*math.exp(-1.1855831477936685E-4*h)
+    }
+  }
 
   val moon_start_position = DVec(-269000000, 269000000)
   val moon_init_velocity = satelliteSpeed(moon_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
@@ -303,8 +361,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           case ship.index =>
             gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G) +
             other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(DVec.dzero) +
-            ship.currentReactiveForce(tacts, bs)/* +
-            airResistance(bs.vel - (bs.coord - earth.coord).p*(earth.currentState.ang_vel.toRad*bs.coord.dist(earth.coord)), bs.coord.dist(earth.coord) - earth.radius)*/
+            ship.currentReactiveForce(tacts, bs) +
+            earth.airResistance(bs.coord, bs.vel, 10, 0.5)
           case station.index =>
             gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G) +
               other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(DVec.dzero) +
@@ -1368,7 +1426,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   pause()
 }
 
-import OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
 trait CelestialBody {
   def index:String
@@ -1381,6 +1439,8 @@ trait CelestialBody {
   val currentState:MutableBodyState = initState.toMutableBodyState
   val ground_length_km = (2*math.Pi*radius/1000).toInt
   def groundSpeedMsec = currentState.ang_vel.toRad*radius
+
+  val g = G*mass/(radius*radius)  // ускорение свободного падения, м/с^2
 }
 
 class Planet(
@@ -1418,10 +1478,10 @@ class Planet(
 
   private var data_initialized = false
   private val half_render_length_km = 50
-  private val alpha = half_render_length_km * 2.0 * 1000 * 180 / math.Pi / radius
+  //private val alpha = half_render_length_km * 2.0 * 1000 * 180 / math.Pi / radius
   private var viewpoint_dist:Double = _
   private var to_viewpoint:DVec = _
-  private var points:Seq[DVec] = _
+  //private var points:Seq[DVec] = _
   private var ground_position_ang:Double = _
   private var ground_position_km:Double = _
   private var ground_features_near:Seq[(DVec, Int, Int)] = _
@@ -1431,10 +1491,10 @@ class Planet(
     if(viewpoint_dist < 50000) {
       //val before_to_viewpoint = (ship.coord + shipOffset - coord).n*(radius - 1000)
       to_viewpoint = (ship.coord + shipOffset - coord).n * radius
-      points = for {
+      /*points = for {
         ang <- -alpha to alpha by 0.0001
         point = to_viewpoint.rotateDeg(ang)
-      } yield point
+      } yield point*/
       ground_position_ang = correctAngle(DVec(0, 1).deg360(to_viewpoint) - currentState.ang)
       ground_position_km = {
         val x = ground_position_ang / 360.0 * 2 * math.Pi * radius / 1000
@@ -1461,7 +1521,7 @@ class Planet(
 
   render {
     if(data_initialized && /*renderingEnabled &&*/ !drawMapMode && viewpoint_dist < 50000) {
-      /*openglLocalTransform {*/
+      openglLocalTransform {
         openglMove(coord - base)
         //drawSlidingLines(points, WHITE)
         //points.foreach(p => drawFilledCircle(p, 0.3, WHITE))
@@ -1485,7 +1545,13 @@ class Planet(
           drawLine(p - p.p*w/2, p + p.n*h, WHITE)
           drawLine(p,                p + p.n*h, WHITE)
         }
-      /*}*/
+      }
+      openglLocalTransform {
+        openglMove(ship.coord - base)
+        val pa = (coord - ship.coord).n*(ship.coord.dist(coord) - radius) + (coord - ship.coord).p*70000
+        val pb = (coord - ship.coord).n*(ship.coord.dist(coord) - radius) + (coord - ship.coord).p*(-70000)
+        drawLine(pa, pb, WHITE)
+      }
     }
   }
 }

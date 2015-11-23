@@ -797,15 +797,6 @@ package object orbitalkiller {
     (body1_coord - body2_coord).n*G*body1_mass*body2_mass/body1_coord.dist2(body2_coord)
   }
 
-  def airResistance(v:DVec, h:Double):DVec = {
-    val F = 0.045*v.norma2*1.225*math.exp(-5.6E-5*h)*math.Pi*30*30
-    -v.n*F
-  }
-
-  def airPressurePascale(h:Double):Double = {
-    101325*math.exp(-1.1855831477936685E-4*h)
-  }
-
   def satelliteSpeed(body_coord:DVec, planet_coord:DVec, planet_velocity:DVec, planet_mass:Double, G:Double, counterclockwise:Boolean):DVec = {
     val from_planet_to_body = body_coord - planet_coord
     if(!counterclockwise) planet_velocity + from_planet_to_body.p*math.sqrt(G*planet_mass/from_planet_to_body.norma)*(-1)
@@ -859,6 +850,10 @@ package object orbitalkiller {
 
   def msecOrKmsec(msec:Number):String = {
     if(math.abs(msec.doubleValue()) < 1000) f"${msec.doubleValue()}%.2f м/сек" else f"${msec.doubleValue()/1000}%.2f км/сек"
+  }
+
+  def newtonOrKilonewton(newton:Number):String = {
+    if(math.abs(newton.doubleValue()) < 1000) f"${newton.doubleValue()}%.2f Н" else f"${newton.doubleValue()/1000}%.2f кН"
   }
 
   /**

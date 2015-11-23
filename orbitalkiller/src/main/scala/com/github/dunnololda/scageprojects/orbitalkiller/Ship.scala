@@ -260,14 +260,12 @@ trait Ship {
   private var ship_removed = false
   def isRemoved = ship_removed
 
-  private val g = OrbitalKiller.earth.mass*G/(OrbitalKiller.earth.radius*OrbitalKiller.earth.radius)
-
   def updateShipState(time_msec:Long): Unit = {
     if(!pilot_is_dead) {
       val dvel = currentState.dvel.norma
       if (dvel > 10) { // crash tolerance = 10 m/s
         pilot_is_dead = true
-        pilot_death_reason = f"Корабль уничтожен в результате столкновения (${dvel/OrbitalKiller.base_dt/g}%.2fg)"
+        pilot_death_reason = f"Корабль уничтожен в результате столкновения (${dvel/OrbitalKiller.base_dt/{earth.g}}%.2fg)"
         flightMode = 1
         if(dvel > 100) {
           OrbitalKiller.our_mutable_system.find(_._1.index == index).foreach(x => {
@@ -277,10 +275,11 @@ trait Ship {
           })
         }
       } else {
-        val reactive_force = currentReactiveForce(0, currentState)
+        val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(coord, linearVelocity, 10, 0.5)
         val centrifugial_force = if (angularVelocity == 0) DVec.zero else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.rotateDeg(rotation)
-        val pilot_acc = (reactive_force / mass + centrifugial_force / pilot_mass + currentState.dacc).norma
-        pilot_gs += ((pilot_acc / g, time_msec))
+        //val air_resistance =  earth.airResistance(coord, linearVelocity, 10, 0.5)
+        val pilot_acc = (reactive_force / mass + centrifugial_force / pilot_mass + currentState.dacc).norma/* - (air_resistance.norma/mass)*/
+        pilot_gs += ((pilot_acc / earth.g, time_msec))
         if (time_msec - pilot_gs.head._2 >= 1000) {
           pilot_average_g = pilot_gs.map(_._1).sum / pilot_gs.length
           pilot_gs.clear()
