@@ -267,7 +267,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       if(T <= 0) DVec.zero
       else {
         val P = airPressurePascale(h)
-        -0.5*P*M/(R*T)*A*C*v.norma2*v.n
+        val ro = P*M/(R*T)                       // density of air
+        val F = -0.5*ro*A*C*v.norma2
+        v.n*F
       }
     }
 
@@ -280,9 +282,18 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
 
     // another model
+    // http://fiz.1september.ru/articlef.php?ID=200801702
 
     def airResistance(v:DVec, h:Double):DVec = {
-      val F = 0.045*v.norma2*1.225*math.exp(-5.6E-5*h)*math.Pi*6*6
+      val c = 0.045                   // безразмерный коэффициент (равный 0,045 для «каплевидного» тела)
+      val ro0 = 1.22                  // плотность воздуха на поверхности Земли, кг/м^3
+      val beta = 5.6E-5               // м^-1
+      val S = math.Pi*3*3             // площадь поперечного сечения тела
+      val ro = ro0*math.exp(-beta*h)  // плотность воздуха на высоте h
+      val k = c*ro*S                  // коэффициент лобового сопротивления
+      val F = k*v.norma2
+      //val F = 0.045*v.norma2*1.225*math.exp(-5.6E-5*h)*math.Pi*3*3
+      //val F = 0.045*v.norma2*1.225*math.exp(-1.4E-4*h)*math.Pi*3*3
       -v.n*F
     }
 

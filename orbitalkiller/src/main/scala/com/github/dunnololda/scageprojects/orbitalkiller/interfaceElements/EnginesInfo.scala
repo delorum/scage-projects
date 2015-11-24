@@ -1,5 +1,6 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interfaceElements
 
+import com.github.dunnololda.scage.support.ScageColor
 import com.github.dunnololda.scageprojects.orbitalkiller.InterfaceElement
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
@@ -21,6 +22,10 @@ class EnginesInfo extends InterfaceElement {
 
   }
   override def data: Seq[String] = strings
+
+  override def color:ScageColor = {
+    if(isMinimized && ship.engines.exists(_.active)) ScageColor.RED else ScageColor.YELLOW
+  }
 
   override val shortDescr: String = "En"
 }
