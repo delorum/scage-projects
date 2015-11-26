@@ -310,7 +310,7 @@ class Ship4(index:String,
       if(!drawMapMode && !isRemoved) {
         openglLocalTransform {
           openglMove(coord - base)
-          drawFilledCircle(DVec.zero, 0.3, GREEN)                             // mass center
+          drawFilledCircle(DVec.zero, 0.3, colorIfAliveOrRed(GREEN))                             // mass center
 
           if(OrbitalKiller.globalScale >= 0.8) {
             if (!InterfaceHolder.linearVelocityInfo.isMinimized) {

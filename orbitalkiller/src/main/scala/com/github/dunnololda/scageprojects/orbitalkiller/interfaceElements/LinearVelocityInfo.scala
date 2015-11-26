@@ -11,7 +11,7 @@ class LinearVelocityInfo extends InterfaceElement {
   }
 
   override def data: Seq[String] = strings
-  override def color = ScageColor.CYAN
+  override val color = ScageColor.CYAN
 
   override val shortDescr: String = "LV"
 }

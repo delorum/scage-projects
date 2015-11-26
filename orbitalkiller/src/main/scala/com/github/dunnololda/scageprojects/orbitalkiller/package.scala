@@ -871,7 +871,7 @@ package object orbitalkiller {
     def e:Double
     def f:DVec
     def center:DVec
-    def strDefinition(prefix:String, planet_radius:Double, planet_velocity:DVec, ship_coord:DVec, ship_velocity:DVec):String
+    def strDefinition(prefix:String, planet_radius:Double, planet_velocity:DVec, planet_g:Double, ship_coord:DVec, ship_velocity:DVec):String
   }
 
   class EllipseOrbit(
@@ -887,10 +887,15 @@ package object orbitalkiller {
     val f2:DVec,              // координаты второго фокуса
     val center:DVec,          // координаты центра
     mu:Double) extends KeplerOrbit {  // гравитационный параметр: произведение гравитационной постоянной G на сумму масс притягивающего центра и корабля на орбите
-    def strDefinition(prefix:String, planet_radius:Double, planet_velocity:DVec, ship_coord:DVec, ship_velocity:DVec):String = {
+    def strDefinition(prefix:String, planet_radius:Double, planet_velocity:DVec, planet_g:Double, ship_coord:DVec, ship_velocity:DVec):String = {
       val dir = if((ship_coord - f).perpendicular*(ship_velocity - planet_velocity) >= 0) "\u21b6" else "\u21b7"
       if(r_p - planet_radius < 0) {
-        f"$prefix, суборбитальная, $dir, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, r_a = ${mOrKm(r_a - planet_radius)}"
+        val y_axis = (ship_coord - f).n
+        val y0 = (ship_coord - f)*y_axis - planet_radius
+        val v0y = (ship_velocity - planet_velocity)*y_axis
+        val fall_time_sec = (v0y + math.sqrt(2*planet_g*y0 + v0y*v0y))/planet_g
+        val time_to_stop_at_full_power = math.abs(v0y/(1000000/OrbitalKiller.ship.mass - planet_g))
+        f"$prefix, суборбитальная, $dir, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, r_a = ${mOrKm(r_a - planet_radius)}. Поверхность через ${timeStr((fall_time_sec*1000l).toLong)} (${timeStr((time_to_stop_at_full_power*1000l).toLong)})"
       } else {
         f"$prefix, замкнутая, $dir, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, r_a = ${mOrKm(r_a - planet_radius)}, t = ${timeStr((t*1000l).toLong)}"
       }
@@ -1015,7 +1020,7 @@ package object orbitalkiller {
      val e:Double,             // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
      val f:DVec,                            // координаты первого фокуса (координаты небесного тела, вокруг которого вращаемся)
      val center:DVec) extends KeplerOrbit { // координаты центр
-    def strDefinition(prefix:String, planet_radius:Double, planet_velocity:DVec, ship_coord:DVec, ship_velocity:DVec):String = {
+    def strDefinition(prefix:String, planet_radius:Double, planet_velocity:DVec, planet_g:Double, ship_coord:DVec, ship_velocity:DVec):String = {
       val dir = if((ship_coord - f).perpendicular*(ship_velocity - planet_velocity) >= 0) "\u21b6" else "\u21b7"
       val r_p_approach = if((ship_coord - f)*(ship_velocity - planet_velocity) >= 0) "удаляемся" else "приближаемся"
       f"$prefix, незамкнутая, $dir, $r_p_approach, e = $e%.2f, r_p = ${mOrKm(a*(e-1) - planet_radius)}"

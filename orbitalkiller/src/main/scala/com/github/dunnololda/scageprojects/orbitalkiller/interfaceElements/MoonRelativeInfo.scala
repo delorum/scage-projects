@@ -17,7 +17,7 @@ class MoonRelativeInfo extends InterfaceElement {
   }
 
   override def data: Seq[String] = strings
-  override def color = ScageColor.GREEN
+  override val color = ScageColor.GREEN
 
   override val shortDescr: String = "M"
 }

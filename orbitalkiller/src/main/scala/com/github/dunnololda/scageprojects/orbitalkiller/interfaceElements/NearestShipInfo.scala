@@ -35,7 +35,7 @@ class NearestShipInfo extends InterfaceElement {
     }
   }
   override def data: Seq[String] = strings
-  override def color = ScageColor.MAGENTA
+  override val color = ScageColor.MAGENTA
 
   override val shortDescr: String = "NS"
 }

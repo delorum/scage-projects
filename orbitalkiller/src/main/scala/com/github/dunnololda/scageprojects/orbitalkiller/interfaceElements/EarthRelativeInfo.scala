@@ -17,7 +17,7 @@ class EarthRelativeInfo extends InterfaceElement {
   }
 
   override def data: Seq[String] = strings
-  override def color = ScageColor.ORANGE
+  override val color = ScageColor.ORANGE
 
   override val shortDescr: String = "E"
 }

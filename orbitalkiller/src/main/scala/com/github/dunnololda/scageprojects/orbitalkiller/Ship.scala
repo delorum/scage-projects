@@ -141,9 +141,9 @@ trait Ship {
     drawRectCentered(center, width, height, color = engineColor(e))
     if(e.active && e.power > 0) {
       if(is_vertical) {
-        drawFilledRectCentered(center, width, engineActiveSize(e, width), color = engineColor(e))
+        drawFilledRectCentered(center, width, engineActiveSize(e, height), color = engineColor(e))
       } else {
-        drawFilledRectCentered(center, engineActiveSize(e, height), height, color = engineColor(e))
+        drawFilledRectCentered(center, engineActiveSize(e, width), height, color = engineColor(e))
       }
       //if(globalScale > 2) print(s"${e.powerPercent}% : ${e.workTimeTacts}", center.toVec, size = (max_font_size/globalScale).toFloat)
       if(isSelectedEngine(e)) drawRectCentered(center, width*1.5, height*1.5, color = engineColor(e))
@@ -245,8 +245,8 @@ trait Ship {
 
   def otherShipsNear:List[Ship] = ships.filter(s => s.index != ship.index/* && ship.coord.dist(s.coord) < 100000*/).sortBy(s => ship.coord.dist(s.coord))
 
-  private val pilot_mass = 75
-  private val pilot_position = DVec(0, 69)
+  protected val pilot_mass = 75
+  protected val pilot_position = DVec(0, 8)
   private var pilot_average_g:Double = 0.0
   private val pilot_gs = ArrayBuffer[(Double, Long)]()
 
@@ -255,7 +255,7 @@ trait Ship {
   def pilotIsDead = pilot_is_dead
   def pilotIsAlive = !pilot_is_dead
 
-  def colorIfAliveOrRed(color:ScageColor) = if(!pilot_is_dead) color else RED
+  def colorIfAliveOrRed(color: => ScageColor) = if(pilot_is_dead) RED else color
 
   private var ship_removed = false
   def isRemoved = ship_removed
@@ -275,7 +275,7 @@ trait Ship {
           })
         }
       } else {
-        val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(coord, linearVelocity, 10, 0.5)
+        val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(coord, linearVelocity, 28, 0.5)
         val centrifugial_force = if (angularVelocity == 0) DVec.zero else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.rotateDeg(rotation)
         //val air_resistance =  earth.airResistance(coord, linearVelocity, 10, 0.5)
         val pilot_acc = (reactive_force / mass + centrifugial_force / pilot_mass + currentState.dacc).norma/* - (air_resistance.norma/mass)*/

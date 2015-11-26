@@ -233,7 +233,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     radius = 6400000/*6314759.95726045*/) {
 
     val T0 = 288     // temperature at sea level, K
-    val L = 0.0065   // temperature lapse rate, K/m
+    //val L = 0.0065   // temperature lapse rate, K/m
+    val L = 0.00288  // temperature lapse rate, K/m
     val P0 = 101325  // pressure at sea level, N/m^2
     val M = 0.02896  // molar mass or air, kg/mole
     val R = 8.314    // ideal gas constant, Joules/(K*mole)
@@ -248,13 +249,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       T0 - L*h
     }
 
-    /*def airPressurePascale(h:Double):Double = {
+    def airPressurePascale(h:Double):Double = {
       val T = temperature(h)
       if(T <= 0) 0
       else {
         P0 * math.pow(T / T0, g * M / (R * L))
       }
-    }*/
+    }
 
     def airPressureMmHg(h:Double):Double = {
       airPressurePascale(h)/133.3
@@ -268,13 +269,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       else {
         val P = airPressurePascale(h)
         val ro = P*M/(R*T)                       // density of air
-        val F = -0.5*ro*A*C*v.norma2
-        v.n*F
+        val F = 0.5*ro*A*C*v.norma2
+        -v.n*F
       }
     }
 
     def airResistance(ship_coord:DVec, ship_velocity:DVec, A:Double, C:Double):DVec = {
-      airResistance(velocityRelativeToAir(ship_coord, ship_velocity), altitude(ship_coord)/*, A, C*/)
+      airResistance(velocityRelativeToAir(ship_coord, ship_velocity), altitude(ship_coord), A, C)
     }
 
     def airPressureMmHg(coord:DVec):Double = {
@@ -284,7 +285,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     // another model
     // http://fiz.1september.ru/articlef.php?ID=200801702
 
-    def airResistance(v:DVec, h:Double):DVec = {
+    /*def airResistance(v:DVec, h:Double):DVec = {
       val c = 0.045                   // безразмерный коэффициент (равный 0,045 для «каплевидного» тела)
       val ro0 = 1.22                  // плотность воздуха на поверхности Земли, кг/м^3
       val beta = 5.6E-5               // м^-1
@@ -295,11 +296,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       //val F = 0.045*v.norma2*1.225*math.exp(-5.6E-5*h)*math.Pi*3*3
       //val F = 0.045*v.norma2*1.225*math.exp(-1.4E-4*h)*math.Pi*3*3
       -v.n*F
-    }
+    }*/
 
-    def airPressurePascale(h:Double):Double = {
+    /*def airPressurePascale(h:Double):Double = {
       101325*math.exp(-1.1855831477936685E-4*h)
-    }
+    }*/
   }
 
   val moon_start_position = DVec(-269000000, 269000000)
@@ -317,14 +318,14 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def currentPlanetStates = current_body_states.filter(x => planet_indexes.contains(x._1))
   def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
 
-  val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
-  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  //val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
+  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   //val ship_start_position = earth.coord + DVec(100, earth.radius + 200000)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
 
-  //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
-  //val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
+  val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
 
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 3000)
@@ -373,7 +374,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
             gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G) +
             other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(DVec.dzero) +
             ship.currentReactiveForce(tacts, bs) +
-            earth.airResistance(bs.coord, bs.vel, 10, 0.5)
+            earth.airResistance(bs.coord, bs.vel, 28, 0.5)
           case station.index =>
             gravityForce(earth.coord, earth.mass, bs.coord, bs.mass, G) +
               other_bodies.find(_.index == moon.index).map(obs => gravityForce(obs.coord, obs.mass, bs.coord, bs.mass, G)).getOrElse(DVec.dzero) +
@@ -571,7 +572,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           case moon.index => "Луна"
         }
         val orbit = calculateOrbit(planet_state.mass, planet_state.coord, mass, coord - planet_state.coord, velocity - planet_state.vel, G)
-        orbit.strDefinition(prefix, planetByIndex(planet_state.index).get.radius, planet_state.vel, coord, velocity)
+        orbit.strDefinition(prefix, planetByIndex(planet_state.index).get.radius, planet_state.vel, planet.g, coord, velocity)
       case None => "N/A"
     }
   }
@@ -636,7 +637,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       }
     } else {
       _draw_map_mode = false
-      globalScale = 1
+      globalScale = 10
       viewMode = 1
     }
   }
@@ -1068,6 +1069,10 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     right_down_corner = Some(absCoord(m))
   })
 
+  rightMouseIgnorePause(onBtnDown = m => {
+    _stop_after_number_of_tacts = 0
+  })
+
   //actionIgnorePause {
     //if(future_trajectory.isEmpty) updateFutureTrajectory("future_trajectory.isEmpty")
   //}
@@ -1090,6 +1095,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   center = _center
   windowCenter = DVec((windowWidth-1024)+1024/2, windowHeight/2)
   viewMode = 1
+  globalScale = 10
 
   private val scale = 1e-6
 
@@ -1164,7 +1170,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                     //val v = vr*basis_r + vt*basis_t + planet_state.vel
                     openglLocalTransform {
                       openglMove(orbital_point * scale)
-                      print(s"  $flight_time", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
+                      print(s"  $flight_time : ${mOrKm(e.distanceByTrueAnomalyRad(true_anomaly_rad))}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
                       //print(s"  $flight_time : ${msecOrKmsec(v.norma)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
                       //print(f"  ${e.tetaDeg360InPoint(x)}%.2f", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
                     }
@@ -1424,12 +1430,12 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
       InterfaceHolder.update()
       InterfaceHolder.strings.zipWithIndex.foreach {
-        case (str, idx) => print(str._1, 20, (InterfaceHolder.strings.length+2 - idx)*20, ship.colorIfAliveOrRed(str._2))
+        case ((str, color), idx) => print(str, 20, (InterfaceHolder.strings.length+2 - idx)*20, ship.colorIfAliveOrRed(color))
       }
       //print(InterfaceHolder.minimizedStrings.map(_._1).mkString(" "), 20, 20, DARK_GRAY)
       InterfaceHolder.minimizedStrings.zipWithIndex.foreach {
         case ((i, color), idx) =>
-          print(i.shortDescr, 20+idx*40, 20, color, align = "center")
+          print(i.shortDescr, 20+idx*40, 20, ship.colorIfAliveOrRed(color), align = "center")
       }
     /*}*/
   }
@@ -1489,10 +1495,10 @@ class Planet(
 
   private var data_initialized = false
   private val half_render_length_km = 50
-  //private val alpha = half_render_length_km * 2.0 * 1000 * 180 / math.Pi / radius
+  private val alpha = half_render_length_km * 2.0 * 1000 * 180 / math.Pi / radius
   private var viewpoint_dist:Double = _
   private var to_viewpoint:DVec = _
-  //private var points:Seq[DVec] = _
+  private var points:Seq[DVec] = _
   private var ground_position_ang:Double = _
   private var ground_position_km:Double = _
   private var ground_features_near:Seq[(DVec, Int, Int)] = _
@@ -1502,10 +1508,10 @@ class Planet(
     if(viewpoint_dist < 50000) {
       //val before_to_viewpoint = (ship.coord + shipOffset - coord).n*(radius - 1000)
       to_viewpoint = (ship.coord + shipOffset - coord).n * radius
-      /*points = for {
-        ang <- -alpha to alpha by 0.0001
+      points = for {
+        ang <- -alpha to alpha by 0.01
         point = to_viewpoint.rotateDeg(ang)
-      } yield point*/
+      } yield point
       ground_position_ang = correctAngle(DVec(0, 1).deg360(to_viewpoint) - currentState.ang)
       ground_position_km = {
         val x = ground_position_ang / 360.0 * 2 * math.Pi * radius / 1000
@@ -1531,37 +1537,33 @@ class Planet(
   }
 
   render {
-    if(data_initialized && /*renderingEnabled &&*/ !drawMapMode && viewpoint_dist < 50000) {
-      openglLocalTransform {
-        openglMove(coord - base)
-        //drawSlidingLines(points, WHITE)
-        //points.foreach(p => drawFilledCircle(p, 0.3, WHITE))
-        //val x = points.sortBy(p => p.dist(ship.coord)).take(2)
-        //println(x.mkString(" : "))
-        //println(ship.coord.dist(coord) - radius)
-        /*val two_points = points.sortBy(p => p.dist(ship.coord)).take(2)
-        val p1 = two_points.head
-        val p2 = two_points.last
-        val A = p1.y - p2.y
-        val B = p2.x - p1.x
-        val C = p1.x*p2.y - p2.x*p1.y
-        val d = math.abs(A*ship.coord.x + B*ship.coord.y + C)/math.sqrt(A*A + B*B)*/
-        //println(f"${ship.coord.dist(coord) - radius}%.2f : $d")
-        /*val pa = ship.coord + (coord - ship.coord).n*(ship.coord.dist(coord) - radius) + (coord - ship.coord).p*500
-        val pb = ship.coord + (coord - ship.coord).n*(ship.coord.dist(coord) - radius) + (coord - ship.coord).p*(-500)
-        drawLine(pa, pb, WHITE)*/
+    if(data_initialized && /*renderingEnabled &&*/ !drawMapMode) {
+      if(viewpoint_dist < 500) {
+        openglLocalTransform {
+          openglMove(coord - base)
 
-        ground_features_near.foreach { case (p, w, h) =>
-          drawLine(p + p.p*w/2, p + p.n*h, WHITE)
-          drawLine(p - p.p*w/2, p + p.n*h, WHITE)
-          drawLine(p,                p + p.n*h, WHITE)
+          ground_features_near.foreach { case (p, w, h) =>
+            drawLine(p + p.p*w/2, p + p.n*h, WHITE)
+            drawLine(p - p.p*w/2, p + p.n*h, WHITE)
+            drawLine(p,                p + p.n*h, WHITE)
+          }
         }
-      }
-      openglLocalTransform {
-        openglMove(ship.coord - base)
-        val pa = (coord - ship.coord).n*(ship.coord.dist(coord) - radius) + (coord - ship.coord).p*70000
-        val pb = (coord - ship.coord).n*(ship.coord.dist(coord) - radius) + (coord - ship.coord).p*(-70000)
-        drawLine(pa, pb, WHITE)
+        openglLocalTransform {
+          openglMove(ship.coord - base)
+          val pa = (coord - ship.coord).n*(ship.coord.dist(coord) - radius) + (coord - ship.coord).p*70000
+          val pb = (coord - ship.coord).n*(ship.coord.dist(coord) - radius) + (coord - ship.coord).p*(-70000)
+          drawLine(pa, pb, WHITE)
+        }
+      } else if(viewpoint_dist < 50000) {
+        openglLocalTransform {
+          openglMove(coord - base)
+          drawSlidingLines(points, WHITE)
+          ground_features_near.foreach { case (p, w, h) =>
+            drawLine(p + p.p*w/2, p + p.n*h, WHITE)
+            drawLine(p - p.p*w/2, p + p.n*h, WHITE)
+            drawLine(p,                p + p.n*h, WHITE)
+          }
+        }
       }
     }
   }
