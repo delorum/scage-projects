@@ -10,6 +10,10 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
   ).map(p => p + windowCenter)
   private var selected_point = 0
 
+  private val convex_parts = collection.mutable.ArrayBuffer[collection.mutable.ArrayBuffer[Vec]]()
+  private var selected_convex_part = 0
+  private var selected_point_in_convex_part = 0
+
   private val engines = collection.mutable.ArrayBuffer[EngineData]()
   private val engines_mapping = collection.mutable.HashMap[Int, Int]()
   private var selected_engine = 0
@@ -63,6 +67,7 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
   key(KEY_RIGHT, onKeyDown = {if(mode != 3) mode = 3 else mode = 0})
   key(KEY_LEFT,  onKeyDown = {if(mode != 4) mode = 4 else mode = 0})
   key(KEY_M,     onKeyDown = {if(mode != 5) mode = 5 else mode = 0})
+  key(KEY_C,     onKeyDown = {if(mode != 6) mode = 6 else mode = 0})
   
   key(KEY_NUMPAD8, onKeyDown = engines_mapping(selected_engine) = KEY_NUMPAD8)
   key(KEY_NUMPAD2, onKeyDown = engines_mapping(selected_engine) = KEY_NUMPAD2)
@@ -148,6 +153,17 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
         val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 1)+0.5f,
                      nearestDot(ssm.y, -windowHeight/2, 1)+0.5f)
         mass_center = sm
+      case 6 => // convex parts
+        val ssm = absCoord(m)
+        if(convex_parts.nonEmpty) {
+          if (convex_parts(selected_convex_part).forall(p => p.dist2(ssm) > 1)) {
+            val sm = Vec(nearestDot(ssm.x, -windowWidth / 2, 1).toInt,
+              nearestDot(ssm.y, -windowHeight / 2, 1).toInt)
+            convex_parts(selected_convex_part).insert(selected_point_in_convex_part, sm)
+          }
+        } else {
+
+        }
       case _ =>
     }
   }, onBtnUp = m => {
@@ -254,6 +270,7 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
       case 3 => "engines right"
       case 4 => "engines left"
       case 5 => "mass center"
+      case 6 => "convex parts"
       case _ => ""
     }
     print(status, 20, 20, WHITE)

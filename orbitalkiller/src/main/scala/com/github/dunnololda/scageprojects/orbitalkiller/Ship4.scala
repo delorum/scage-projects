@@ -28,6 +28,12 @@ class Ship4(index:String,
     DVec(3.5, -3.5)
   )
 
+  override val convex_parts = List(
+    PolygonShape(List(DVec(-1.5, 6.5), DVec(-1.5, 10.5), DVec(1.5, 10.5), DVec(1.5, 6.5)), Nil),
+    PolygonShape(List(DVec(-3.5, 2.5), DVec(-1.5, 6.5), DVec(1.5, 6.5), DVec(3.5, 2.5)), Nil),
+    PolygonShape(List(DVec(-3.5, -3.5), DVec(-3.5, 2.5), DVec(3.5, 2.5), DVec(3.5, -3.5)), Nil)
+  )
+
   val draw_points = points :+ points.head
 
   val four  = Engine("4",  position = Vec(-3.5, 0.0), force_dir = Vec(1.0, 0.0),  max_power = 1000000, default_power_percent = 1,   this)

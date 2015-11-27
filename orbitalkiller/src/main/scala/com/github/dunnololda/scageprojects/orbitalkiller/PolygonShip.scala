@@ -9,6 +9,7 @@ abstract class PolygonShip(
   init_velocity:DVec = DVec.dzero,
   init_rotation:Double = 0) extends Ship {
   def points:List[DVec]
+  def convex_parts:List[PolygonShape] = Nil
   def engines:List[Engine]
   def engines_mapping:Map[Int, Engine]
 
@@ -27,7 +28,7 @@ abstract class PolygonShip(
     ang_acc = 0,
     ang_vel = 0,
     ang = init_rotation,
-    shape = PolygonShape(points),
+    shape = PolygonShape(points, convex_parts),
     is_static = false)
 
   lazy val currentState:MutableBodyState = initState.toMutableBodyState

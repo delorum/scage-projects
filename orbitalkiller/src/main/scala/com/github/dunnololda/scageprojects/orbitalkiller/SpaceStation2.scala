@@ -22,7 +22,6 @@ class SpaceStation2(
   val points:List[DVec] = List(
     DVec(-90.0, -10.0),
     DVec(-130.0, -10.0),
-    DVec(-130.0, -10.0),
     DVec(-130.0, 10.0),
     DVec(-90.0, 10.0),
     DVec(-50.0, 30.0),
@@ -33,6 +32,14 @@ class SpaceStation2(
     DVec(90.0, -10.0),
     DVec(50.0, -30.0),
     DVec(-50.0, -30.0)
+  )
+
+  override val convex_parts = List(
+    PolygonShape(List(DVec(-130.0, -10.0), DVec(-130.0, 10.0), DVec(-90.0, 10.0), DVec(-90.0, -10.0)), Nil),
+    PolygonShape(List(DVec(-90.0, -10.0), DVec(-90.0, 10.0), DVec(-50.0, 30.0), DVec(-50.0, -30.0)), Nil),
+    PolygonShape(List(DVec(-50.0, -30.0), DVec(-50.0, 30.0), DVec(50.0, 30.0), DVec(50.0, -30.0)), Nil),
+    PolygonShape(List(DVec(50.0, -30.0), DVec(50.0, 30.0), DVec(90.0, 10.0), DVec(90.0, -10.0)), Nil),
+    PolygonShape(List(DVec(90.0, -10.0), DVec(90.0, 10.0), DVec(130.0, 10.0), DVec(130.0, -10.0)), Nil)
   )
 
   val four  = Engine("4", position = Vec(-130.0, 0.0),   force_dir = Vec(1.0, 0.0),  max_power = 10, default_power_percent = 1, this)

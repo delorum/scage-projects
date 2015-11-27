@@ -350,7 +350,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   val ship_indexes = ships.map(_.index).toSet
   def shipByIndex(index:String):Option[Ship] = ships.find(_.index == index)
 
-  private def makeThisAndOthers[A](s:mutable.Buffer[A]):mutable.Buffer[(A, mutable.Buffer[A])] = {
+  def makeThisAndOthers[A](s:mutable.Buffer[A]):mutable.Buffer[(A, mutable.Buffer[A])] = {
     s.zipWithIndex.map {
       case (b, idx) =>
         (b, s.take(idx) ++ s.drop(idx+1))

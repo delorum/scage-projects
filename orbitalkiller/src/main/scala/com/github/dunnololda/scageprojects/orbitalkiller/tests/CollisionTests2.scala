@@ -147,7 +147,7 @@ class MyPentagon2(val index:String, init_coord:Vec, init_velocity:Vec, val len:D
         val three = DVec(0, len).rotateDeg(0+72+72)
         val four  = DVec(0, len).rotateDeg(0+72+72+72)
         val five  = DVec(0, len).rotateDeg(0+72+72+72+72)
-        PolygonShape(List(one, two, three, four, five))
+        PolygonShape(List(one, two, three, four, five), Nil)
       },
       is_static = false, restitution = 1))
 
