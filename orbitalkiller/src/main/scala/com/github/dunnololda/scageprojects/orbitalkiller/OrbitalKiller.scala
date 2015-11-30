@@ -1254,6 +1254,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   render {
     /*if(_rendering_enabled) {*/
       if(drawMapMode) {
+
+        /*val spaces = splitSpace(new Space(our_mutable_system.map(_._1), DVec(OrbitalKiller.earth.radius*2, -OrbitalKiller.earth.radius*2)), 5, 2)
+        spaces.foreach(s => {
+          drawRectCentered(s.center*scale, s.width*scale, s.height*scale, GRAY)
+        })
+        println(spaces.filter(_.bodies.length > 1).map(x => s"${x.bodies.length}").mkString(" : "))*/
+
         drawCircle(earth.coord*scale, earth.radius * scale, WHITE)
         drawCircle(earth.coord*scale, equalGravityRadius(earth.currentState, moon.currentState)*scale, color = DARK_GRAY)
         drawLine(earth.coord*scale, (earth.coord*scale + DVec(0, earth.radius*scale)).rotateDeg(earth.currentState.ang), WHITE)
