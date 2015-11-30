@@ -11,11 +11,21 @@ class EnginesInfo extends InterfaceElement {
     var engines_active = false
     strings(2) = s"${
       ship.engines.map(e => {
-        if (e.active) {
-          engines_active = true
-          if (ship.isSelectedEngine(e)) f"[r${e.index}: ${e.power/1000}%.1f кН (${e.workTimeStr})]"
-          else f"[o${e.index}: ${e.power/1000}%.1f кН (${e.workTimeStr})]"
-        } else f"${e.index}: ${e.power/1000}%.1f кН (${e.workTimeStr})"
+        if(ship.isSelectedEngine(e)) {
+          if(e.active) {
+            engines_active = true
+            f"[r${e.index}: ${e.power/1000}%.1f кН (${e.workTimeStr})]"
+          } else {
+            f"[g${e.index}: ${e.power/1000}%.1f кН (${e.workTimeStr})]"
+          }
+        } else {
+          if(e.active) {
+            engines_active = true
+            f"[o${e.index}: ${e.power/1000}%.1f кН (${e.workTimeStr})]"
+          } else {
+            f"${e.index}: ${e.power/1000}%.1f кН (${e.workTimeStr})"
+          }
+        }
       }).mkString(", ")
     }"
     strings(0) = s"Двигательная установка: ${if (engines_active) "[rактивирована]" else "отключена"}"

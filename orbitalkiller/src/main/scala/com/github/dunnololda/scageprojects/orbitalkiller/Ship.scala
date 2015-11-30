@@ -25,12 +25,15 @@ trait Ship {
     engines_mapping.get(engine_code).foreach(e => e.switchActive())
   }
 
-  def switchEngineActiveOrSelect(engine_code:Int) {
+  def selectOrSwitchEngineActive(engine_code:Int) {
     //timeMultiplier = realtime
-    engines_mapping.get(engine_code).foreach(e => if(e.active) {
-      if(selected_engine.exists(_ == e)) e.switchActive()
-      else selected_engine = Some(e)
-    } else e.switchActive())
+    engines_mapping.get(engine_code).foreach(e => {
+      if(selected_engine.exists(_ == e)) {
+        e.switchActive()
+      } else {
+        selected_engine = Some(e)
+      }
+    })
   }
 
   def mass:Double
@@ -139,14 +142,13 @@ trait Ship {
 
   def drawEngine(e:Engine, center:DVec, width:Double, height:Double, is_vertical:Boolean) {
     drawRectCentered(center, width, height, color = engineColor(e))
+    if(isSelectedEngine(e)) drawRectCentered(center, width*1.5, height*1.5, color = engineColor(e))
     if(e.active && e.power > 0) {
       if(is_vertical) {
         drawFilledRectCentered(center, width, engineActiveSize(e, height), color = engineColor(e))
       } else {
         drawFilledRectCentered(center, engineActiveSize(e, width), height, color = engineColor(e))
       }
-      //if(globalScale > 2) print(s"${e.powerPercent}% : ${e.workTimeTacts}", center.toVec, size = (max_font_size/globalScale).toFloat)
-      if(isSelectedEngine(e)) drawRectCentered(center, width*1.5, height*1.5, color = engineColor(e))
     }
   }
 

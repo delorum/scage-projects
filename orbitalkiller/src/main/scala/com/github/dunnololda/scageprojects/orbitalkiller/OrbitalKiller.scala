@@ -682,14 +682,14 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     addGlyphs("\u21b6\u21b7")
   }
 
-  keyIgnorePause(KEY_NUMPAD1, onKeyDown = {if(ship.pilotIsAlive) ship.switchEngineActiveOrSelect(KEY_NUMPAD1)})
-  keyIgnorePause(KEY_NUMPAD2, onKeyDown = {if(ship.pilotIsAlive) ship.switchEngineActiveOrSelect(KEY_NUMPAD2)})
-  keyIgnorePause(KEY_NUMPAD3, onKeyDown = {if(ship.pilotIsAlive) ship.switchEngineActiveOrSelect(KEY_NUMPAD3)})
-  keyIgnorePause(KEY_NUMPAD4, onKeyDown = {if(ship.pilotIsAlive) ship.switchEngineActiveOrSelect(KEY_NUMPAD4)})
-  keyIgnorePause(KEY_NUMPAD6, onKeyDown = {if(ship.pilotIsAlive) ship.switchEngineActiveOrSelect(KEY_NUMPAD6)})
-  keyIgnorePause(KEY_NUMPAD7, onKeyDown = {if(ship.pilotIsAlive) ship.switchEngineActiveOrSelect(KEY_NUMPAD7)})
-  keyIgnorePause(KEY_NUMPAD8, onKeyDown = {if(ship.pilotIsAlive) ship.switchEngineActiveOrSelect(KEY_NUMPAD8)})
-  keyIgnorePause(KEY_NUMPAD9, onKeyDown = {if(ship.pilotIsAlive) ship.switchEngineActiveOrSelect(KEY_NUMPAD9)})
+  keyIgnorePause(KEY_NUMPAD1, onKeyDown = {if(ship.pilotIsAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD1)})
+  keyIgnorePause(KEY_NUMPAD2, onKeyDown = {if(ship.pilotIsAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD2)})
+  keyIgnorePause(KEY_NUMPAD3, onKeyDown = {if(ship.pilotIsAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD3)})
+  keyIgnorePause(KEY_NUMPAD4, onKeyDown = {if(ship.pilotIsAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD4)})
+  keyIgnorePause(KEY_NUMPAD6, onKeyDown = {if(ship.pilotIsAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD6)})
+  keyIgnorePause(KEY_NUMPAD7, onKeyDown = {if(ship.pilotIsAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD7)})
+  keyIgnorePause(KEY_NUMPAD8, onKeyDown = {if(ship.pilotIsAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD8)})
+  keyIgnorePause(KEY_NUMPAD9, onKeyDown = {if(ship.pilotIsAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD9)})
 
   keyIgnorePause(KEY_NUMPAD5, onKeyDown = {
     if(ship.pilotIsAlive) {
@@ -1194,6 +1194,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   private var ship_orbit_render:() => Unit = () => {}
   private var station_orbit_render:() => Unit = () => {}
+  private var moon_orbit_render:() => Unit = () => {}
+  moon_orbit_render =  shipOrbitRender(moon.index, current_body_states, GREEN, GREEN)
 
   private var _calculate_orbits = false
 
@@ -1278,33 +1280,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         drawCircle(moon.coord*scale, equalGravityRadius(moon.currentState, earth.currentState)*scale, color = DARK_GRAY)
         //drawCircle(moon.coord*scale, soi(moon.mass, earth.coord.dist(moon.coord), earth.mass)*scale, color = DARK_GRAY)
         drawLine(moon.coord*scale, moon.coord * scale + DVec(0, moon.radius * scale).rotateDeg(moon.currentState.ang), WHITE)
-        calculateOrbit(earth.mass, earth.coord, moon.mass, moon.coord, moon.linearVelocity, G) match {
-          case moon_orbit:EllipseOrbit =>
-            openglLocalTransform {
-              openglMove(moon_orbit.center*scale)
-              openglRotateDeg(Vec(-1,0).signedDeg(moon_orbit.f2-moon_orbit.f))
-              drawEllipse(DVec.zero, moon_orbit.a * scale, moon_orbit.b * scale, GREEN)
-            }
-            /*openglLocalTransform {
-              openglMove(moon.coord*scale)
-              val current_ang = moon.currentState.ang
-              (0.0 to 359.0 by 6000.0/globalScale).init.map(_.toInt).distinct.foreach {
-                case ang =>
-                  openglLocalTransform {
-                    openglRotateDeg(current_ang + ang.toDouble)
-                    openglMove(DVec(0, 1) * (moon.radius - 20000000 / globalScale) * scale)
-                    print(
-                      s"$ang",
-                      Vec.zero,
-                      color = WHITE,
-                      size = (max_font_size / globalScale).toFloat,
-                      align = "bottom-center"
-                    )
-                  }
-              }
-            }*/
-          case _ =>
-        }
+        moon_orbit_render()
         if(!ship.isRemoved) {
           drawFilledCircle(ship.coord * scale, earth.radius * scale / 2f / globalScale, WHITE)
           ship_orbit_render()

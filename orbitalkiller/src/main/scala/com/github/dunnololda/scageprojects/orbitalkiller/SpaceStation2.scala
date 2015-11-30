@@ -72,7 +72,7 @@ class SpaceStation2(
 
   render {
     /*if(renderingEnabled) {*/
-      if(!drawMapMode) {
+      if(!drawMapMode && coord.dist2(ship.coord) < 100000*100000) {
         openglLocalTransform {
           openglMove(coord - base)
           drawFilledCircle(DVec.zero, 2, GREEN)                                // mass center
