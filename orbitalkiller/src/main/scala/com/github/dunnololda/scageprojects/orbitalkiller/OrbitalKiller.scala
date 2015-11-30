@@ -318,14 +318,14 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def currentPlanetStates = current_body_states.filter(x => planet_indexes.contains(x._1))
   def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
 
-  //val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
-  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
+  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   //val ship_start_position = earth.coord + DVec(100, earth.radius + 200000)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
 
-  val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
-  val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
+  //val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
 
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 3000)
@@ -1150,8 +1150,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                   if(ship_index == ship.index) {
                     val mouse_point = absCoord(mouseCoord) / scale
                     drawLine(e.f*scale, mouse_point*scale, DARK_GRAY)
+
                     val orbital_point = e.orbitalPointInPoint(mouse_point)
                     drawFilledCircle(orbital_point*scale, 3 / globalScale, color2)
+
+                    /*if(e.r_p < planet.radius) {
+                      val fall_teta = -math.acos((e.p/planet.radius - 1)/e.e)/math.Pi*180 + 360
+                      val orbital_point2 = e.orbitalPointByTrueAnomalyDeg(fall_teta)
+                      drawFilledCircle(orbital_point2*scale, 3 / globalScale, color2)
+                    }*/
+
                     if(_stop_after_number_of_tacts > 0) {
                       drawFilledCircle(e.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)*scale, 3 / globalScale, RED)
                     }

@@ -995,9 +995,9 @@ package object orbitalkiller {
       val dir = if((ship_coord - f).perpendicular*(ship_velocity - planet_velocity) >= 0) "\u21b6" else "\u21b7"
       if(r_p - planet_radius < 0) {
         val y_axis = (ship_coord - f).n
-        val y0 = (ship_coord - f)*y_axis - planet_radius
+        //val y0 = (ship_coord - f)*y_axis - planet_radius
         val v0y = (ship_velocity - planet_velocity)*y_axis
-        val fall_time_sec = (v0y + math.sqrt(2*planet_g*y0 + v0y*v0y))/planet_g
+        //val fall_time_sec = (v0y + math.sqrt(2*planet_g*y0 + v0y*v0y))/planet_g
         /*val fall_time_sec = {
           // https://www.rand.org/content/dam/rand/pubs/research_memoranda/2008/RM3752.pdf
           // page 6-7
@@ -1012,8 +1012,12 @@ package object orbitalkiller {
           val launch_before_apogee = v0y >= 0
           if(launch_before_apogee) t_LA + t_AT else -t_LA + t_AT
         }*/
+
+        val fall_teta_rad = -math.acos((p/(planet_radius+3) - 1)/e) + 2*math.Pi
+        val fall_time_msec = travelTimeOnOrbitMsec(ship_coord, orbitalPointByTrueAnomalyRad(fall_teta_rad))
+
         val time_to_stop_at_full_power = math.abs(v0y/(1000000/OrbitalKiller.ship.mass - planet_g))
-        f"$prefix, суборбитальная, $dir, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, r_a = ${mOrKm(r_a - planet_radius)}. Поверхность через ${timeStr((fall_time_sec*1000l).toLong)} (${timeStr((time_to_stop_at_full_power*1000l).toLong)})"
+        f"$prefix, суборбитальная, $dir, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, r_a = ${mOrKm(r_a - planet_radius)}. Поверхность через ${timeStr(fall_time_msec)} (${timeStr((time_to_stop_at_full_power*1000l).toLong)})"
       } else {
         f"$prefix, замкнутая, $dir, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, r_a = ${mOrKm(r_a - planet_radius)}, t = ${timeStr((t*1000l).toLong)}"
       }

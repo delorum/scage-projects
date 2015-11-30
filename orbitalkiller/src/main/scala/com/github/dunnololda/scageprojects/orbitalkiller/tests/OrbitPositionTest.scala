@@ -1,6 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scageprojects.orbitalkiller._
 
 case class Orbit2(
                    a:Double,                     // большая полуось
@@ -14,6 +15,133 @@ val r_p = a*(1 - e)                              // перигей
 val r_a = a*(1 + e)                              // апогей
 val f1 = center + DVec(1,0)*c   // координаты первого фокуса
 val f2 = center - DVec(1,0)*c   // координаты второго фокуса
+
+  private val f1_minus_f2 = f1 - f2
+
+  def tetaDeg360ByDir(dir:DVec) = f1_minus_f2.deg360(dir)
+  def tetaSignedDegByDir(dir:DVec) = f1_minus_f2.signedDeg(dir)
+  def tetaRad2PiByDir(dir:DVec) = f1_minus_f2.rad2Pi(dir)
+  def tetaSignedRadByDir(dir:DVec) = f1_minus_f2.signedRad(dir)
+
+  def tetaDeg360InPoint(p:DVec) = tetaDeg360ByDir(p - f1)
+  def tetaSignedDegInPoint(p:DVec) = tetaSignedDegByDir(p - f1)
+  def tetaRad2PiInPoint(p:DVec) = tetaRad2PiByDir(p - f1)
+  def tetaSignedRadInPoint(p:DVec) = tetaSignedRadByDir(p - f1)
+
+  def tetaRadByDistance(r:Double):Double = {
+    math.acos((p/r - 1)/e)
+  }
+  def tetaDegByDistance(r:Double):Double = {
+    tetaRadByDistance(r)/math.Pi*180.0
+  }
+
+  def distanceByTrueAnomalyRad(teta_rad:Double) = {
+    p/(1 + e*math.cos(teta_rad))
+  }
+
+  def distanceByTrueAnomalyDeg(teta_deg:Double) = {
+    p/(1 + e*math.cos(teta_deg/180.0*math.Pi))
+  }
+
+  /**
+   * Расстояние от притягивающего центра до орбиты в данном направлении. Определяем истинную аномалию данного направления
+   * и по формуле считаем длину радиус-вектора.
+   * https://en.wikipedia.org/wiki/True_anomaly#Radius_from_true_anomaly
+   * @param dir - вектор направления
+   * @return
+   */
+  def distanceByDir(dir:DVec) = {
+    p/(1 + e*math.cos(tetaSignedRadByDir(dir)))
+  }
+
+  def distanceInPoint(point:DVec) = {
+    p/(1 + e*math.cos(tetaSignedRadInPoint(point)))
+  }
+
+  def orbitalPointByTrueAnomalyRad(teta_rad:Double) = {
+    f1 + f1_minus_f2.rotateRad(teta_rad).n*distanceByTrueAnomalyRad(teta_rad)
+  }
+
+  def orbitalPointByTrueAnomalyDeg(teta_deg:Double) = {
+    f1 + f1_minus_f2.rotateDeg(teta_deg).n*distanceByTrueAnomalyDeg(teta_deg)
+  }
+
+  def orbitalPointByDir(dir:DVec) = {
+    f1 + dir.n*distanceByDir(dir)
+  }
+
+  def orbitalPointInPoint(point:DVec) = {
+    val dir = point - f1
+    f1 + dir.n*distanceByDir(dir)
+  }
+
+  /**
+   * Время в миллисекундах, которое займет перемещение корабля по эллиптической орбите из точки point1 в точку point2.
+   * Вычисляется по формуле Ламберта, которую нашел в книге М.Б. Балка "Элементы динамики космического полета", стр 122-129
+   * http://pskgu.ru/ebooks/astro3/astro3_03_05.pdf
+   * @param point1 - начальная точка
+   * @param point2 - конечная точка
+   * @return
+   */
+  def travelTimeOnOrbitMsec(point1:DVec, point2:DVec, mu:Double):Long = {
+    val t1 = tetaDeg360InPoint(point1)
+    val t2 = tetaDeg360InPoint(point2)
+    val orbital_point1 = f1 + (point1 - f1).n*distanceInPoint(point1)
+    val orbital_point2 = f1 + (point2 - f1).n*distanceInPoint(point2)
+    val r1 = (orbital_point1 - f1).norma
+    val r2 = (orbital_point2 - f1).norma
+    val s = orbital_point1.dist(orbital_point2)
+    val xl1 = math.acos(1 - (r1+r2+s)/(2*a))
+    val xl2 = math.acos(1 - (r1+r2-s)/(2*a))
+    // Балк М.Б. Элементы динамики космического полета, , Формула Ламберта, стр 128-129: выбор чисел l1, l2 среди корней уравнения
+    // для эллиптической орбиты, анализ проведен английским математиком А. Кэли
+    def _detectCase(l1:Double, l2:Double):(Double, Double, String) = {
+      if(t1 == 0) {
+        if(t2 < 180) (l1, l2, "None")
+        else (2*math.Pi - l1, -l2, "F & A")
+      } else {
+        if (areLinesIntersect(f2 + (f2 - f1).n*r_p, f2, orbital_point1, orbital_point2)) {
+          if (t2 > t1) (l1, l2, "None")
+          else (2 * math.Pi - l1, -l2, "F & A")
+        } else if (areLinesIntersect(f1, f1 + (f1 - f2).n*r_p, orbital_point1, orbital_point2)) {
+          if (t1 > t2) (l1, l2, "None")
+          else (2 * math.Pi - l1, -l2, "F & A")
+        } else if (areLinesIntersect(f2, f1, orbital_point1, orbital_point2)) {
+          if (t2 > t1) (2 * math.Pi - l1, l2, "F")
+          else (l1, -l2, "A")
+        } else {
+          if (t2 > t1) (l1, l2, "None")
+          else (2 * math.Pi - l1, -l2, "F & A")
+        }
+      }
+    }
+    val (l1, l2, _) = _detectCase(xl1, xl2)
+    val n_1 = a*math.sqrt(a/mu) // это 1/n
+    // Балк М.Б. Элементы динамики космического полета, Формула Ламберта
+    (n_1*((l1 - math.sin(l1)) - (l2 - math.sin(l2)))).toLong*1000
+  }
+
+  /**
+   * Орбитальная скорость в точке орбиты с данной истинной аномалией
+   * @param teta_rad - угол в радианах между радиус вектором на точку на орбите и направлением на перицентр.
+   *                   Если против часовой стрелки - положительный, от 0 до pi, иначе отрицательный, от 0 до -pi
+   *                   https://en.wikipedia.org/wiki/Lambert%27s_problem
+   *                   https://en.wikipedia.org/wiki/Kepler_orbit
+   * @return
+   */
+  def orbitalVelocityByTrueAnomalyRad(teta_rad:Double, mu:Double) = {
+    val vr = math.sqrt(mu/p)*e*math.sin(teta_rad)
+    val vt = math.sqrt(mu/p)*(1 + e*math.cos(teta_rad))
+    (vt, vr)
+  }
+
+  def orbitalVelocityByDir(dir:DVec, mu:Double) = {
+    orbitalVelocityByTrueAnomalyRad(tetaRad2PiByDir(dir), mu)
+  }
+
+  def orbitalVelocityInPoint(point:DVec, mu:Double) = {
+    orbitalVelocityByTrueAnomalyRad(tetaRad2PiInPoint(point), mu)
+  }
 }
 
 object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640) {
