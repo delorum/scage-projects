@@ -1059,6 +1059,7 @@ package object orbitalkiller {
     }
 
     private val f_minus_f2 = f - f2
+    private val n_1 = a*math.sqrt(a/mu) // это 1/n
 
     def tetaDeg360ByDir(dir:DVec) = f_minus_f2.deg360(dir)
     def tetaSignedDegByDir(dir:DVec) = f_minus_f2.signedDeg(dir)
@@ -1155,7 +1156,6 @@ package object orbitalkiller {
           else (2 * math.Pi - xl1, -xl2, "F & A")
         }
       }
-      val n_1 = a*math.sqrt(a/mu) // это 1/n
       // Балк М.Б. Элементы динамики космического полета, Формула Ламберта
       (n_1*((l1 - math.sin(l1)) - (l2 - math.sin(l2)))).toLong*1000
     }
@@ -1188,15 +1188,98 @@ package object orbitalkiller {
   }          
 
   class HyperbolaOrbit(
-     val a:Double,             // большая полуось
+     val a:Double,                          // большая полуось
      val b:Double,
-     val e:Double,             // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
+     val e:Double,                          // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
      val f:DVec,                            // координаты первого фокуса (координаты небесного тела, вокруг которого вращаемся)
-     val center:DVec) extends KeplerOrbit { // координаты центр
+     val center:DVec,                       // координаты центра
+     val mu:Double) extends KeplerOrbit {
+    val r_p = a*(e-1)                       // перигей
+    val p = a*(e*e - 1)                     // фокальный параметр (половина длины хорды, проходящей через фокус и перпендикулярной к фокальной оси)
+
+    val teta_deg_max = -180 + math.acos(1/e)/math.Pi*180 + 360  // разрешенные углы: от этого угла до 360
+    val teta_rad_max = teta_deg_max/180.0*math.Pi
+    
+    val teta_deg_min = 180 - math.acos(1/e)/math.Pi*180         // разрешенные углы: от 0 до этого угла
+    val teta_rad_min = teta_deg_min/180.0*math.Pi
+    
+    def tetaDeg360Valid(teta_deg360:Double):Boolean = {
+      teta_deg360 <= teta_deg_min || teta_deg360 >= teta_deg_max
+    }
+
+    def tetaRad2PiValid(teta_rad2Pi:Double):Boolean = {
+      teta_rad2Pi <= teta_rad_max || teta_rad2Pi >= teta_rad_min
+    }
+
+    val center_minus_f = center - f
+    val inv_n = a*math.sqrt(a/mu)
+
     def strDefinition(prefix:String, planet_radius:Double, planet_velocity:DVec, planet_g:Double, ship_coord:DVec, ship_velocity:DVec):String = {
       val dir = if((ship_coord - f).perpendicular*(ship_velocity - planet_velocity) >= 0) "\u21b6" else "\u21b7"
       val r_p_approach = if((ship_coord - f)*(ship_velocity - planet_velocity) >= 0) "удаляемся" else "приближаемся"
-      f"$prefix, незамкнутая, $dir, $r_p_approach, e = $e%.2f, r_p = ${mOrKm(a*(e-1) - planet_radius)}"
+      f"$prefix, незамкнутая, $dir, $r_p_approach, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}"
+    }
+
+    def tetaDeg360ByDir(dir:DVec):Double = {
+      center_minus_f.deg360(dir)
+    }
+
+    def tetaDeg360InPoint(p:DVec) = tetaDeg360ByDir(p - f)
+
+    def tetaRad2PiByDir(dir:DVec):Double = {
+      center_minus_f.rad2Pi(dir)
+    }
+
+    def tetaRad2PiInPoint(p:DVec) = tetaRad2PiByDir(p - f)
+
+    def tetaSignedRadByDir(dir:DVec) = center_minus_f.signedRad(dir)
+
+    def tetaSignedRadInPoint(p:DVec) = tetaSignedRadByDir(p - f)
+
+    def distanceByTrueAnomalyRad(teta_rad:Double) = {
+      p/(1 + e*math.cos(teta_rad))
+    }
+
+    def distanceByDir(dir:DVec):Double = {
+      p/(1 + e*math.cos(tetaRad2PiByDir(dir)))
+    }
+
+    def distanceInPoint(point:DVec) = {
+      p/(1 + e*math.cos(tetaSignedRadInPoint(point)))
+    }
+
+    def orbitalPointByTrueAnomalyRad(teta_rad:Double) = {
+      f + center_minus_f.rotateRad(teta_rad).n*distanceByTrueAnomalyRad(teta_rad)
+    }
+
+    def orbitalPointByDir(dir:DVec) = {
+      f + dir.n*distanceByDir(dir)
+    }
+
+    def orbitalPointInPoint(point:DVec) = {
+      val dir = point - f
+      f + dir.n*distanceByDir(dir)
+    }
+
+    def travelTimeOnOrbitMsecCCW(point1:DVec, point2:DVec):Long = {
+      val t1 = tetaDeg360InPoint(point1)
+      val t2 = tetaDeg360InPoint(point2)
+      val orbital_point1 = f + (point1 - f).n*distanceInPoint(point1)
+      val orbital_point2 = f + (point2 - f).n*distanceInPoint(point2)
+      val r1 = (orbital_point1 - f).norma
+      val r2 = (orbital_point2 - f).norma
+      val s = orbital_point1.dist(orbital_point2)
+
+      val chl1 = 1 + (r1 + r2 + s)/(2*a)
+      val chl2 = 1 + (r1 + r2 - s)/(2*a)
+
+      val l1 = math.log(chl1 + math.sqrt(chl1*chl1 - 1))
+      val l2 = math.log(chl2 + math.sqrt(chl2*chl2 - 1))
+      (inv_n*((math.sinh(l1) - l1) - (math.sinh(l2) - l2))).toLong*1000
+    }
+
+    def travelTimeOnOrbitMsecCW(point1:DVec, point2:DVec):Long = {
+      travelTimeOnOrbitMsecCCW(point2, point1)
     }
   }
 
@@ -1250,7 +1333,8 @@ package object orbitalkiller {
 
       new EllipseOrbit(a, b, e, c, p, r_p, r_a, t, f1, f2, center, G*(planet_mass + body_mass))
     } else {
-      val e = math.sqrt(math.abs(1 + (b * b) / (a * a))) // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
+      // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
+      val e = math.sqrt(math.abs(1 + (b * b) / (a * a)))
 
       val true_anomaly = math.abs(math.acos((a*(e*e-1) - body_relative_coord.norma)/(body_relative_coord.norma*e)))
 
@@ -1265,11 +1349,11 @@ package object orbitalkiller {
 
       val center = planet_coord + body_relative_coord.rotateRad(true_anomaly*signum).n*a*e
 
-      new HyperbolaOrbit(a,b,e,planet_coord, center)
+      new HyperbolaOrbit(a, b, e, planet_coord, center, mu)
     }
   }
 
-  def calculateHyperbolaOrbit(planet_mass:Double, planet_coord:DVec, body_mass:Double, body_relative_coord:DVec, body_relative_velocity:DVec, G:Double):HyperbolaOrbit = {
+  /*def calculateHyperbolaOrbit(planet_mass:Double, planet_coord:DVec, body_mass:Double, body_relative_coord:DVec, body_relative_velocity:DVec, G:Double):HyperbolaOrbit = {
     //https://ru.wikipedia.org/wiki/Гравитационный_параметр
     val mu = (planet_mass + body_mass) * G // гравитационный параметр
     //val mu = planet_mass*G // гравитационный параметр
@@ -1295,8 +1379,8 @@ package object orbitalkiller {
     val true_anomaly = math.abs(math.acos((a*(e*e-1) - body_relative_coord.norma)/(body_relative_coord.norma*e)))*math.signum(-body_relative_coord.signedDeg(body_relative_velocity))
     val center = planet_coord + body_relative_coord.rotateRad(true_anomaly).n*a*e
 
-    new HyperbolaOrbit(a,b,e,planet_coord, center)
-  }
+    new HyperbolaOrbit(a, b, e, planet_coord, center)
+  }*/
 
   /*def equalGravityRadius(planet1:BodyState, planet2:BodyState):Double = {
     val A = planet1.coord.dist(planet2.coord)

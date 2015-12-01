@@ -50,7 +50,7 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
             case None => "N/A"
           }
         } else {
-        orbitStrInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass, current_body_states.filter(x => planet_indexes.contains(x._1)))
+        orbitStrInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass, currentPlanetStates)
       }
     }
   }

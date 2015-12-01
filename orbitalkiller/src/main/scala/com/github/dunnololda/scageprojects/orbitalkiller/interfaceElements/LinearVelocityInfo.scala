@@ -5,9 +5,9 @@ import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 
 class LinearVelocityInfo extends InterfaceElement {
-  private val strings = Array(f"Линейная скорость: ${msecOrKmsec(ship.linearVelocity.norma)}")
+  private val strings = Array(f"Линейная скорость: ${ship.velocityStr}")
   override protected def _update(): Unit = {
-    strings(0) = f"Линейная скорость: ${msecOrKmsec(ship.linearVelocity.norma)}"
+    strings(0) = f"Линейная скорость: ${ship.velocityStr}"
   }
 
   override def data: Seq[String] = strings

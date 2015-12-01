@@ -567,12 +567,12 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def orbitStrInPointWithVelocity(coord:DVec, velocity:DVec, mass:Double, planet_states:mutable.Map[String, MutableBodyState]):String = {
     insideSphereOfInfluenceOfCelestialBody(coord, mass, planet_states) match {
       case Some((planet, planet_state)) =>
-        val prefix = planet.index match {
+        val planet_name = planet.index match {
           case earth.index => "Земля"
           case moon.index => "Луна"
         }
         val orbit = calculateOrbit(planet_state.mass, planet_state.coord, mass, coord - planet_state.coord, velocity - planet_state.vel, G)
-        orbit.strDefinition(prefix, planetByIndex(planet_state.index).get.radius, planet_state.vel, planet.g, coord, velocity)
+        orbit.strDefinition(planet_name, planetByIndex(planet_state.index).get.radius, planet_state.vel, planet.g, coord, velocity)
       case None => "N/A"
     }
   }
@@ -1140,6 +1140,38 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                 }).toList
                 result += (() => {
                   drawSlidingLines(yy, color1)
+
+                  if(ship_index == ship.index) {
+                    val mouse_point = absCoord(mouseCoord) / scale
+                    drawLine(h.f * scale, mouse_point * scale, DARK_GRAY)
+
+                    if(_stop_after_number_of_tacts > 0) {
+                      drawFilledCircle(h.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)*scale, 3 / globalScale, RED)
+                    }
+
+                    val mouse_teta_rad2Pi = h.tetaRad2PiInPoint(mouse_point)
+                    val ship_teta_rad2Pi = h.tetaRad2PiInPoint(bs.coord)
+                    if(h.tetaRad2PiValid(mouse_teta_rad2Pi)) {
+                      val away_from_rp = (bs.coord - h.f) * (bs.vel - planet_state.vel) >= 0 // приближаемся к перигею или удаляемся от него?
+                      if((away_from_rp  && ship_teta_rad2Pi <= mouse_teta_rad2Pi && 0 <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= h.teta_rad_min) ||
+                         (!away_from_rp && !(h.teta_rad_min <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= ship_teta_rad2Pi))) {
+                        val orbital_point = h.orbitalPointInPoint(mouse_point)
+                        drawFilledCircle(orbital_point*scale, 3 / globalScale, color2)
+                        val ccw = (bs.coord - h.f).perpendicular * (bs.vel - planet_state.vel) >= 0 // летим против часовой?
+                        val flight_time_msec = if (ccw) h.travelTimeOnOrbitMsecCCW(bs.coord, orbital_point) else h.travelTimeOnOrbitMsecCW(bs.coord, orbital_point)
+                        val flight_time = s"${timeStr(flight_time_msec)}"
+                        if (set_stop_moment) {
+                          _stop_after_number_of_tacts = (flight_time_msec / 1000 / base_dt).toLong
+                          _stop_in_orbit_true_anomaly = mouse_teta_rad2Pi
+                          set_stop_moment = false
+                        }
+                        openglLocalTransform {
+                          openglMove(orbital_point * scale)
+                          print(s"  $flight_time : ${mOrKm(h.distanceByTrueAnomalyRad(mouse_teta_rad2Pi))}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
+                        }
+                      }
+                    }
+                  }
                 })
               case e:EllipseOrbit =>
                 result += (() => {

@@ -52,6 +52,19 @@ trait Ship {
     linearVelocity - insideSphereOfInfluenceOfCelestialBody(coord, mass, OrbitalKiller.currentPlanetStates).map(_._2.vel).getOrElse(DVec.zero)
   }
 
+  def velocityStr:String = {
+    insideSphereOfInfluenceOfCelestialBody(coord, mass, OrbitalKiller.currentPlanetStates) match {
+      case Some((planet, planet_state)) =>
+        val planet_name = planet.index match {
+          case earth.index => "Земля"
+          case moon.index => "Луна"
+        }
+        s"${msecOrKmsec((linearVelocity - planet_state.vel).norma)} ($planet_name), ${msecOrKmsec(linearVelocity.norma)} (абсолютная)"
+      case None =>
+        s"${msecOrKmsec(linearVelocity.norma)} (абсолютная)"
+    }
+  }
+
   def coord = currentState.coord
 
   def angularAcceleration = currentState.ang_acc
