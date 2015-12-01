@@ -80,14 +80,14 @@ case class Engine(index:String, position:DVec, force_dir:DVec, max_power:Double,
           }
           timeMultiplier = realtime
           if(workTimeTacts == 0) workTimeTacts = 10
-          ship.selected_engine = Some(this)
+          //ship.selected_engine = Some(this)
         } else {
           is_active = false
-          ship.selected_engine = ship.engines.filter(_.active).lastOption
+          //ship.selected_engine = ship.engines.filter(_.active).lastOption
         }
       } else {
         is_active = false
-        ship.selected_engine = ship.engines.filter(_.active).lastOption
+        //ship.selected_engine = ship.engines.filter(_.active).lastOption
       }
       //updateFutureTrajectory("engine active")
     }

@@ -918,30 +918,38 @@ package object orbitalkiller {
     (body1_coord - body2_coord).n*G*body1_mass*body2_mass/body1_coord.dist2(body2_coord)
   }
 
-  def satelliteSpeed(body_coord:DVec, planet_coord:DVec, planet_velocity:DVec, planet_mass:Double, G:Double, counterclockwise:Boolean):DVec = {
-    val from_planet_to_body = body_coord - planet_coord
-    if(!counterclockwise) planet_velocity + from_planet_to_body.p*math.sqrt(G*planet_mass/from_planet_to_body.norma)*(-1)
-    else planet_velocity + from_planet_to_body.p*math.sqrt(G*planet_mass/from_planet_to_body.norma)
+  private def _satelliteSpeed(from_planet_to_body:DVec, planet_velocity:DVec, planet_mass:Double, G:Double, counterclockwise:Boolean):DVec = {
+    val sat_speed = from_planet_to_body.p*math.sqrt(G*planet_mass/from_planet_to_body.norma)
+    if(!counterclockwise) planet_velocity + sat_speed*(-1)
+    else planet_velocity + sat_speed
   }
 
-  def escapeVelocity(body_coord:DVec, planet_coord:DVec, planet_velocity:DVec, planet_mass:Double, G:Double, counterclockwise:Boolean):DVec = {
+  def satelliteSpeed(body_coord:DVec, planet_coord:DVec, planet_velocity:DVec, planet_mass:Double, G:Double, counterclockwise:Boolean):DVec = {
     val from_planet_to_body = body_coord - planet_coord
-    if(!counterclockwise) planet_velocity + from_planet_to_body.p*math.sqrt(G*planet_mass/from_planet_to_body.norma)*math.sqrt(2)*(-1)
-    else planet_velocity + from_planet_to_body.p*math.sqrt(G*planet_mass/from_planet_to_body.norma)*math.sqrt(2)
+    _satelliteSpeed(from_planet_to_body, planet_velocity, planet_mass, G, counterclockwise)
   }
 
   def satelliteSpeed(body_coord:DVec, body_velocity:DVec, planet_coord:DVec, planet_velocity:DVec, planet_mass:Double, G:Double):DVec = {
     val from_planet_to_body = body_coord - planet_coord
-    val counterclockwise = math.signum(from_planet_to_body.signedDeg(body_velocity)) > 0
-    if(!counterclockwise) planet_velocity + from_planet_to_body.p*math.sqrt(G*planet_mass/from_planet_to_body.norma)*(-1)
-    else planet_velocity + from_planet_to_body.p*math.sqrt(G*planet_mass/from_planet_to_body.norma)
+    val counterclockwise = from_planet_to_body.perpendicular*(body_velocity - planet_velocity) >= 0
+    _satelliteSpeed(from_planet_to_body, planet_velocity, planet_mass, G, counterclockwise)
+  }
+
+  private def _escapeVelocity(from_planet_to_body:DVec, planet_velocity:DVec, planet_mass:Double, G:Double, counterclockwise:Boolean):DVec = {
+    val esc_speed = from_planet_to_body.p*math.sqrt(G*planet_mass/from_planet_to_body.norma)*math.sqrt(2)
+    if(!counterclockwise) planet_velocity + esc_speed*(-1)
+    else planet_velocity + esc_speed
+  }
+
+  def escapeVelocity(body_coord:DVec, planet_coord:DVec, planet_velocity:DVec, planet_mass:Double, G:Double, counterclockwise:Boolean):DVec = {
+    val from_planet_to_body = body_coord - planet_coord
+    _escapeVelocity(from_planet_to_body, planet_velocity, planet_mass, G, counterclockwise)
   }
 
   def escapeVelocity(body_coord:DVec, body_velocity:DVec, planet_coord:DVec, planet_velocity:DVec, planet_mass:Double, G:Double):DVec = {
     val from_planet_to_body = body_coord - planet_coord
-    val counterclockwise = math.signum(from_planet_to_body.signedDeg(body_velocity)) > 0
-    if(!counterclockwise) planet_velocity + from_planet_to_body.p*math.sqrt(G*planet_mass/from_planet_to_body.norma)*math.sqrt(2)*(-1)
-    else planet_velocity + from_planet_to_body.p*math.sqrt(G*planet_mass/from_planet_to_body.norma)*math.sqrt(2)
+    val counterclockwise = math.signum(from_planet_to_body.signedDeg(body_velocity - planet_velocity)) > 0
+    _escapeVelocity(from_planet_to_body, planet_velocity, planet_mass, G, counterclockwise)
   }
 
   def timeStr(time_msec:Long):String = {
@@ -1009,7 +1017,12 @@ package object orbitalkiller {
     val center:DVec,          // координаты центра
     mu:Double) extends KeplerOrbit {  // гравитационный параметр: произведение гравитационной постоянной G на сумму масс притягивающего центра и корабля на орбите
     def strDefinition(prefix:String, planet_radius:Double, planet_velocity:DVec, planet_g:Double, ship_coord:DVec, ship_velocity:DVec):String = {
-      val dir = if((ship_coord - f).perpendicular*(ship_velocity - planet_velocity) >= 0) "\u21b6" else "\u21b7"
+      val ccw = (ship_coord - f).perpendicular*(ship_velocity - planet_velocity) >= 0   // летим против часовой?
+      val dir = if(ccw) {
+        "\u21b6"  // против часовой стрелки
+      } else {
+        "\u21b7"  // по часовой стрелке
+      }
       if(r_p - planet_radius < 0) {
         val y_axis = (ship_coord - f).n
         //val y0 = (ship_coord - f)*y_axis - planet_radius
@@ -1030,8 +1043,13 @@ package object orbitalkiller {
           if(launch_before_apogee) t_LA + t_AT else -t_LA + t_AT
         }*/
 
-        val fall_teta_rad = -math.acos((p/(planet_radius+3) - 1)/e) + 2*math.Pi
-        val fall_time_msec = travelTimeOnOrbitMsec(ship_coord, orbitalPointByTrueAnomalyRad(fall_teta_rad))
+        val fall_time_msec = if(ccw) {
+          val fall_teta_rad = -math.acos((p/(planet_radius+3) - 1)/e) + 2*math.Pi
+          travelTimeOnOrbitMsecCCW(ship_coord, orbitalPointByTrueAnomalyRad(fall_teta_rad))
+        } else {
+          val fall_teta_rad = math.acos((p/(planet_radius+3) - 1)/e)
+          travelTimeOnOrbitMsecCW(ship_coord, orbitalPointByTrueAnomalyRad(fall_teta_rad))
+        }
 
         val time_to_stop_at_full_power = math.abs(v0y/(1000000/OrbitalKiller.ship.mass - planet_g))
         f"$prefix, суборбитальная, $dir, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, r_a = ${mOrKm(r_a - planet_radius)}. Поверхность через ${timeStr(fall_time_msec)} (${timeStr((time_to_stop_at_full_power*1000l).toLong)})"
@@ -1100,14 +1118,14 @@ package object orbitalkiller {
     }
 
     /**
-     * Время в миллисекундах, которое займет перемещение корабля по эллиптической орбите из точки point1 в точку point2.
+     * Время в миллисекундах, которое займет перемещение корабля по эллиптической орбите из точки point1 в точку point2 против часово стрелки.
      * Вычисляется по формуле Ламберта, которую нашел в книге М.Б. Балка "Элементы динамики космического полета", стр 122-129
      * http://pskgu.ru/ebooks/astro3/astro3_03_05.pdf
      * @param point1 - начальная точка
      * @param point2 - конечная точка
      * @return
      */
-    def travelTimeOnOrbitMsec(point1:DVec, point2:DVec):Long = {
+    def travelTimeOnOrbitMsecCCW(point1:DVec, point2:DVec):Long = {
       val t1 = tetaDeg360InPoint(point1)
       val t2 = tetaDeg360InPoint(point2)
       val orbital_point1 = f + (point1 - f).n*distanceInPoint(point1)
@@ -1117,32 +1135,33 @@ package object orbitalkiller {
       val s = orbital_point1.dist(orbital_point2)
       val xl1 = math.acos(1 - (r1+r2+s)/(2*a))
       val xl2 = math.acos(1 - (r1+r2-s)/(2*a))
-      // Балк М.Б. Элементы динамики космического полета, , Формула Ламберта, стр 128-129: выбор чисел l1, l2 среди корней уравнения
+      // Балк М.Б. Элементы динамики космического полета, Формула Ламберта, стр 128-129: выбор чисел l1, l2 среди корней уравнения
       // для эллиптической орбиты, анализ проведен английским математиком А. Кэли
-      def _detectCase(l1:Double, l2:Double):(Double, Double, String) = {
-        if(t1 == 0) {
-          if(t2 < 180) (l1, l2, "None")
-          else (2*math.Pi - l1, -l2, "F & A")
+      val (l1, l2, _) = if(t1 == 0) {
+        if(t2 < 180) (xl1, xl2, "None")
+        else (2*math.Pi - xl1, -xl2, "F & A")
+      } else {
+        if (areLinesIntersect(f2 + (f2 - f).n*r_p, f2, orbital_point1, orbital_point2)) {
+          if (t2 > t1) (xl1, xl2, "None")
+          else (2 * math.Pi - xl1, -xl2, "F & A")
+        } else if (areLinesIntersect(f, f + (f - f2).n*r_p, orbital_point1, orbital_point2)) {
+          if (t1 > t2) (xl1, xl2, "None")
+          else (2 * math.Pi - xl1, -xl2, "F & A")
+        } else if (areLinesIntersect(f2, f, orbital_point1, orbital_point2)) {
+          if (t2 > t1) (2 * math.Pi - xl1, xl2, "F")
+          else (xl1, -xl2, "A")
         } else {
-          if (areLinesIntersect(f2 + (f2 - f).n*r_p, f2, orbital_point1, orbital_point2)) {
-            if (t2 > t1) (l1, l2, "None")
-            else (2 * math.Pi - l1, -l2, "F & A")
-          } else if (areLinesIntersect(f, f + (f - f2).n*r_p, orbital_point1, orbital_point2)) {
-            if (t1 > t2) (l1, l2, "None")
-            else (2 * math.Pi - l1, -l2, "F & A")
-          } else if (areLinesIntersect(f2, f, orbital_point1, orbital_point2)) {
-            if (t2 > t1) (2 * math.Pi - l1, l2, "F")
-            else (l1, -l2, "A")
-          } else {
-            if (t2 > t1) (l1, l2, "None")
-            else (2 * math.Pi - l1, -l2, "F & A")
-          }
+          if (t2 > t1) (xl1, xl2, "None")
+          else (2 * math.Pi - xl1, -xl2, "F & A")
         }
       }
-      val (l1, l2, _) = _detectCase(xl1, xl2)
       val n_1 = a*math.sqrt(a/mu) // это 1/n
       // Балк М.Б. Элементы динамики космического полета, Формула Ламберта
       (n_1*((l1 - math.sin(l1)) - (l2 - math.sin(l2)))).toLong*1000
+    }
+
+    def travelTimeOnOrbitMsecCW(point1:DVec, point2:DVec):Long = {
+      travelTimeOnOrbitMsecCCW(point2, point1)
     }
 
     /**

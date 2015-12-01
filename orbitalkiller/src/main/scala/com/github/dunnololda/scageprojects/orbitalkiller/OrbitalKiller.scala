@@ -318,14 +318,14 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def currentPlanetStates = current_body_states.filter(x => planet_indexes.contains(x._1))
   def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
 
-  val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
-  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  //val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
+  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   //val ship_start_position = earth.coord + DVec(100, earth.radius + 200000)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
 
-  //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
-  //val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
+  val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
 
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 3000)
@@ -701,6 +701,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           e.workTimeTacts = 0
         }
       })
+      ship.selected_engine = None
     }
   })
 
@@ -1164,7 +1165,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                       drawFilledCircle(e.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)*scale, 3 / globalScale, RED)
                     }
                     val true_anomaly_rad = e.tetaRad2PiInPoint(mouse_point)
-                    val flight_time_msec = e.travelTimeOnOrbitMsec(bs.coord, orbital_point)
+                    val ccw = (bs.coord - e.f).perpendicular*(bs.vel - planet_state.vel) >= 0 // летим против часовой?
+                    val flight_time_msec = if(ccw) e.travelTimeOnOrbitMsecCCW(bs.coord, orbital_point) else e.travelTimeOnOrbitMsecCW(bs.coord, orbital_point)
                     val flight_time = s"${timeStr(flight_time_msec)}"
                     if(set_stop_moment) {
                       _stop_after_number_of_tacts = (flight_time_msec/1000/base_dt).toLong

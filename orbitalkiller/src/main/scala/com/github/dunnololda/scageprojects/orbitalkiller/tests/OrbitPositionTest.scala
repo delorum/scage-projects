@@ -76,14 +76,15 @@ val f2 = center - DVec(1,0)*c   // координаты второго фоку�
   }
 
   /**
-   * Время в миллисекундах, которое займет перемещение корабля по эллиптической орбите из точки point1 в точку point2.
+   * Время в миллисекундах, которое займет перемещение корабля по эллиптической орбите из точки point1 в точку point2
+   * против часовой стрелки.
    * Вычисляется по формуле Ламберта, которую нашел в книге М.Б. Балка "Элементы динамики космического полета", стр 122-129
    * http://pskgu.ru/ebooks/astro3/astro3_03_05.pdf
    * @param point1 - начальная точка
    * @param point2 - конечная точка
    * @return
    */
-  def travelTimeOnOrbitMsec(point1:DVec, point2:DVec, mu:Double):Long = {
+  def travelTimeOnOrbitMsecCCW(point1:DVec, point2:DVec, mu:Double):(Long, String) = {
     val t1 = tetaDeg360InPoint(point1)
     val t2 = tetaDeg360InPoint(point2)
     val orbital_point1 = f1 + (point1 - f1).n*distanceInPoint(point1)
@@ -93,32 +94,29 @@ val f2 = center - DVec(1,0)*c   // координаты второго фоку�
     val s = orbital_point1.dist(orbital_point2)
     val xl1 = math.acos(1 - (r1+r2+s)/(2*a))
     val xl2 = math.acos(1 - (r1+r2-s)/(2*a))
-    // Балк М.Б. Элементы динамики космического полета, , Формула Ламберта, стр 128-129: выбор чисел l1, l2 среди корней уравнения
+    // Балк М.Б. Элементы динамики космического полета, Формула Ламберта, стр 128-129: выбор чисел l1, l2 среди корней уравнения
     // для эллиптической орбиты, анализ проведен английским математиком А. Кэли
-    def _detectCase(l1:Double, l2:Double):(Double, Double, String) = {
-      if(t1 == 0) {
-        if(t2 < 180) (l1, l2, "None")
-        else (2*math.Pi - l1, -l2, "F & A")
+    val (l1, l2, variant) = if(t1 == 0) {
+      if(t2 < 180) (xl1, xl2, "None")
+      else (2*math.Pi - xl1, -xl2, "F & A")
+    } else {
+      if (areLinesIntersect(f2 + (f2 - f1).n*r_p, f2, orbital_point1, orbital_point2)) {
+        if (t2 > t1) (xl1, xl2, "None")
+        else (2 * math.Pi - xl1, -xl2, "F & A")
+      } else if (areLinesIntersect(f1, f1 + (f1 - f2).n*r_p, orbital_point1, orbital_point2)) {
+        if (t1 > t2) (xl1, xl2, "None")
+        else (2 * math.Pi - xl1, -xl2, "F & A")
+      } else if (areLinesIntersect(f2, f1, orbital_point1, orbital_point2)) {
+        if (t2 > t1) (2 * math.Pi - xl1, xl2, "F")
+        else (xl1, -xl2, "A")
       } else {
-        if (areLinesIntersect(f2 + (f2 - f1).n*r_p, f2, orbital_point1, orbital_point2)) {
-          if (t2 > t1) (l1, l2, "None")
-          else (2 * math.Pi - l1, -l2, "F & A")
-        } else if (areLinesIntersect(f1, f1 + (f1 - f2).n*r_p, orbital_point1, orbital_point2)) {
-          if (t1 > t2) (l1, l2, "None")
-          else (2 * math.Pi - l1, -l2, "F & A")
-        } else if (areLinesIntersect(f2, f1, orbital_point1, orbital_point2)) {
-          if (t2 > t1) (2 * math.Pi - l1, l2, "F")
-          else (l1, -l2, "A")
-        } else {
-          if (t2 > t1) (l1, l2, "None")
-          else (2 * math.Pi - l1, -l2, "F & A")
-        }
+        if (t2 > t1) (xl1, xl2, "None")
+        else (2 * math.Pi - xl1, -xl2, "F & A")
       }
     }
-    val (l1, l2, _) = _detectCase(xl1, xl2)
     val n_1 = a*math.sqrt(a/mu) // это 1/n
     // Балк М.Б. Элементы динамики космического полета, Формула Ламберта
-    (n_1*((l1 - math.sin(l1)) - (l2 - math.sin(l2)))).toLong*1000
+    ((n_1*((l1 - math.sin(l1)) - (l2 - math.sin(l2)))).toLong*1000, variant)
   }
 
   /**
@@ -145,13 +143,6 @@ val f2 = center - DVec(1,0)*c   // координаты второго фоку�
 }
 
 object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640) {
-  implicit class MyVec(v1:DVec) {
-    def deg360(v2:DVec):Double = {
-      val scalar = v2*v1.perpendicular
-      if(scalar >= 0) v2.deg(v1) else 360 - v2.deg(v1)
-    }
-  }
-
   val o = Orbit2(
     a = 1.0922509227094337E7,
     b = 1.0338913703140972E7,
@@ -209,56 +200,6 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640
 
   val polygon_step = 1
 
-  def calculateTime(): Unit = {
-    val r1 = (mr1.get - o.f1).norma
-    val t1 = (o.f1-o.f2).deg360(mr1.get - o.f1)
-    //println(t1)
-    val r2 = (mr2.get - o.f1).norma
-    val t2 = (o.f1-o.f2).deg360(mr2.get - o.f1)
-    //println(t2)
-    //println(t2 - t1)
-    val s = mr1.get.dist(mr2.get)
-    val xl1 = math.acos(1 - (r1+r2+s)/(2*o.a))
-    val xl2 = math.acos(1 - (r1+r2-s)/(2*o.a))
-
-    def _detectCase(t1:Double, xt2:Double, l1:Double, l2:Double):(Double, Double, String) = {
-      val res1 = areLinesIntersect(o.f2 + (o.f2 - o.f1).n*o.r_p, o.f2, mr1.get, mr2.get)
-      val res2 = areLinesIntersect(o.f2, o.f1, mr1.get, mr2.get)
-      val res3 = areLinesIntersect(o.f1, o.f1 + (o.f1 - o.f2).n*o.r_p, mr1.get, mr2.get)
-      if(t1 == 0) {
-        if(t2 < 180) (l1, l2, "None")
-        else (2*math.Pi - l1, -l2, "F & A")
-      } else {
-        if (!res1 && !res2 && !res3) {
-          if (t2 > t1) (l1, l2, "None")
-          else (2 * math.Pi - l1, -l2, "F & A")
-        } else {
-          if (res1) {
-            if (t2 > t1) (l1, l2, "None")
-            else (2 * math.Pi - l1, -l2, "F & A")
-          } else if (res3) {
-            if (t1 > t2) (l1, l2, "None")
-            else (2 * math.Pi - l1, -l2, "F & A")
-          } else if (res2) {
-            if (t2 > t1) (2 * math.Pi - l1, l2, "F")
-            else (l1, -l2, "A")
-          } else {
-            (l1, l2, "None")
-          }
-        }
-      }
-    }
-    val (l1, l2, variant) = _detectCase(t1, t2, xl1, xl2)
-    /*def _printTimes:List[String] = {
-      List((xl1, xl2), (2*math.Pi - xl1, -xl2), (xl1, -xl2), (2*math.Pi-xl1, xl2)).map {
-        case (x1, x2) =>
-          timeStr((n_1*((x1 - math.sin(x1)) - (x2 - math.sin(x2)))).toLong*1000)
-      }
-    }*/
-    flight_time = Some(s"${timeStr((n_1*((l1 - math.sin(l1)) - (l2 - math.sin(l2)))).toLong*1000)}, $variant")
-    //flight_time = Some(_printTimes ::: List(variant))
-  }
-
   leftMouseIgnorePause(onBtnDown = m => {
     val mm = absCoord(m)/scale
     mr1 = Some(o.f1 + (mm - o.f1).n*ro(mm))
@@ -273,7 +214,8 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640
     _m = absCoord(m)
     val mm = _m/scale
     mr2 = Some(o.f1 + (mm - o.f1).n * ro(mm))
-    calculateTime()
+    val (time, variant) = o.travelTimeOnOrbitMsecCCW(mr1.get, mr2.get, mu)
+    flight_time = Some(s"${timeStr(time)}, $variant")
     //println(ro(_m/scale))
   })
 
