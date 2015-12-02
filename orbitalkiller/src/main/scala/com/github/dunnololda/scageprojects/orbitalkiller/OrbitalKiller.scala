@@ -625,10 +625,10 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
               _center = ellipse.center*scale
             case hyperbola:HyperbolaOrbit =>
               val b = BoxShape(2*hyperbola.a, 2*hyperbola.b)
-              val aabb = b.aabb(hyperbola.center, Vec(-1,0).signedDeg(hyperbola.center-hyperbola.f))
+              val aabb = b.aabb(hyperbola.half_center, Vec(1,0).signedDeg(hyperbola.f_minus_center_n))
               viewMode = 0
               globalScale = 750 / (aabb.height * scale)
-              _center = hyperbola.center*scale
+              _center = hyperbola.half_center*scale
           }
         case None =>
           viewMode = 0
@@ -1133,10 +1133,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
               bs.vel - planet_state.vel, G)
             orbit match {
               case h:HyperbolaOrbit =>
-                val axis = (h.center - h.f).n
                 val yy = (-math.acos(-1.0/h.e)+0.1 to math.acos(-1.0/h.e)-0.1 by 0.1).map(true_anomaly => {
                   val r = h.a*(h.e*h.e-1)/(1 + h.e*math.cos(true_anomaly))
-                  (h.f + (axis*r).rotateRad(true_anomaly))*scale
+                  (h.f + (h.f_minus_center_n*r).rotateRad(true_anomaly))*scale
                 }).toList
                 result += (() => {
                   drawSlidingLines(yy, color1)
@@ -1152,12 +1151,22 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                     val mouse_teta_rad2Pi = h.tetaRad2PiInPoint(mouse_point)
                     val ship_teta_rad2Pi = h.tetaRad2PiInPoint(bs.coord)
                     if(h.tetaRad2PiValid(mouse_teta_rad2Pi)) {
+                      val ccw = (bs.coord - h.f).perpendicular * (bs.vel - planet_state.vel) >= 0 // летим против часовой?
                       val away_from_rp = (bs.coord - h.f) * (bs.vel - planet_state.vel) >= 0 // приближаемся к перигею или удаляемся от него?
-                      if((away_from_rp  && ship_teta_rad2Pi <= mouse_teta_rad2Pi && 0 <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= h.teta_rad_min) ||
-                         (!away_from_rp && !(h.teta_rad_min <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= ship_teta_rad2Pi))) {
+
+                      val (allow) = {
+                        if(ccw) {
+                          (away_from_rp  && ship_teta_rad2Pi <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= h.teta_rad_min) ||
+                          (!away_from_rp && ((ship_teta_rad2Pi <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= 360) || (0 <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= h.teta_rad_min)))
+                        } else {
+                          (away_from_rp && ship_teta_rad2Pi >= mouse_teta_rad2Pi && mouse_teta_rad2Pi >= h.teta_rad_max) ||
+                          (!away_from_rp && ((ship_teta_rad2Pi >= mouse_teta_rad2Pi && mouse_teta_rad2Pi >= 0) || (360 >= mouse_teta_rad2Pi && mouse_teta_rad2Pi >= h.teta_rad_max)))
+                        }
+                      }
+
+                      if(allow) {
                         val orbital_point = h.orbitalPointInPoint(mouse_point)
                         drawFilledCircle(orbital_point*scale, 3 / globalScale, color2)
-                        val ccw = (bs.coord - h.f).perpendicular * (bs.vel - planet_state.vel) >= 0 // летим против часовой?
                         val flight_time_msec = if (ccw) h.travelTimeOnOrbitMsecCCW(bs.coord, orbital_point) else h.travelTimeOnOrbitMsecCW(bs.coord, orbital_point)
                         val flight_time = s"${timeStr(flight_time_msec)}"
                         if (set_stop_moment) {
@@ -1167,7 +1176,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                         }
                         openglLocalTransform {
                           openglMove(orbital_point * scale)
-                          print(s"  $flight_time : ${mOrKm(h.distanceByTrueAnomalyRad(mouse_teta_rad2Pi))}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
+                          print(s"  $flight_time : ${mOrKm(h.distanceByTrueAnomalyRad(mouse_teta_rad2Pi) - planet.radius)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
                         }
                       }
                     }

@@ -948,7 +948,7 @@ package object orbitalkiller {
 
   def escapeVelocity(body_coord:DVec, body_velocity:DVec, planet_coord:DVec, planet_velocity:DVec, planet_mass:Double, G:Double):DVec = {
     val from_planet_to_body = body_coord - planet_coord
-    val counterclockwise = math.signum(from_planet_to_body.signedDeg(body_velocity - planet_velocity)) > 0
+    val counterclockwise = from_planet_to_body.perpendicular*(body_velocity - planet_velocity) >= 0
     _escapeVelocity(from_planet_to_body, planet_velocity, planet_mass, G, counterclockwise)
   }
 
@@ -1051,15 +1051,17 @@ package object orbitalkiller {
           travelTimeOnOrbitMsecCW(ship_coord, orbitalPointByTrueAnomalyRad(fall_teta_rad))
         }
 
+        val fall_time_str = if(fall_time_msec < 30000) s"[r${timeStr(fall_time_msec)}]" else s"${timeStr(fall_time_msec)}"
+
         val time_to_stop_at_full_power = math.abs(v0y/(1000000/OrbitalKiller.ship.mass - planet_g))
-        f"$prefix, суборбитальная, $dir, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, r_a = ${mOrKm(r_a - planet_radius)}. Поверхность через ${timeStr(fall_time_msec)} (${timeStr((time_to_stop_at_full_power*1000l).toLong)})"
+        f"$prefix, суборбитальная, $dir, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, r_a = ${mOrKm(r_a - planet_radius)}. Поверхность через $fall_time_str (${timeStr((time_to_stop_at_full_power*1000l).toLong)})"
       } else {
         f"$prefix, замкнутая, $dir, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, r_a = ${mOrKm(r_a - planet_radius)}, t = ${timeStr((t*1000l).toLong)}"
       }
     }
 
     private val f_minus_f2 = f - f2
-    private val n_1 = a*math.sqrt(a/mu) // это 1/n
+    private val inv_n = a*math.sqrt(a/mu) // это 1/n
 
     def tetaDeg360ByDir(dir:DVec) = f_minus_f2.deg360(dir)
     def tetaSignedDegByDir(dir:DVec) = f_minus_f2.signedDeg(dir)
@@ -1157,7 +1159,7 @@ package object orbitalkiller {
         }
       }
       // Балк М.Б. Элементы динамики космического полета, Формула Ламберта
-      (n_1*((l1 - math.sin(l1)) - (l2 - math.sin(l2)))).toLong*1000
+      (inv_n*((l1 - math.sin(l1)) - (l2 - math.sin(l2)))).toLong*1000
     }
 
     def travelTimeOnOrbitMsecCW(point1:DVec, point2:DVec):Long = {
@@ -1211,7 +1213,8 @@ package object orbitalkiller {
       teta_rad2Pi <= teta_rad_max || teta_rad2Pi >= teta_rad_min
     }
 
-    val center_minus_f = center - f
+    val f_minus_center_n = (f - center).n
+    val half_center = f - f_minus_center_n*(center.dist(f)*0.5)
     val inv_n = a*math.sqrt(a/mu)
 
     def strDefinition(prefix:String, planet_radius:Double, planet_velocity:DVec, planet_g:Double, ship_coord:DVec, ship_velocity:DVec):String = {
@@ -1221,18 +1224,18 @@ package object orbitalkiller {
     }
 
     def tetaDeg360ByDir(dir:DVec):Double = {
-      center_minus_f.deg360(dir)
+      f_minus_center_n.deg360(dir)
     }
 
     def tetaDeg360InPoint(p:DVec) = tetaDeg360ByDir(p - f)
 
     def tetaRad2PiByDir(dir:DVec):Double = {
-      center_minus_f.rad2Pi(dir)
+      f_minus_center_n.rad2Pi(dir)
     }
 
     def tetaRad2PiInPoint(p:DVec) = tetaRad2PiByDir(p - f)
 
-    def tetaSignedRadByDir(dir:DVec) = center_minus_f.signedRad(dir)
+    def tetaSignedRadByDir(dir:DVec) = f_minus_center_n.signedRad(dir)
 
     def tetaSignedRadInPoint(p:DVec) = tetaSignedRadByDir(p - f)
 
@@ -1249,7 +1252,7 @@ package object orbitalkiller {
     }
 
     def orbitalPointByTrueAnomalyRad(teta_rad:Double) = {
-      f + center_minus_f.rotateRad(teta_rad).n*distanceByTrueAnomalyRad(teta_rad)
+      f + f_minus_center_n.rotateRad(teta_rad).n*distanceByTrueAnomalyRad(teta_rad)
     }
 
     def orbitalPointByDir(dir:DVec) = {
@@ -1347,7 +1350,7 @@ package object orbitalkiller {
         if(moving_away) 1 else -1
       }
 
-      val center = planet_coord + body_relative_coord.rotateRad(true_anomaly*signum).n*a*e
+      val center = planet_coord - body_relative_coord.rotateRad(true_anomaly*signum).n*a*e
 
       new HyperbolaOrbit(a, b, e, planet_coord, center, mu)
     }
