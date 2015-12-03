@@ -224,7 +224,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   }*/
 
   val earth = new Planet(
-    "Earth",
+    "Earth", "Земля",
     mass = 5.9746E24,
     init_coord = DVec.dzero,
     init_velocity = DVec.zero,
@@ -306,7 +306,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   val moon_start_position = DVec(-269000000, 269000000)
   val moon_init_velocity = satelliteSpeed(moon_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
   val moon = new Planet(
-    "Moon",
+    "Moon", "Луна",
     mass = 7.3477E22,
     init_coord = moon_start_position,
     init_velocity = moon_init_velocity,
@@ -567,12 +567,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def orbitStrInPointWithVelocity(coord:DVec, velocity:DVec, mass:Double, planet_states:mutable.Map[String, MutableBodyState]):String = {
     insideSphereOfInfluenceOfCelestialBody(coord, mass, planet_states) match {
       case Some((planet, planet_state)) =>
-        val planet_name = planet.index match {
-          case earth.index => "Земля"
-          case moon.index => "Луна"
-        }
         val orbit = calculateOrbit(planet_state.mass, planet_state.coord, mass, coord - planet_state.coord, velocity - planet_state.vel, G)
-        orbit.strDefinition(planet_name, planetByIndex(planet_state.index).get.radius, planet_state.vel, planet.g, coord, velocity)
+        orbit.strDefinition(planet.name, planetByIndex(planet_state.index).get.radius, planet_state.vel, planet.g, coord, velocity)
       case None => "N/A"
     }
   }
@@ -1221,7 +1217,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                     //val v = vr*basis_r + vt*basis_t + planet_state.vel
                     openglLocalTransform {
                       openglMove(orbital_point * scale)
-                      print(s"  $flight_time : ${mOrKm(e.distanceByTrueAnomalyRad(true_anomaly_rad))}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
+                      print(s"  $flight_time : ${mOrKm(e.distanceByTrueAnomalyRad(true_anomaly_rad) - planet.radius)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
                       //print(s"  $flight_time : ${msecOrKmsec(v.norma)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
                       //print(f"  ${e.tetaDeg360InPoint(x)}%.2f", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
                     }
@@ -1238,7 +1234,6 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   private var ship_orbit_render:() => Unit = () => {}
   private var station_orbit_render:() => Unit = () => {}
   private var moon_orbit_render:() => Unit = () => {}
-  moon_orbit_render =  shipOrbitRender(moon.index, current_body_states, GREEN, GREEN)
 
   private var _calculate_orbits = false
 
@@ -1277,6 +1272,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       }
     }
     station_orbit_render = shipOrbitRender(station.index, current_body_states, ORANGE, YELLOW)
+    moon_orbit_render =  shipOrbitRender(moon.index, current_body_states, GREEN, GREEN)
     _calculate_orbits = false
   }
   updateOrbits()
@@ -1481,6 +1477,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
 trait CelestialBody {
   def index:String
+  def name:String
   def coord:DVec
   def linearVelocity:DVec
   def mass:Double
@@ -1496,6 +1493,7 @@ trait CelestialBody {
 
 class Planet(
   val index:String,
+  val name:String,
   val mass:Double,
   val init_coord:DVec,
   val init_velocity:DVec,
@@ -1603,7 +1601,7 @@ class Planet(
   }
 }
 
-class Star(val index:String, val mass:Double, val coord:DVec, ang_vel:Double, val radius:Double) extends CelestialBody {
+class Star(val index:String, val name:String, val mass:Double, val coord:DVec, ang_vel:Double, val radius:Double) extends CelestialBody {
   def initState:BodyState = BodyState(
       index = index,
       mass = mass,

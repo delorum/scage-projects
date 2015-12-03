@@ -1051,10 +1051,10 @@ package object orbitalkiller {
           travelTimeOnOrbitMsecCW(ship_coord, orbitalPointByTrueAnomalyRad(fall_teta_rad))
         }
 
-        val fall_time_str = if(fall_time_msec < 30000) s"[r${timeStr(fall_time_msec)}]" else s"${timeStr(fall_time_msec)}"
-
         val time_to_stop_at_full_power = math.abs(v0y/(1000000/OrbitalKiller.ship.mass - planet_g))
-        f"$prefix, суборбитальная, $dir, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, r_a = ${mOrKm(r_a - planet_radius)}. Поверхность через $fall_time_str (${timeStr((time_to_stop_at_full_power*1000l).toLong)})"
+        val fall_time_str = if(fall_time_msec < 30000) s"[r Поверхность через ${timeStr(fall_time_msec)} (${timeStr((time_to_stop_at_full_power*1000l).toLong)})]" else s"Поверхность через ${timeStr(fall_time_msec)}"
+
+        f"$prefix, суборбитальная, $dir, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, r_a = ${mOrKm(r_a - planet_radius)}. $fall_time_str"
       } else {
         f"$prefix, замкнутая, $dir, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, r_a = ${mOrKm(r_a - planet_radius)}, t = ${timeStr((t*1000l).toLong)}"
       }
