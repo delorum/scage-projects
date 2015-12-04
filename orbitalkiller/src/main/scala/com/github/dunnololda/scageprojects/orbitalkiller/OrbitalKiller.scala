@@ -407,12 +407,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   var _stop_in_orbit_true_anomaly:Double = 0
 
   //private var skipped_points = 0
-  private var ship_states_with_different_max_multipliers:List[(Int, Double)] = Nil
+  /*private var ship_states_with_different_max_multipliers:List[(Int, Double)] = Nil
   private val xx = 250
   private val fos = new FileOutputStream(s"errors_stats_$xx.txt", true)
   clear {
     fos.close()
-  }
+  }*/
+
   private def nextStep() {
     if(ship.currentState.ang_vel != 0 && math.abs(ship.currentState.ang_vel) < 0.01) {
       ship.currentState.ang_vel = 0

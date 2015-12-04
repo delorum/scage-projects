@@ -1199,11 +1199,11 @@ package object orbitalkiller {
     val r_p = a*(e-1)                       // перигей
     val p = a*(e*e - 1)                     // фокальный параметр (половина длины хорды, проходящей через фокус и перпендикулярной к фокальной оси)
 
-    val teta_deg_max = -180 + math.acos(1/e)/math.Pi*180 + 360  // разрешенные углы: от этого угла до 360
-    val teta_rad_max = teta_deg_max/180.0*math.Pi
-    
     val teta_deg_min = 180 - math.acos(1/e)/math.Pi*180         // разрешенные углы: от 0 до этого угла
     val teta_rad_min = teta_deg_min/180.0*math.Pi
+
+    val teta_deg_max = -180 + math.acos(1/e)/math.Pi*180 + 360  // разрешенные углы: от этого угла до 360
+    val teta_rad_max = teta_deg_max/180.0*math.Pi
     
     def tetaDeg360Valid(teta_deg360:Double):Boolean = {
       teta_deg360 <= teta_deg_min || teta_deg360 >= teta_deg_max
@@ -1218,9 +1218,26 @@ package object orbitalkiller {
     val inv_n = a*math.sqrt(a/mu)
 
     def strDefinition(prefix:String, planet_radius:Double, planet_velocity:DVec, planet_g:Double, ship_coord:DVec, ship_velocity:DVec):String = {
-      val dir = if((ship_coord - f).perpendicular*(ship_velocity - planet_velocity) >= 0) "\u21b6" else "\u21b7"
+      val ccw = (ship_coord - f).perpendicular*(ship_velocity - planet_velocity) >= 0   // летим против часовой?
+      val dir = if(ccw) "\u21b6" else "\u21b7"
       val r_p_approach = if((ship_coord - f)*(ship_velocity - planet_velocity) >= 0) "удаляемся" else "приближаемся"
-      f"$prefix, незамкнутая, $dir, $r_p_approach, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}"
+      if(r_p - planet_radius < 0) {
+        val y_axis = (ship_coord - f).n
+        val v0y = (ship_velocity - planet_velocity) * y_axis
+        val fall_time_msec = if (ccw) {
+          val fall_teta_rad = -math.acos((p / (planet_radius + 3) - 1) / e) + 2 * math.Pi
+          travelTimeOnOrbitMsecCCW(ship_coord, orbitalPointByTrueAnomalyRad(fall_teta_rad))
+        } else {
+          val fall_teta_rad = math.acos((p / (planet_radius + 3) - 1) / e)
+          travelTimeOnOrbitMsecCW(ship_coord, orbitalPointByTrueAnomalyRad(fall_teta_rad))
+        }
+
+        val time_to_stop_at_full_power = math.abs(v0y / (1000000 / OrbitalKiller.ship.mass - planet_g))
+        val fall_time_str = if (fall_time_msec < 30000) s"[r Поверхность через ${timeStr(fall_time_msec)} (${timeStr((time_to_stop_at_full_power * 1000l).toLong)})]" else s"Поверхность через ${timeStr(fall_time_msec)}"
+        f"$prefix, незамкнутая, суборбитальная $dir, $r_p_approach, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, $fall_time_str"
+      } else {
+        f"$prefix, незамкнутая, $dir, $r_p_approach, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}"
+      }
     }
 
     def tetaDeg360ByDir(dir:DVec):Double = {
