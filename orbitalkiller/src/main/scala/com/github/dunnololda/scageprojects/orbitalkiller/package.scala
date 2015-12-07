@@ -767,6 +767,7 @@ package object orbitalkiller {
         } yield c
       } else Nil
 
+      // Integrate forces first part
       mutable_system.foreach {case (mb, other_mutable_bodies) =>
         if(!mb.is_static) {
           val next_force = force(mb, other_mutable_bodies)
