@@ -147,7 +147,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   //private val future_trajectory_map = mutable.HashMap[String, ArrayBuffer[(Long, BodyState)]]()
   //private val future_trajectory_capacity = 10000
 
-  private val system_cache = mutable.HashMap[Long, mutable.Map[String, MutableBodyState]]()
+  /*private val system_cache = mutable.HashMap[Long, mutable.Map[String, MutableBodyState]]()
 
   def getFutureState(tacts:Long):mutable.Map[String, MutableBodyState] = {
     if(ship.flightMode != 0) {
@@ -159,18 +159,19 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       system_cache.getOrElseUpdate(tacts, {
         println("adding to system_cache")
         val system_copy = makeThisAndOthers(our_mutable_system.map(_._1.copy))
-        ourMutableSystemEvolution(system_copy, (tacts - _tacts).toInt)
+        val steps = (tacts - _tacts).toInt
+        (1 to steps).foreach(step => ourMutableSystemEvolution(system_copy))
         mutable.Map(system_copy.map(x => (x._1.index, x._1)):_*)
       })
     } else collection.mutable.Map()
-  }
+  }*/
 
   //private val body_trajectories_map = mutable.HashMap[String, ArrayBuffer[(Long, BodyState)]]()
 
   def updateFutureTrajectory(reason:String) {
     if(ship.flightMode != 0) {
       println(s"updateFutureTrajectory: $reason")
-      system_cache.clear()
+      //system_cache.clear()
       /*future_trajectory.clear()
       future_trajectory ++= {
         futureSystemEvolutionFrom(base_dt, _tacts, currentSystemState, enable_collisions = false)
@@ -365,9 +366,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   our_mutable_system.foreach(x => current_body_states(x._1.index) = x._1)
 
-  def ourMutableSystemEvolution(system:Seq[(MutableBodyState, Seq[MutableBodyState])], steps:Long) {
+  def ourMutableSystemEvolution(system:Seq[(MutableBodyState, Seq[MutableBodyState])]) {
     mutableSystemEvolution(
-      system, steps, base_dt,
+      system, base_dt,
       force = (bs, other_bodies) => {
         bs.index match {
           case ship.index =>
@@ -415,57 +416,44 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   }*/
 
   private def nextStep() {
-    if(ship.currentState.ang_vel != 0 && math.abs(ship.currentState.ang_vel) < 0.01) {
-      ship.currentState.ang_vel = 0
-    }
-    ship.currentState.mass = ship.currentMass(_tacts)
     val steps = math.max((dt/base_dt).toInt, 1)
-    ourMutableSystemEvolution(our_mutable_system, steps)
-
-    if(_stop_after_number_of_tacts > 0) {
-      _stop_after_number_of_tacts -= steps
-      if(_stop_after_number_of_tacts <= 0) {
-        if (timeMultiplier != realtime) {
-          timeMultiplier = realtime
+    (1 to steps).foreach(step => {
+      ships.foreach(s => s.engines.foreach(e => {
+        if(e.active) {
+          if(e.workTimeTacts <= 0 || ship.fuelMass <= 0) {
+            e.active = false
+          } else {
+            if(e.ship.fuelMass - e.fuelConsumptionPerTact <= 0) {
+              e.active = false
+            }
+          }
         }
-        pause()
-      } else if(_stop_after_number_of_tacts < timeMultiplier) {
-        timeMultiplier = math.max((_stop_after_number_of_tacts/2).toInt, 1)
+      }))
+      if(ship.currentState.ang_vel != 0 && math.abs(ship.currentState.ang_vel) < 0.01) {
+        ship.currentState.ang_vel = 0
       }
-    }
-
-    /*if(timeMultiplier == xx) {
-      val system_state = currentSystemState
-      val mults = List(50,100,150,200,250,300,350,400).takeWhile(x => x <= timeMultiplier)
-      ship_states_with_different_max_multipliers = mults.flatMap {
-        case max_multiplier =>
-          val (t, diff_body_states) = futureSystemEvolutionWithCustomMaxMultiplierFrom(dt, max_multiplier, _tacts, system_state, enable_collisions = true).head
-          for {
-            real_ship <- body_states.find(_.index == ship.index)
-            diff_ship <- diff_body_states.find(_.index == ship.index)
-          } yield (max_multiplier, real_ship.coord.dist(diff_ship.coord))
+      ship.currentState.mass = ship.mass/*currentMass(_tacts)*/
+      ourMutableSystemEvolution(our_mutable_system)
+      if(_stop_after_number_of_tacts > 0) {
+        _stop_after_number_of_tacts -= 1
+        if (_stop_after_number_of_tacts <= 0) {
+          if (timeMultiplier != realtime) {
+            timeMultiplier = realtime
+          }
+          pause()
+        }
       }
-      //fos.write(s"${mOrKm(earth.coord.dist(ship.coord))} : ${mOrKm(moon.coord.dist(ship.coord))} : ${msecOrKmsec(ship.linearVelocity.norma)} : ${curvatureRadiusStrInPoint(ship.currentState)} : ${ship_states_with_different_max_multipliers.map(x => s"${x._1} ${mOrKm(x._2)}").mkString(" : ")}\n".getBytes)
-      ship_states_with_different_max_multipliers.find(_._1 == xx).foreach(x => fos.write(s"${ship.linearAcceleration.norma} ${x._2}\n".getBytes))
-    } else ship_states_with_different_max_multipliers = Nil*/
-
-    _tacts += steps
-
-    /*if(skipped_points == trajectory_accuracy-1) {
-      body_states.foreach(bs => {
-        current_body_states(bs.index) = bs
-        /*val body_trajectory = body_trajectories_map.getOrElseUpdate(bs.index, ArrayBuffer[(Long, BodyState)]())
-        body_trajectory += (_tacts -> bs)
-        if(body_trajectory.size >= trajectory_capacity) body_trajectory.remove(0, 1000)*/
-      })
-      skipped_points = 0
-    } else {*/
-      /*body_states.foreach(bs => {
-        current_body_states(bs.index) = bs
-      })*/
+      _tacts += 1
       ship.updateShipState((tacts*base_dt*1000).toLong)
-      //skipped_points += 1
-    /*}*/
+      ships.foreach(s => s.engines.foreach(e => {
+        if(e.active) {
+          if(e.workTimeTacts > 0) {
+            e.workTimeTacts -= 1
+            e.ship.fuelMass -= e.fuelConsumptionPerTact
+          } else e.active = false
+        }
+      }))
+    })
   }
   nextStep()
 
@@ -1245,13 +1233,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     //println("updateOrbits")
     if(ship.flightMode != 0) {
       ship_orbit_render = if(ship.engines.exists(_.active)) {
-        if(!onPause) {
-          shipOrbitRender(ship.index, current_body_states, PURPLE, RED)
-        } else {
+        /*if(!onPause) {*/
+          shipOrbitRender(ship.index, current_body_states, ship.colorIfAliveOrRed(PURPLE), RED)
+        /*} else {
           // получаем состояние системы, когда двигатели отработали
           val system_state_when_engines_off = getFutureState(ship.engines.map(_.stopMomentTacts).max)
           shipOrbitRender(ship.index, system_state_when_engines_off, PURPLE, RED)
-        }
+        }*/
       } else {
         // двигатели корабля не работают - можем работать с текущим состоянием
         shipOrbitRender(ship.index, current_body_states, ship.colorIfAliveOrRed(ORANGE), ship.colorIfAliveOrRed(YELLOW))

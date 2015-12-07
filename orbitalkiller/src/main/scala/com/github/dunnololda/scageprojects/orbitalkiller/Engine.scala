@@ -96,7 +96,7 @@ case class Engine(index:String, position:DVec, force_dir:DVec, max_power:Double,
     active = !active
   }
 
-  action(position = -1) {
+  /*action(position = -1) {
     if(is_active) {
       if(worktime_tacts <= 0 || ship.fuelMass <= 0) {
         active = false
@@ -115,5 +115,5 @@ case class Engine(index:String, position:DVec, force_dir:DVec, max_power:Double,
         ship.fuelMass -= fuelConsumptionPerTact
       } else active = false
     }
-  }
+  }*/
 }

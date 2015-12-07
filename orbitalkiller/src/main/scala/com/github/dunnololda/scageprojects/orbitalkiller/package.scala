@@ -746,64 +746,59 @@ package object orbitalkiller {
     contacts:List[net.phys2d.raw.Contact], new_velocity:DVec, new_angular_velocity:Double)
 
   def mutableSystemEvolution(mutable_system:Seq[(MutableBodyState, Seq[MutableBodyState])],
-                             steps:Long,           // в секундах, может быть больше либо равно base_dt - обеспечивается ускорение времени
                              base_dt:Double,          // в секундах
                              force: (MutableBodyState, Seq[MutableBodyState]) => DVec = (body, other_bodies) => DVec.dzero,
                              torque: (MutableBodyState, Seq[MutableBodyState]) => Double = (body, other_bodies) => 0.0,
                              enable_collisions:Boolean = true): Unit = {
-    var step = 1l
-    while(step <= steps) {
-      mutable_system.foreach(_._1.init())
+    mutable_system.foreach(_._1.init())
 
-      val collisions = if(enable_collisions) {
-        val x = splitSpace(new Space(mutable_system.map(_._1), DVec(OrbitalKiller.earth.radius*2, -OrbitalKiller.earth.radius*2)), 5, 2)
-        for {
-          space <- x
-          if space.bodies.length > 1
-          (b1, idx) <- space.bodies.zipWithIndex.init
-          b2 <- space.bodies.drop(idx+1)
-          if !b1.is_static || !b2.is_static
-          c <- maybeCollisions(b1, b2)
-        } yield c
-      } else Nil
+    val collisions = if(enable_collisions) {
+      val x = splitSpace(new Space(mutable_system.map(_._1), DVec(OrbitalKiller.earth.radius*2, -OrbitalKiller.earth.radius*2)), 5, 2)
+      for {
+        space <- x
+        if space.bodies.length > 1
+        (b1, idx) <- space.bodies.zipWithIndex.init
+        b2 <- space.bodies.drop(idx+1)
+        if !b1.is_static || !b2.is_static
+        c <- maybeCollisions(b1, b2)
+      } yield c
+    } else Nil
 
-      mutable_system.foreach {case (mb, other_mutable_bodies) =>
-        if(!mb.is_static) {
-          val next_force = force(mb, other_mutable_bodies)
-          val next_acc = next_force * mb.invMass
-          val next_torque = torque(mb, other_mutable_bodies)
-          val next_ang_acc = (next_torque * mb.invI).toDeg // in degrees
-          mb.acc = next_acc
-          mb.vel += next_acc * base_dt * 0.5
-          mb.ang_acc = next_ang_acc
-          mb.ang_vel += next_ang_acc * base_dt * 0.5
-        }
+    // Integrate forces first part
+    mutable_system.foreach {case (mb, other_mutable_bodies) =>
+      if(!mb.is_static) {
+        val next_force = force(mb, other_mutable_bodies)
+        val next_acc = next_force * mb.invMass
+        val next_torque = torque(mb, other_mutable_bodies)
+        val next_ang_acc = (next_torque * mb.invI).toDeg // in degrees
+        mb.acc = next_acc
+        mb.vel += next_acc * base_dt * 0.5
+        mb.ang_acc = next_ang_acc
+        mb.ang_vel += next_ang_acc * base_dt * 0.5
       }
-
-      // Solve collisions
-      if(collisions.nonEmpty) collisions.foreach(c => c.solveCollision(base_dt))
-
-      // Integrate velocities and forces last part
-      mutable_system.foreach{ case (mb2, other_mutable_bodies2) =>
-        if(!mb2.is_static) {
-          mb2.coord += mb2.vel*base_dt
-          mb2.ang = correctAngle((mb2.ang + mb2.ang_vel*base_dt) % 360)
-          val next_force2 = force(mb2, other_mutable_bodies2)
-          val next_acc2 = next_force2 * mb2.invMass
-          val next_torque2 = torque(mb2, other_mutable_bodies2)
-          val next_ang_acc2 = (next_torque2 * mb2.invI).toDeg // in degrees
-          mb2.acc += next_acc2
-          mb2.vel += next_acc2 * base_dt * 0.5
-          mb2.ang_acc += next_ang_acc2
-          mb2.ang_vel += next_ang_acc2 * base_dt * 0.5
-        }
-      }
-
-      // Correct positions
-      if(collisions.nonEmpty) collisions.foreach(c => c.positionalCorrection())
-
-      step += 1l
     }
+
+    // Solve collisions
+    if(collisions.nonEmpty) collisions.foreach(c => c.solveCollision(base_dt))
+
+    // Integrate velocities and forces last part
+    mutable_system.foreach{ case (mb2, other_mutable_bodies2) =>
+      if(!mb2.is_static) {
+        mb2.coord += mb2.vel*base_dt
+        mb2.ang = correctAngle((mb2.ang + mb2.ang_vel*base_dt) % 360)
+        val next_force2 = force(mb2, other_mutable_bodies2)
+        val next_acc2 = next_force2 * mb2.invMass
+        val next_torque2 = torque(mb2, other_mutable_bodies2)
+        val next_ang_acc2 = (next_torque2 * mb2.invI).toDeg // in degrees
+        mb2.acc += next_acc2
+        mb2.vel += next_acc2 * base_dt * 0.5
+        mb2.ang_acc += next_ang_acc2
+        mb2.ang_vel += next_ang_acc2 * base_dt * 0.5
+      }
+    }
+
+    // Correct positions
+    if(collisions.nonEmpty) collisions.foreach(c => c.positionalCorrection())
   }
 
   def systemEvolutionFrom(dt: => Double,           // в секундах, может быть больше либо равно base_dt - обеспечивается ускорение времени
@@ -1220,8 +1215,9 @@ package object orbitalkiller {
     def strDefinition(prefix:String, planet_radius:Double, planet_velocity:DVec, planet_g:Double, ship_coord:DVec, ship_velocity:DVec):String = {
       val ccw = (ship_coord - f).perpendicular*(ship_velocity - planet_velocity) >= 0   // летим против часовой?
       val dir = if(ccw) "\u21b6" else "\u21b7"
-      val r_p_approach = if((ship_coord - f)*(ship_velocity - planet_velocity) >= 0) "удаляемся" else "приближаемся"
-      if(r_p - planet_radius < 0) {
+      val r_p_approach = (ship_coord - f)*(ship_velocity - planet_velocity) >= 0
+      val r_p_approach_str = if(r_p_approach) "удаляемся" else "приближаемся"
+      if(r_p - planet_radius < 0 && !r_p_approach) {
         val y_axis = (ship_coord - f).n
         val v0y = (ship_velocity - planet_velocity) * y_axis
         val fall_time_msec = if (ccw) {
@@ -1234,9 +1230,9 @@ package object orbitalkiller {
 
         val time_to_stop_at_full_power = math.abs(v0y / (1000000 / OrbitalKiller.ship.mass - planet_g))
         val fall_time_str = if (fall_time_msec < 30000) s"[r Поверхность через ${timeStr(fall_time_msec)} (${timeStr((time_to_stop_at_full_power * 1000l).toLong)})]" else s"Поверхность через ${timeStr(fall_time_msec)}"
-        f"$prefix, незамкнутая, суборбитальная $dir, $r_p_approach, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, $fall_time_str"
+        f"$prefix, незамкнутая, суборбитальная $dir, $r_p_approach_str, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}, $fall_time_str"
       } else {
-        f"$prefix, незамкнутая, $dir, $r_p_approach, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}"
+        f"$prefix, незамкнутая, $dir, $r_p_approach_str, e = $e%.2f, r_p = ${mOrKm(r_p - planet_radius)}"
       }
     }
 

@@ -34,7 +34,7 @@ object InterfaceHolder {
 
   val enginesInfo = new EnginesInfo
 
-  val shipParamsWhenEginesOff = new ShipParamsWhenEnginesOff
+  //val shipParamsWhenEginesOff = new ShipParamsWhenEnginesOff
 
   val interfaces = List(
     List(timeInfo),
@@ -42,8 +42,8 @@ object InterfaceHolder {
     List(earthRelativeInfo, moonRelativeInfo, nearestShipInfo),
     List(linearVelocityInfo, angularVelocityInfo, pilotStateInfo),
     List(planetsInfluenceInfo, /*satelliteEscapeVelocityInfo, */orbitInfo),
-    List(enginesInfo),
-    List(shipParamsWhenEginesOff)
+    List(enginesInfo)/*,
+    List(shipParamsWhenEginesOff)*/
   )
 
   def hideAllByUser(): Unit = {
@@ -78,13 +78,13 @@ object InterfaceHolder {
     } else nearestShipInfo.showByConstraint()*/
     if(ship.flightMode == 8) {
       enginesInfo.hideByConstraint()
-      shipParamsWhenEginesOff.hideByConstraint()
+      //shipParamsWhenEginesOff.hideByConstraint()
     } else {
       enginesInfo.showByConstraint()
       if(!ship.engines.exists(_.active) || ship.flightMode == 0) {
-        shipParamsWhenEginesOff.hideByConstraint()
+        //shipParamsWhenEginesOff.hideByConstraint()
       } else {
-        shipParamsWhenEginesOff.showByConstraint()
+        //shipParamsWhenEginesOff.showByConstraint()
       }
     }
   }

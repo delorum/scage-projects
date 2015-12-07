@@ -282,6 +282,7 @@ trait Ship {
           OrbitalKiller.our_mutable_system.find(_._1.index == index).foreach(x => {
             println("removed ship from mutable system")
             OrbitalKiller.our_mutable_system -= x
+            OrbitalKiller.our_mutable_system.foreach(y => y._2 -= x._1)
             ship_removed = true
           })
         }

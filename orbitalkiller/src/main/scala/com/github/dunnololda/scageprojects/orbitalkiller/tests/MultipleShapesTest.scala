@@ -29,7 +29,7 @@ object MultipleShapesTest extends ScageScreenAppD("Multiple Shapes Test", 640, 4
   key(KEY_Q, onKeyDown = if(keyPressed(KEY_RCONTROL) || keyPressed(KEY_LCONTROL)) stopApp())
 
   action {
-    mutableSystemEvolution(mutable_system, 1, 1.0/63)
+    mutableSystemEvolution(mutable_system, /*1, */1.0/63)
   }
 
   render {

@@ -4,7 +4,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.InterfaceElement
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
-class ShipParamsWhenEnginesOff extends InterfaceElement {
+/*class ShipParamsWhenEnginesOff extends InterfaceElement {
   def linearSpeedStrWhenEnginesOff:String = {
     if(ship.flightMode != 1 || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
@@ -83,4 +83,4 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
   override def data: Seq[String] = strings
 
   override val shortDescr: String = "SP"
-}
+}*/
