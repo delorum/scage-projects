@@ -206,11 +206,34 @@ trait Ship {
     }
   }
 
+  protected var last_correction_or_check_moment:Long = 0l
+
+  private var prev_flight_mode_and_engine_states:Option[(Int, List[(Long, Double, Boolean)])] = None
+  def saveFlightModeAndEngineStates(prev_flight_mode:Int): Unit = {
+    prev_flight_mode_and_engine_states = Some((prev_flight_mode, engines.map(e => (e.workTimeTacts, e.power, e.active))))
+  }
+  def restoreFlightModeAndEngineStates(): Unit = {
+    prev_flight_mode_and_engine_states match {
+      case Some((prev_flight_mode, engine_states)) =>
+        flightMode = prev_flight_mode
+        engines.zip(engine_states).foreach {
+          case (e, (tacts, power, active)) =>
+            e.active = active
+            e.workTimeTacts = tacts
+            e.power = power
+        }
+        prev_flight_mode_and_engine_states = None
+      case None =>
+        flightMode = 1
+    }
+  }
+
   private var flight_mode = 1
   def flightMode = flight_mode
   def flightMode_=(new_flight_mode:Int) {
     val prev_flight_mode = flight_mode
     flight_mode = new_flight_mode
+    last_correction_or_check_moment = 0l
     if(flight_mode == 0) {
       engines.foreach(e => e.power = e.max_power*0.5)
       engines.filterNot(_.active).foreach(e => e.workTimeTacts = 226800)     // 1 hour
@@ -222,13 +245,14 @@ trait Ship {
         active_engines.foreach(e => e.workTimeTacts = (fuel_for_every_active_engine/e.fuelConsumptionPerTact).toLong)
       }
     } else {
-      if(flightMode == 1) {
-        engines.foreach(e => e.active = false)
-      }
-      if(prev_flight_mode == 0) {
+      /*if(prev_flight_mode == 0) {
         engines.foreach(e => e.workTimeTacts = 0)
-      }
-      if(flightMode == 8) {
+      }*/
+      if(flight_mode == 1) {
+        engines.foreach(e => e.active = false)
+      } else if(flight_mode == 2/* && prev_flight_mode == 0*/) {
+        saveFlightModeAndEngineStates(prev_flight_mode)
+      } else if(flight_mode == 8) {
         vertical_speed_msec = 0
         horizontal_speed_msec = 0
       }

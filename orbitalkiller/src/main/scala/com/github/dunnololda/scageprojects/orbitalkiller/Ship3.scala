@@ -99,7 +99,7 @@ class Ship3(
     }.map(percent => max_power*0.01*percent).getOrElse(max_power*0.01)
   }
 
-  private var last_correction_or_check_moment:Long = 0l
+  //private var last_correction_or_check_moment:Long = 0l
 
   def preserveAngularVelocity(ang_vel_deg:Double) {
     val difference = angularVelocity - ang_vel_deg
