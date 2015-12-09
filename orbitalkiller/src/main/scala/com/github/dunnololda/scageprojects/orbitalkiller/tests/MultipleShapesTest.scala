@@ -4,6 +4,7 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
 
 object MultipleShapesTest extends ScageScreenAppD("Multiple Shapes Test", 640, 480) {
   val b1 = new MutableBodyState(BodyState(
@@ -24,7 +25,14 @@ object MultipleShapesTest extends ScageScreenAppD("Multiple Shapes Test", 640, 4
     restitution = 0.9
   ))
 
-  val mutable_system = OrbitalKiller.makeThisAndOthers(ArrayBuffer(b1, b2))
+  def makeThisAndOthers[A](s:mutable.Buffer[A]):mutable.Buffer[(A, mutable.Buffer[A])] = {
+    s.zipWithIndex.map {
+      case (b, idx) =>
+        (b, s.take(idx) ++ s.drop(idx+1))
+    }
+  }
+
+  val mutable_system = makeThisAndOthers(ArrayBuffer(b1, b2))
 
   key(KEY_Q, onKeyDown = if(keyPressed(KEY_RCONTROL) || keyPressed(KEY_LCONTROL)) stopApp())
 

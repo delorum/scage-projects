@@ -4,6 +4,8 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
+import scala.collection.mutable.ArrayBuffer
+
 class Ship4(index:String,
             init_coord:DVec,
             init_velocity:DVec = DVec.dzero,
@@ -143,6 +145,8 @@ class Ship4(index:String,
     val ship_velocity_n = linearVelocity*n  // from
     val ss_n = vel*n                         // to
 
+    val activate_engines = ArrayBuffer[Engine]()
+
     if(ship_velocity_n - ss_n > linear_velocity_error) {
       val power = maxPossiblePowerForLinearMovement(eight.max_power, eight.force_dir.y, mass, ss_n, ship_velocity_n, linear_velocity_error)
 
@@ -151,8 +155,8 @@ class Ship4(index:String,
       val (tacts, result_to) = howManyTacts(ss_n, ship_velocity_n, acc, dt)
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
-      eight.active = true
       eight.workTimeTacts = tacts
+      activate_engines += eight
     } else if(ship_velocity_n - ss_n < -linear_velocity_error) {
       val power = maxPossiblePowerForLinearMovement(two.max_power, two.force_dir.y, mass, ss_n, ship_velocity_n, linear_velocity_error)
       two.power = power
@@ -160,8 +164,8 @@ class Ship4(index:String,
       val (tacts, result_to) = howManyTacts(ss_n, ship_velocity_n, acc, dt)
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
-      two.active = true
       two.workTimeTacts = tacts
+      activate_engines += two
     }
 
     val ship_velocity_p = p*linearVelocity
@@ -174,8 +178,8 @@ class Ship4(index:String,
       val (tacts, _) = howManyTacts(ss_p, ship_velocity_p, acc, dt)
       /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
       println("===========================")*/
-      six.active = true
       six.workTimeTacts = tacts
+      activate_engines += six
     } else if(ship_velocity_p - ss_p < -linear_velocity_error) {
       val power = maxPossiblePowerForLinearMovement(four.max_power, four.force_dir.x, mass, ss_p, ship_velocity_p, linear_velocity_error)
       four.power = power
@@ -183,9 +187,10 @@ class Ship4(index:String,
       val (tacts, _) = howManyTacts(ss_p, ship_velocity_p, acc, dt)
       /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
       println("===========================")*/
-      four.active = true
       four.workTimeTacts = tacts
+      activate_engines += four
     }
+    activateOnlyTheseEngines(activate_engines:_*)
     last_correction_or_check_moment = OrbitalKiller.tacts
   }
 
@@ -206,8 +211,8 @@ class Ship4(index:String,
         case 2 => // запрет вращения
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, 1000)) {
             if (math.abs(angularVelocity) < angular_velocity_error) {
-              //flightMode = 1
-              restoreFlightModeAndEngineStates()
+              if(haveSavedFlightMode) restoreFlightModeAndEngineStates()
+              else flightMode = 1
             } else {
               preserveAngularVelocity(0)
             }

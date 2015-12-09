@@ -127,6 +127,10 @@ trait Ship {
     }
   }
 
+  def deactivateAllEngines(): Unit = {
+    engines.foreach(_.active = false)
+  }
+
   def activateOnlyTheseEngines(engines_to_activate:Engine*) {
     //timeMultiplier = realtime
     engines_to_activate.foreach(_.active = true)
@@ -209,6 +213,7 @@ trait Ship {
   protected var last_correction_or_check_moment:Long = 0l
 
   private var prev_flight_mode_and_engine_states:Option[(Int, List[(Long, Double, Boolean)])] = None
+  def haveSavedFlightMode = prev_flight_mode_and_engine_states.nonEmpty
   def saveFlightModeAndEngineStates(prev_flight_mode:Int): Unit = {
     prev_flight_mode_and_engine_states = Some((prev_flight_mode, engines.map(e => (e.workTimeTacts, e.power, e.active))))
   }
@@ -224,7 +229,6 @@ trait Ship {
         }
         prev_flight_mode_and_engine_states = None
       case None =>
-        flightMode = 1
     }
   }
 
@@ -245,16 +249,16 @@ trait Ship {
         active_engines.foreach(e => e.workTimeTacts = (fuel_for_every_active_engine/e.fuelConsumptionPerTact).toLong)
       }
     } else {
-      /*if(prev_flight_mode == 0) {
-        engines.foreach(e => e.workTimeTacts = 0)
-      }*/
       if(flight_mode == 1) {
         engines.foreach(e => e.active = false)
-      } else if(flight_mode == 2/* && prev_flight_mode == 0*/) {
+      } else if(flight_mode == 2 && prev_flight_mode == 0) {
         saveFlightModeAndEngineStates(prev_flight_mode)
       } else if(flight_mode == 8) {
         vertical_speed_msec = 0
         horizontal_speed_msec = 0
+      }
+      if(prev_flight_mode == 0 && flight_mode != 0) {
+        engines.foreach(e => e.workTimeTacts = 0)
       }
     }
   }
@@ -303,15 +307,11 @@ trait Ship {
         pilot_death_reason = f"Корабль уничтожен в результате столкновения (${dvel/OrbitalKiller.base_dt/{earth.g}}%.2fg)"
         flightMode = 1
         if(dvel > 100) {
-          OrbitalKiller.our_mutable_system.find(_._1.index == index).foreach(x => {
-            println("removed ship from mutable system")
-            OrbitalKiller.our_mutable_system -= x
-            OrbitalKiller.our_mutable_system.foreach(y => y._2 -= x._1)
-            ship_removed = true
-          })
+          OrbitalKiller.system_evolution.removeBodyByIndex(index)
+          println("removed ship from mutable system")
         }
       } else {
-        val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(coord, linearVelocity, 28, 0.5)
+        val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(currentState, earth.currentState, 28, 0.5)
         val centrifugial_force = if (angularVelocity == 0) DVec.zero else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.rotateDeg(rotation)
         //val air_resistance =  earth.airResistance(coord, linearVelocity, 10, 0.5)
         val pilot_acc = (reactive_force / mass + centrifugial_force / pilot_mass + currentState.dacc).norma/* - (air_resistance.norma/mass)*/

@@ -54,12 +54,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   def dt = timeMultiplier*base_dt
 
-  private var _tacts = 0l
-  def tacts:Long = _tacts
+  /*private var _tacts = 0l
+  def tacts:Long = _tacts*/
 
-  val current_body_states = mutable.HashMap[String, MutableBodyState]()
-  def currentBodyState(index:String):Option[MutableBodyState] = current_body_states.get(index)
+  val system_evolution = new SystemEvolution(base_dt)
+  def tacts:Long = system_evolution.tacts
+
+  /*val current_body_states = mutable.HashMap[String, MutableBodyState]()
+  def currentBodyState(index:String):Option[MutableBodyState] = current_body_states.get(index)*/
   //def currentSystemState = current_body_states.values.toList.map(_.toImmutableBodyState)
+  def currentBodyState(index:String):Option[MutableBodyState] = system_evolution.bodyState(index)
 
   /*def futureSystemEvolutionFrom(dt: => Double, tacts:Long, body_states:List[BodyState], enable_collisions:Boolean) = systemEvolutionFrom(
     dt, maxTimeMultiplier, base_dt,
@@ -240,10 +244,10 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     val M = 0.02896  // molar mass or air, kg/mole
     val R = 8.314    // ideal gas constant, Joules/(K*mole)
 
-    def altitude(ship_coord:DVec):Double = ship_coord.dist(coord) - radius
+    def altitude(ship_coord:DVec, planet_coord:DVec):Double = ship_coord.dist(planet_coord) - radius
     
-    def velocityRelativeToAir(ship_coord:DVec, ship_velocity:DVec):DVec = {
-      ship_velocity - (ship_coord - coord).p*(currentState.ang_vel.toRad*ship_coord.dist(coord))
+    def velocityRelativeToAir(ship_coord:DVec, ship_velocity:DVec, planet_coord:DVec, planet_velocity:DVec, planet_ang_vel:Double):DVec = {
+      (ship_velocity - planet_velocity) - (ship_coord - planet_coord).p*(planet_ang_vel.toRad*ship_coord.dist(planet_coord))
     }
     
     def temperature(h:Double) = {
@@ -275,12 +279,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       }
     }
 
-    def airResistance(ship_coord:DVec, ship_velocity:DVec, A:Double, C:Double):DVec = {
-      airResistance(velocityRelativeToAir(ship_coord, ship_velocity), altitude(ship_coord), A, C)
+    def airResistance(ship_coord:DVec, ship_velocity:DVec, planet_coord:DVec, planet_velocity:DVec, planet_ang_vel:Double, A:Double, C:Double):DVec = {
+      airResistance(velocityRelativeToAir(ship_coord, ship_velocity, planet_coord, planet_velocity, planet_ang_vel), altitude(ship_coord, planet_coord), A, C)
     }
 
-    def airPressureMmHg(coord:DVec):Double = {
-      airPressureMmHg(altitude(coord))
+    def airResistance(ship_mutable_state:MutableBodyState, planet_mutable_state:MutableBodyState, A:Double, C:Double):DVec = {
+      airResistance(ship_mutable_state.coord, ship_mutable_state.vel, planet_mutable_state.coord, planet_mutable_state.vel, planet_mutable_state.ang_vel, A, C)
+    }
+
+    def airPressureMmHg(ship_coord:DVec, planet_coord:DVec):Double = {
+      airPressureMmHg(altitude(ship_coord, planet_coord))
     }
 
     // another model
@@ -314,11 +322,6 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     init_ang_vel = 360.0/(26l*24*60*60 + 8l*60*60 + 59l*60 + 44),   // период орбиты луны в данной симуляции: 26 д. 8 ч. 59 мин. 44 сек, равен периоду обращения вокруг собственной оси
     radius = 1737000)
 
-  val planets = List(earth, moon)
-  val planet_indexes = planets.map(_.index).toSet
-  def currentPlanetStates = current_body_states.filter(x => planet_indexes.contains(x._1))
-  def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
-
   //val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
   //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
@@ -346,19 +349,15 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     init_velocity = station_init_velocity,
     init_rotation = 45
   )
-  
-  val ships = List(ship, station)
-  val ship_indexes = ships.map(_.index).toSet
-  def shipByIndex(index:String):Option[Ship] = ships.find(_.index == index)
 
-  def makeThisAndOthers[A](s:mutable.Buffer[A]):mutable.Buffer[(A, mutable.Buffer[A])] = {
+  /*def makeThisAndOthers[A](s:mutable.Buffer[A]):mutable.Buffer[(A, mutable.Buffer[A])] = {
     s.zipWithIndex.map {
       case (b, idx) =>
         (b, s.take(idx) ++ s.drop(idx+1))
     }
-  }
+  }*/
 
-  val our_mutable_system = makeThisAndOthers(ArrayBuffer[MutableBodyState](
+  /*val our_mutable_system = makeThisAndOthers(ArrayBuffer[MutableBodyState](
     ship.currentState,
     station.currentState,
     moon.currentState,
@@ -394,7 +393,67 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         }
       },
       enable_collisions = true)
-  }
+  }*/
+
+  system_evolution.addBody(
+    ship.currentState,
+    (tacts, helper) => {
+      helper.gravityForceHelper(earth.index, ship.index) +
+      helper.gravityForceHelper(moon.index, ship.index) +
+      helper.funcOrDVecZero(ship.index, bs => ship.currentReactiveForce(tacts, bs)) +
+      helper.funcOfArrayOrDVecZero(Array(ship.index, earth.index), l => {
+        val bs = l(0)
+        val e = l(1)
+        earth.airResistance(bs, e, 28, 0.5)
+      })
+    },
+    (tacts, helper) => {
+      helper.funcOrDoubleZero(ship.index, bs => ship.currentTorque(tacts))
+    }
+  )
+  system_evolution.addBody(
+    station.currentState,
+    (tacts, helper) => {
+      helper.gravityForceHelper(earth.index, station.index) +
+      helper.gravityForceHelper(moon.index, station.index) +
+      helper.funcOrDVecZero(station.index, bs => station.currentReactiveForce(tacts, bs)) +
+      helper.funcOfArrayOrDVecZero(Array(station.index, earth.index), l => {
+        val bs = l(0)
+        val e = l(1)
+        earth.airResistance(bs, e, 28, 0.5)
+      })
+    },
+    (tacts, helper) => {
+      helper.funcOrDoubleZero(station.index, bs => station.currentTorque(tacts))
+    }
+  )
+  system_evolution.addBody(
+    moon.currentState,
+    (tacts, helper) => {
+      helper.gravityForceHelper(earth.index, moon.index)
+    },
+    (tacts, helper) => {
+      0.0
+    }
+  )
+  system_evolution.addBody(
+    earth.currentState,
+    (tacts, helper) => {
+      DVec.zero
+    },
+    (tacts, helper) => {
+      0.0
+    }
+  )
+
+  val ships = List(ship, station)
+  val ship_indexes = ships.map(_.index).toSet
+  def shipByIndex(index:String):Option[Ship] = ships.find(_.index == index)
+
+  val planets = List(earth, moon)
+  val planet_indexes = planets.map(_.index).toSet
+  val currentPlanetStates = system_evolution.bodyStates(planet_indexes)
+  def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
 
   /*private var real_system_evolution =
     futureSystemEvolutionFrom(dt, 0, List(
@@ -433,7 +492,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         ship.currentState.ang_vel = 0
       }
       ship.currentState.mass = ship.mass/*currentMass(_tacts)*/
-      ourMutableSystemEvolution(our_mutable_system)
+      //ourMutableSystemEvolution(our_mutable_system)
+      system_evolution.step()
       if(_stop_after_number_of_tacts > 0) {
         _stop_after_number_of_tacts -= 1
         if (_stop_after_number_of_tacts <= 0) {
@@ -443,7 +503,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           pause()
         }
       }
-      _tacts += 1
+      //_tacts += 1
       ship.updateShipState((tacts*base_dt*1000).toLong)
       ships.foreach(s => s.engines.foreach(e => {
         if(e.active) {
@@ -830,7 +890,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   def saveGame() {
     val fos = new FileOutputStream("save.orbitalkiller")
-    fos.write(s"time ${_tacts}\n".getBytes)
+    fos.write(s"time $tacts\n".getBytes)
     currentBodyState(ship.index).foreach {
       case x =>
         fos.write(s"${x.index} ${x.acc.x}:${x.acc.y} ${x.vel.x}:${x.vel.y} ${x.coord.x}:${x.coord.y} ${x.ang_acc} ${x.ang_vel} ${x.ang}\n".getBytes)
@@ -922,7 +982,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       moon_state <- new_states.get("Moon")
       (moon_acc, moon_vel, moon_coord, _, _, _) = moon_state
     } {
-      _tacts = new_tacts
+      system_evolution.tacts = new_tacts
       /*real_system_evolution = futureSystemEvolutionFrom(dt, _tacts, List(
           ship.currentState.copy(acc = ship_acc, vel = ship_vel, coord = ship_coord, ang_acc = ship_ang_acc, ang_vel = ship_ang_vel, ang = ship_ang),
           station.currentState.copy(acc = station_acc, vel = station_vel, coord = station_coord, ang_acc = station_ang_acc, ang_vel = station_ang_vel, ang = station_ang),
@@ -1101,13 +1161,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }*/
 
-  private def shipOrbitRender(ship_index:String, some_system_state:collection.mutable.Map[String, MutableBodyState], color1:ScageColor, color2:ScageColor):() => Unit = {
+  private def shipOrbitRender(ship_index:String, color1:ScageColor, color2:ScageColor):() => Unit = {
     val result = ArrayBuffer[() => Unit]()
     // находим наш корабль
-    some_system_state.get(ship_index) match {
+    system_evolution.bodyState(ship_index) match {
       case Some(bs) =>
         // смотрим, где он находится
-        insideSphereOfInfluenceOfCelestialBody(bs.coord, bs.mass, some_system_state.filter(x => planet_indexes.contains(x._1))) match {
+        insideSphereOfInfluenceOfCelestialBody(bs.coord, bs.mass, system_evolution.bodyStates(planet_indexes)) match {
           case Some((planet, planet_state)) =>
             // корабль находится внутри гравитационного радиуса какой-то планеты (Земли или Луны)
             val orbit = calculateOrbit(
@@ -1234,7 +1294,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     if(ship.flightMode != 0) {
       ship_orbit_render = if(ship.engines.exists(_.active)) {
         /*if(!onPause) {*/
-          shipOrbitRender(ship.index, current_body_states, ship.colorIfAliveOrRed(PURPLE), RED)
+          shipOrbitRender(ship.index, ship.colorIfAliveOrRed(PURPLE), RED)
         /*} else {
           // получаем состояние системы, когда двигатели отработали
           val system_state_when_engines_off = getFutureState(ship.engines.map(_.stopMomentTacts).max)
@@ -1242,7 +1302,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         }*/
       } else {
         // двигатели корабля не работают - можем работать с текущим состоянием
-        shipOrbitRender(ship.index, current_body_states, ship.colorIfAliveOrRed(ORANGE), ship.colorIfAliveOrRed(YELLOW))
+        shipOrbitRender(ship.index, ship.colorIfAliveOrRed(ORANGE), ship.colorIfAliveOrRed(YELLOW))
         /*val one_week_evolution_after_engines_off = futureSystemEvolutionWithoutReactiveForcesFrom(
           3600 * base_dt, _tacts, currentSystemState, enable_collisions = false)
           .take(7* 24 * 63)
@@ -1255,13 +1315,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       }
     } else {
       ship_orbit_render = if(ship.engines.exists(_.active)) {
-        shipOrbitRender(ship.index, current_body_states, PURPLE, RED)
+        shipOrbitRender(ship.index, PURPLE, RED)
       } else {
-        shipOrbitRender(ship.index, current_body_states, ship.colorIfAliveOrRed(ORANGE), ship.colorIfAliveOrRed(YELLOW))
+        shipOrbitRender(ship.index, ship.colorIfAliveOrRed(ORANGE), ship.colorIfAliveOrRed(YELLOW))
       }
     }
-    station_orbit_render = shipOrbitRender(station.index, current_body_states, ORANGE, YELLOW)
-    moon_orbit_render =  shipOrbitRender(moon.index, current_body_states, GREEN, GREEN)
+    station_orbit_render = shipOrbitRender(station.index, ORANGE, YELLOW)
+    moon_orbit_render =  shipOrbitRender(moon.index, GREEN, GREEN)
     _calculate_orbits = false
   }
   updateOrbits()
