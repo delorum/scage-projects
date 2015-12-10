@@ -4,7 +4,7 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 
 object OrbitalOscillationsTests extends ScageApp {
-  val earth = new Star("Earth", "Земля", mass = 5.9746E24, coord = DVec.dzero, 0, radius = 6400000)
+  val earth = new Star("Earth", "Земля", mass = 5.9746E24, coord = DVec.dzero, radius = 6400000)
 
   val moon_start_position = DVec(-269000000, 269000000)
   val moon_init_velocity = satelliteSpeed(moon_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)

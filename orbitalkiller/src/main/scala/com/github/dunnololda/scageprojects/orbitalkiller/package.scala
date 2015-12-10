@@ -1162,12 +1162,16 @@ package object orbitalkiller {
     }
 
     /**
-     * Орбитальная скорость в точке орбиты с данной истинной аномалией
+     * Орбитальная скорость в точке орбиты с данной истинной аномалией. Это скорость относительно притягивающего центра.
+     * То есть, если планета в свою очередь движется по орбите, то чтобы получить абсолютную скорость, надо вычислять и прибавлять
+     * эту скорость планеты в данный момент времени и так далее.
      * @param teta_rad - угол в радианах между радиус вектором на точку на орбите и направлением на перицентр.
      *                   Если против часовой стрелки - положительный, от 0 до pi, иначе отрицательный, от 0 до -pi
      *                   https://en.wikipedia.org/wiki/Lambert%27s_problem
      *                   https://en.wikipedia.org/wiki/Kepler_orbit
-     * @return
+     * @return vr - радиальная компонента, направлена к притягивающему центру
+     *         vt - перпендикулярна радиальной компоненте
+     *         math.sqrt(vr*vr + vt*vt) даст числовое выражение скорости
      */
     def orbitalVelocityByTrueAnomalyRad(teta_rad:Double) = {
       val vr = math.sqrt(mu/p)*e*math.sin(teta_rad)
@@ -1278,8 +1282,8 @@ package object orbitalkiller {
     }
 
     def travelTimeOnOrbitMsecCCW(point1:DVec, point2:DVec):Long = {
-      val t1 = tetaDeg360InPoint(point1)
-      val t2 = tetaDeg360InPoint(point2)
+      /*val t1 = tetaDeg360InPoint(point1)
+      val t2 = tetaDeg360InPoint(point2)*/
       val orbital_point1 = f + (point1 - f).n*distanceInPoint(point1)
       val orbital_point2 = f + (point2 - f).n*distanceInPoint(point2)
       val r1 = (orbital_point1 - f).norma
@@ -1296,6 +1300,30 @@ package object orbitalkiller {
 
     def travelTimeOnOrbitMsecCW(point1:DVec, point2:DVec):Long = {
       travelTimeOnOrbitMsecCCW(point2, point1)
+    }
+
+    /**
+     * Орбитальная скорость в точке орбиты с данной истинной аномалией. Это скорость относительно притягивающего центра.
+     * То есть, если планета в свою очередь движется по орбите, то чтобы получить абсолютную скорость, надо вычислять и прибавлять
+     * эту скорость планеты в данный момент времени и так далее.
+     * @param teta_rad - угол в радианах между радиус вектором на точку на орбите и направлением на перицентр.
+     *                   Если против часовой стрелки - положительный, от 0 до pi, иначе отрицательный, от 0 до -pi
+     *                   Рой А. Движение по орбитам. стр. 109
+     *                   http://stu.alnam.ru/book_mor-60
+     * @return
+     */
+    def orbitalVelocityByTrueAnomalyRad(teta_rad:Double) = {
+      val orbital_point = orbitalPointByTrueAnomalyRad(teta_rad)
+      val r = orbital_point.dist(f)
+      math.sqrt(mu*(2/r + 1/a))
+    }
+
+    def orbitalVelocityByDir(dir:DVec) = {
+      orbitalVelocityByTrueAnomalyRad(tetaRad2PiByDir(dir))
+    }
+
+    def orbitalVelocityInPoint(point:DVec) = {
+      orbitalVelocityByTrueAnomalyRad(tetaRad2PiInPoint(point))
     }
   }
 

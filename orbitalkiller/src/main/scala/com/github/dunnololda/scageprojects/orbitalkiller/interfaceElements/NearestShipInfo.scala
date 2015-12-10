@@ -22,10 +22,20 @@ class NearestShipInfo extends InterfaceElement {
           our_orbit_period = our_orbit.asInstanceOf[EllipseOrbit].t
           os_orbit_period = os_orbit.asInstanceOf[EllipseOrbit].t
         } yield {
-            val a = (os.coord - our_orbit_planet_state.coord).deg360(ship.coord - our_orbit_planet_state.coord)
-            val t1 = a/360.0*os_orbit_period
-            val t2 = (a + 360)/360.0*os_orbit_period
-            (f"$a%.2f град.", s"${timeStr(t1.toLong*1000)}", s"${timeStr(t2.toLong*1000)}")
+            val deg_diff = (os.coord - our_orbit_planet_state.coord).deg360(ship.coord - our_orbit_planet_state.coord)
+            val t1_sec = deg_diff/360.0*os_orbit_period
+            val t2_sec = (deg_diff + 360)/360.0*os_orbit_period
+            // здесь два варианта орбитальных периодов, один больше другой меньше. Оба могут соответствовать орбитам с нормальной высотой,
+            // но также может быть, что меньший период t1 соответствует суборбитальной траектории. Это надо все просчитать.
+            val mu = G*our_orbit_planet_state.mass
+            def _calculateRp(t_sec:Double):Double = {
+              val a = math.pow(math.pow(t_sec/(2*math.Pi), 2)*mu, 1.0/3)  // большая полуось для данного периода
+              val x = ship.coord.dist(our_orbit_planet_state.coord)
+              2*a-x-our_orbit_planet.radius
+            }
+            val r_p1 = math.min(_calculateRp(t1_sec), ship.coord.dist(our_orbit_planet_state.coord) - our_orbit_planet.radius)
+            val r_p2 = math.min(_calculateRp(t2_sec), ship.coord.dist(our_orbit_planet_state.coord) - our_orbit_planet.radius)
+            (f"$deg_diff%.2f град.", s"${timeStr(t1_sec.toLong*1000)} (r_p=${mOrKm(r_p1)})", s"${timeStr(t2_sec.toLong*1000)} (r_p=${mOrKm(r_p2)})")
         }).getOrElse("N/A", "N/A", "N/A")
         val dist = mOrKm(ship.coord.dist(os.coord))
         val vel = msecOrKmsec((ship.linearVelocity - os.linearVelocity)* (ship.coord - os.coord).n)

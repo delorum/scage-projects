@@ -6,9 +6,14 @@ import com.github.dunnololda.scageprojects.orbitalkiller._
 class PlanetsInfluenceInfo extends InterfaceElement {
   private val strings = Array("")
   override protected def _update(): Unit = {
+    val sun_force = gravityForce(sun.coord, sun.mass, ship.coord, ship.mass, G).norma
     val earth_force = gravityForce(earth.coord, earth.mass, ship.coord, ship.mass, G).norma
     val moon_force = gravityForce(moon.coord, moon.mass, ship.coord, ship.mass, G).norma
-    strings(0) = f"Влияние планет: Земля ${earth_force/(earth_force + moon_force)*100}%.2f%% Луна ${moon_force/(earth_force + moon_force)*100}%.2f%% З/Л ${earth_force/moon_force}%.2f Л/З ${moon_force/earth_force}%.2f"
+    val all = sun_force + earth_force + moon_force
+    val sun_influence_str   = f"${sun.name} ${sun_force/all*100}%.2f%%"
+    val earth_influence_str = f"${earth.name} ${earth_force/all*100}%.2f%%"
+    val moon_influence_str  = f"${moon.name} ${moon_force/all*100}%.2f%%"
+    strings(0) = f"Влияние небесных тел $sun_influence_str $earth_influence_str $moon_influence_str"
   }
 
   override def data: Seq[String] = strings

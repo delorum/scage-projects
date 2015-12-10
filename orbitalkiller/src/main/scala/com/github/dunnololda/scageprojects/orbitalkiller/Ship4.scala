@@ -285,7 +285,7 @@ class Ship4(index:String,
                     if (vertical_diff > horizontal_diff) {
                       preserveVelocity(
                         (planet_state.vel * (coord - planet_state.coord).n + vertical_speed_msec) * (coord - planet_state.coord).n +
-                          (linearVelocity * (coord - planet_state.coord).p) * (coord - planet_state.coord).p
+                        (linearVelocity * (coord - planet_state.coord).p) * (coord - planet_state.coord).p
                       )
                     } else {
                       preserveVelocity((planet.groundSpeedMsec + horizontal_speed_msec) * (coord - planet_state.coord).p + planet_state.vel)
@@ -293,7 +293,7 @@ class Ship4(index:String,
                   } else {
                     preserveVelocity(
                       (planet_state.vel * (coord - planet_state.coord).n + vertical_speed_msec) * (coord - planet_state.coord).n +
-                        (linearVelocity * (coord - planet_state.coord).p) * (coord - planet_state.coord).p
+                      (linearVelocity * (coord - planet_state.coord).p) * (coord - planet_state.coord).p
                     )
                   }
                 } else {

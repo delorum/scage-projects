@@ -227,12 +227,21 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         }
     }
   }*/
+  
+  val sun = new Star(
+    "Sun", "Солнце",
+    mass = 1.9891E30,
+    coord = DVec(0, 1.496E11),
+    radius = 6.9551E8
+  )
 
+  val earth_start_position = DVec.dzero
+  val earth_init_velocity = satelliteSpeed(earth_start_position, sun.coord, sun.linearVelocity, sun.mass, G, counterclockwise = true)
   val earth = new Planet(
     "Earth", "Земля",
     mass = 5.9746E24,
-    init_coord = DVec.dzero,
-    init_velocity = DVec.zero,
+    init_coord = earth_start_position,
+    init_velocity = earth_init_velocity,
     //init_ang_vel = 0.0,
     init_ang_vel = 360.0/(24l*60*60),
     radius = 6400000/*6314759.95726045*/) {
@@ -398,6 +407,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   system_evolution.addBody(
     ship.currentState,
     (tacts, helper) => {
+      helper.gravityForceHelper(sun.index, ship.index) +
       helper.gravityForceHelper(earth.index, ship.index) +
       helper.gravityForceHelper(moon.index, ship.index) +
       helper.funcOrDVecZero(ship.index, bs => ship.currentReactiveForce(tacts, bs)) +
@@ -414,6 +424,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   system_evolution.addBody(
     station.currentState,
     (tacts, helper) => {
+      helper.gravityForceHelper(sun.index, station.index) +
       helper.gravityForceHelper(earth.index, station.index) +
       helper.gravityForceHelper(moon.index, station.index) +
       helper.funcOrDVecZero(station.index, bs => station.currentReactiveForce(tacts, bs)) +
@@ -430,6 +441,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   system_evolution.addBody(
     moon.currentState,
     (tacts, helper) => {
+      helper.gravityForceHelper(sun.index, moon.index) +
       helper.gravityForceHelper(earth.index, moon.index)
     },
     (tacts, helper) => {
@@ -438,6 +450,15 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   )
   system_evolution.addBody(
     earth.currentState,
+    (tacts, helper) => {
+      helper.gravityForceHelper(sun.index, earth.index)
+    },
+    (tacts, helper) => {
+      0.0
+    }
+  )
+  system_evolution.addBody(
+    sun.currentState,
     (tacts, helper) => {
       DVec.zero
     },
@@ -450,7 +471,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   val ship_indexes = ships.map(_.index).toSet
   def shipByIndex(index:String):Option[Ship] = ships.find(_.index == index)
 
-  val planets = List(earth, moon)
+  val planets = List(sun, earth, moon)
   val planet_indexes = planets.map(_.index).toSet
   val currentPlanetStates = system_evolution.bodyStates(planet_indexes)
   def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
@@ -705,10 +726,15 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     for {
       moon_state <- planet_states.get(moon.index)
       earth_state <- planet_states.get(earth.index)
+      sun_state <- planet_states.get(sun.index)
     } yield {
+      val sun_force = gravityForce(sun_state.coord, sun_state.mass, ship_coord, ship_mass, G).norma
       val earth_force = gravityForce(earth_state.coord, earth_state.mass, ship_coord, ship_mass, G).norma
       val moon_force = gravityForce(moon_state.coord, moon_state.mass, ship_coord, ship_mass, G).norma
-      if(earth_force >= moon_force) (earth, earth_state) else (moon, moon_state)
+      val x = math.max(sun_force, math.max(earth_force, moon_force))
+      if(x == sun_force) (sun, sun_state)
+      else if(x == earth_force) (earth, earth_state)
+      else (moon, moon_state)
       /*if(coord.dist(moon_state.coord) < soi(moon_state.mass, moon_state.coord.dist(earth_state.coord), earth_state.mass)) {
         (moon, moon_state)
       } else (earth, earth_state)*/
@@ -1219,9 +1245,10 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                           _stop_in_orbit_true_anomaly = mouse_teta_rad2Pi
                           set_stop_moment = false
                         }
+                        val vnorm = h.orbitalVelocityByTrueAnomalyRad(mouse_teta_rad2Pi)
                         openglLocalTransform {
                           openglMove(orbital_point * scale)
-                          print(s"  $flight_time : ${mOrKm(h.distanceByTrueAnomalyRad(mouse_teta_rad2Pi) - planet.radius)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
+                          print(s"  $flight_time : ${mOrKm(h.distanceByTrueAnomalyRad(mouse_teta_rad2Pi) - planet.radius)} : ${msecOrKmsec(vnorm)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
                         }
                       }
                     }
@@ -1259,14 +1286,14 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                       _stop_in_orbit_true_anomaly = true_anomaly_rad
                       set_stop_moment = false
                     }
-                    /*val (vt, vr) = e.orbitalVelocityByTrueAnomalyRad(true_anomaly_rad)
-                    val basis_r = (orbital_point - e.f).n
+                    val (vt, vr) = e.orbitalVelocityByTrueAnomalyRad(true_anomaly_rad)
+                    /*val basis_r = (orbital_point - e.f).n
                     val basis_t = basis_r.p*/
-                    /*val vnorm = math.sqrt(vr*vr + vt*vt)*/
+                    val vnorm = math.sqrt(vr*vr + vt*vt)
                     //val v = vr*basis_r + vt*basis_t + planet_state.vel
                     openglLocalTransform {
                       openglMove(orbital_point * scale)
-                      print(s"  $flight_time : ${mOrKm(e.distanceByTrueAnomalyRad(true_anomaly_rad) - planet.radius)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
+                      print(s"  $flight_time : ${mOrKm(e.distanceByTrueAnomalyRad(true_anomaly_rad) - planet.radius)} : ${msecOrKmsec(vnorm)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
                       //print(s"  $flight_time : ${msecOrKmsec(v.norma)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
                       //print(f"  ${e.tetaDeg360InPoint(x)}%.2f", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
                     }
@@ -1650,7 +1677,12 @@ class Planet(
   }
 }
 
-class Star(val index:String, val name:String, val mass:Double, val coord:DVec, ang_vel:Double, val radius:Double) extends CelestialBody {
+class Star(val index:String, 
+           val name:String, 
+           val mass:Double, 
+           val coord:DVec, 
+           /*val init_ang_vel:Double,*/
+           val radius:Double) extends CelestialBody {
   def initState:BodyState = BodyState(
       index = index,
       mass = mass,
@@ -1658,12 +1690,12 @@ class Star(val index:String, val name:String, val mass:Double, val coord:DVec, a
       vel = DVec.dzero,
       coord = coord,
       ang_acc = 0,
-      ang_vel = ang_vel,
+      ang_vel = 0,
       ang = 0,
       shape = CircleShape(radius),
-      is_static = false)
+      is_static = true)
 
-  private var data_initialized = false
+  /*private var data_initialized = false
   private val alpha = 100 * 1000 * 180 / math.Pi / radius // угловой размер для 100 километров поверхности
   private var viewpoint_dist:Double = _
   private var to_viewpoint:DVec = _
@@ -1697,7 +1729,7 @@ class Star(val index:String, val name:String, val mass:Double, val coord:DVec, a
         drawSlidingLines(points, WHITE)
       }
     }
-  }
+  }*/
 
   def linearVelocity: DVec = DVec.dzero
 }

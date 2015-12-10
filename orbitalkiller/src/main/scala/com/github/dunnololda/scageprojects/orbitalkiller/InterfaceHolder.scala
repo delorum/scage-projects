@@ -20,6 +20,7 @@ object InterfaceHolder {
   val viewModeInfo = new ViewModeInfo
   val flightModeInfo = new FlightModeInfo
 
+  val sunRelativeInfo = new SunRelativeInfo
   val earthRelativeInfo = new EarthRelativeInfo
   val moonRelativeInfo = new MoonRelativeInfo
   val nearestShipInfo = new NearestShipInfo
@@ -39,7 +40,7 @@ object InterfaceHolder {
   val interfaces = List(
     List(timeInfo),
     List(viewModeInfo, flightModeInfo),
-    List(earthRelativeInfo, moonRelativeInfo, nearestShipInfo),
+    List(sunRelativeInfo, earthRelativeInfo, moonRelativeInfo, nearestShipInfo),
     List(linearVelocityInfo, angularVelocityInfo, pilotStateInfo),
     List(planetsInfluenceInfo, /*satelliteEscapeVelocityInfo, */orbitInfo),
     List(enginesInfo)/*,
