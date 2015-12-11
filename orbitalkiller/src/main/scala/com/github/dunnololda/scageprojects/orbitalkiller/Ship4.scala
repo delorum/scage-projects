@@ -266,10 +266,9 @@ class Ship4(index:String,
           }
         case 8 => // уравнять скорость с ближайшей планетой
           (for {
-            planet_state <- currentPlanetStates.values.toSeq.sortBy(_.coord.dist(coord)).headOption
-            planet <- planetByIndex(planet_state.index)
-          } yield (planet_state, planet)) match {
-            case Some((planet_state, planet)) =>
+            (planet, planet_state) <- currentPlanetStates.sortBy(_._2.coord.dist(coord)).headOption
+          } yield (planet, planet_state)) match {
+            case Some((planet, planet_state)) =>
               val vertical_orientation = DVec(0, 1).deg360(coord - planet_state.coord)
               if (angleMinDiff(rotation, vertical_orientation) >= angle_error) {
                 preserveAngle(vertical_orientation)
@@ -332,6 +331,10 @@ class Ship4(index:String,
               drawArrow(DVec.zero, relativeLinearVelocity.n * 20, colorIfAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
             }
             //drawArrow(DVec.zero, linearAcceleration.n * 100, ORANGE)        // current acceleration
+            if (!InterfaceHolder.sunRelativeInfo.isMinimized) {
+              // direction to earth
+              drawArrow(Vec.zero, (sun.coord - coord).n * 20, colorIfAliveOrRed(InterfaceHolder.sunRelativeInfo.color))
+            }
             if (!InterfaceHolder.earthRelativeInfo.isMinimized) {
               // direction to earth
               drawArrow(Vec.zero, (earth.coord - coord).n * 20, colorIfAliveOrRed(InterfaceHolder.earthRelativeInfo.color))

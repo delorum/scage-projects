@@ -473,7 +473,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   val planets = List(sun, earth, moon)
   val planet_indexes = planets.map(_.index).toSet
-  val currentPlanetStates = system_evolution.bodyStates(planet_indexes)
+  val currentPlanetStates:Seq[(CelestialBody, MutableBodyState)] = {
+    system_evolution.bodyStates(planet_indexes).flatMap(kv => {
+      planets.find(_.index == kv._1).map(planet => (kv._1, (planet, kv._2)))
+    }).values.toSeq.sortBy(_._2.mass)
+  }
   def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
 
   /*private var real_system_evolution =
@@ -634,7 +638,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }*/
 
-  def orbitStrInPointWithVelocity(coord:DVec, velocity:DVec, mass:Double, planet_states:mutable.Map[String, MutableBodyState]):String = {
+  def orbitStrInPointWithVelocity(coord:DVec, velocity:DVec, mass:Double, planet_states:Seq[(CelestialBody, MutableBodyState)]):String = {
     insideSphereOfInfluenceOfCelestialBody(coord, mass, planet_states) match {
       case Some((planet, planet_state)) =>
         val orbit = calculateOrbit(planet_state.mass, planet_state.coord, mass, coord - planet_state.coord, velocity - planet_state.vel, G)
@@ -722,23 +726,38 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }*/
 
-  def insideSphereOfInfluenceOfCelestialBody(ship_coord:DVec, ship_mass:Double, planet_states:collection.mutable.Map[String, MutableBodyState]):Option[(CelestialBody, MutableBodyState)] = {
-    for {
-      moon_state <- planet_states.get(moon.index)
-      earth_state <- planet_states.get(earth.index)
-      sun_state <- planet_states.get(sun.index)
-    } yield {
-      val sun_force = gravityForce(sun_state.coord, sun_state.mass, ship_coord, ship_mass, G).norma
-      val earth_force = gravityForce(earth_state.coord, earth_state.mass, ship_coord, ship_mass, G).norma
-      val moon_force = gravityForce(moon_state.coord, moon_state.mass, ship_coord, ship_mass, G).norma
-      val x = math.max(sun_force, math.max(earth_force, moon_force))
-      if(x == sun_force) (sun, sun_state)
-      else if(x == earth_force) (earth, earth_state)
-      else (moon, moon_state)
-      /*if(coord.dist(moon_state.coord) < soi(moon_state.mass, moon_state.coord.dist(earth_state.coord), earth_state.mass)) {
-        (moon, moon_state)
-      } else (earth, earth_state)*/
+  /**
+   * Возвращает информацию о небесном теле, в сфере влияния которого находится наш объект (заведомо гораздо меньшей массы).
+   * Мы вычисляем это, определяя в сфере Хилла какого небесного тела мы находимся. Потенциальные кандидаты передаются в аргументе
+   * planet_state, и они там отсортированы по возрастанию массы. Мы проверяем нахождение в сфере Хилла начиная с самого малого.
+   *
+   * @param ship_coord - позиция нашего объекта
+   * @param ship_mass - масса нашего объекта
+   * @param planet_states - информация о небесных телах, в сфере влияния которых потенциально мы можем быть. Это список, и он должен быть
+   *                      отсортирован по возрастанию массы.
+   * @return
+   */
+  def insideSphereOfInfluenceOfCelestialBody(ship_coord:DVec,
+                                             ship_mass:Double,
+                                             planet_states:Seq[(CelestialBody, MutableBodyState)]):Option[(CelestialBody, MutableBodyState)] = {
+    if(planet_states.isEmpty) None
+    else if(planet_states.length == 1) Some(planet_states.head)
+    else {
+      planet_states.sliding(2).find {
+        case Seq((smaller_planet, smaller_planet_state), (bigger_planet, bigger_planet_state)) =>
+          val one_third_hill_sphere = oneThirdHillSphere(smaller_planet_state.mass, smaller_planet_state.coord.dist(bigger_planet_state.coord), bigger_planet_state.mass)
+          ship_coord.dist(smaller_planet_state.coord) <= one_third_hill_sphere
+      }.flatMap(x => x.headOption)
     }
+    /*planet_states.values.foldLeft[(Option[(CelestialBody, MutableBodyState)], Double)]((None, 0.0)) {
+      case (res@(_, max_gravity), (planet, planet_state)) =>
+        val gravity = gravityForce(planet_state.coord, planet_state.mass, ship_coord, ship_mass, G).norma
+        if (gravity > max_gravity) {
+          (Some((planet, planet_state)), gravity)
+        } else {
+          res
+        }
+    }._1*/
   }
 
   def drawArrow(from1:DVec, to1:DVec, color:ScageColor, scale:Double = globalScale) {
@@ -1187,13 +1206,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }*/
 
-  private def shipOrbitRender(ship_index:String, color1:ScageColor, color2:ScageColor):() => Unit = {
+  private def shipOrbitRender(ship_index:String, color1:ScageColor, color2:ScageColor, celestials:Seq[(CelestialBody, MutableBodyState)]):() => Unit = {
     val result = ArrayBuffer[() => Unit]()
     // находим наш корабль
     system_evolution.bodyState(ship_index) match {
       case Some(bs) =>
         // смотрим, где он находится
-        insideSphereOfInfluenceOfCelestialBody(bs.coord, bs.mass, system_evolution.bodyStates(planet_indexes)) match {
+        insideSphereOfInfluenceOfCelestialBody(bs.coord, bs.mass, celestials) match {
           case Some((planet, planet_state)) =>
             // корабль находится внутри гравитационного радиуса какой-то планеты (Земли или Луны)
             val orbit = calculateOrbit(
@@ -1310,6 +1329,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   private var ship_orbit_render:() => Unit = () => {}
   private var station_orbit_render:() => Unit = () => {}
   private var moon_orbit_render:() => Unit = () => {}
+  private var earth_orbit_render:() => Unit = () => {}
 
   private var _calculate_orbits = false
 
@@ -1321,7 +1341,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     if(ship.flightMode != 0) {
       ship_orbit_render = if(ship.engines.exists(_.active)) {
         /*if(!onPause) {*/
-          shipOrbitRender(ship.index, ship.colorIfAliveOrRed(PURPLE), RED)
+          shipOrbitRender(ship.index, ship.colorIfAliveOrRed(PURPLE), RED, currentPlanetStates)
         /*} else {
           // получаем состояние системы, когда двигатели отработали
           val system_state_when_engines_off = getFutureState(ship.engines.map(_.stopMomentTacts).max)
@@ -1329,7 +1349,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         }*/
       } else {
         // двигатели корабля не работают - можем работать с текущим состоянием
-        shipOrbitRender(ship.index, ship.colorIfAliveOrRed(ORANGE), ship.colorIfAliveOrRed(YELLOW))
+        shipOrbitRender(ship.index, ship.colorIfAliveOrRed(ORANGE), ship.colorIfAliveOrRed(YELLOW), currentPlanetStates)
         /*val one_week_evolution_after_engines_off = futureSystemEvolutionWithoutReactiveForcesFrom(
           3600 * base_dt, _tacts, currentSystemState, enable_collisions = false)
           .take(7* 24 * 63)
@@ -1342,18 +1362,19 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       }
     } else {
       ship_orbit_render = if(ship.engines.exists(_.active)) {
-        shipOrbitRender(ship.index, PURPLE, RED)
+        shipOrbitRender(ship.index, PURPLE, RED, currentPlanetStates)
       } else {
-        shipOrbitRender(ship.index, ship.colorIfAliveOrRed(ORANGE), ship.colorIfAliveOrRed(YELLOW))
+        shipOrbitRender(ship.index, ship.colorIfAliveOrRed(ORANGE), ship.colorIfAliveOrRed(YELLOW), currentPlanetStates)
       }
     }
-    station_orbit_render = shipOrbitRender(station.index, ORANGE, YELLOW)
-    moon_orbit_render =  shipOrbitRender(moon.index, GREEN, GREEN)
+    station_orbit_render = shipOrbitRender(station.index, ORANGE, YELLOW, currentPlanetStates)
+    moon_orbit_render =  shipOrbitRender(moon.index, GREEN, GREEN, Seq((earth, earth.currentState), (sun, sun.currentState)))
+    earth_orbit_render =  shipOrbitRender(earth.index, ORANGE, ORANGE, Seq((sun, sun.currentState)))
     _calculate_orbits = false
   }
   updateOrbits()
 
-  actionStaticPeriodIgnorePause(1000) {
+  actionDynamicPeriodIgnorePause(1000/timeMultiplier) {
     if(/*_rendering_enabled && */drawMapMode && (!onPause || _calculate_orbits)) {
       updateOrbits()
     }
@@ -1377,8 +1398,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         println(spaces.filter(_.bodies.length > 1).map(x => s"${x.bodies.length}").mkString(" : "))*/
 
         drawCircle(earth.coord*scale, earth.radius * scale, WHITE)
-        drawCircle(earth.coord*scale, equalGravityRadius(earth.currentState, moon.currentState)*scale, color = DARK_GRAY)
-        drawLine(earth.coord*scale, (earth.coord*scale + DVec(0, earth.radius*scale)).rotateDeg(earth.currentState.ang), WHITE)
+        //drawCircle(earth.coord*scale, equalGravityRadius(earth.currentState, moon.currentState)*scale, color = DARK_GRAY)
+        drawCircle(earth.coord*scale, oneThirdHillSphere(earth.currentState.mass, earth.currentState.coord.dist(sun.currentState.coord), sun.currentState.mass)*scale, color = DARK_GRAY)
+        drawLine(earth.coord*scale, earth.coord*scale + DVec(0, earth.radius*scale).rotateDeg(earth.currentState.ang), WHITE)
         /*openglLocalTransform {
           openglMove(earth.coord*scale)
           val current_ang = earth.currentState.ang
@@ -1399,10 +1421,12 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         }*/
 
         drawCircle(moon.coord*scale, moon.radius * scale, WHITE)
-        drawCircle(moon.coord*scale, equalGravityRadius(moon.currentState, earth.currentState)*scale, color = DARK_GRAY)
+        //drawCircle(moon.coord*scale, equalGravityRadius(moon.currentState, earth.currentState)*scale, color = DARK_GRAY)
+        drawCircle(moon.coord*scale, oneThirdHillSphere(moon.currentState.mass, moon.currentState.coord.dist(earth.currentState.coord), earth.currentState.mass)*scale, color = DARK_GRAY)
         //drawCircle(moon.coord*scale, soi(moon.mass, earth.coord.dist(moon.coord), earth.mass)*scale, color = DARK_GRAY)
         drawLine(moon.coord*scale, moon.coord * scale + DVec(0, moon.radius * scale).rotateDeg(moon.currentState.ang), WHITE)
         moon_orbit_render()
+        earth_orbit_render()
         if(!ship.isRemoved) {
           drawFilledCircle(ship.coord * scale, earth.radius * scale / 2f / globalScale, WHITE)
           ship_orbit_render()

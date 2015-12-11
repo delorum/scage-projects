@@ -1449,6 +1449,10 @@ package object orbitalkiller {
     semi_major_axis*math.pow(smaller_planet_mass/bigger_planet_mass, 2.0/5)
   }
 
+  def oneThirdHillSphere(smaller_planet_mass:Double, semi_major_axis:Double, bigger_planet_mass:Double):Double = {
+    1.0/3*semi_major_axis*math.pow(smaller_planet_mass/(3*bigger_planet_mass), 1.0/3)
+  }
+
   def specificOrbitalEnergy(planet_mass:Double, planet_coord:DVec, body_mass:Double, body_relative_coord:DVec, body_relative_velocity:DVec, G:Double):Double = {
     val mu = (planet_mass + body_mass)*G // гравитационный параметр
     body_relative_velocity.norma2/2 - mu/body_relative_coord.norma

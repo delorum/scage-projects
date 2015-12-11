@@ -222,9 +222,9 @@ class Ship3(
           } else preserveAngularVelocity(0)
         case 8 => // уравнять скорость с ближайшей планетой
           if(math.abs(angularVelocity) < 0.01) {
-            currentPlanetStates.values.toSeq.sortBy(_.coord.dist(coord)).headOption match {
+            currentPlanetStates.sortBy(_._2.coord.dist(coord)).headOption match {
               case Some(s) =>
-                val ss = s.vel
+                val ss = s._2.vel
                 if(linearVelocity.dist(ss) > 0.1) {
                   preserveVelocity(ss)
                 } else flightMode = 1
