@@ -6,6 +6,19 @@ import com.github.dunnololda.scage.support.DVec
 
 import scala.collection.mutable.ArrayBuffer
 
+sealed trait FlightMode
+
+case object Free                    extends FlightMode
+case object Killrot                 extends FlightMode
+case object AxisAligned             extends FlightMode
+case object VelocityAligned         extends FlightMode
+case object OppositeVelocityAligned extends FlightMode
+case object CirclularOrbit          extends FlightMode
+case object NearestShipVelocity     extends FlightMode
+case object NearestPlanetVelocity   extends FlightMode
+case object AbsoluteStop            extends FlightMode
+case object Maneuvering             extends FlightMode
+
 trait Ship {
   def index:String
   var selected_engine:Option[Engine] = None
@@ -212,9 +225,9 @@ trait Ship {
 
   protected var last_correction_or_check_moment:Long = 0l
 
-  private var prev_flight_mode_and_engine_states:Option[(Int, List[(Long, Double, Boolean)])] = None
+  private var prev_flight_mode_and_engine_states:Option[(FlightMode, List[(Long, Double, Boolean)])] = None
   def haveSavedFlightMode = prev_flight_mode_and_engine_states.nonEmpty
-  def saveFlightModeAndEngineStates(prev_flight_mode:Int): Unit = {
+  def saveFlightModeAndEngineStates(prev_flight_mode:FlightMode): Unit = {
     prev_flight_mode_and_engine_states = Some((prev_flight_mode, engines.map(e => (e.workTimeTacts, e.power, e.active))))
   }
   def restoreFlightModeAndEngineStates(): Unit = {
@@ -232,13 +245,13 @@ trait Ship {
     }
   }
 
-  private var flight_mode = 1
-  def flightMode = flight_mode
-  def flightMode_=(new_flight_mode:Int) {
+  private var flight_mode:FlightMode = Free
+  def flightMode:FlightMode = flight_mode
+  def flightMode_=(new_flight_mode:FlightMode) {
     val prev_flight_mode = flight_mode
     flight_mode = new_flight_mode
     last_correction_or_check_moment = 0l
-    if(flight_mode == 0) {
+    if(flight_mode == Maneuvering) {
       engines.foreach(e => e.power = e.max_power*0.5)
       engines.filterNot(_.active).foreach(e => e.workTimeTacts = 226800)     // 1 hour
       val active_engines = engines.filter(_.active)
@@ -249,15 +262,15 @@ trait Ship {
         active_engines.foreach(e => e.workTimeTacts = (fuel_for_every_active_engine/e.fuelConsumptionPerTact).toLong)
       }
     } else {
-      if(flight_mode == 1) {
+      if(flight_mode == Free) {
         engines.foreach(e => e.active = false)
-      } else if(flight_mode == 2 && prev_flight_mode == 0) {
+      } else if(flight_mode == Killrot && prev_flight_mode == Maneuvering) {
         saveFlightModeAndEngineStates(prev_flight_mode)
-      } else if(flight_mode == 8) {
+      } else if(flight_mode == NearestPlanetVelocity) {
         vertical_speed_msec = 0
         horizontal_speed_msec = 0
       }
-      if(prev_flight_mode == 0 && flight_mode != 0) {
+      if(prev_flight_mode == Maneuvering && flight_mode != Maneuvering) {
         engines.foreach(e => e.workTimeTacts = 0)
       }
     }
@@ -269,16 +282,16 @@ trait Ship {
   def horizontal_speed_msec_=(x:Int) {}
 
   def flightModeStr:String = flight_mode match {
-    case 1 => "свободный"
-    case 2 => "запрет вращения"
-    case 3 => "ориентация по осям"
-    case 4 => "ориентация по траектории"
-    case 5 => "ориентация против траектории"
-    case 6 => "выход на круговую орбиту"
-    case 7 => "уравнять скорость с кораблем"
-    case 8 => s"уравнять скорость с ближайшей планетой: ${msecOrKmsec(vertical_speed_msec)}, ${msecOrKmsec(horizontal_speed_msec)}"
-    case 9 => "остановиться"
-    case 0 => "маневрирование"
+    case Free => "свободный"
+    case Killrot => "запрет вращения"
+    case AxisAligned => "ориентация по осям"
+    case VelocityAligned => "ориентация по траектории"
+    case OppositeVelocityAligned => "ориентация против траектории"
+    case CirclularOrbit => "выход на круговую орбиту"
+    case NearestShipVelocity => "уравнять скорость с кораблем"
+    case NearestPlanetVelocity => s"уравнять скорость с ближайшей планетой: ${msecOrKmsec(vertical_speed_msec)}, ${msecOrKmsec(horizontal_speed_msec)}"
+    case AbsoluteStop => "остановиться"
+    case Maneuvering => "маневрирование"
     case _ => ""
   }
 
@@ -305,7 +318,7 @@ trait Ship {
       if (dvel > 10) { // crash tolerance = 10 m/s
         pilot_is_dead = true
         pilot_death_reason = f"Корабль уничтожен в результате столкновения (${dvel/OrbitalKiller.base_dt/{earth.g}}%.2fg)"
-        flightMode = 1
+        flightMode = Free
         if(dvel > 100) {
           OrbitalKiller.system_evolution.removeBodyByIndex(index)
           println("removed ship from mutable system")

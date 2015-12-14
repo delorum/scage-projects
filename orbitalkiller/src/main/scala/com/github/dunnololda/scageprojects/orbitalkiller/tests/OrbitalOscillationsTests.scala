@@ -14,7 +14,7 @@ object OrbitalOscillationsTests extends ScageApp {
     init_coord = moon_start_position,
     init_velocity = moon_init_velocity,
     0,
-    radius = 1737000)
+    radius = 1737000, earth, 2000)
 
   val planets = List(earth, moon)
   val planet_indexes = planets.map(_.index).toSet

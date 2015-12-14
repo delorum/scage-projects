@@ -947,7 +947,7 @@ package object orbitalkiller {
     _escapeVelocity(from_planet_to_body, planet_velocity, planet_mass, G, counterclockwise)
   }
 
-  def timeStr(time_msec:Long):String = {
+  def timeStr(time_msec:Long,add_plus_sign:Boolean = false):String = {
     val is_below_zero = time_msec < 0
     val abs_time_msec = math.abs(time_msec)
     val result = if (abs_time_msec < 1000) s"$abs_time_msec мсек."
@@ -965,7 +965,10 @@ package object orbitalkiller {
         (abs_time_msec%sec,      "мсек.")
       ).filter(_._1 > 0).map(e => e._1+" "+e._2).mkString(" ")
     }
-    if(is_below_zero) s"-$result" else result
+    if(is_below_zero) s"-$result" else {
+      if(add_plus_sign) s"+$result"
+      else result
+    }
   }
 
   def mOrKm(meters:Number):String = {
@@ -1449,8 +1452,8 @@ package object orbitalkiller {
     semi_major_axis*math.pow(smaller_planet_mass/bigger_planet_mass, 2.0/5)
   }
 
-  def oneThirdHillSphere(smaller_planet_mass:Double, semi_major_axis:Double, bigger_planet_mass:Double):Double = {
-    1.0/3*semi_major_axis*math.pow(smaller_planet_mass/(3*bigger_planet_mass), 1.0/3)
+  def halfHillRadius(smaller_planet_mass:Double, semi_major_axis:Double, bigger_planet_mass:Double):Double = {
+    0.5*semi_major_axis*math.pow(smaller_planet_mass/(3*bigger_planet_mass), 1.0/3)
   }
 
   def specificOrbitalEnergy(planet_mass:Double, planet_coord:DVec, body_mass:Double, body_relative_coord:DVec, body_relative_velocity:DVec, G:Double):Double = {

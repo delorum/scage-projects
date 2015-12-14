@@ -11,7 +11,7 @@ class EnginesInfo extends InterfaceElement {
     var engines_active = false
     strings(2) = s"${
       if(ship.pilotIsAlive) {
-        ship.engines.map(e => {
+        ship.engines.filter(e => e.active || ship.isSelectedEngine(e)).map(e => {
           if (ship.isSelectedEngine(e)) {
             if (e.active) {
               engines_active = true

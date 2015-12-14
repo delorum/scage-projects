@@ -203,38 +203,38 @@ class Ship4(index:String,
   }
 
   action {
-    if(fuelMass <= 0 && flightMode != 1) {
-      flightMode = 1
+    if(fuelMass <= 0 && flightMode != Free) {
+      flightMode = Free
     } else {
       flightMode match {
-        case 1 => // свободный режим
-        case 2 => // запрет вращения
+        case Free => // свободный режим
+        case Killrot => // запрет вращения
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, 1000)) {
             if (math.abs(angularVelocity) < angular_velocity_error) {
               if(haveSavedFlightMode) restoreFlightModeAndEngineStates()
-              else flightMode = 1
+              else flightMode = Free
             } else {
               preserveAngularVelocity(0)
             }
           }
-        case 3 => // ориентация по осям
+        case AxisAligned => // ориентация по осям
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, 1000)) {
-            if (angleMinDiff(rotation, 0) < angle_error) flightMode = 2
+            if (angleMinDiff(rotation, 0) < angle_error) flightMode = Killrot
             else preserveAngle(0)
           }
-        case 4 => // ориентация по траектории
+        case VelocityAligned => // ориентация по траектории
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, 1000)) {
             val angle = DVec(0, 1).deg360(relativeLinearVelocity)
-            if (angleMinDiff(rotation, angle) < angle_error) flightMode = 2
+            if (angleMinDiff(rotation, angle) < angle_error) flightMode = Killrot
             else preserveAngle(angle)
           }
-        case 5 => // ориентация против траектории
+        case OppositeVelocityAligned => // ориентация против траектории
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, 1000)) {
             val angle = DVec(0, -1).deg360(relativeLinearVelocity)
-            if (angleMinDiff(rotation, angle) < angle_error) flightMode = 2
+            if (angleMinDiff(rotation, angle) < angle_error) flightMode = Killrot
             else preserveAngle(angle)
           }
-        case 6 => // выход на орбиту
+        case CirclularOrbit => // выход на орбиту
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, 1000)) {
             if (math.abs(angularVelocity) < angular_velocity_error) {
               insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
@@ -242,13 +242,13 @@ class Ship4(index:String,
                   val ss = satelliteSpeed(coord, linearVelocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
                   if (linearVelocity.dist(ss) > linear_velocity_error) {
                     preserveVelocity(ss)
-                  } else flightMode = 1
+                  } else flightMode = Free
                 case None =>
-                  flightMode = 1
+                  flightMode = Free
               }
             } else preserveAngularVelocity(0)
           }
-        case 7 => // уравнять скорость с ближайшим кораблем
+        case NearestShipVelocity => // уравнять скорость с ближайшим кораблем
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, 1000)) {
             if (math.abs(angularVelocity) < angular_velocity_error) {
               otherShipsNear.headOption match {
@@ -257,14 +257,14 @@ class Ship4(index:String,
                   if (linearVelocity.dist(ss) > linear_velocity_error) {
                     preserveVelocity(ss)
                   } else {
-                    flightMode = 1
+                    flightMode = Free
                   }
                 case None =>
-                  flightMode = 1
+                  flightMode = Free
               }
             } else preserveAngularVelocity(0)
           }
-        case 8 => // уравнять скорость с ближайшей планетой
+        case NearestPlanetVelocity => // уравнять скорость с ближайшей планетой
           (for {
             (planet, planet_state) <- currentPlanetStates.sortBy(_._2.coord.dist(coord)).headOption
           } yield (planet, planet_state)) match {
@@ -304,12 +304,12 @@ class Ship4(index:String,
               }
             case None =>
           }
-        case 9 => // остановиться
+        case AbsoluteStop => // остановиться
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, 1000)) {
             if (math.abs(angularVelocity) < angular_velocity_error) {
               if (linearVelocity.dist(DVec.dzero) > linear_velocity_error) {
                 preserveVelocity(DVec.dzero)
-              } else flightMode = 1
+              } else flightMode = Free
             } else preserveAngularVelocity(0)
           }
         case _ =>

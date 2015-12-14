@@ -181,62 +181,62 @@ class Ship3(
   action {
     if(allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment > 1000) {
       flightMode match {
-        case 1 => // свободный режим
-        case 2 => // запрет вращения
-          if(math.abs(angularVelocity) < 0.01) flightMode = 1
+        case Free => // свободный режим
+        case Killrot => // запрет вращения
+          if(math.abs(angularVelocity) < 0.01) flightMode = Free
           else preserveAngularVelocity(0)
-        case 3 => // ориентация по осям
-          if(math.abs(rotation) < 0.1) flightMode = 2
+        case AxisAligned => // ориентация по осям
+          if(math.abs(rotation) < 0.1) flightMode = Killrot
           else preserveAngle(0)
-        case 4 => // ориентация по траектории
+        case VelocityAligned => // ориентация по траектории
           val angle = DVec(0,1).deg360(linearVelocity)
-          if(math.abs(rotation - angle) < 0.1) flightMode = 2
+          if(math.abs(rotation - angle) < 0.1) flightMode = Killrot
           else preserveAngle(angle)
-        case 5 => // ориентация против траектории
+        case OppositeVelocityAligned => // ориентация против траектории
           val angle = correctAngle(DVec(0,1).deg360(linearVelocity) + 180)
-          if(math.abs(rotation - angle) < 0.1) flightMode = 2
+          if(math.abs(rotation - angle) < 0.1) flightMode = Killrot
           else preserveAngle(angle)
-        case 6 => // выход на орбиту
+        case CirclularOrbit => // выход на орбиту
           if(math.abs(angularVelocity) < 0.01) {
             insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
               case Some((planet, planet_state)) =>
                 val ss = satelliteSpeed(coord, linearVelocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
                 if(linearVelocity.dist(ss) > 0.1) {
                   preserveVelocity(ss)
-                } else flightMode = 1
+                } else flightMode = Free
               case None =>
-                flightMode = 1
+                flightMode = Free
             }
           } else preserveAngularVelocity(0)
-        case 7 => // уравнять скорость с ближайшим кораблем
+        case NearestShipVelocity => // уравнять скорость с ближайшим кораблем
           if(math.abs(angularVelocity) < 0.01) {
             otherShipsNear.headOption match {
               case Some(s) =>
                 val ss = s.linearVelocity
                 if(linearVelocity.dist(ss) > 0.1) {
                   preserveVelocity(ss)
-                } else flightMode = 1
+                } else flightMode = Free
               case None =>
-                flightMode = 1
+                flightMode = Free
             }
           } else preserveAngularVelocity(0)
-        case 8 => // уравнять скорость с ближайшей планетой
+        case NearestPlanetVelocity => // уравнять скорость с ближайшей планетой
           if(math.abs(angularVelocity) < 0.01) {
             currentPlanetStates.sortBy(_._2.coord.dist(coord)).headOption match {
               case Some(s) =>
                 val ss = s._2.vel
                 if(linearVelocity.dist(ss) > 0.1) {
                   preserveVelocity(ss)
-                } else flightMode = 1
+                } else flightMode = Free
               case None =>
-                flightMode = 1
+                flightMode = Free
             }
           } else preserveAngularVelocity(0)
-        case 9 => // остановиться
+        case AbsoluteStop => // остановиться
           if(math.abs(angularVelocity) < 0.01) {
             if(linearVelocity.dist(DVec.dzero) > 0.1) {
               preserveVelocity(DVec.dzero)
-            } else flightMode = 1
+            } else flightMode = Free
           } else preserveAngularVelocity(0)
         case _ =>
       }
