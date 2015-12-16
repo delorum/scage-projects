@@ -328,14 +328,14 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     radius = 1737000,
     earth, 2000)
 
-  //val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
-  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
+  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   //val ship_start_position = earth.coord + DVec(100, earth.radius + 200000)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
 
-  val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
-  val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
+  //val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
 
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 3000)
@@ -619,7 +619,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   }
 
   def curvatureRadiusStrInPoint(body_state:BodyState):String = {
-    s"${mOrKm(curvatureRadiusInPoint(body_state))}"
+    s"${mOrKmOrMKm(curvatureRadiusInPoint(body_state))}"
   }
 
   /*def orbitStrInPointWithVelocity_imm(coord:DVec, velocity:DVec, mass:Double, planet_states:Seq[BodyState]):String = {
@@ -1274,7 +1274,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                         val vnorm = h.orbitalVelocityByTrueAnomalyRad(mouse_teta_rad2Pi)
                         openglLocalTransform {
                           openglMove(orbital_point * scale)
-                          print(s"  $flight_time : ${mOrKm(h.distanceByTrueAnomalyRad(mouse_teta_rad2Pi) - planet.radius)} : ${msecOrKmsec(vnorm)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
+                          print(s"  $flight_time : ${mOrKmOrMKm(h.distanceByTrueAnomalyRad(mouse_teta_rad2Pi) - planet.radius)} : ${msecOrKmsec(vnorm)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
                         }
                       }
                     }
@@ -1303,12 +1303,12 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                     val ccw = (bs_coord - e.f).perpendicular*(bs_vel - planet_state_vel) >= 0 // летим против часовой?
 
                     if(_stop_after_number_of_tacts > 0) {
-                      //drawFilledCircle(e.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)*scale, 3 / globalScale, RED)
-                      if(ccw) {
+                      drawFilledCircle(e.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)*scale, 3 / globalScale, RED)
+                      /*if(ccw) {
                         drawFilledCircle(e.orbitalPointAfterTimeCCW(bs_coord, (_stop_after_number_of_tacts*base_dt).toLong)*scale, 3 / globalScale, RED)
                       } else {
                         drawFilledCircle(e.orbitalPointAfterTimeCW(bs_coord, (_stop_after_number_of_tacts*base_dt).toLong)*scale, 3 / globalScale, RED)
-                      }
+                      }*/
                     }
                     val true_anomaly_rad = e.tetaRad2PiInPoint(mouse_point)
 
@@ -1330,7 +1330,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                     //val v = vr*basis_r + vt*basis_t + planet_state_vel
                     openglLocalTransform {
                       openglMove(orbital_point * scale)
-                      print(s"  $flight_time : ${mOrKm(e.distanceByTrueAnomalyRad(true_anomaly_rad) - planet.radius)} : ${msecOrKmsec(vnorm)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
+                      print(s"  $flight_time : ${mOrKmOrMKm(e.distanceByTrueAnomalyRad(true_anomaly_rad) - planet.radius)} : ${msecOrKmsec(vnorm)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
                       //print(s"  $flight_time : ${msecOrKmsec(v.norma)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
                       //print(f"  ${e.tetaDeg360InPoint(x)}%.2f", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
                     }
@@ -1415,6 +1415,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         })
         println(spaces.filter(_.bodies.length > 1).map(x => s"${x.bodies.length}").mkString(" : "))*/
 
+        drawCircle(sun.coord*scale, sun.radius * scale, WHITE)
         drawCircle(earth.coord*scale, earth.radius * scale, WHITE)
         //drawCircle(earth.coord*scale, equalGravityRadius(earth.currentState, moon.currentState)*scale, color = DARK_GRAY)
         drawCircle(earth.coord*scale, earth.one_third_hill_radius*scale, color = DARK_GRAY)
@@ -1492,10 +1493,10 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           drawArrow(c + DVec(0, -h/2) + DVec(0, -5/globalScale), c + DVec(w/2, -h/2)  + DVec(0, -5/globalScale),DARK_GRAY)
 
           openglLocalTransform {
-            val k = messageBounds(s"${mOrKm((w / scale).toInt)}", (max_font_size / globalScale).toFloat)
+            val k = messageBounds(s"${mOrKmOrMKm((w / scale).toInt)}", (max_font_size / globalScale).toFloat)
             openglMove((c + DVec(0, -h / 2) + DVec(0, -15 / globalScale) + DVec(-k.x / 2, -k.y / 2)).toVec)
             print(
-              s"${mOrKm((w / scale).toInt)}",
+              s"${mOrKmOrMKm((w / scale).toInt)}",
               Vec.zero,
               color = DARK_GRAY,
               size = (max_font_size / globalScale).toFloat
@@ -1509,10 +1510,10 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           drawArrow(c + DVec(w/2, 0) + DVec(5/globalScale, 0), c + DVec(w/2, -h/2) + DVec(5/globalScale, 0),DARK_GRAY)
 
           openglLocalTransform {
-            val l = messageBounds(s"${mOrKm((h / scale).toInt)}", (max_font_size / globalScale).toFloat)
+            val l = messageBounds(s"${mOrKmOrMKm((h / scale).toInt)}", (max_font_size / globalScale).toFloat)
             openglMove((c + DVec(w / 2, 0) + DVec(10 / globalScale, 0) + DVec(0, -l.y / 2)).toVec)
             print(
-              s"${mOrKm((h / scale).toInt)}",
+              s"${mOrKmOrMKm((h / scale).toInt)}",
               Vec.zero,
               color = DARK_GRAY,
               size = (max_font_size / globalScale).toFloat
@@ -1526,7 +1527,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           drawArrow(ship.coord * scale, m, DARK_GRAY)
           openglLocalTransform {
             openglMove(m)
-            print(s"  ${mOrKm(d.toLong)}", Vec.zero, size = (max_font_size / globalScale).toFloat, DARK_GRAY)
+            print(s"  ${mOrKmOrMKm(d.toLong)}", Vec.zero, size = (max_font_size / globalScale).toFloat, DARK_GRAY)
           }
         }
       } else {
@@ -1538,7 +1539,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
             drawArrow(DVec.zero, m - ship.coord, DARK_GRAY)
             openglMove(m - ship.coord)
             openglRotateDeg(-rotationAngleDeg)
-            print(s"  ${mOrKm(d.toLong)}", Vec.zero, size = (max_font_size / globalScale).toFloat, DARK_GRAY)
+            print(s"  ${mOrKmOrMKm(d.toLong)}", Vec.zero, size = (max_font_size / globalScale).toFloat, DARK_GRAY)
           }
         }
       }
@@ -1560,7 +1561,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       drawLine(a,b, DARK_GRAY)
       drawLine(a, a+(a-b).rotateDeg(90).n*5, DARK_GRAY)
       drawLine(b, b+(a-b).rotateDeg(90).n*5, DARK_GRAY)
-      print(s"${mOrKm((100/globalScale/(if(drawMapMode) scale else 1.0)).toInt)}", b.toVec, DARK_GRAY)
+      print(s"${mOrKmOrMKm((100/globalScale/(if(drawMapMode) scale else 1.0)).toInt)}", b.toVec, DARK_GRAY)
     /*}*/
 
     /*if(!disable_interface_drawing) {*/

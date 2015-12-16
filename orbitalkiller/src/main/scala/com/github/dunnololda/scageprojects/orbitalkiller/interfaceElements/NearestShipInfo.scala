@@ -42,25 +42,25 @@ class NearestShipInfo extends InterfaceElement {
             val sep_in_r_p = os_orbit_ellipse.orbitalPointInPoint(our_r_p).dist(our_r_p)
             val sep_in_r_a = os_orbit_ellipse.orbitalPointInPoint(our_r_a).dist(our_r_a)
             val sep_str = if(sep_in_r_p <= sep_in_r_a) {
-              s"min sep = in r_p, ${mOrKm(sep_in_r_p)}"
+              s"min sep = in r_p, ${mOrKmOrMKm(sep_in_r_p)}"
             } else {
-              s"min sep = in r_a, ${mOrKm(sep_in_r_a)}"
+              s"min sep = in r_a, ${mOrKmOrMKm(sep_in_r_a)}"
             }
             val cur_sep = os_orbit_ellipse.orbitalPointInPoint(ship.coord).dist(ship.coord)
             val need_orbit_period_str = {
               if(r_p1 >= our_orbit_planet.air_free_altitude) {
                 if(r_p2 >= our_orbit_planet.air_free_altitude) {
                   if(math.abs(our_orbit_ellipse.t - t1_sec) <= math.abs(our_orbit_ellipse.t - t2_sec)) {
-                    s"${timeStr((t1_sec - our_orbit_ellipse.t).toLong*1000)} ($sep_str, cur sep = ${mOrKm(cur_sep)})"
+                    s"${timeStr((t1_sec - our_orbit_ellipse.t).toLong*1000)} ($sep_str, cur sep = ${mOrKmOrMKm(cur_sep)})"
                   } else {
-                    s"${timeStr((t2_sec - our_orbit_ellipse.t).toLong*1000)} ($sep_str, cur sep = ${mOrKm(cur_sep)})"
+                    s"${timeStr((t2_sec - our_orbit_ellipse.t).toLong*1000)} ($sep_str, cur sep = ${mOrKmOrMKm(cur_sep)})"
                   }
                 } else {
-                  s"${timeStr((t1_sec - our_orbit_ellipse.t).toLong*1000)} ($sep_str, cur sep = ${mOrKm(cur_sep)})"
+                  s"${timeStr((t1_sec - our_orbit_ellipse.t).toLong*1000)} ($sep_str, cur sep = ${mOrKmOrMKm(cur_sep)})"
                 }
               } else {
                 if(r_p2 >= our_orbit_planet.air_free_altitude) {
-                  s"${timeStr((t2_sec - our_orbit_ellipse.t).toLong*1000)} ($sep_str, cur sep = ${mOrKm(cur_sep)})"
+                  s"${timeStr((t2_sec - our_orbit_ellipse.t).toLong*1000)} ($sep_str, cur sep = ${mOrKmOrMKm(cur_sep)})"
                 } else {
                   "N/A"
                 }
@@ -68,7 +68,7 @@ class NearestShipInfo extends InterfaceElement {
             }
             (f"$deg_diff%.2f град.", need_orbit_period_str)
         }).getOrElse("N/A", "N/A")
-        val dist = mOrKm(ship.coord.dist(os.coord))
+        val dist = mOrKmOrMKm(ship.coord.dist(os.coord))
         val vel = msecOrKmsec((ship.linearVelocity - os.linearVelocity)* (ship.coord - os.coord).n)
         strings(1) = s"$dist, $vel, $need_orbit_period_str"
       case None =>
