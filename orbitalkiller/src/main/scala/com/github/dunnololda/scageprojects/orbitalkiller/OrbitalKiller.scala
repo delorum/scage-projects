@@ -7,7 +7,6 @@ import com.github.dunnololda.scage.ScageLibD._
 import scala.collection.mutable.ArrayBuffer
 
 //import collection.mutable.ArrayBuffer
-import scala.collection.mutable
 
 object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("screen.width", 1280), property("screen.height", 768)) {
   val k:Double = 1 // доля секунды симуляции, которая обрабатывается за одну реальную секунду, если не применяется ускорение
@@ -329,14 +328,14 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     radius = 1737000,
     earth, 2000)
 
-  val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
-  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  //val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
+  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   //val ship_start_position = earth.coord + DVec(100, earth.radius + 200000)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
 
-  //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
-  //val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
+  val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
 
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 3000)
@@ -1186,7 +1185,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   viewMode = 1
   globalScale = 10
 
-  private val scale = 1e-6
+  val scale = 1e-6
 
   /*private def reducePointsNumber(points:Seq[DVec], res:List[DVec] = Nil):List[DVec] = {
     if(points.isEmpty) res
@@ -1210,15 +1209,21 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     system_evolution.bodyState(ship_index) match {
       case Some(bs) =>
         // смотрим, где он находится
-        insideSphereOfInfluenceOfCelestialBody(bs.coord, bs.mass, celestials) match {
+        val bs_coord = bs.coord
+        val bs_vel = bs.vel
+        val bs_mass = bs.mass
+        insideSphereOfInfluenceOfCelestialBody(bs_coord, bs_mass, celestials) match {
           case Some((planet, planet_state)) =>
+            val planet_state_coord = planet_state.coord
+            val planet_state_vel = planet_state.vel
+            val planet_state_mass = planet_state.mass
             // корабль находится внутри гравитационного радиуса какой-то планеты (Земли или Луны)
             val orbit = calculateOrbit(
-              planet_state.mass,
-              planet_state.coord,
-              bs.mass,
-              bs.coord - planet_state.coord,
-              bs.vel - planet_state.vel, G)
+              planet_state_mass,
+              planet_state_coord,
+              bs_mass,
+              bs_coord - planet_state_coord,
+              bs_vel - planet_state_vel, G)
             orbit match {
               case h:HyperbolaOrbit =>
                 val yy = (-math.acos(-1.0/h.e)+0.1 to math.acos(-1.0/h.e)-0.1 by 0.1).map(true_anomaly => {
@@ -1237,10 +1242,10 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                     }
 
                     val mouse_teta_rad2Pi = h.tetaRad2PiInPoint(mouse_point)
-                    val ship_teta_rad2Pi = h.tetaRad2PiInPoint(bs.coord)
+                    val ship_teta_rad2Pi = h.tetaRad2PiInPoint(bs_coord)
                     if(h.tetaRad2PiValid(mouse_teta_rad2Pi)) {
-                      val ccw = (bs.coord - h.f).perpendicular * (bs.vel - planet_state.vel) >= 0 // летим против часовой?
-                      val away_from_rp = (bs.coord - h.f) * (bs.vel - planet_state.vel) >= 0 // приближаемся к перигею или удаляемся от него?
+                      val ccw = (bs_coord - h.f).perpendicular * (bs_vel - planet_state_vel) >= 0 // летим против часовой?
+                      val away_from_rp = (bs_coord - h.f) * (bs_vel - planet_state_vel) >= 0 // приближаемся к перигею или удаляемся от него?
 
                       val (allow) = {
                         if(ccw) {
@@ -1255,7 +1260,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                       if(allow) {
                         val orbital_point = h.orbitalPointInPoint(mouse_point)
                         drawFilledCircle(orbital_point*scale, 3 / globalScale, color2)
-                        val flight_time_msec = if (ccw) h.travelTimeOnOrbitMsecCCW(bs.coord, orbital_point) else h.travelTimeOnOrbitMsecCW(bs.coord, orbital_point)
+                        val flight_time_msec = if (ccw) {
+                          h.travelTimeOnOrbitMsecCCW(bs_coord, orbital_point)
+                        } else {
+                          h.travelTimeOnOrbitMsecCW(bs_coord, orbital_point)
+                        }
                         val flight_time = s"${timeStr(flight_time_msec)}"
                         if (set_stop_moment) {
                           _stop_after_number_of_tacts = (flight_time_msec / 1000 / base_dt).toLong
@@ -1291,12 +1300,23 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                       drawFilledCircle(orbital_point2*scale, 3 / globalScale, color2)
                     }*/
 
+                    val ccw = (bs_coord - e.f).perpendicular*(bs_vel - planet_state_vel) >= 0 // летим против часовой?
+
                     if(_stop_after_number_of_tacts > 0) {
-                      drawFilledCircle(e.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)*scale, 3 / globalScale, RED)
+                      //drawFilledCircle(e.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)*scale, 3 / globalScale, RED)
+                      if(ccw) {
+                        drawFilledCircle(e.orbitalPointAfterTimeCCW(bs_coord, (_stop_after_number_of_tacts*base_dt).toLong)*scale, 3 / globalScale, RED)
+                      } else {
+                        drawFilledCircle(e.orbitalPointAfterTimeCW(bs_coord, (_stop_after_number_of_tacts*base_dt).toLong)*scale, 3 / globalScale, RED)
+                      }
                     }
                     val true_anomaly_rad = e.tetaRad2PiInPoint(mouse_point)
-                    val ccw = (bs.coord - e.f).perpendicular*(bs.vel - planet_state.vel) >= 0 // летим против часовой?
-                    val flight_time_msec = if(ccw) e.travelTimeOnOrbitMsecCCW(bs.coord, orbital_point) else e.travelTimeOnOrbitMsecCW(bs.coord, orbital_point)
+
+                    val flight_time_msec = if(ccw) {
+                      e.travelTimeOnOrbitMsecCCW(bs_coord, orbital_point)
+                    } else {
+                      e.travelTimeOnOrbitMsecCW(bs_coord, orbital_point)
+                    }
                     val flight_time = s"${timeStr(flight_time_msec)}"
                     if(set_stop_moment) {
                       _stop_after_number_of_tacts = (flight_time_msec/1000/base_dt).toLong
@@ -1307,7 +1327,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                     /*val basis_r = (orbital_point - e.f).n
                     val basis_t = basis_r.p*/
                     val vnorm = math.sqrt(vr*vr + vt*vt)
-                    //val v = vr*basis_r + vt*basis_t + planet_state.vel
+                    //val v = vr*basis_r + vt*basis_t + planet_state_vel
                     openglLocalTransform {
                       openglMove(orbital_point * scale)
                       print(s"  $flight_time : ${mOrKm(e.distanceByTrueAnomalyRad(true_anomaly_rad) - planet.radius)} : ${msecOrKmsec(vnorm)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
