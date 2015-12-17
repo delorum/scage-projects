@@ -18,6 +18,11 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
   private val mutable_system_helper = new EvolutionHelper(mutable_system)
   var tacts = init_tacts
 
+  def addBody(new_part:MutableSystemPart): Unit = {
+    mutable_system += (new_part.body.index -> new_part)
+    all_bodies += new_part.body
+  }
+
   def addBody(b:MutableBodyState,
               force:(Long, EvolutionHelper) => DVec,
               torque:(Long, EvolutionHelper) => Double): Unit = {
@@ -30,8 +35,13 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
     mutable_system.remove(index).foreach(part => all_bodies -= part.body)
   }
 
-  def bodyStates(indicies:Set[String]) = mutable_system.filter(kv => indicies.contains(kv._1)).map(kv => (kv._1, kv._2.body))
-  def bodyState(index:String) = mutable_system.get(index).map(_.body)
+  def allBodyStates:mutable.Map[String, MutableBodyState] = {
+    mutable_system.map(kv => (kv._1, kv._2.body))
+  }
+  def bodyStates(indicies:Set[String]):mutable.Map[String, MutableBodyState] = {
+    mutable_system.filter(kv => indicies.contains(kv._1)).map(kv => (kv._1, kv._2.body))
+  }
+  def bodyState(index:String):Option[MutableBodyState] = mutable_system.get(index).map(_.body)
 
   def step(): Unit = {
     mutable_system.foreach(_._2.body.init())
@@ -85,6 +95,12 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
     if(collisions.nonEmpty) collisions.foreach(c => c.positionalCorrection())
 
     tacts += 1l
+  }
+
+  def copy(tacts:Long):SystemEvolution = {
+    val x = new SystemEvolution(base_dt, init_space_center, tacts)
+    mutable_system.foreach(p => x.addBody(p._2.copy(body = p._2.body.copy)))
+    x
   }
 }
 
