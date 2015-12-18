@@ -1230,6 +1230,8 @@ package object orbitalkiller {
       e*math.sin(Ex) + M
     }
 
+    private val num_iterations = 30
+
     // Балк М.Б. Элементы динамики космического полета. Гл. III, параграф 3 "Решение уравнения Кеплера", стр. 111
     // http://pskgu.ru/ebooks/astro3/astro3_03_03.pdf
     def orbitalPointAfterTimeCCW(point1:DVec, time_sec:Long):DVec = {
@@ -1237,7 +1239,7 @@ package object orbitalkiller {
       val time_from_r_p = travelTimeOnOrbitMsecCCW(0, t1/*, print_variant = true*/)
       val all_time = time_from_r_p/1000 + time_sec
       val M = 1/inv_n*all_time
-      val E7 = (1 to 7).foldLeft(M) {
+      val E7 = (1 to num_iterations).foldLeft(M) {
         case (res, i) => _iteration(res, M)
       }
       val tg_half_teta_res_rad = math.sqrt((1 + e)/(1 - e))*math.tan(E7/2)
@@ -1251,7 +1253,7 @@ package object orbitalkiller {
       val time_from_r_p = travelTimeOnOrbitMsecCW(0, t1/*, print_variant = true*/)
       val all_time = t.toLong - (time_from_r_p/1000 + time_sec)
       val M = 1/inv_n*all_time
-      val E7 = (1 to 7).foldLeft(M) {
+      val E7 = (1 to num_iterations).foldLeft(M) {
         case (res, i) => _iteration(res, M)
       }
       val tg_half_teta_res_rad = math.sqrt((1 + e)/(1 - e))*math.tan(E7/2)
@@ -1427,36 +1429,89 @@ package object orbitalkiller {
       def _arsh(z:Double) = math.log(z + math.sqrt(z*z + 1))
       _arsh((Hx + M)/e)
     }
+    private val num_iterations = 30
 
     // Балк М.Б. Элементы динамики космического полета. Гл. III, параграф 3 "Решение уравнения Кеплера", стр. 111
     // http://pskgu.ru/ebooks/astro3/astro3_03_03.pdf
     // https://ru.wikipedia.org/wiki/Уравнение_Кеплера
     def orbitalPointAfterTimeCCW(point1:DVec, time_sec:Long):DVec = {
       val t1 = tetaDeg360InPoint(point1)
-      val time_from_r_p = travelTimeOnOrbitMsecCCW(0, t1/*, print_variant = true*/)
-      val all_time = time_from_r_p/1000 + time_sec
-      val M = 1/inv_n*all_time
-      val H7 = (1 to 7).foldLeft(M) {
-        case (res, i) => _iteration(res, M)
+      val away_from_rp = teta_deg_min >= t1 && t1 >= 0
+      if(away_from_rp) {
+        val time_from_r_p_to_cur_point = travelTimeOnOrbitMsecCCW(0, t1 /*, print_variant = true*/)/1000
+        val time_from_r_p = time_from_r_p_to_cur_point + time_sec
+        val M = 1 / inv_n * time_from_r_p
+        val H7 = (1 to num_iterations).foldLeft(M) {
+          case (res, i) => _iteration(res, M)
+        }
+        val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(H7 / 2)
+        val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
+        val teta_res_deg = teta_res_rad / math.Pi * 180
+        orbitalPointByTrueAnomalyDeg(teta_res_deg)
+      } else {
+        val time_from_cur_point_to_r_p = travelTimeOnOrbitMsecCCW(t1, 360 /*, print_variant = true*/)/1000
+        if(time_sec >= time_from_cur_point_to_r_p) {
+          val time_from_r_p = time_sec - time_from_cur_point_to_r_p
+          val M = 1 / inv_n * time_from_r_p
+          val H7 = (1 to num_iterations).foldLeft(M) {
+            case (res, i) => _iteration(res, M)
+          }
+          val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(H7 / 2)
+          val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
+          val teta_res_deg = teta_res_rad / math.Pi * 180
+          orbitalPointByTrueAnomalyDeg(teta_res_deg)
+        } else {
+          val time_from_r_p = time_from_cur_point_to_r_p - time_sec
+          val M = 1 / inv_n * time_from_r_p
+          val H7 = (1 to num_iterations).foldLeft(M) {
+            case (res, i) => _iteration(res, M)
+          }
+          val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(H7 / 2)
+          val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
+          val teta_res_deg = 360 - teta_res_rad / math.Pi * 180
+          orbitalPointByTrueAnomalyDeg(teta_res_deg)
+        }
       }
-      val tg_half_teta_res_rad = math.sqrt((e + 1)/(e - 1))*math.tanh(H7/2)
-      val teta_res_rad = math.atan(tg_half_teta_res_rad)*2
-      val teta_res_deg = teta_res_rad/math.Pi*180
-      orbitalPointByTrueAnomalyDeg(teta_res_deg)
     }
 
     def orbitalPointAfterTimeCW(point1:DVec, time_sec:Long):DVec = {
       val t1 = tetaDeg360InPoint(point1)
-      val time_from_r_p = travelTimeOnOrbitMsecCW(0, t1/*, print_variant = true*/)
-      val all_time = time_from_r_p/1000 + time_sec
-      val M = 1/inv_n*all_time
-      val E7 = (1 to 7).foldLeft(M) {
-        case (res, i) => _iteration(res, M)
+      val away_from_rp = 360 >= t1 && t1 >= teta_deg_max
+      if(away_from_rp) {
+        val time_from_r_p_to_cur_point = travelTimeOnOrbitMsecCW(360, t1/*, print_variant = true*/)/1000
+        val time_from_r_p = time_from_r_p_to_cur_point + time_sec
+        val M = 1/inv_n*time_from_r_p
+        val H7 = (1 to num_iterations).foldLeft(M) {
+          case (res, i) => _iteration(res, M)
+        }
+        val tg_half_teta_res_rad = math.sqrt((e + 1)/(e - 1))*math.tanh(H7/2)
+        val teta_res_rad = math.atan(tg_half_teta_res_rad)*2
+        val teta_res_deg = 360 - teta_res_rad/math.Pi*180
+        orbitalPointByTrueAnomalyDeg(teta_res_deg)
+      } else {
+        val time_from_cur_point_to_r_p = travelTimeOnOrbitMsecCW(t1, 0/*, print_variant = true*/)/1000
+        if(time_sec >= time_from_cur_point_to_r_p) {
+          val time_from_r_p = time_sec - time_from_cur_point_to_r_p
+          val M = 1/inv_n*time_from_r_p
+          val H7 = (1 to num_iterations).foldLeft(M) {
+            case (res, i) => _iteration(res, M)
+          }
+          val tg_half_teta_res_rad = math.sqrt((e + 1)/(e - 1))*math.tanh(H7/2)
+          val teta_res_rad = math.atan(tg_half_teta_res_rad)*2
+          val teta_res_deg = 360 - teta_res_rad/math.Pi*180
+          orbitalPointByTrueAnomalyDeg(teta_res_deg)
+        } else {
+          val time_from_r_p = time_from_cur_point_to_r_p - time_sec
+          val M = 1/inv_n*time_from_r_p
+          val H7 = (1 to num_iterations).foldLeft(M) {
+            case (res, i) => _iteration(res, M)
+          }
+          val tg_half_teta_res_rad = math.sqrt((e + 1)/(e - 1))*math.tanh(H7/2)
+          val teta_res_rad = math.atan(tg_half_teta_res_rad)*2
+          val teta_res_deg = teta_res_rad/math.Pi*180
+          orbitalPointByTrueAnomalyDeg(teta_res_deg)
+        }
       }
-      val tg_half_teta_res_rad = math.sqrt((1 + e)/(1 - e))*math.tan(E7/2)
-      val teta_res_rad = math.atan(tg_half_teta_res_rad)*2
-      val teta_res_deg = teta_res_rad/math.Pi*180
-      orbitalPointByTrueAnomalyDeg(teta_res_deg)
     }
   }
 

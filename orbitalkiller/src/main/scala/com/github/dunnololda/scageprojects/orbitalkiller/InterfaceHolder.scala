@@ -77,16 +77,15 @@ object InterfaceHolder {
     /*if(ship.otherShipsNear.isEmpty) {
       nearestShipInfo.hideByConstraint()
     } else nearestShipInfo.showByConstraint()*/
-    if(ship.flightMode == NearestPlanetVelocity) {
-      enginesInfo.hideByConstraint()
+    if(ship.flightMode != Free || !ship.engines.exists(_.active)) {
       shipParamsWhenEginesOff.hideByConstraint()
     } else {
+      shipParamsWhenEginesOff.showByConstraint()
+    }
+    if(ship.flightMode == NearestPlanetVelocity) {
+      enginesInfo.hideByConstraint()
+    } else {
       enginesInfo.showByConstraint()
-      if(!ship.engines.exists(_.active) || ship.flightMode == Maneuvering) {
-        shipParamsWhenEginesOff.hideByConstraint()
-      } else {
-        shipParamsWhenEginesOff.showByConstraint()
-      }
     }
   }
 
