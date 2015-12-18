@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.github.dunnololda.scageprojects</groupId>
   <artifactId>orbitalkiller</artifactId>
-  <version>realworld-double-48</version>
+  <version>realworld-double-49</version>
   <inceptionYear>2011</inceptionYear>
 
   <name>Orbital Killer</name>
@@ -239,6 +239,7 @@
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>2.3.1</version>
                     <configuration>
+                        <finalName>orbitalkiller</finalName>
                        <archive>
                           <manifest>
                              <addClasspath>true</addClasspath>

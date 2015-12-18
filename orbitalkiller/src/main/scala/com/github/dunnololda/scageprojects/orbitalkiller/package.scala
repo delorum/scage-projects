@@ -1429,7 +1429,7 @@ package object orbitalkiller {
       def _arsh(z:Double) = math.log(z + math.sqrt(z*z + 1))
       _arsh((Hx + M)/e)
     }
-    private val num_iterations = 30
+    private val num_iterations = 60
 
     // Балк М.Б. Элементы динамики космического полета. Гл. III, параграф 3 "Решение уравнения Кеплера", стр. 111
     // http://pskgu.ru/ebooks/astro3/astro3_03_03.pdf

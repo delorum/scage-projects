@@ -178,6 +178,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         val system_evolution_copy = system_evolution.copy(system_evolution.tacts)
         val steps = (tacts - system_evolution.tacts).toInt
         (1 to steps).foreach(x => {
+          system_evolution_copy.bodyState(ship.index).foreach(bs => {
+            bs.mass = ship.currentMass(system_evolution_copy.tacts)
+          })
           system_evolution_copy.step()
         })
         system_evolution_copy.allBodyStates
@@ -1465,6 +1468,18 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }
 
+  private def drawSunTangents(planet_coord:DVec, planet_radius:Double, sun_coord:DVec, sun_radius:Double, dist:Double) {
+    val p2p1_p = (sun_coord - planet_coord).p
+    val b1 = sun_coord + p2p1_p*sun_radius
+    val b2 = sun_coord - p2p1_p*sun_radius
+    val c1 = planet_coord + p2p1_p*planet_radius
+    val c2 = planet_coord - p2p1_p*planet_radius
+    val a = (c1 - b1).n*dist
+    val b = (c2 - b2).n*dist
+    drawLine(c1*scale, (c1 + a)*scale, DARK_GRAY)
+    drawLine(c2*scale, (c2 + b)*scale, DARK_GRAY)
+  }
+
   render {
     /*if(_rendering_enabled) {*/
       if(drawMapMode) {
@@ -1480,6 +1495,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         //drawCircle(earth.coord*scale, equalGravityRadius(earth.currentState, moon.currentState)*scale, color = DARK_GRAY)
         drawCircle(earth.coord*scale, earth.one_third_hill_radius*scale, color = DARK_GRAY)
         drawLine(earth.coord*scale, earth.coord*scale + DVec(0, earth.radius*scale).rotateDeg(earth.currentState.ang), WHITE)
+        drawSunTangents(earth.coord, earth.radius, sun.coord, sun.radius, 500000000)
         /*openglLocalTransform {
           openglMove(earth.coord*scale)
           val current_ang = earth.currentState.ang
@@ -1504,6 +1520,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         drawCircle(moon.coord*scale, moon.one_third_hill_radius*scale, color = DARK_GRAY)
         //drawCircle(moon.coord*scale, soi(moon.mass, earth.coord.dist(moon.coord), earth.mass)*scale, color = DARK_GRAY)
         drawLine(moon.coord*scale, moon.coord * scale + DVec(0, moon.radius * scale).rotateDeg(moon.currentState.ang), WHITE)
+        drawSunTangents(moon.coord, moon.radius, sun.coord, sun.radius, 40000000)
         moon_orbit_render.foreach(_.render())
         earth_orbit_render.foreach(_.render())
         if(!ship.isRemoved) {
