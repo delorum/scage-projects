@@ -346,4 +346,33 @@ trait Ship {
       pilot_death_reason
     }
   }
+
+  def massStr = f"Масса корабля: $mass%.1f кг. Остаток топлива: $fuelMass%.1f кг"
+
+  def shadowSideStr = {
+    val in_shadow_of_planet:Option[String] = {
+      val ship_sun_dist = ship.coord.dist(sun.coord)
+      currentPlanetStates.filterNot(_._1.index == sun.index).find {
+        case (planet, planet_state) =>
+          ship_sun_dist > planet.coord.dist(sun.coord) && (tangentsFromCircleToCircle(planet.coord, planet.radius, sun.coord, sun.radius) match {
+            case Some((c1, c2, b1, b2)) =>
+              val a1 = (c1 - b1).perpendicular * (ship.coord - b1) > 0
+              val a2 = (c2 - b2).perpendicular * (ship.coord - b2) < 0
+              a1 && a2
+            case None => false
+          })
+      }.map(_._1.name)
+    }
+    in_shadow_of_planet match {
+      case Some(planet_name) =>
+        /*planet_name match {
+          case moon.name => "Корабль находится в тени Луны"
+          case earth.name => "Корабль находится в тени Земли"
+          case _ => "Корабль находится в тени"
+        }*/
+        "Корабль находится в тени"
+      case None =>
+        "Корабль освещается солнцем"
+    }
+  }
 }
