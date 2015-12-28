@@ -9,7 +9,7 @@ abstract class PolygonShip(
   init_velocity:DVec = DVec.dzero,
   init_rotation:Double = 0) extends Ship {
   def points:List[DVec]
-  def convex_parts:List[PolygonShape] = Nil
+
   def engines:List[Engine]
   def engines_mapping:Map[Int, Engine]
 

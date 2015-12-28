@@ -198,9 +198,9 @@ class Ship3(
           else preserveAngle(angle)
         case CirclularOrbit => // выход на орбиту
           if(math.abs(angularVelocity) < 0.01) {
-            insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
+            insideSphereOfInfluenceOfCelestialBody(coordOrFirstPartCoord, mass, currentPlanetStates) match {
               case Some((planet, planet_state)) =>
-                val ss = satelliteSpeed(coord, linearVelocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
+                val ss = satelliteSpeed(coordOrFirstPartCoord, linearVelocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
                 if(linearVelocity.dist(ss) > 0.1) {
                   preserveVelocity(ss)
                 } else flightMode = Free
@@ -222,7 +222,7 @@ class Ship3(
           } else preserveAngularVelocity(0)
         case NearestPlanetVelocity => // уравнять скорость с ближайшей планетой
           if(math.abs(angularVelocity) < 0.01) {
-            currentPlanetStates.sortBy(_._2.coord.dist(coord)).headOption match {
+            currentPlanetStates.sortBy(_._2.coord.dist(coordOrFirstPartCoord)).headOption match {
               case Some(s) =>
                 val ss = s._2.vel
                 if(linearVelocity.dist(ss) > 0.1) {
@@ -247,13 +247,13 @@ class Ship3(
     /*if(renderingEnabled) {*/
       if(!drawMapMode) {
         openglLocalTransform {
-          openglMove(coord - base)
+          openglMove(coordOrFirstPartCoord - base)
           drawFilledCircle(DVec.zero, 2, GREEN)                                 // mass center
 
           drawArrow(DVec.zero, linearVelocity.n * 100, CYAN)              // current velocity
           drawArrow(DVec.zero, linearAcceleration.n * 100, ORANGE)        // current acceleration
-          drawArrow(Vec.zero, (earth.coord - coord).n * 100, YELLOW)      // direction to earth
-          drawArrow(Vec.zero, (moon.coord - coord).n * 100, GREEN)        // direction to moon
+          drawArrow(Vec.zero, (earth.coord - coordOrFirstPartCoord).n * 100, YELLOW)      // direction to earth
+          drawArrow(Vec.zero, (moon.coord - coordOrFirstPartCoord).n * 100, GREEN)        // direction to moon
 
           openglRotateDeg(rotation)
           drawSlidingLines(draw_points, WHITE)

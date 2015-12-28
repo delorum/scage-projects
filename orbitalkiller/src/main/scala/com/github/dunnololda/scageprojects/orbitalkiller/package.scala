@@ -4,6 +4,7 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.{Body => Phys2dBody, BodyList => Phys2dBodyList, Collider => Phys2dCollider, DynamicShape => Phys2dShape, StaticBody => Phys2dStaticBody, _}
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.language.reflectiveCalls
 
 package object orbitalkiller {
@@ -230,6 +231,8 @@ package object orbitalkiller {
   case class Contact(a:BodyState, b:BodyState, contact_point:DVec, normal:DVec, separation:Double)
   case class MutableContact(a:MutableBodyState, b:MutableBodyState, contact_point:DVec, normal:DVec, separation:Double) {
     def solveCollision(_dt:Double) {
+      a.contacts += this
+      b.contacts += this
       /*val a_prev_vel = a.vel
       val b_prev_vel = b.vel*/
 
@@ -275,7 +278,7 @@ package object orbitalkiller {
     }
     
     def positionalCorrection() {
-      val correction = math.max(separation - 0.05, 0)/(a.invMass + b.invMass)*0.4
+      val correction = math.max(separation - 0.005, 0)/(a.invMass + b.invMass)*0.8
       if(!a.is_static) a.coord += normal*(-a.invMass*correction)
       if(!b.is_static) b.coord += normal*b.invMass*correction
     }
@@ -521,6 +524,8 @@ package object orbitalkiller {
     var d_ang_acc:Double = 0.0
     var d_ang_vel:Double = 0.0
 
+    val contacts = ArrayBuffer[MutableContact]()
+
     def init(): Unit = {
       acc = DVec.zero
       ang_acc = 0.0
@@ -529,6 +534,7 @@ package object orbitalkiller {
       d_ang_acc = 0.0
       d_ang_vel = 0.0
       aabb = body.shape.aabb(coord, ang)
+      contacts.clear()
     }
 
     var aabb = body.shape.aabb(coord, ang)
@@ -749,11 +755,12 @@ package object orbitalkiller {
                              base_dt:Double,          // в секундах
                              force: (MutableBodyState, Seq[MutableBodyState]) => DVec = (body, other_bodies) => DVec.dzero,
                              torque: (MutableBodyState, Seq[MutableBodyState]) => Double = (body, other_bodies) => 0.0,
-                             enable_collisions:Boolean = true): Unit = {
+                             enable_collisions:Boolean = true,
+                             system_center:DVec = DVec.zero): Unit = {
     mutable_system.foreach(_._1.init())
 
     val collisions = if(enable_collisions) {
-      val x = splitSpace(new Space(mutable_system.map(_._1), DVec(OrbitalKiller.earth.radius*2, -OrbitalKiller.earth.radius*2)), 5, 2)
+      val x = splitSpace(new Space(mutable_system.map(_._1), system_center), 5, 2)
       for {
         space <- x
         if space.bodies.length > 1

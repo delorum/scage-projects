@@ -175,8 +175,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       }*/
       system_cache.getOrElseUpdate(tacts, {
         println("adding to system_cache")
-        val system_evolution_copy = system_evolution.copy(system_evolution.tacts)
-        val steps = (tacts - system_evolution.tacts).toInt
+        val system_evolution_copy = system_evolution.copy
+        val steps = (tacts - system_evolution_copy.tacts).toInt
         (1 to steps).foreach(x => {
           system_evolution_copy.bodyState(ship.index).foreach(bs => {
             bs.mass = ship.currentMass(system_evolution_copy.tacts)
@@ -581,30 +581,30 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         base = DVec.zero
         view_mode = 0
       case 1 => // фиксация на корабле
-        center = ship.coord + _ship_offset
-        base = if(ship.coord.norma < 100000) DVec.zero else ship.coord
-        rotationCenter = ship.coord
-        rotationAngleDeg = -ship.rotation
+        center = ship.coordOrFirstPartCoord + _ship_offset
+        base = if(ship.coordOrFirstPartCoord.norma < 100000) DVec.zero else ship.coordOrFirstPartCoord
+        rotationCenter = ship.coordOrFirstPartCoord
+        rotationAngleDeg = -ship.rotationOrFistPartRotation
         view_mode = 1
       case 2 => // посадка на планету
-        center = ship.coord
-        rotationCenter = ship.coord
+        center = ship.coordOrFirstPartCoord
+        rotationCenter = ship.coordOrFirstPartCoord
         rotationAngleDeg = {
-          val nearest_body_coord = if(ship.coord.dist2(earth.coord) < ship.coord.dist2(moon.coord)) earth.coord else moon.coord
-          val vec = ship.coord - nearest_body_coord
+          val nearest_body_coord = if(ship.coordOrFirstPartCoord.dist2(earth.coord) < ship.coordOrFirstPartCoord.dist2(moon.coord)) earth.coord else moon.coord
+          val vec = ship.coordOrFirstPartCoord - nearest_body_coord
           if(vec.x >= 0) vec.deg(DVec(0, 1))
           else vec.deg(DVec(0, 1)) * (-1)
         }
         view_mode = 2
       case 3 => // фиксация на корабле, абсолютная ориентация
-        center = ship.coord + _ship_offset
-        base = if(ship.coord.norma < 100000) DVec.zero else ship.coord
+        center = ship.coordOrFirstPartCoord + _ship_offset
+        base = if(ship.coordOrFirstPartCoord.norma < 100000) DVec.zero else ship.coordOrFirstPartCoord
         rotationAngle = 0
         view_mode = 3
       case 4 => // в режиме карты зафиксировать центр орбиты в центре экрана
         if(drawMapMode) {
-          _center = _center - orbitAroundCelestialInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass).map(_._2.center * scale).getOrElse(ship.coord)
-          center = orbitAroundCelestialInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass).map(_._2.center * scale).getOrElse(ship.coord) + _center
+          _center = _center - orbitAroundCelestialInPointWithVelocity(ship.coordOrFirstPartCoord, ship.linearVelocity, ship.mass).map(_._2.center * scale).getOrElse(ship.coordOrFirstPartCoord)
+          center = orbitAroundCelestialInPointWithVelocity(ship.coordOrFirstPartCoord, ship.linearVelocity, ship.mass).map(_._2.center * scale).getOrElse(ship.coordOrFirstPartCoord) + _center
           rotationAngle = 0
           view_mode = 4
         }
@@ -707,7 +707,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def drawMapMode_=(new_mode:Boolean) {
     if(new_mode) {
       _draw_map_mode = true
-      orbitAroundCelestialInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass) match {
+      orbitAroundCelestialInPointWithVelocity(ship.coordOrFirstPartCoord, ship.linearVelocity, ship.mass) match {
         case Some((planet, kepler_orbit)) =>
           kepler_orbit match {
             case ellipse:EllipseOrbit =>
@@ -1203,7 +1203,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     //timeMultiplier = maxTimeMultiplier
   }
 
-  private var _center = ship.coord
+  private var _center = ship.coordOrFirstPartCoord
   private var _ship_offset = DVec.zero
   def shipOffset = _ship_offset
   center = _center
@@ -1560,7 +1560,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         moon_orbit_render.foreach(_.render())
         earth_orbit_render.foreach(_.render())
         if(!ship.isRemoved) {
-          drawFilledCircle(ship.coord * scale, earth.radius * scale / 2f / globalScale, WHITE)
+          drawFilledCircle(ship.coordOrFirstPartCoord * scale, earth.radius * scale / 2f / globalScale, WHITE)
           ship_orbit_render.foreach(_.render())
         }
         // если у корабля активны двигатели
@@ -1586,7 +1586,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         val point = if(radius >= 0) ship.coord + ship.linearVelocity.p*radius else ship.coord - ship.linearVelocity.p*radius
         drawCircle(point*scale, math.abs(radius)*scale, DARK_GRAY)*/
 
-        drawFilledCircle(station.coord*scale, earth.radius * scale / 2f / globalScale, WHITE)
+        drawFilledCircle(station.coordOrFirstPartCoord*scale, earth.radius * scale / 2f / globalScale, WHITE)
         //shipOrbitRender(station.index, currentSystemState, ORANGE, YELLOW)
         station_orbit_render.foreach(_.render())
 
@@ -1636,8 +1636,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
         if(left_up_corner.isEmpty) {
           val m = absCoord(mouseCoord)
-          val d = (ship.coord * scale).dist(m) / scale
-          drawArrow(ship.coord * scale, m, DARK_GRAY)
+          val d = (ship.coordOrFirstPartCoord * scale).dist(m) / scale
+          drawArrow(ship.coordOrFirstPartCoord * scale, m, DARK_GRAY)
           openglLocalTransform {
             openglMove(m)
             print(s"  ${mOrKmOrMKm(d.toLong)}", Vec.zero, size = (max_font_size / globalScale).toFloat, DARK_GRAY)
@@ -1646,11 +1646,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       } else {
         if(!ship.isRemoved) {
           val m = absCoord(mouseCoord)
-          val d = ship.coord.dist(m)
+          val d = ship.coordOrFirstPartCoord.dist(m)
           openglLocalTransform {
-            openglMove(ship.coord - base)
-            drawArrow(DVec.zero, m - ship.coord, DARK_GRAY)
-            openglMove(m - ship.coord)
+            openglMove(ship.coordOrFirstPartCoord - base)
+            drawArrow(DVec.zero, m - ship.coordOrFirstPartCoord, DARK_GRAY)
+            openglMove(m - ship.coordOrFirstPartCoord)
             openglRotateDeg(-rotationAngleDeg)
             print(s"  ${mOrKmOrMKm(d.toLong)}", Vec.zero, size = (max_font_size / globalScale).toFloat, DARK_GRAY)
           }
@@ -1774,10 +1774,10 @@ class Planet(
   private var ground_features_near:Seq[(DVec, Int, Int)] = _
 
   private def updateRenderData() {
-    viewpoint_dist = math.abs((ship.coord + shipOffset).dist(coord) - radius)
+    viewpoint_dist = math.abs((ship.coordOrFirstPartCoord + shipOffset).dist(coord) - radius)
     if(viewpoint_dist < 50000) {
       //val before_to_viewpoint = (ship.coord + shipOffset - coord).n*(radius - 1000)
-      to_viewpoint = (ship.coord + shipOffset - coord).n * radius
+      to_viewpoint = (ship.coordOrFirstPartCoord + shipOffset - coord).n * radius
       points = for {
         ang <- -alpha to alpha by 0.01
         point = to_viewpoint.rotateDeg(ang)
@@ -1819,9 +1819,9 @@ class Planet(
           }
         }
         openglLocalTransform {
-          openglMove(ship.coord - base)
-          val pa = (coord - ship.coord).n*(ship.coord.dist(coord) - radius) + (coord - ship.coord).p*70000
-          val pb = (coord - ship.coord).n*(ship.coord.dist(coord) - radius) + (coord - ship.coord).p*(-70000)
+          openglMove(ship.coordOrFirstPartCoord - base)
+          val pa = (coord - ship.coordOrFirstPartCoord).n*(ship.coordOrFirstPartCoord.dist(coord) - radius) + (coord - ship.coordOrFirstPartCoord).p*70000
+          val pb = (coord - ship.coordOrFirstPartCoord).n*(ship.coordOrFirstPartCoord.dist(coord) - radius) + (coord - ship.coordOrFirstPartCoord).p*(-70000)
           drawLine(pa, pb, WHITE)
         }
       } else if(viewpoint_dist < 50000) {

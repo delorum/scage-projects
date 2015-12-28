@@ -49,7 +49,7 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
       dynamic_bodies += c
     //} else addCircleBody(i)
   }
-  (1 to 40).foreach(i => addCircleBody(i))
+  (1 to 5).foreach(i => addCircleBody(i))
   /*val c1 = new MyCircle("c1", Vec(w, h), Vec(0.0f, -0.0f), 5, 1f)
   dynamic_bodies += c1*/
 

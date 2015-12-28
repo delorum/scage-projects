@@ -11,7 +11,7 @@ case class MutableSystemPart(body:MutableBodyState,
                              torque:(Long, EvolutionHelper) => Double)
 
 class SystemEvolution(val base_dt:Double = 1.0/63,
-                      init_space_center:DVec = DVec.zero,
+                      system_center:DVec = DVec.zero,
                       init_tacts:Long = 0) {
   private val mutable_system = mutable.HashMap[String, MutableSystemPart]()
   private val all_bodies = ArrayBuffer[MutableBodyState]()
@@ -27,6 +27,12 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
               force:(Long, EvolutionHelper) => DVec,
               torque:(Long, EvolutionHelper) => Double): Unit = {
     val new_part = MutableSystemPart(b, force, torque)
+    mutable_system += (b.index -> new_part)
+    all_bodies += b
+  }
+
+  def addBody(b:MutableBodyState): Unit = {
+     val new_part = MutableSystemPart(b, (t, h) => DVec.zero, (t, h) => 0.0)
     mutable_system += (b.index -> new_part)
     all_bodies += b
   }
@@ -47,7 +53,7 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
     mutable_system.foreach(_._2.body.init())
 
     val collisions = {
-      val x = splitSpace(new Space(all_bodies, init_space_center), 5, 2)
+      val x = splitSpace(new Space(all_bodies, system_center), 5, 2)
       for {
         space <- x
         if space.bodies.length > 1
@@ -97,8 +103,8 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
     tacts += 1l
   }
 
-  def copy(tacts:Long):SystemEvolution = {
-    val x = new SystemEvolution(base_dt, init_space_center, tacts)
+  def copy:SystemEvolution = {
+    val x = new SystemEvolution(base_dt, system_center, tacts)
     mutable_system.foreach(p => x.addBody(p._2.copy(body = p._2.body.copy)))
     x
   }

@@ -13,18 +13,18 @@ class NearestShipInfo extends InterfaceElement {
     other_ship_near match {
       case Some(os) =>
         val (_, need_orbit_period_str) = (for {
-          (our_orbit_planet, our_orbit_planet_state) <- insideSphereOfInfluenceOfCelestialBody(ship.coord, ship.mass, currentPlanetStates)
-          (os_orbit_planet, os_orbit_planet_state) <- insideSphereOfInfluenceOfCelestialBody(os.coord, os.mass, currentPlanetStates)
+          (our_orbit_planet, our_orbit_planet_state) <- insideSphereOfInfluenceOfCelestialBody(ship.coordOrFirstPartCoord, ship.mass, currentPlanetStates)
+          (os_orbit_planet, os_orbit_planet_state) <- insideSphereOfInfluenceOfCelestialBody(os.coordOrFirstPartCoord, os.mass, currentPlanetStates)
           if our_orbit_planet.index == os_orbit_planet.index
-          our_orbit_kepler = calculateOrbit(our_orbit_planet_state.mass, our_orbit_planet_state.coord, ship.mass, ship.coord - our_orbit_planet_state.coord, ship.linearVelocity - our_orbit_planet_state.vel, G)
-          os_orbit_kepler = calculateOrbit(os_orbit_planet_state.mass, os_orbit_planet_state.coord, os.mass, os.coord - os_orbit_planet_state.coord, os.linearVelocity - os_orbit_planet_state.vel, G)
+          our_orbit_kepler = calculateOrbit(our_orbit_planet_state.mass, our_orbit_planet_state.coord, ship.mass, ship.coordOrFirstPartCoord - our_orbit_planet_state.coord, ship.linearVelocity - our_orbit_planet_state.vel, G)
+          os_orbit_kepler = calculateOrbit(os_orbit_planet_state.mass, os_orbit_planet_state.coord, os.mass, os.coordOrFirstPartCoord - os_orbit_planet_state.coord, os.linearVelocity - os_orbit_planet_state.vel, G)
           if our_orbit_kepler.isInstanceOf[EllipseOrbit] && os_orbit_kepler.isInstanceOf[EllipseOrbit]
           our_orbit_ellipse = our_orbit_kepler.asInstanceOf[EllipseOrbit]
           os_orbit_ellipse = os_orbit_kepler.asInstanceOf[EllipseOrbit]
           our_orbit_period = our_orbit_ellipse.t
           os_orbit_period = os_orbit_ellipse.t
         } yield {
-            val deg_diff = (os.coord - our_orbit_planet_state.coord).deg360(ship.coord - our_orbit_planet_state.coord)
+            val deg_diff = (os.coordOrFirstPartCoord - our_orbit_planet_state.coord).deg360(ship.coordOrFirstPartCoord - our_orbit_planet_state.coord)
             val our_r_p = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(0)
             val our_r_a = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(180)
             val t1_sec = deg_diff/360.0*os_orbit_period
@@ -34,7 +34,7 @@ class NearestShipInfo extends InterfaceElement {
             val mu = G*our_orbit_planet_state.mass
             def _calculateRp(t_sec:Double):Double = {
               val a = math.pow(math.pow(t_sec/(2*math.Pi), 2)*mu, 1.0/3)  // большая полуось для данного периода
-              val x = ship.coord.dist(our_orbit_planet_state.coord)
+              val x = ship.coordOrFirstPartCoord.dist(our_orbit_planet_state.coord)
               math.min(2*a-x, x)
             }
             val r_p1 = _calculateRp(t1_sec) - our_orbit_planet.radius
@@ -46,7 +46,7 @@ class NearestShipInfo extends InterfaceElement {
             } else {
               s"min sep = in r_a, ${mOrKmOrMKm(sep_in_r_a)}"
             }
-            val cur_sep = os_orbit_ellipse.orbitalPointInPoint(ship.coord).dist(ship.coord)
+            val cur_sep = os_orbit_ellipse.orbitalPointInPoint(ship.coordOrFirstPartCoord).dist(ship.coordOrFirstPartCoord)
             val need_orbit_period_str = {
               if(r_p1 >= our_orbit_planet.air_free_altitude) {
                 if(r_p2 >= our_orbit_planet.air_free_altitude) {
@@ -68,8 +68,8 @@ class NearestShipInfo extends InterfaceElement {
             }
             (f"$deg_diff%.2f град.", need_orbit_period_str)
         }).getOrElse("N/A", "N/A")
-        val dist = mOrKmOrMKm(ship.coord.dist(os.coord))
-        val vel = msecOrKmsec((ship.linearVelocity - os.linearVelocity)* (ship.coord - os.coord).n)
+        val dist = mOrKmOrMKm(ship.coordOrFirstPartCoord.dist(os.coordOrFirstPartCoord))
+        val vel = msecOrKmsec((ship.linearVelocity - os.linearVelocity)* (ship.coordOrFirstPartCoord - os.coordOrFirstPartCoord).n)
         strings(1) = s"$dist, $vel, $need_orbit_period_str"
       case None =>
         strings(1) = "N/A"

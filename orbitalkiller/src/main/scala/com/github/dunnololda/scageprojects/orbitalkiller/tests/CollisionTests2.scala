@@ -8,9 +8,12 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object BodyStatesHolder {
+  val system_evolution = new SystemEvolution()
   val current_body_states = mutable.HashMap[String, BodyState]()
-  def currentBodyState(index:String):Option[BodyState] = current_body_states.get(index)
-  def currentBodyStates = current_body_states.values.toList
+  /*def currentBodyState(index:String):Option[BodyState] = current_body_states.get(index)
+  def currentBodyStates = current_body_states.values.toList*/
+  def currentBodyState(index:String):Option[BodyState] = system_evolution.bodyState(index).map(_.toImmutableBodyState)
+  def currentBodyStates = system_evolution.allBodyStates
 }
 
 import BodyStatesHolder._
@@ -19,7 +22,7 @@ object CollisionTests2 extends ScageScreenAppD("Collision Tests 2", 640, 480) {
   def futureSystemEvolutionFrom(time:Long, body_states:List[BodyState]) = systemEvolutionFrom(
     dt = 1.0/63.0, base_dt = 1.0/63.0,
     force = (time, bs, other_bodies) => {
-      DVec.zero/*DVec(0, -9.81*bs.mass)*/
+      /*DVec.zero*/DVec(0, -9.81*bs.mass)
     },
     torque = (time, bs, other_bodies) => {
       0f
@@ -44,14 +47,34 @@ object CollisionTests2 extends ScageScreenAppD("Collision Tests 2", 640, 480) {
   }
 
   val w1 = new MyWall2("w1", Vec(w-100, h-100),  Vec(w-100, h+100), this)
+  system_evolution.addBody(w1.currentState.toMutableBodyState)
   val w2 = new MyWall2("w2", Vec(w-100, h+100),  Vec(w+100, h+100), this)
+  system_evolution.addBody(w2.currentState.toMutableBodyState)
   val w3 = new MyWall2("w3", Vec(w+100, h+100),  Vec(w+100, h-100), this)
+  system_evolution.addBody(w3.currentState.toMutableBodyState)
   val w4 = new MyWall2("w4", Vec(w+100, h-100),  Vec(w-100, h-100), this)
+  system_evolution.addBody(w4.currentState.toMutableBodyState)
 
-  val b1 = new MyBox2("b1", Vec(w-60, h), Vec(0.0f, -10), 30, 20, 1, this)
+
+  /*val b1 = new MyBox2("b1", Vec(w-60, h), Vec(0.0f, 0), 30, 20, 1, this)
   dynamic_bodies += b1
-  /*val p1 = new MyPentagon2("p1", Vec(w-60, h-40), Vec(0.0f, 0), 20, 1)
-  dynamic_bodies += p1*/
+  val b2 = new MyBox2("b2", Vec(w-60, h-40), Vec(0.0f, 0), 30, 20, 1, this)
+  dynamic_bodies += b2*/
+  val p1 = new MyPentagon2("p1", Vec(w-60, h), Vec(0.0f, 0), 20, 1, this)
+  dynamic_bodies += p1
+  system_evolution.addBody(p1.currentState.toMutableBodyState,
+    (tacts, helper) => DVec(0, -helper.bodyState("p1").map(_.mass).getOrElse(0.0)*9.81),
+    (tacts, helper) => 0.0)
+  val p2 = new MyPentagon2("p2", Vec(w-60, h-40), Vec(0.0f, 0), 20, 1, this)
+  dynamic_bodies += p2
+  system_evolution.addBody(p2.currentState.toMutableBodyState,
+    (tacts, helper) => DVec(0, -helper.bodyState("p2").map(_.mass).getOrElse(0.0)*9.81),
+    (tacts, helper) => 0.0)
+  val p3 = new MyPentagon2("p3", Vec(w-60, h-80), Vec(0.0f, 0), 20, 1, this)
+  dynamic_bodies += p3
+  system_evolution.addBody(p3.currentState.toMutableBodyState,
+    (tacts, helper) => DVec(0, -helper.bodyState("p3").map(_.mass).getOrElse(0.0)*9.81),
+    (tacts, helper) => 0.0)
 
   private val real_system_evolution =
     futureSystemEvolutionFrom(0, dynamic_bodies.map(_.currentState).toList ::: List(
@@ -61,10 +84,11 @@ object CollisionTests2 extends ScageScreenAppD("Collision Tests 2", 640, 480) {
       w4.currentState)).iterator
 
   private def nextStep() {
-    val (_, body_states) = real_system_evolution.next()
+    /*val (_, body_states) = real_system_evolution.next()
     body_states.foreach {
       case bs => current_body_states(bs.index) = bs
-    }
+    }*/
+    system_evolution.step()
   }
   nextStep()
 
@@ -140,28 +164,46 @@ class MyPentagon2(val index:String, init_coord:Vec, init_velocity:Vec, val len:D
       coord = init_coord,
       ang_acc = 0f,
       ang_vel = 0f,
-      ang = 10f,
+      ang = 0f,
       shape = {
-        val one   = DVec(0, len).rotateDeg(0)
+        /*val one   = DVec(0, len).rotateDeg(0)
         val two   = DVec(0, len).rotateDeg(0+72)
         val three = DVec(0, len).rotateDeg(0+72+72)
         val four  = DVec(0, len).rotateDeg(0+72+72+72)
         val five  = DVec(0, len).rotateDeg(0+72+72+72+72)
-        PolygonShape(List(one, two, three, four, five), Nil)
+        PolygonShape(List(one, two, three, four, five), Nil)*/
+        val one   = DVec(0, len).rotateDeg(45)
+        val two   = DVec(0, len).rotateDeg(135)
+        val three = DVec(0, len).rotateDeg(225)
+        val four  = DVec(0, len).rotateDeg(315)
+        PolygonShape(List(one, two, three, four), Nil)
       },
-      is_static = false, restitution = 1))
+      is_static = false, restitution = 0.2))
 
   screen.render {
     val state = currentState
     val coord = state.coord
     val rotation = state.ang
-    val one = coord + DVec(0, len).rotateDeg(rotation)
+    /*val one = coord + DVec(0, len).rotateDeg(rotation)
     val two = coord + DVec(0, len).rotateDeg(rotation+72)
     val three = coord + DVec(0, len).rotateDeg(rotation+72+72)
     val four = coord + DVec(0, len).rotateDeg(rotation+72+72+72)
     val five = coord + DVec(0, len).rotateDeg(rotation+72+72+72+72)
     val color = WHITE
-    drawSlidingLines(List(one, two, three, four, five, one), color)
+    drawSlidingLines(List(one, two, three, four, five, one), color)*/
+    val one = coord + DVec(0, len).rotateDeg(rotation+45)
+    val two = coord + DVec(0, len).rotateDeg(rotation+135)
+    val three = coord + DVec(0, len).rotateDeg(rotation+225)
+    val four = coord + DVec(0, len).rotateDeg(rotation+315)
+    val color = WHITE
+    drawSlidingLines(List(one, two, three, four, one), color)
+
+    system_evolution.bodyState(index).foreach(mbs => {
+      mbs.contacts.foreach(c => {
+        drawCircle(c.contact_point, c.separation, YELLOW)
+        drawLine(c.contact_point, c.contact_point + c.normal.n*5, YELLOW)
+      })
+    })
 
     /*state.collisions.foreach {
       case CollisionData(other_body, contact, normal, separation, contacts, _, _) =>
@@ -218,7 +260,7 @@ class MyBox2(val index:String, init_coord:DVec, init_velocity:DVec, val w:Double
       ang_acc = 0.0,
       ang_vel = 0.0,
       ang = 0.0,
-      shape = BoxShape(w, h),/*CircleShape(w/2),*/
+      shape = PolygonShape(List(DVec(w/2, h/2), DVec(w/2, -h/2), DVec(-w/2, -h/2), DVec(-w/2, h/2)), Nil),/*BoxShape(w, h),*//*CircleShape(w/2),*/
       is_static = false, restitution = 0.5))
 
   screen.render(0) {

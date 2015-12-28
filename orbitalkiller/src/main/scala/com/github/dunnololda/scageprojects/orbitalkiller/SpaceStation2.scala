@@ -35,11 +35,11 @@ class SpaceStation2(
   )
 
   override val convex_parts = List(
-    PolygonShape(List(DVec(-130.0, -10.0), DVec(-130.0, 10.0), DVec(-90.0, 10.0), DVec(-90.0, -10.0)), Nil),
-    PolygonShape(List(DVec(-90.0, -10.0), DVec(-90.0, 10.0), DVec(-50.0, 30.0), DVec(-50.0, -30.0)), Nil),
-    PolygonShape(List(DVec(-50.0, -30.0), DVec(-50.0, 30.0), DVec(50.0, 30.0), DVec(50.0, -30.0)), Nil),
-    PolygonShape(List(DVec(50.0, -30.0), DVec(50.0, 30.0), DVec(90.0, 10.0), DVec(90.0, -10.0)), Nil),
-    PolygonShape(List(DVec(90.0, -10.0), DVec(90.0, 10.0), DVec(130.0, 10.0), DVec(130.0, -10.0)), Nil)
+    PolygonShape(List(DVec(-130.0, -10.0), DVec(-130.0, 10.0), DVec(-90.0, 10.0), DVec(-90.0, -10.0)).reverse, Nil),
+    PolygonShape(List(DVec(-90.0, -10.0), DVec(-90.0, 10.0), DVec(-50.0, 30.0), DVec(-50.0, -30.0)).reverse, Nil),
+    PolygonShape(List(DVec(-50.0, -30.0), DVec(-50.0, 30.0), DVec(50.0, 30.0), DVec(50.0, -30.0)).reverse, Nil),
+    PolygonShape(List(DVec(50.0, -30.0), DVec(50.0, 30.0), DVec(90.0, 10.0), DVec(90.0, -10.0)).reverse, Nil),
+    PolygonShape(List(DVec(90.0, -10.0), DVec(90.0, 10.0), DVec(130.0, 10.0), DVec(130.0, -10.0)).reverse, Nil)
   )
 
   val four  = Engine("4", position = Vec(-130.0, 0.0),   force_dir = Vec(1.0, 0.0),  max_power = 10, default_power_percent = 1, this)
@@ -72,9 +72,9 @@ class SpaceStation2(
 
   render {
     /*if(renderingEnabled) {*/
-      if(!drawMapMode && coord.dist2(ship.coord) < 100000*100000) {
+      if(!drawMapMode && coordOrFirstPartCoord.dist2(ship.coordOrFirstPartCoord) < 100000*100000) {
         openglLocalTransform {
-          openglMove(coord - base)
+          openglMove(coordOrFirstPartCoord - base)
           drawFilledCircle(DVec.zero, 2, GREEN)                                // mass center
           if(OrbitalKiller.globalScale >= 0.2) {
             drawArrow(DVec.zero, relativeLinearVelocity.n * 100, CYAN) // current velocity

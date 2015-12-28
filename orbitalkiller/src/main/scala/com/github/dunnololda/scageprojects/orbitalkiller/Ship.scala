@@ -54,6 +54,8 @@ trait Ship {
   def fuelMass:Double
   def fuelMass_=(m:Double):Unit
 
+  def convex_parts:List[PolygonShape] = Nil
+
   def initState:BodyState
   def currentState:MutableBodyState
 
@@ -75,12 +77,14 @@ trait Ship {
   }
 
   def coord = currentState.coord
+  def coordOrFirstPartCoord = if(pilotIsAlive) coord else ship_parts.headOption.map(_.coord).getOrElse(coord)
 
   def angularAcceleration = currentState.ang_acc
 
   def angularVelocity = currentState.ang_vel
 
   def rotation = currentState.ang
+  def rotationOrFistPartRotation = if(pilotIsAlive) rotation else  ship_parts.headOption.map(_.ang).getOrElse(rotation)
 
   def currentReactiveForce(time:Long, bs:BodyState):DVec = {
     engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(DVec.dzero) {
@@ -295,7 +299,7 @@ trait Ship {
     case _ => ""
   }
 
-  def otherShipsNear:List[Ship] = ships.filter(s => s.index != ship.index/* && ship.coord.dist(s.coord) < 100000*/).sortBy(s => ship.coord.dist(s.coord))
+  def otherShipsNear:List[Ship] = ships.filter(s => s.index != index/* && coord.dist(s.coord) < 100000*/).sortBy(s => coord.dist(s.coord))
 
   protected val pilot_mass = 75
   protected val pilot_position = DVec(0, 8)
@@ -312,6 +316,10 @@ trait Ship {
   private var ship_removed = false
   def isRemoved = ship_removed
 
+  protected var ship_parts:List[MutableBodyState] = Nil
+
+  private def randomSpeed = Vec(-1 + math.random*2, -1 + math.random*2).n*20f
+  
   def updateShipState(time_msec:Long): Unit = {
     if(!pilot_is_dead) {
       val dvel = currentState.dvel.norma
@@ -319,14 +327,39 @@ trait Ship {
         pilot_is_dead = true
         pilot_death_reason = f"Корабль уничтожен в результате столкновения (${dvel/OrbitalKiller.base_dt/{earth.g}}%.2fg)"
         flightMode = Free
-        if(dvel > 100) {
-          OrbitalKiller.system_evolution.removeBodyByIndex(index)
-          println("removed ship from mutable system")
-        }
+        OrbitalKiller.system_evolution.removeBodyByIndex(index)
+        ship_parts = convex_parts.zipWithIndex.map(x => {
+          val part_center = coord + x._1.points.sum/x._1.points.length
+          val part_points = x._1.points.map(p => coord + p - part_center)
+          val part_index = s"${index}_part_${x._2}"
+          val mbs = new MutableBodyState(BodyState(
+            index = part_index,
+            mass = mass/convex_parts.length,
+            vel = linearVelocity + randomSpeed,
+            coord = part_center,
+            ang = rotation,
+            shape = PolygonShape(part_points, Nil),
+            is_static = false,
+            restitution = 0.8
+          ))
+          OrbitalKiller.system_evolution.addBody(mbs,
+            (tacts, helper) => {
+              helper.gravityForceHelper(sun.index, part_index) +
+                helper.gravityForceHelper(earth.index, part_index) +
+                helper.gravityForceHelper(moon.index, part_index) +
+                helper.funcOfArrayOrDVecZero(Array(part_index, earth.index), l => {
+                  val bs = l(0)
+                  val e = l(1)
+                  earth.airResistance(bs, e, 28, 0.5)
+                })
+            },
+            (tacts, helper) => 0.0
+          )
+          mbs
+        })
       } else {
         val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(currentState, earth.currentState, 28, 0.5)
         val centrifugial_force = if (angularVelocity == 0) DVec.zero else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.rotateDeg(rotation)
-        //val air_resistance =  earth.airResistance(coord, linearVelocity, 10, 0.5)
         val pilot_acc = (reactive_force / mass + centrifugial_force / pilot_mass + currentState.dacc).norma/* - (air_resistance.norma/mass)*/
         pilot_gs += ((pilot_acc / earth.g, time_msec))
         if (time_msec - pilot_gs.head._2 >= 1000) {
@@ -351,13 +384,13 @@ trait Ship {
 
   def shadowSideStr = {
     val in_shadow_of_planet:Option[String] = {
-      val ship_sun_dist = ship.coord.dist(sun.coord)
+      val ship_sun_dist = coord.dist(sun.coord)
       currentPlanetStates.filterNot(_._1.index == sun.index).find {
         case (planet, planet_state) =>
           ship_sun_dist > planet.coord.dist(sun.coord) && (tangentsFromCircleToCircle(planet.coord, planet.radius, sun.coord, sun.radius) match {
             case Some((c1, c2, b1, b2)) =>
-              val a1 = (c1 - b1).perpendicular * (ship.coord - b1) > 0
-              val a2 = (c2 - b2).perpendicular * (ship.coord - b2) < 0
+              val a1 = (c1 - b1).perpendicular * (coord - b1) > 0
+              val a2 = (c2 - b2).perpendicular * (coord - b2) < 0
               a1 && a2
             case None => false
           })

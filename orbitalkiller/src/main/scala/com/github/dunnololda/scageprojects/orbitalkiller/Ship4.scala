@@ -31,9 +31,9 @@ class Ship4(index:String,
   )
 
   override val convex_parts = List(
-    PolygonShape(List(DVec(-1.5, 6.5), DVec(-1.5, 10.5), DVec(1.5, 10.5), DVec(1.5, 6.5)), Nil),
-    PolygonShape(List(DVec(-3.5, 2.5), DVec(-1.5, 6.5), DVec(1.5, 6.5), DVec(3.5, 2.5)), Nil),
-    PolygonShape(List(DVec(-3.5, -3.5), DVec(-3.5, 2.5), DVec(3.5, 2.5), DVec(3.5, -3.5)), Nil)
+    PolygonShape(List(DVec(-1.5, 6.5), DVec(-1.5, 10.5), DVec(1.5, 10.5), DVec(1.5, 6.5)).reverse, Nil),
+    PolygonShape(List(DVec(-3.5, 2.5), DVec(-1.5, 6.5), DVec(1.5, 6.5), DVec(3.5, 2.5)).reverse, Nil),
+    PolygonShape(List(DVec(-3.5, -3.5), DVec(-3.5, 2.5), DVec(3.5, 2.5), DVec(3.5, -3.5)).reverse, Nil)
   )
 
   val draw_points = points :+ points.head
@@ -119,21 +119,21 @@ class Ship4(index:String,
     if(difference > angular_velocity_error) {
       val power = maxPossiblePowerForRotation(seven.max_power, seven.force_dir, seven.position, currentState.I, ang_vel_deg, angularVelocity, angular_velocity_error)
       seven.power = power
-      six.power = power
+      //six.power = power
       val ang_acc = (seven.torque / currentState.I).toDeg
       val (tacts, _) = howManyTacts(ang_vel_deg, angularVelocity, ang_acc, dt)
-      activateOnlyTheseEngines(seven, six)
+      activateOnlyTheseEngines(seven/*, six*/)
       seven.workTimeTacts = tacts
-      six.workTimeTacts = tacts
+      //six.workTimeTacts = tacts
     } else if(difference < -angular_velocity_error) {
       val power = maxPossiblePowerForRotation(nine.max_power, nine.force_dir, nine.position, currentState.I, ang_vel_deg, angularVelocity, angular_velocity_error)
       nine.power = power
-      four.power = power
+      //four.power = power
       val ang_acc = (nine.torque / currentState.I).toDeg
       val (tacts, _) = howManyTacts(ang_vel_deg, angularVelocity, ang_acc, dt)
-      activateOnlyTheseEngines(nine, four)
+      activateOnlyTheseEngines(nine/*, four*/)
       nine.workTimeTacts = tacts
-      four.workTimeTacts = tacts
+      //four.workTimeTacts = tacts
     }
     last_correction_or_check_moment = OrbitalKiller.tacts
   }
@@ -237,9 +237,9 @@ class Ship4(index:String,
         case CirclularOrbit => // выход на орбиту
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, 1000)) {
             if (math.abs(angularVelocity) < angular_velocity_error) {
-              insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
+              insideSphereOfInfluenceOfCelestialBody(coordOrFirstPartCoord, mass, currentPlanetStates) match {
                 case Some((planet, planet_state)) =>
-                  val ss = satelliteSpeed(coord, linearVelocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
+                  val ss = satelliteSpeed(coordOrFirstPartCoord, linearVelocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
                   if (linearVelocity.dist(ss) > linear_velocity_error) {
                     preserveVelocity(ss)
                   } else flightMode = Free
@@ -266,38 +266,38 @@ class Ship4(index:String,
           }
         case NearestPlanetVelocity => // уравнять скорость с ближайшей планетой
           (for {
-            (planet, planet_state) <- currentPlanetStates.sortBy(_._2.coord.dist(coord)).headOption
+            (planet, planet_state) <- currentPlanetStates.sortBy(_._2.coord.dist(coordOrFirstPartCoord)).headOption
           } yield (planet, planet_state)) match {
             case Some((planet, planet_state)) =>
-              val vertical_orientation = DVec(0, 1).deg360(coord - planet_state.coord)
+              val vertical_orientation = DVec(0, 1).deg360(coordOrFirstPartCoord - planet_state.coord)
               if (angleMinDiff(rotation, vertical_orientation) >= angle_error) {
                 preserveAngle(vertical_orientation)
               } else if (math.abs(angularVelocity) >= angular_velocity_error) {
                 preserveAngularVelocity(0)
               } else {
-                val ship_vertical_speed = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).n
-                val ship_above_ground_velocity = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).p
+                val ship_vertical_speed = (linearVelocity - planet_state.vel) * (coordOrFirstPartCoord - planet_state.coord).n
+                val ship_above_ground_velocity = (linearVelocity - planet_state.vel) * (coordOrFirstPartCoord - planet_state.coord).p
                 val vertical_diff = math.abs(ship_vertical_speed - vertical_speed_msec)
                 val horizontal_diff = math.abs(ship_above_ground_velocity - horizontal_speed_msec - planet.groundSpeedMsec)
                 if (vertical_diff > linear_velocity_error) {
                   if (horizontal_diff > linear_velocity_error) {
                     if (vertical_diff > horizontal_diff) {
                       preserveVelocity(
-                        (planet_state.vel * (coord - planet_state.coord).n + vertical_speed_msec) * (coord - planet_state.coord).n +
-                        (linearVelocity * (coord - planet_state.coord).p) * (coord - planet_state.coord).p
+                        (planet_state.vel * (coordOrFirstPartCoord - planet_state.coord).n + vertical_speed_msec) * (coordOrFirstPartCoord - planet_state.coord).n +
+                        (linearVelocity * (coordOrFirstPartCoord - planet_state.coord).p) * (coordOrFirstPartCoord - planet_state.coord).p
                       )
                     } else {
-                      preserveVelocity((planet.groundSpeedMsec + horizontal_speed_msec) * (coord - planet_state.coord).p + planet_state.vel)
+                      preserveVelocity((planet.groundSpeedMsec + horizontal_speed_msec) * (coordOrFirstPartCoord - planet_state.coord).p + planet_state.vel)
                     }
                   } else {
                     preserveVelocity(
-                      (planet_state.vel * (coord - planet_state.coord).n + vertical_speed_msec) * (coord - planet_state.coord).n +
-                      (linearVelocity * (coord - planet_state.coord).p) * (coord - planet_state.coord).p
+                      (planet_state.vel * (coordOrFirstPartCoord - planet_state.coord).n + vertical_speed_msec) * (coordOrFirstPartCoord - planet_state.coord).n +
+                      (linearVelocity * (coordOrFirstPartCoord - planet_state.coord).p) * (coordOrFirstPartCoord - planet_state.coord).p
                     )
                   }
                 } else {
                   if (horizontal_diff > linear_velocity_error) {
-                    preserveVelocity((planet.groundSpeedMsec + horizontal_speed_msec) * (coord - planet_state.coord).p + planet_state.vel)
+                    preserveVelocity((planet.groundSpeedMsec + horizontal_speed_msec) * (coordOrFirstPartCoord - planet_state.coord).p + planet_state.vel)
                   } else {
                   }
                 }
@@ -320,54 +320,73 @@ class Ship4(index:String,
   render {
     /*if(renderingEnabled) {*/
       if(!drawMapMode && !isRemoved) {
-        openglLocalTransform {
-          openglMove(coord - base)
-          drawFilledCircle(DVec.zero, 0.3, colorIfAliveOrRed(GREEN))                             // mass center
+        if(pilotIsAlive) {
+          openglLocalTransform {
+            openglMove(coordOrFirstPartCoord - base)
+            drawFilledCircle(DVec.zero, 0.3, colorIfAliveOrRed(GREEN)) // mass center
 
-          if(OrbitalKiller.globalScale >= 0.8) {
-            if (!InterfaceHolder.linearVelocityInfo.isMinimized) {
+            if (OrbitalKiller.globalScale >= 0.8) {
+              if (!InterfaceHolder.linearVelocityInfo.isMinimized) {
 
-              // current velocity
-              drawArrow(DVec.zero, relativeLinearVelocity.n * 20, colorIfAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
+                // current velocity
+                drawArrow(DVec.zero, relativeLinearVelocity.n * 20, colorIfAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
+              }
+              //drawArrow(DVec.zero, linearAcceleration.n * 100, ORANGE)        // current acceleration
+              if (!InterfaceHolder.sunRelativeInfo.isMinimized) {
+                // direction to earth
+                drawArrow(Vec.zero, (sun.coord - coordOrFirstPartCoord).n * 20, colorIfAliveOrRed(InterfaceHolder.sunRelativeInfo.color))
+              }
+              if (!InterfaceHolder.earthRelativeInfo.isMinimized) {
+                // direction to earth
+                drawArrow(Vec.zero, (earth.coord - coordOrFirstPartCoord).n * 20, colorIfAliveOrRed(InterfaceHolder.earthRelativeInfo.color))
+              }
+              if (!InterfaceHolder.moonRelativeInfo.isMinimized) {
+                // direction to moon
+                drawArrow(Vec.zero, (moon.coord - coordOrFirstPartCoord).n * 20, colorIfAliveOrRed(InterfaceHolder.moonRelativeInfo.color))
+              }
+              if (!InterfaceHolder.nearestShipInfo.isMinimized) {
+                // direction to nearest ship
+                otherShipsNear.headOption.foreach(x => {
+                  drawArrow(Vec.zero, (x.coordOrFirstPartCoord - coordOrFirstPartCoord).n * 20, colorIfAliveOrRed(InterfaceHolder.nearestShipInfo.color))
+                })
+              }
             }
-            //drawArrow(DVec.zero, linearAcceleration.n * 100, ORANGE)        // current acceleration
-            if (!InterfaceHolder.sunRelativeInfo.isMinimized) {
-              // direction to earth
-              drawArrow(Vec.zero, (sun.coord - coord).n * 20, colorIfAliveOrRed(InterfaceHolder.sunRelativeInfo.color))
-            }
-            if (!InterfaceHolder.earthRelativeInfo.isMinimized) {
-              // direction to earth
-              drawArrow(Vec.zero, (earth.coord - coord).n * 20, colorIfAliveOrRed(InterfaceHolder.earthRelativeInfo.color))
-            }
-            if (!InterfaceHolder.moonRelativeInfo.isMinimized) {
-              // direction to moon
-              drawArrow(Vec.zero, (moon.coord - coord).n * 20, colorIfAliveOrRed(InterfaceHolder.moonRelativeInfo.color))
-            }
-            if (!InterfaceHolder.nearestShipInfo.isMinimized) {
-              // direction to nearest ship
-              otherShipsNear.headOption.foreach(x => {
-                drawArrow(Vec.zero, (x.coord - coord).n * 20, colorIfAliveOrRed(InterfaceHolder.nearestShipInfo.color))
-              })
-            }
-          }
 
-          /*val pa = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*70000
+            /*val pa = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*70000
           val pb = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*(-70000)
           drawLine(pa, pb, WHITE)*/
 
-          openglRotateDeg(rotation)
-          drawSlidingLines(draw_points, colorIfAliveOrRed(WHITE))
+            openglRotateDeg(rotation)
+            drawSlidingLines(draw_points, colorIfAliveOrRed(WHITE))
 
-          engines.foreach {
-            case e =>
-              e.force_dir match {
-                case DVec(0, -1) => drawEngine(e, e.position + DVec(0, 0.25),  1, 0.5,  is_vertical = false)
-                case DVec(0, 1)  => drawEngine(e, e.position + DVec(0, -0.25), 1, 0.5,  is_vertical = false)
-                case DVec(-1, 0) => drawEngine(e, e.position + DVec(0.25, 0),  0.5,  1, is_vertical = true)
-                case DVec(1, 0)  => drawEngine(e, e.position + DVec(-0.25, 0), 0.5,  1, is_vertical = true)
-                case _ =>
-              }
+            engines.foreach {
+              case e =>
+                e.force_dir match {
+                  case DVec(0, -1) => drawEngine(e, e.position + DVec(0, 0.25), 1, 0.5, is_vertical = false)
+                  case DVec(0, 1) => drawEngine(e, e.position + DVec(0, -0.25), 1, 0.5, is_vertical = false)
+                  case DVec(-1, 0) => drawEngine(e, e.position + DVec(0.25, 0), 0.5, 1, is_vertical = true)
+                  case DVec(1, 0) => drawEngine(e, e.position + DVec(-0.25, 0), 0.5, 1, is_vertical = true)
+                  case _ =>
+                }
+            }
           }
+        } else {
+          ship_parts.foreach(mbs => {
+            val mbs_points = mbs.shape.asInstanceOf[PolygonShape].points
+            openglLocalTransform {
+              openglMove(mbs.coord - base)
+              drawFilledCircle(DVec.zero, 0.3, GREEN)
+              mbs.contacts.foreach(x => {
+                if(x.a.index.contains("part") && x.b.index.contains("part")) {
+                  drawFilledCircle(x.contact_point - mbs.coord, 0.3, YELLOW)
+                  drawLine(x.contact_point - mbs.coord, x.contact_point - mbs.coord + x.normal.n, YELLOW)
+                  drawCircle(x.contact_point - mbs.coord, x.separation, YELLOW)
+                }
+              })
+              openglRotateDeg(mbs.ang)
+              drawSlidingLines(mbs_points :+ mbs_points.head, colorIfAliveOrRed(RED))
+            }
+          })
         }
       }
     /*}*/
