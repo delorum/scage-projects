@@ -1,8 +1,7 @@
-package com.github.dunnololda.scageprojects.orbitalkiller.tests
+package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
-import com.github.dunnololda.scageprojects.orbitalkiller._
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -17,6 +16,8 @@ object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", 
     DVec(-3.5, -3.5),
     DVec(3.5, -3.5)
   )*/
+
+  // ВАЖНО: следует перечислять точки ПРОТИВ ЧАСОВОЙ СТРЕЛКИ! Если по часовой перечислять, collision detection будет плохо работать
 
   val points:List[DVec] = List(
     DVec(-90.0, -10.0),

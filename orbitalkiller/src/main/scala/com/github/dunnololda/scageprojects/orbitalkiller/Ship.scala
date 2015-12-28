@@ -318,45 +318,49 @@ trait Ship {
 
   protected var ship_parts:List[MutableBodyState] = Nil
 
+  private def crash(reason:String): Unit = {
+    pilot_is_dead = true
+    pilot_death_reason = reason
+    flightMode = Free
+    OrbitalKiller.system_evolution.removeBodyByIndex(index)
+    ship_parts = convex_parts.zipWithIndex.map(x => {
+      val part_center = coord + x._1.points.sum/x._1.points.length
+      val part_points = x._1.points.map(p => coord + p - part_center)
+      val part_index = s"${index}_part_${x._2}"
+      val mbs = new MutableBodyState(BodyState(
+        index = part_index,
+        mass = mass/convex_parts.length,
+        vel = linearVelocity + randomSpeed,
+        coord = part_center,
+        ang = rotation,
+        shape = PolygonShape(part_points, Nil),
+        is_static = false,
+        restitution = 0.8
+      ))
+      OrbitalKiller.system_evolution.addBody(mbs,
+        (tacts, helper) => {
+          helper.gravityForceHelper(sun.index, part_index) +
+            helper.gravityForceHelper(earth.index, part_index) +
+            helper.gravityForceHelper(moon.index, part_index) +
+            helper.funcOfArrayOrDVecZero(Array(part_index, earth.index), l => {
+              val bs = l(0)
+              val e = l(1)
+              earth.airResistance(bs, e, 28, 0.5)
+            })
+        },
+        (tacts, helper) => 0.0
+      )
+      mbs
+    })
+  }
+
   private def randomSpeed = Vec(-1 + math.random*2, -1 + math.random*2).n*20f
   
   def updateShipState(time_msec:Long): Unit = {
     if(!pilot_is_dead) {
       val dvel = currentState.dvel.norma
       if (dvel > 10) { // crash tolerance = 10 m/s
-        pilot_is_dead = true
-        pilot_death_reason = f"Корабль уничтожен в результате столкновения (${dvel/OrbitalKiller.base_dt/{earth.g}}%.2fg)"
-        flightMode = Free
-        OrbitalKiller.system_evolution.removeBodyByIndex(index)
-        ship_parts = convex_parts.zipWithIndex.map(x => {
-          val part_center = coord + x._1.points.sum/x._1.points.length
-          val part_points = x._1.points.map(p => coord + p - part_center)
-          val part_index = s"${index}_part_${x._2}"
-          val mbs = new MutableBodyState(BodyState(
-            index = part_index,
-            mass = mass/convex_parts.length,
-            vel = linearVelocity + randomSpeed,
-            coord = part_center,
-            ang = rotation,
-            shape = PolygonShape(part_points, Nil),
-            is_static = false,
-            restitution = 0.8
-          ))
-          OrbitalKiller.system_evolution.addBody(mbs,
-            (tacts, helper) => {
-              helper.gravityForceHelper(sun.index, part_index) +
-                helper.gravityForceHelper(earth.index, part_index) +
-                helper.gravityForceHelper(moon.index, part_index) +
-                helper.funcOfArrayOrDVecZero(Array(part_index, earth.index), l => {
-                  val bs = l(0)
-                  val e = l(1)
-                  earth.airResistance(bs, e, 28, 0.5)
-                })
-            },
-            (tacts, helper) => 0.0
-          )
-          mbs
-        })
+        crash(f"Корабль уничтожен в результате столкновения (${dvel/OrbitalKiller.base_dt/{earth.g}}%.2fg)")
       } else {
         val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(currentState, earth.currentState, 28, 0.5)
         val centrifugial_force = if (angularVelocity == 0) DVec.zero else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.rotateDeg(rotation)
@@ -365,6 +369,9 @@ trait Ship {
         if (time_msec - pilot_gs.head._2 >= 1000) {
           pilot_average_g = pilot_gs.map(_._1).sum / pilot_gs.length
           pilot_gs.clear()
+          if(pilot_average_g > 100) {
+            crash(f"Корабль разрушился вследствие критической перегрузки ($pilot_average_g%.2fg)")
+          }
         }
       }
     }
