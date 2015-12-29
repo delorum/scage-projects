@@ -263,7 +263,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     //init_ang_vel = 0.0,
     init_ang_vel = 360.0/(24l*60*60),
     radius = 6400000/*6314759.95726045*/,
-    sun, 150000) {
+    sun, 101000) {
 
     val T0 = 288     // temperature at sea level, K
     //val L = 0.0065   // temperature lapse rate, K/m
@@ -351,14 +351,14 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     radius = 1737000,
     earth, 2000)
 
-  val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
-  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  //val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
+  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   //val ship_start_position = earth.coord + DVec(100, earth.radius + 200000)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
 
-  //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
-  //val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
+  val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
 
   //val ship_start_position = moon.coord + DVec(0, moon.radius + 3000)

@@ -27,6 +27,8 @@ trait Ship {
     selected_engine.exists(x => x == e)
   }
 
+  def radius:Double
+
   def switchEngineSelected(engine_code:Int) {
     engines_mapping.get(engine_code).foreach(e => if(isSelectedEngine(e)) selected_engine = None else selected_engine = Some(e))
   }
@@ -373,6 +375,14 @@ trait Ship {
             crash(f"Корабль разрушился вследствие критической перегрузки ($pilot_average_g%.2fg)")
           }
         }
+      }
+      currentPlanetStates.find {
+        case (planet, planet_state) => planet.coord.dist(coord) < planet.radius
+      }.foreach {
+        case (planet, planet_state) =>
+          currentState.coord = currentState.coord + (currentState.coord - planet.coord).n*(planet.radius + radius - planet.coord.dist(coord))
+          currentState.vel = planet.linearVelocity
+          crash("корабль врезался в планету")
       }
     }
   }

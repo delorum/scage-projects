@@ -51,16 +51,16 @@ class NearestShipInfo extends InterfaceElement {
               if(r_p1 >= our_orbit_planet.air_free_altitude) {
                 if(r_p2 >= our_orbit_planet.air_free_altitude) {
                   if(math.abs(our_orbit_ellipse.t - t1_sec) <= math.abs(our_orbit_ellipse.t - t2_sec)) {
-                    s"${timeStr((t1_sec - our_orbit_ellipse.t).toLong*1000)} ($sep_str, cur sep = ${mOrKmOrMKm(cur_sep)})"
+                    s"${timeStr(t1_sec.toLong*1000)} ($sep_str, cur sep = ${mOrKmOrMKm(cur_sep)})"
                   } else {
-                    s"${timeStr((t2_sec - our_orbit_ellipse.t).toLong*1000)} ($sep_str, cur sep = ${mOrKmOrMKm(cur_sep)})"
+                    s"${timeStr(t2_sec.toLong*1000)} ($sep_str, cur sep = ${mOrKmOrMKm(cur_sep)})"
                   }
                 } else {
-                  s"${timeStr((t1_sec - our_orbit_ellipse.t).toLong*1000)} ($sep_str, cur sep = ${mOrKmOrMKm(cur_sep)})"
+                  s"${timeStr(t1_sec.toLong*1000)} ($sep_str, cur sep = ${mOrKmOrMKm(cur_sep)})"
                 }
               } else {
                 if(r_p2 >= our_orbit_planet.air_free_altitude) {
-                  s"${timeStr((t2_sec - our_orbit_ellipse.t).toLong*1000)} ($sep_str, cur sep = ${mOrKmOrMKm(cur_sep)})"
+                  s"${timeStr(t2_sec.toLong*1000)} ($sep_str, cur sep = ${mOrKmOrMKm(cur_sep)})"
                 } else {
                   s"N/A ($sep_str, cur sep = ${mOrKmOrMKm(cur_sep)})"
                 }
