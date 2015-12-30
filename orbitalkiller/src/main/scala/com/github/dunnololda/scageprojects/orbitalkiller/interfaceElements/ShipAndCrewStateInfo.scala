@@ -8,7 +8,7 @@ class ShipAndCrewStateInfo extends InterfaceElement {
     ship.pilotStateStr,
     ship.massStr,
     ship.shadowSideStr,
-    f"Атмосферное давление: ${earth.airPressureMmHg(ship.coordOrFirstPartCoord, earth.coord)}%.2f мм рт. ст. Сопротивление воздуха: ${newtonOrKilonewton(earth.airResistance(ship.currentState, earth.currentState, 28, 0.5).norma)}"
+    f"Атмосферное давление: ${earth.airPressureMmHg(ship.coord, earth.coord)}%.2f мм рт. ст. Сопротивление воздуха: ${newtonOrKilonewton(earth.airResistance(ship.currentState, earth.currentState, 28, 0.5).norma)}"
   )
   private val stringsWithoutAirPressure = Array(
     ship.pilotStateStr,
@@ -23,11 +23,11 @@ class ShipAndCrewStateInfo extends InterfaceElement {
   override def data: Seq[String] = selectedStrings
 
   override protected def _update(): Unit = {
-    if(earth.altitude(ship.coordOrFirstPartCoord, earth.coord) < earth.air_free_altitude) {
+    if(earth.altitude(ship.coord, earth.coord) < earth.air_free_altitude) {
       stringsWithAirPressure(0) = ship.pilotStateStr
       stringsWithAirPressure(1) = ship.massStr
       stringsWithAirPressure(2) = ship.shadowSideStr
-      stringsWithAirPressure(3) = f"Атмосферное давление: ${earth.airPressureMmHg(ship.coordOrFirstPartCoord, earth.coord)}%.2f мм рт. ст. Сопротивление воздуха: ${newtonOrKilonewton(earth.airResistance(ship.currentState, earth.currentState, 28, 0.5).norma)}"
+      stringsWithAirPressure(3) = f"Атмосферное давление: ${earth.airPressureMmHg(ship.coord, earth.coord)}%.2f мм рт. ст. Сопротивление воздуха: ${newtonOrKilonewton(earth.airResistance(ship.currentState, earth.currentState, 28, 0.5).norma)}"
       selectedStrings = stringsWithAirPressure
     } else {
       stringsWithoutAirPressure(0) = ship.pilotStateStr

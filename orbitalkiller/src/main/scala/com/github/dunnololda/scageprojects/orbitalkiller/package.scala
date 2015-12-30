@@ -278,9 +278,14 @@ package object orbitalkiller {
     }
     
     def positionalCorrection() {
-      val correction = math.max(separation - 0.005, 0)/(a.invMass + b.invMass)*0.8
-      if(!a.is_static) a.coord += normal*(-a.invMass*correction)
-      if(!b.is_static) b.coord += normal*b.invMass*correction
+      if(separation > 0.005) {
+        val correction = separation/(a.invMass + b.invMass)
+        if(correction != 0) {
+          println(s"correction: separation=$separation correction_${a.index}=${-a.invMass*correction} correction_${b.index}=${b.invMass*correction}")
+        }
+        if(!a.is_static) a.coord += normal*(-a.invMass*correction)
+        if(!b.is_static) b.coord += normal*b.invMass*correction
+      }
     }
 
     def toImmutableForA = Contact(a.toImmutableBodyState,

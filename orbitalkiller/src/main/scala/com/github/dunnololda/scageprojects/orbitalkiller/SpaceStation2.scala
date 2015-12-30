@@ -72,9 +72,9 @@ class SpaceStation2(
 
   render {
     /*if(renderingEnabled) {*/
-      if(!drawMapMode && coordOrFirstPartCoord.dist2(ship.coordOrFirstPartCoord) < 100000*100000) {
+      if(!drawMapMode && coord.dist2(ship.coord) < 100000*100000) {
         openglLocalTransform {
-          openglMove(coordOrFirstPartCoord - base)
+          openglMove(coord - base)
           drawFilledCircle(DVec.zero, 2, GREEN)                                // mass center
           if(OrbitalKiller.globalScale >= 0.2) {
             drawArrow(DVec.zero, relativeLinearVelocity.n * 100, CYAN) // current velocity

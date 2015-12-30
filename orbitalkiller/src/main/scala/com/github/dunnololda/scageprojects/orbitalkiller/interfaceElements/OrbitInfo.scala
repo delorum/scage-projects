@@ -8,7 +8,7 @@ class OrbitInfo extends InterfaceElement {
   private val strings = Array("", ""/*, ""*/)
   override protected def _update(): Unit = {
     strings(0) = s"Параметры орбиты:"
-    strings(1) = orbitStrInPointWithVelocity(ship.coordOrFirstPartCoord, ship.linearVelocity, ship.mass, currentPlanetStates)
+    strings(1) = orbitStrInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass, currentPlanetStates)
 
     /*val equation = insideSphereOfInfluenceOfCelestialBody(ship.coord, ship.mass, currentPlanetStates) match {
       case Some((planet, planet_state)) =>

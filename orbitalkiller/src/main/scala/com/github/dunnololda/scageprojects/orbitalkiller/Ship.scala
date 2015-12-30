@@ -60,10 +60,10 @@ trait Ship {
 
   def initState:BodyState
   def currentState:MutableBodyState
-
-  def linearAcceleration = currentState.acc
-
-  def linearVelocity = currentState.vel
+  
+  def coord = if(pilotIsAlive) currentState.coord else ship_parts.headOption.map(_.coord).getOrElse(currentState.coord)
+  
+  def linearVelocity = if(pilotIsAlive) currentState.vel else ship_parts.headOption.map(_.vel).getOrElse(currentState.vel)
 
   def relativeLinearVelocity = {
     linearVelocity - insideSphereOfInfluenceOfCelestialBody(coord, mass, OrbitalKiller.currentPlanetStates).map(_._2.vel).getOrElse(DVec.zero)
@@ -72,21 +72,15 @@ trait Ship {
   def velocityStr:String = {
     insideSphereOfInfluenceOfCelestialBody(coord, mass, OrbitalKiller.currentPlanetStates) match {
       case Some((planet, planet_state)) =>
-        s"${msecOrKmsec((linearVelocity - planet_state.vel).norma)} (${planet.name}), ${msecOrKmsec(linearVelocity.norma)} (абсолютная)"
+        s"${msecOrKmsec((linearVelocity - planet_state.vel).norma)} (${planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
       case None =>
         s"${msecOrKmsec(linearVelocity.norma)} (абсолютная)"
     }
   }
 
-  def coord = currentState.coord
-  def coordOrFirstPartCoord = if(pilotIsAlive) coord else ship_parts.headOption.map(_.coord).getOrElse(coord)
-
-  def angularAcceleration = currentState.ang_acc
-
-  def angularVelocity = currentState.ang_vel
-
-  def rotation = currentState.ang
-  def rotationOrFistPartRotation = if(pilotIsAlive) rotation else  ship_parts.headOption.map(_.ang).getOrElse(rotation)
+  def angularVelocity = if(pilotIsAlive) currentState.ang_vel else ship_parts.headOption.map(_.ang_vel).getOrElse(currentState.ang_vel)
+  
+  def rotation = if(pilotIsAlive) currentState.ang else  ship_parts.headOption.map(_.ang).getOrElse(currentState.ang)
 
   def currentReactiveForce(time:Long, bs:BodyState):DVec = {
     engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(DVec.dzero) {
@@ -301,7 +295,7 @@ trait Ship {
     case _ => ""
   }
 
-  def otherShipsNear:List[Ship] = ships.filter(s => s.index != index/* && coord.dist(s.coord) < 100000*/).sortBy(s => coord.dist(s.coord))
+  def otherShipsNear:List[Ship] = ships.filter(s => s.index != index && s.pilotIsAlive).sortBy(s => coord.dist(s.coord))
 
   protected val pilot_mass = 75
   protected val pilot_position = DVec(0, 8)
@@ -326,8 +320,8 @@ trait Ship {
     flightMode = Free
     OrbitalKiller.system_evolution.removeBodyByIndex(index)
     ship_parts = convex_parts.zipWithIndex.map(x => {
-      val part_center = coord + x._1.points.sum/x._1.points.length
-      val part_points = x._1.points.map(p => coord + p - part_center)
+      val part_center = currentState.coord + x._1.points.sum/x._1.points.length
+      val part_points = x._1.points.map(p => currentState.coord + p - part_center)
       val part_index = s"${index}_part_${x._2}"
       val mbs = new MutableBodyState(BodyState(
         index = part_index,
@@ -342,13 +336,13 @@ trait Ship {
       OrbitalKiller.system_evolution.addBody(mbs,
         (tacts, helper) => {
           helper.gravityForceHelper(sun.index, part_index) +
-            helper.gravityForceHelper(earth.index, part_index) +
-            helper.gravityForceHelper(moon.index, part_index) +
-            helper.funcOfArrayOrDVecZero(Array(part_index, earth.index), l => {
-              val bs = l(0)
-              val e = l(1)
-              earth.airResistance(bs, e, 28, 0.5)
-            })
+          helper.gravityForceHelper(earth.index, part_index) +
+          helper.gravityForceHelper(moon.index, part_index) +
+          helper.funcOfArrayOrDVecZero(Array(part_index, earth.index), l => {
+            val bs = l(0)
+            val e = l(1)
+            earth.airResistance(bs, e, 28, 0.5)
+          })
         },
         (tacts, helper) => 0.0
       )
@@ -377,12 +371,12 @@ trait Ship {
         }
       }
       currentPlanetStates.find {
-        case (planet, planet_state) => planet.coord.dist(coord) < planet.radius
+        case (planet, planet_state) => planet.coord.dist(currentState.coord) < planet.radius
       }.foreach {
         case (planet, planet_state) =>
-          currentState.coord = currentState.coord + (currentState.coord - planet.coord).n*(planet.radius + radius - planet.coord.dist(coord))
+          currentState.coord = currentState.coord + (currentState.coord - planet.coord).n*(planet.radius + radius - planet.coord.dist(currentState.coord))
           currentState.vel = planet.linearVelocity
-          crash("корабль врезался в планету")
+          crash("Корабль врезался в планету")
       }
     }
   }
