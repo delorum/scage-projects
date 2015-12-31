@@ -4,21 +4,24 @@ import com.github.dunnololda.scage.ScageLib._
 
 case class EngineData(coord:Vec, force_dir:Vec)
 
-object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
-  private val points = collection.mutable.ArrayBuffer[Vec](
-    //Vec(-10.0, 70.74072), Vec(-10.0, 10.740723), Vec(-50.0, -9.259277), Vec(-10.0, -9.259277), Vec(-10.0, -69.25928), Vec(10.0, -69.25928), Vec(10.0, -9.259277), Vec(50.0, -9.259277), Vec(10.0, 10.740723), Vec(10.0, 70.74072), Vec(-10.0, 70.74072)
-  ).map(p => p + windowCenter)
-  private var selected_point = 0
+// ВАЖНО: Точки корабля следует описывать против часовой стрелки!
 
-  private val convex_parts = collection.mutable.ArrayBuffer[collection.mutable.ArrayBuffer[Vec]]()
-  private var selected_convex_part = 0
-  private var selected_point_in_convex_part = 0
+object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.width", 640), property("screen.height", 480)) {
+  private val cell_size:Int = property("cell_size", 1)
+  private val cell_size2 = cell_size*cell_size
+  private val cell_size_double = cell_size*2
+  private val cell_size_half:Float = 0.5f*cell_size
+  private val cell_size_quater:Float = 0.25f*cell_size
+  private val cell_size_eights:Float = 0.125f*cell_size
+  private val points = collection.mutable.ArrayBuffer[Vec]()
+  private var selected_point = 0
 
   private val engines = collection.mutable.ArrayBuffer[EngineData]()
   private val engines_mapping = collection.mutable.HashMap[Int, Int]()
   private var selected_engine = 0
 
-  private var mass_center = windowCenter
+  private var mass_center = Vec(nearestDot(absCoord(windowCenter).x, -windowWidth/2, cell_size)+cell_size_half,
+                                nearestDot(absCoord(windowCenter).y, -windowHeight/2, cell_size)+cell_size_half)
 
   private var mode = 0  // 0 - points, 1 - engines up, 2 - engines down, 3 - engines right, 4 - engines left, 5 - mass center set
 
@@ -67,7 +70,6 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
   key(KEY_RIGHT, onKeyDown = {if(mode != 3) mode = 3 else mode = 0})
   key(KEY_LEFT,  onKeyDown = {if(mode != 4) mode = 4 else mode = 0})
   key(KEY_M,     onKeyDown = {if(mode != 5) mode = 5 else mode = 0})
-  key(KEY_C,     onKeyDown = {if(mode != 6) mode = 6 else mode = 0})
   
   key(KEY_NUMPAD8, onKeyDown = engines_mapping(selected_engine) = KEY_NUMPAD8)
   key(KEY_NUMPAD2, onKeyDown = engines_mapping(selected_engine) = KEY_NUMPAD2)
@@ -119,59 +121,48 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
     mode match {
       case 0 =>
         val ssm = absCoord(m)
-        if(points.forall(p => p.dist2(ssm) > 1)) {
-          val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 1).toInt,
-                       nearestDot(ssm.y, -windowHeight/2, 1).toInt)
+        if(points.forall(p => p.dist2(ssm) > cell_size2)) {
+          val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size).toInt,
+                       nearestDot(ssm.y, -windowHeight/2, cell_size).toInt)
           points.insert(selected_point, sm)
         }
       case 1 => // engines up
         val ssm = absCoord(m)
-        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 1) + 0.5f,
-                     nearestDot(ssm.y, -windowHeight/2, 1))
+        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size) + cell_size_half,
+                     nearestDot(ssm.y, -windowHeight/2, cell_size))
         engines += EngineData(sm, Vec(0, -1))
         selected_engine = engines.length-1
       case 2 => // engines down
         val ssm = absCoord(m)
-        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 1) + 0.5f,
-                     nearestDot(ssm.y, -windowHeight/2, 1))
+        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size) + cell_size_half,
+                     nearestDot(ssm.y, -windowHeight/2, cell_size))
         engines += EngineData(sm, Vec(0, 1))
         selected_engine = engines.length-1
       case 3 => // engines right
         val ssm = absCoord(m)
-        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 1),
-                     nearestDot(ssm.y, -windowHeight/2, 1) + 0.5f)
+        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size),
+                     nearestDot(ssm.y, -windowHeight/2, cell_size) +cell_size_half)
         engines += EngineData(sm, Vec(-1, 0))
         selected_engine = engines.length-1
       case 4 => // engines left
         val ssm = absCoord(m)
-        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 1),
-                     nearestDot(ssm.y, -windowHeight/2, 1) + 0.5f)
+        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size),
+                     nearestDot(ssm.y, -windowHeight/2, cell_size) + cell_size_half)
         engines += EngineData(sm, Vec(1, 0))
         selected_engine = engines.length-1
       case 5 => // mass center set
         val ssm = absCoord(m)
-        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 1)+0.5f,
-                     nearestDot(ssm.y, -windowHeight/2, 1)+0.5f)
+        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size)+cell_size_half,
+                     nearestDot(ssm.y, -windowHeight/2, cell_size)+cell_size_half)
         mass_center = sm
-      case 6 => // convex parts
-        val ssm = absCoord(m)
-        if(convex_parts.nonEmpty) {
-          if (convex_parts(selected_convex_part).forall(p => p.dist2(ssm) > 1)) {
-            val sm = Vec(nearestDot(ssm.x, -windowWidth / 2, 1).toInt,
-              nearestDot(ssm.y, -windowHeight / 2, 1).toInt)
-            convex_parts(selected_convex_part).insert(selected_point_in_convex_part, sm)
-          }
-        } else {
-
-        }
       case _ =>
     }
   }, onBtnUp = m => {
     mode match {
       case 0 =>
         val ssm = absCoord(m)
-        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, 1),
-                     nearestDot(ssm.y, -windowHeight/2, 1))
+        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size),
+                     nearestDot(ssm.y, -windowHeight/2, cell_size))
         points(selected_point) = sm
       case _ =>
     }
@@ -223,7 +214,7 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
     mode match {
       case 0 =>
         val ssm = absCoord(m)
-        points.zipWithIndex.find(p => p._1.dist2(ssm) < 1).foreach(p => {
+        points.zipWithIndex.find(p => p._1.dist2(ssm) < cell_size2).foreach(p => {
           selected_point = p._2
           points(selected_point) = ssm
         })
@@ -231,30 +222,30 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", 640, 480) {
     }
   })
 
-  globalScale = 20
+  globalScale = 20f/cell_size
 
   render {
-    (0 to windowWidth  by 1).foreach(x => drawLine(Vec(x, 0), Vec(x, windowHeight), DARK_GRAY))
-    (0 to windowHeight by 1).foreach(y => drawLine(Vec(0, y), Vec(windowWidth,  y), DARK_GRAY))
+    (0 to windowWidth  by cell_size).foreach(x => drawLine(Vec(x, 0), Vec(x, windowHeight), DARK_GRAY))
+    (0 to windowHeight by cell_size).foreach(y => drawLine(Vec(0, y), Vec(windowWidth,  y), DARK_GRAY))
 
     if(points.length > 0) {
-      points.zipWithIndex.foreach(p => drawFilledCircle(p._1, 0.3f, if(p._2 == selected_point) RED else WHITE))
+      points.zipWithIndex.foreach(p => drawFilledCircle(p._1, 0.3f*cell_size, if(p._2 == selected_point) RED else WHITE))
       drawSlidingLines(points.:+(points.head), WHITE)
     }
 
     /*if(points.length > 1) {*/
     //val mass_center = polygonCentroid(points)
-    drawCircle(mass_center, 0.3f, GREEN)
+    drawCircle(mass_center, 0.3f*cell_size, GREEN)
     /*}*/
 
     if(engines.length > 0) {
       engines.zipWithIndex.foreach {
         case (EngineData(coord, force_dir), idx) =>
           force_dir match {
-            case Vec(0, -1) => drawRectCentered(coord + Vec(0, 0.125f),  0.5f,  0.25f, if(idx == selected_engine) RED else WHITE)
-            case Vec(0, 1)  => drawRectCentered(coord + Vec(0, -0.125f), 0.5f,  0.25f, if(idx == selected_engine) RED else WHITE)
-            case Vec(-1, 0) => drawRectCentered(coord + Vec(0.125f, 0),  0.25f, 0.5f,  if(idx == selected_engine) RED else WHITE)
-            case Vec(1, 0)  => drawRectCentered(coord + Vec(-0.125f, 0), 0.25f, 0.5f,  if(idx == selected_engine) RED else WHITE)
+            case Vec(0, -1) => drawRectCentered(coord + Vec(0, cell_size_eights),  cell_size_half,  cell_size_quater, if(idx == selected_engine) RED else WHITE)
+            case Vec(0, 1)  => drawRectCentered(coord + Vec(0, -cell_size_eights), cell_size_half, cell_size_quater, if(idx == selected_engine) RED else WHITE)
+            case Vec(-1, 0) => drawRectCentered(coord + Vec(cell_size_eights, 0),  cell_size_quater, cell_size_half,  if(idx == selected_engine) RED else WHITE)
+            case Vec(1, 0)  => drawRectCentered(coord + Vec(-cell_size_eights, 0), cell_size_quater, cell_size_half,  if(idx == selected_engine) RED else WHITE)
             case _ =>
           }
           print(engineMappingStr(engines_mapping.getOrElse(idx, 0))._1, coord, max_font_size/globalScale, if(idx == selected_engine) RED else WHITE)
