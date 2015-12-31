@@ -1597,41 +1597,6 @@ package object orbitalkiller {
     }
   }
 
-  /*def calculateHyperbolaOrbit(planet_mass:Double, planet_coord:DVec, body_mass:Double, body_relative_coord:DVec, body_relative_velocity:DVec, G:Double):HyperbolaOrbit = {
-    //https://ru.wikipedia.org/wiki/Гравитационный_параметр
-    val mu = (planet_mass + body_mass) * G // гравитационный параметр
-    //val mu = planet_mass*G // гравитационный параметр
-
-    //http://ru.wikipedia.org/wiki/Кеплеровы_элементы_орбиты
-    //val a = body_relative_coord.norma*k/(2*k*k - body_relative_coord.norma*body_velocity.norma2)
-
-    //https://en.wikipedia.org/wiki/Specific_orbital_energy
-    val epsilon = body_relative_velocity.norma2 / 2 - mu / body_relative_coord.norma // орбитальная энергия - сумма потенциальной и кинетической энергии тел, деленные на приведенную массу
-
-    //http://ru.wikipedia.org/wiki/Большая_полуось
-    val a = math.abs(mu / (2 * epsilon)) // большая полуось
-
-    //http://en.wikipedia.org/wiki/Kepler_orbit
-    val r_n = body_relative_coord.n
-    val v_t = math.abs(body_relative_velocity * r_n.perpendicular)
-    val p = math.pow(body_relative_coord.norma * v_t, 2) / mu // фокальный параметр (половина длины хорды, проходящей через фокус и перпендикулярной к фокальной оси)
-
-    //http://ru.wikipedia.org/wiki/Эллипс
-    val b = math.sqrt(math.abs(a * p)) // малая полуось
-    val e = math.sqrt(math.abs(1 + (b * b) / (a * a))) // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
-
-    val true_anomaly = math.abs(math.acos((a*(e*e-1) - body_relative_coord.norma)/(body_relative_coord.norma*e)))*math.signum(-body_relative_coord.signedDeg(body_relative_velocity))
-    val center = planet_coord + body_relative_coord.rotateRad(true_anomaly).n*a*e
-
-    new HyperbolaOrbit(a, b, e, planet_coord, center)
-  }*/
-
-  /*def equalGravityRadius(planet1:BodyState, planet2:BodyState):Double = {
-    val A = planet1.coord.dist(planet2.coord)
-    val X = planet1.mass/planet2.mass
-    A*math.sqrt(X)/(math.sqrt(X) + 1)
-  }
-*/
   def equalGravityRadius(planet1:MutableBodyState, planet2:MutableBodyState):Double = {
     val A = planet1.coord.dist(planet2.coord)
     val X = planet1.mass/planet2.mass

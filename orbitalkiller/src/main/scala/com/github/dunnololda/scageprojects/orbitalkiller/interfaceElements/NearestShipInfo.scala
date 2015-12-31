@@ -70,7 +70,7 @@ class NearestShipInfo extends InterfaceElement {
         }).getOrElse("N/A", "N/A")
         val dist = mOrKmOrMKm(ship.coord.dist(os.coord))
         val vel = msecOrKmsec((ship.linearVelocity - os.linearVelocity)* (ship.coord - os.coord).n)
-        strings(1) = s"$dist, $vel, $need_orbit_period_str"
+        strings(1) = s"${os.index} $dist, $vel, $need_orbit_period_str"
       case None =>
         strings(1) = "N/A"
     }

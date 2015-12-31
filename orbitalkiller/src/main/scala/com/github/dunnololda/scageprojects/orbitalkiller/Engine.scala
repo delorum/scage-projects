@@ -3,7 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import OrbitalKiller._
 import com.github.dunnololda.scage.ScageLibD._
 
-case class Engine(index:String, position:DVec, force_dir:DVec, max_power:Double, default_power_percent:Int, ship:Ship) {
+case class Engine(index:String, position:DVec, force_dir:DVec, max_power:Double, default_power_percent:Int, ship:PolygonShip) {
   private var worktime_tacts = 0l
   private var stop_moment_tacts = 0l
 
@@ -95,25 +95,4 @@ case class Engine(index:String, position:DVec, force_dir:DVec, max_power:Double,
   def switchActive() {
     active = !active
   }
-
-  /*action(position = -1) {
-    if(is_active) {
-      if(worktime_tacts <= 0 || ship.fuelMass <= 0) {
-        active = false
-      } else {
-        if(ship.fuelMass - fuelConsumptionPerTact <= 0) {
-          active = false
-        }
-      }
-    }
-  }
-
-  action(position = 1) {
-    if(is_active) {
-      if(worktime_tacts > 0) {
-        worktime_tacts -= 1
-        ship.fuelMass -= fuelConsumptionPerTact
-      } else active = false
-    }
-  }*/
 }
