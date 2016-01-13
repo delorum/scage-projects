@@ -32,7 +32,7 @@ case class Engine(index:String, position:DVec, force_dir:DVec, max_power:Double,
    * Расход топлива в килограммах в секунду на полной мощности
    *
    * */
-  val fuel_consumption_per_sec_at_full_power:Double = 0.002
+  val fuel_consumption_per_sec_at_full_power:Double = 4//0.002
   //val fuel_consumption_per_sec_at_full_power:Double = 200
   
   def fuelConsumptionPerTact:Double = {
