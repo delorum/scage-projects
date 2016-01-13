@@ -1202,14 +1202,24 @@ package object orbitalkiller {
       _travelTimeOnOrbitMsecCCW(teta1Deg360, orbital_point1, teta2Deg360, orbital_point2)
     }
 
-    def travelTimeOnOrbitMsecCW(point1:DVec, point2:DVec):Long = {
-      travelTimeOnOrbitMsecCCW(point2, point1)
+    def travelTimeOnOrbitMsecCW(point1:DVec, point2:DVec, recalculate_orbital_points:Boolean = false):Long = {
+      travelTimeOnOrbitMsecCCW(point2, point1, recalculate_orbital_points)
     }
 
     def travelTimeOnOrbitMsecCW(teta1Deg360:Double, teta2Deg360:Double/*, print_variant:Boolean*/):Long = {
       val orbital_point1 = orbitalPointByTrueAnomalyDeg(teta1Deg360)
       val orbital_point2 = orbitalPointByTrueAnomalyDeg(teta2Deg360)
       _travelTimeOnOrbitMsecCCW(teta2Deg360, orbital_point2, teta1Deg360, orbital_point1)
+    }
+
+    def travelTimeOnOrbitMsec(point1:DVec, point2:DVec, ccw:Boolean, recalculate_orbital_points:Boolean = false):Long = {
+      if(ccw) travelTimeOnOrbitMsecCCW(point1, point2, recalculate_orbital_points)
+      else travelTimeOnOrbitMsecCW(point1, point2, recalculate_orbital_points)
+    }
+
+    def travelTimeOnOrbitMsec(teta1Deg360:Double, teta2Deg360:Double, ccw:Boolean):Long = {
+      if(ccw) travelTimeOnOrbitMsecCCW(teta1Deg360, teta2Deg360)
+      else travelTimeOnOrbitMsecCW(teta1Deg360, teta2Deg360)
     }
 
     /**
@@ -1242,11 +1252,11 @@ package object orbitalkiller {
       e*math.sin(Ex) + M
     }
 
-    private val num_iterations = 30
+    private val default_num_iterations = 30
 
     // Балк М.Б. Элементы динамики космического полета. Гл. III, параграф 3 "Решение уравнения Кеплера", стр. 111
     // http://pskgu.ru/ebooks/astro3/astro3_03_03.pdf
-    def orbitalPointAfterTimeCCW(point1:DVec, time_sec:Long):DVec = {
+    def orbitalPointAfterTimeCCW(point1:DVec, time_sec:Long, num_iterations:Int = default_num_iterations):DVec = {
       val t1 = tetaDeg360InPoint(point1)
       val time_from_r_p = travelTimeOnOrbitMsecCCW(0, t1/*, print_variant = true*/)
       val all_time = time_from_r_p/1000 + time_sec
@@ -1260,7 +1270,7 @@ package object orbitalkiller {
       orbitalPointByTrueAnomalyDeg(teta_res_deg)
     }
 
-    def orbitalPointAfterTimeCW(point1:DVec, time_sec:Long):DVec = {
+    def orbitalPointAfterTimeCW(point1:DVec, time_sec:Long, num_iterations:Int = default_num_iterations):DVec = {
       val t1 = tetaDeg360InPoint(point1)
       val time_from_r_p = travelTimeOnOrbitMsecCW(0, t1/*, print_variant = true*/)
       val all_time = t.toLong - (time_from_r_p/1000 + time_sec)
@@ -1272,6 +1282,11 @@ package object orbitalkiller {
       val teta_res_rad = math.atan(tg_half_teta_res_rad)*2
       val teta_res_deg = teta_res_rad/math.Pi*180
       orbitalPointByTrueAnomalyDeg(teta_res_deg)
+    }
+
+    def orbitalPointAfterTime(point1:DVec, time_sec:Long, ccw:Boolean, num_iterations:Int = default_num_iterations):DVec = {
+      if(ccw) orbitalPointAfterTimeCCW(point1, time_sec, num_iterations)
+      else orbitalPointAfterTimeCW(point1, time_sec, num_iterations)
     }
   }          
 
@@ -1405,12 +1420,22 @@ package object orbitalkiller {
       travelTimeOnOrbitMsecCCW(orbitalPointByTrueAnomalyDeg(teta1Deg360), orbitalPointByTrueAnomalyDeg(teta2Deg360))
     }
 
-    def travelTimeOnOrbitMsecCW(point1:DVec, point2:DVec):Long = {
-      travelTimeOnOrbitMsecCCW(point2, point1)
+    def travelTimeOnOrbitMsecCW(point1:DVec, point2:DVec, recalculate_points:Boolean = false):Long = {
+      travelTimeOnOrbitMsecCCW(point2, point1, recalculate_points)
     }
 
     def travelTimeOnOrbitMsecCW(teta1Deg360:Double, teta2Deg360:Double):Long = {
       travelTimeOnOrbitMsecCCW(orbitalPointByTrueAnomalyDeg(teta2Deg360), orbitalPointByTrueAnomalyDeg(teta1Deg360))
+    }
+
+    def travelTimeOnOrbitMsec(point1:DVec, point2:DVec, ccw:Boolean, recalculate_points:Boolean = false):Long = {
+      if(ccw) travelTimeOnOrbitMsecCCW(point1, point2, recalculate_points)
+      else travelTimeOnOrbitMsecCW(point1, point2, recalculate_points)
+    }
+
+    def travelTimeOnOrbitMsec(teta1Deg360:Double, teta2Deg360:Double, ccw:Boolean):Long = {
+      if(ccw) travelTimeOnOrbitMsecCCW(teta1Deg360, teta2Deg360)
+      else travelTimeOnOrbitMsecCW(teta1Deg360, teta2Deg360)
     }
 
     /**
@@ -1441,12 +1466,12 @@ package object orbitalkiller {
       def _arsh(z:Double) = math.log(z + math.sqrt(z*z + 1))
       _arsh((Hx + M)/e)
     }
-    private val num_iterations = 60
+    private val default_num_iterations = 60
 
     // Балк М.Б. Элементы динамики космического полета. Гл. III, параграф 3 "Решение уравнения Кеплера", стр. 111
     // http://pskgu.ru/ebooks/astro3/astro3_03_03.pdf
     // https://ru.wikipedia.org/wiki/Уравнение_Кеплера
-    def orbitalPointAfterTimeCCW(point1:DVec, time_sec:Long):DVec = {
+    def orbitalPointAfterTimeCCW(point1:DVec, time_sec:Long, num_iterations:Int = default_num_iterations):DVec = {
       val t1 = tetaDeg360InPoint(point1)
       val away_from_rp = teta_deg_min >= t1 && t1 >= 0
       if(away_from_rp) {
@@ -1486,7 +1511,7 @@ package object orbitalkiller {
       }
     }
 
-    def orbitalPointAfterTimeCW(point1:DVec, time_sec:Long):DVec = {
+    def orbitalPointAfterTimeCW(point1:DVec, time_sec:Long, num_iterations:Int = default_num_iterations):DVec = {
       val t1 = tetaDeg360InPoint(point1)
       val away_from_rp = 360 >= t1 && t1 >= teta_deg_max
       if(away_from_rp) {
@@ -1524,6 +1549,11 @@ package object orbitalkiller {
           orbitalPointByTrueAnomalyDeg(teta_res_deg)
         }
       }
+    }
+
+    def orbitalPointAfterTime(point1:DVec, time_sec:Long, ccw:Boolean, num_iterations:Int = default_num_iterations):DVec = {
+      if(ccw) orbitalPointAfterTimeCCW(point1, time_sec, num_iterations)
+      else orbitalPointAfterTimeCW(point1, time_sec, num_iterations)
     }
   }
 

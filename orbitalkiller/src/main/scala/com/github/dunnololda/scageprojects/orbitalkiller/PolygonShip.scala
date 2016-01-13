@@ -389,7 +389,7 @@ abstract class PolygonShip(
     }
   }
 
-  def massStr = f"Масса корабля: $mass%.1f кг. Остаток топлива: $fuelMass%.1f кг"
+  def massStr = f"Масса корабля: $mass%.3f кг. Остаток топлива: $fuelMass%.3f кг"
 
   def shadowSideStr = {
     val in_shadow_of_planet:Option[String] = {

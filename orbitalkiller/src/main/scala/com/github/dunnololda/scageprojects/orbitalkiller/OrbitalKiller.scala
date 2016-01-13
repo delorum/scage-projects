@@ -134,11 +134,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     radius = 1737000,
     earth, 2000)
 
-  //val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
-  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
+  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
-  val ship_start_position = earth.coord + DVec(100, earth.radius + 200000)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
+  //val ship_start_position = earth.coord + DVec(100, earth.radius + 200000)
+  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
 
   //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
   //val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
@@ -276,6 +276,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         if(e.active) {
           if(e.workTimeTacts > 0) {
             e.workTimeTacts -= 1
+            InterfaceHolder.enginesInfo.addWorkTime(base_dt*1000*e.power/e.max_power)
             e.ship.fuelMass -= e.fuelConsumptionPerTact
           } else e.active = false
         }
@@ -898,11 +899,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
                     if(_stop_after_number_of_tacts > 0) {
                       drawFilledCircle(h.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)*scale, 3 / globalScale, RED)
-                      if(ccw) {
-                        drawFilledCircle(h.orbitalPointAfterTimeCCW(bs_coord, (_stop_after_number_of_tacts*base_dt).toLong)*scale, 3 / globalScale, GREEN)
-                      } else {
-                        drawFilledCircle(h.orbitalPointAfterTimeCW(bs_coord, (_stop_after_number_of_tacts*base_dt).toLong)*scale, 3 / globalScale, GREEN)
-                      }
+                      drawFilledCircle(h.orbitalPointAfterTime(bs_coord, (_stop_after_number_of_tacts*base_dt).toLong, ccw)*scale, 3 / globalScale, GREEN)
                     }
 
                     val mouse_teta_rad2Pi = h.tetaRad2PiInPoint(mouse_point)
@@ -923,16 +920,18 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                       if(allow) {
                         val orbital_point = h.orbitalPointInPoint(mouse_point)
                         drawFilledCircle(orbital_point*scale, 3 / globalScale, color2)
-                        val flight_time_msec = if (ccw) {
-                          h.travelTimeOnOrbitMsecCCW(bs_coord, orbital_point)
-                        } else {
-                          h.travelTimeOnOrbitMsecCW(bs_coord, orbital_point)
-                        }
+                        val flight_time_msec = h.travelTimeOnOrbitMsec(bs_coord, orbital_point, ccw)
                         val flight_time = s"${timeStr(flight_time_msec)}"
                         if (set_stop_moment) {
                           _stop_after_number_of_tacts = (flight_time_msec / 1000 / base_dt).toLong
                           _stop_in_orbit_true_anomaly = mouse_teta_rad2Pi
                           set_stop_moment = false
+
+                          val p1 = h.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)
+                          println((50 to 300 by 50).map(num_iterations => {
+                            val px = h.orbitalPointAfterTime(bs_coord, (_stop_after_number_of_tacts*base_dt).toLong, ccw, num_iterations)
+                            mOrKmOrMKm(p1.dist(px))
+                          }).mkString(" : "))
                         }
                         val vnorm = h.orbitalVelocityByTrueAnomalyRad(mouse_teta_rad2Pi)
                         openglLocalTransform {
@@ -953,6 +952,25 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                           })
                         })
                       }
+                      station_orbit_render.foreach(x => {
+                        x.ellipseOrbit.foreach(e => {
+                          if(_stop_after_number_of_tacts > 0) {
+                            val time_to_stop_sec = (_stop_after_number_of_tacts*base_dt).toLong
+                            val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
+                            drawCircle(position_when_stop_moment*scale, earth.radius * scale / 2f / globalScale, GREEN)
+                          }
+                        })
+                      })
+                      moon_orbit_render.foreach(x => {
+                        x.ellipseOrbit.foreach(e => {
+                          if(_stop_after_number_of_tacts > 0) {
+                            val time_to_stop_sec = (_stop_after_number_of_tacts*base_dt).toLong
+                            val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
+                            drawCircle(position_when_stop_moment*scale, moon.radius * scale, GREEN)
+                            drawCircle(position_when_stop_moment*scale, moon.one_third_hill_radius*scale, color = DARK_GRAY)
+                          }
+                        })
+                      })
                     }
                   }
                 }))
@@ -974,24 +992,22 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
                     if(_stop_after_number_of_tacts > 0) {
                       drawFilledCircle(e.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)*scale, 3 / globalScale, RED)
-                      if(ccw) {
-                        drawFilledCircle(e.orbitalPointAfterTimeCCW(bs_coord, (_stop_after_number_of_tacts*base_dt).toLong)*scale, 3 / globalScale, GREEN)
-                      } else {
-                        drawFilledCircle(e.orbitalPointAfterTimeCW(bs_coord, (_stop_after_number_of_tacts*base_dt).toLong)*scale, 3 / globalScale, GREEN)
-                      }
+                      drawFilledCircle(e.orbitalPointAfterTime(bs_coord, (_stop_after_number_of_tacts*base_dt).toLong, ccw)*scale, 3 / globalScale, GREEN)
                     }
                     val true_anomaly_rad = e.tetaRad2PiInPoint(mouse_point)
 
-                    val flight_time_msec = if(ccw) {
-                      e.travelTimeOnOrbitMsecCCW(bs_coord, orbital_point)
-                    } else {
-                      e.travelTimeOnOrbitMsecCW(bs_coord, orbital_point)
-                    }
+                    val flight_time_msec = e.travelTimeOnOrbitMsec(bs_coord, orbital_point, ccw)
                     val flight_time_str = s"${timeStr(flight_time_msec)}"
                     if(set_stop_moment) {
                       _stop_after_number_of_tacts = (flight_time_msec/1000/base_dt).toLong
                       _stop_in_orbit_true_anomaly = true_anomaly_rad
                       set_stop_moment = false
+
+                      val p1 = e.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)
+                      println((50 to 300 by 50).map(num_iterations => {
+                        val px = e.orbitalPointAfterTime(bs_coord, (_stop_after_number_of_tacts*base_dt).toLong, ccw, num_iterations)
+                        mOrKmOrMKm(p1.dist(px))
+                      }).mkString(" : "))
                     }
                     val (vt, vr) = e.orbitalVelocityByTrueAnomalyRad(true_anomaly_rad)
                     val vnorm = math.sqrt(vr*vr + vt*vt)
