@@ -33,7 +33,7 @@ object OrbitalOscillationsTests extends ScageApp {
 
   val station_start_position = earth.coord + DVec(300, earth.radius + 100000)
   val station_init_velocity = satelliteSpeed(station_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.25
-  val station = new SpaceStation("station",
+  val station = new SpaceStation2("station",
     init_coord = station_start_position,
     init_velocity = station_init_velocity,
     init_rotation = 45
