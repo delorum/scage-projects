@@ -298,7 +298,7 @@ abstract class PolygonShip(
   protected val pilot_mass = 75
   protected val pilot_position = DVec(0, 8)
   private var pilot_average_g:Double = 0.0
-  private val pilot_gs = ArrayBuffer[(Double, Long)]()
+  private val pilot_accs = ArrayBuffer[(DVec, Long)]()
 
   private var pilot_is_dead = false
   private var pilot_death_reason = ""
@@ -358,11 +358,11 @@ abstract class PolygonShip(
       } else {
         val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(currentState, earth.currentState, 28, 0.5)
         val centrifugial_force = if (angularVelocity == 0) DVec.zero else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.rotateDeg(rotation)
-        val pilot_acc = (reactive_force / mass + centrifugial_force / pilot_mass + currentState.dacc).norma/* - (air_resistance.norma/mass)*/
-        pilot_gs += ((pilot_acc / earth.g, time_msec))
-        if (time_msec - pilot_gs.head._2 >= 1000) {
-          pilot_average_g = pilot_gs.map(_._1).sum / pilot_gs.length
-          pilot_gs.clear()
+        val pilot_acc = reactive_force / mass + centrifugial_force / pilot_mass + currentState.dacc
+        pilot_accs += ((pilot_acc, time_msec))
+        if (time_msec - pilot_accs.head._2 >= 1000) {
+          pilot_average_g = (pilot_accs.map(_._1).sum / pilot_accs.length).norma/earth.g
+          pilot_accs.clear()
           if(pilot_average_g > 100) {
             crash(f"Корабль разрушился вследствие критической перегрузки ($pilot_average_g%.2fg)")
           }
