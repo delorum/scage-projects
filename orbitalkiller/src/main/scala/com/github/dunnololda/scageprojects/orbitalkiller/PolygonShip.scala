@@ -250,11 +250,12 @@ abstract class PolygonShip(
     flight_mode = new_flight_mode
     last_correction_or_check_moment = 0l
     if(flight_mode == Maneuvering) {
+      val ten_min_or_max_time_at_full_power = math.min((fuelMass/engines.map(_.maxFuelConsumptionPerTact).max).toLong, 37800)
       engines.foreach(e => e.power = e.max_power*0.5)
-      engines.filterNot(_.active).foreach(e => e.workTimeTacts = 18900)     // 1 hour
+      engines.filterNot(_.active).foreach(e => e.workTimeTacts = ten_min_or_max_time_at_full_power)     // 10 minutes in tacts (10*60*63)
       val active_engines = engines.filter(_.active)
-      if(active_engines.map(ae => ae.fuelConsumptionPerTact*18900).sum <= fuelMass) {
-        active_engines.foreach(e => e.workTimeTacts = 18900)
+      if(active_engines.map(ae => ae.fuelConsumptionPerTact*ten_min_or_max_time_at_full_power).sum <= fuelMass) {
+        active_engines.foreach(e => e.workTimeTacts = ten_min_or_max_time_at_full_power)
       } else {
         val fuel_for_every_active_engine = fuelMass / active_engines.length
         active_engines.foreach(e => e.workTimeTacts = (fuel_for_every_active_engine/e.fuelConsumptionPerTact).toLong)

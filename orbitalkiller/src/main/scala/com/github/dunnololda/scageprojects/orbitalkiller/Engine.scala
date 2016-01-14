@@ -33,7 +33,11 @@ class Engine(val index:String,
       }
     }
   }
-  
+
+  def maxFuelConsumptionPerTact:Double = {
+    fuel_consumption_per_sec_at_full_power*base_dt
+  }
+
   def fuelConsumptionPerTact:Double = {
     fuel_consumption_per_sec_at_full_power*(_power/max_power)*base_dt
   }
