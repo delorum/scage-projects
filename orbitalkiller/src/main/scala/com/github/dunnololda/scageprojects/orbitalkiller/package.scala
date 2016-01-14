@@ -504,15 +504,15 @@ package object orbitalkiller {
   class MutableBodyState(body:BodyState) {
     val init_aabb = body.aabb
     val restitution = body.restitution
-    val invMass = body.invMass
-    val invI = body.invI
+    var mass = body.mass
+    def invMass = if(is_static || mass == 0) 0.0 else 1.0/mass
+    def I = mass*shape.wI
+    def invI = if(is_static || I == 0) 0.0 else 1.0/I
     val staticFriction = body.staticFriction
     val dynamicFriction = body.dynamicFriction
     val is_static = body.is_static
     val shape = body.shape
     val index = body.index
-    var mass = body.mass
-    val I = body.I
 
     // ===========================================
 
@@ -538,58 +538,58 @@ package object orbitalkiller {
       dvel = DVec.zero
       d_ang_acc = 0.0
       d_ang_vel = 0.0
-      aabb = body.shape.aabb(coord, ang)
+      aabb = shape.aabb(coord, ang)
       contacts.clear()
     }
 
-    var aabb = body.shape.aabb(coord, ang)
+    var aabb = shape.aabb(coord, ang)
 
     def phys2dBody = {
-      if(body.is_static) {
-        val x = new Phys2dStaticBody(body.index, body.shape.phys2dShape)
+      if(is_static) {
+        val x = new Phys2dStaticBody(index, shape.phys2dShape)
         x.setPosition(coord.x, coord.y)
         x.setRotation(ang.toRad)
-        x.setUserData((body.index, body.shape))
+        x.setUserData((index, shape))
         x
       } else {
-        val x = new Phys2dBody(body.index, body.shape.phys2dShape, body.mass)
+        val x = new Phys2dBody(index, shape.phys2dShape, mass)
         x.setPosition(coord.x, coord.y)
         x.setRotation(ang.toRad)
         x.adjustVelocity(vel.toPhys2dVecD)
         x.adjustAngularVelocity(ang_vel.toRad)
-        x.setUserData((body.index, body.shape))
+        x.setUserData((index, shape))
         x
       }
     }
 
     def phys2dBodyWithShape(shape:Shape) = {
-      if(body.is_static) {
-        val x = new Phys2dStaticBody(body.index, shape.phys2dShape)
+      if(is_static) {
+        val x = new Phys2dStaticBody(index, shape.phys2dShape)
         x.setPosition(coord.x, coord.y)
         x.setRotation(ang.toRad)
-        x.setUserData((body.index, shape))
+        x.setUserData((index, shape))
         x
       } else {
-        val x = new Phys2dBody(body.index, shape.phys2dShape, body.mass)
+        val x = new Phys2dBody(index, shape.phys2dShape, mass)
         x.setPosition(coord.x, coord.y)
         x.setRotation(ang.toRad)
         x.adjustVelocity(vel.toPhys2dVecD)
         x.adjustAngularVelocity(ang_vel.toRad)
-        x.setUserData((body.index, shape))
+        x.setUserData((index, shape))
         x
       }
     }
 
     def applyCollisionImpulse(impulse:DVec, contactVector:DVec, dt:Double) {
-      if(!body.is_static) {
-        val x = impulse * body.invMass
+      if(!is_static) {
+        val x = impulse * invMass
         acc += x/dt
         dacc += x/dt
         vel += x
         dvel += x
 
 
-        val y = (body.invI * (contactVector */ impulse)).toDeg
+        val y = (invI * (contactVector */ impulse)).toDeg
         ang_acc += y/dt
         d_ang_acc += y/dt
         ang_vel += y
@@ -598,6 +598,7 @@ package object orbitalkiller {
     }
     
     def toImmutableBodyState:BodyState = body.copy(
+      mass = mass,
       coord = coord,
       acc = acc,
       vel = vel,
@@ -610,18 +611,7 @@ package object orbitalkiller {
       collisions_d_ang_vel = d_ang_vel)
 
     def copy:MutableBodyState = {
-      val mb = new MutableBodyState(body)
-      mb.mass = mass
-      mb.acc = acc
-      mb.vel = vel
-      mb.coord = coord
-      mb.ang_acc = ang_acc
-      mb.ang_vel = ang_vel
-      mb.ang = ang
-      mb.dacc = dacc
-      mb.dvel = dvel
-      mb.d_ang_acc = d_ang_acc
-      mb.d_ang_vel = d_ang_vel
+      val mb = new MutableBodyState(toImmutableBodyState)
       mb
     }
 

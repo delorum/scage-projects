@@ -3,7 +3,13 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import OrbitalKiller._
 import com.github.dunnololda.scage.ScageLibD._
 
-case class Engine(index:String, position:DVec, force_dir:DVec, max_power:Double, default_power_percent:Int, ship:PolygonShip) {
+class Engine(val index:String,
+             val position:DVec,                                  // позиция относительно центра массы корабля (ц.м. в точке (0,0))
+             val force_dir:DVec,                                 // вектор направления приложения силы
+             val max_power:Double,                               // в ньютонах
+             val default_power_percent:Int,                      // при выборе данного двигателя какая мощность выставляется по умолчанию
+             val fuel_consumption_per_sec_at_full_power:Double,  // Расход топлива в килограммах в секунду на полной мощности
+             val ship:PolygonShip) {
   private var worktime_tacts = 0l
   private var stop_moment_tacts = 0l
 
@@ -14,29 +20,22 @@ case class Engine(index:String, position:DVec, force_dir:DVec, max_power:Double,
     if(new_worktime_tacts >= 0) {
       val prev = worktime_tacts
       worktime_tacts = new_worktime_tacts
-      stop_moment_tacts = tacts + worktime_tacts * timeMultiplier
+      stop_moment_tacts = tacts + worktime_tacts
       if(ship.fuelMassWhenEnginesOff < 0) {
         val possible_fuel_for_this_engine = ship.fuelMassWhenEnginesOffWithoutEngine(this)
         if(worktime_tacts > prev && possible_fuel_for_this_engine > 0) {
           worktime_tacts = (possible_fuel_for_this_engine / fuelConsumptionPerTact).toLong
-          stop_moment_tacts = tacts + worktime_tacts * timeMultiplier
+          stop_moment_tacts = tacts + worktime_tacts
         } else {
           worktime_tacts = prev
-          stop_moment_tacts = tacts + worktime_tacts * timeMultiplier
+          stop_moment_tacts = tacts + worktime_tacts
         }
       }
     }
   }
-
-  /**
-   * Расход топлива в килограммах в секунду на полной мощности
-   *
-   * */
-  val fuel_consumption_per_sec_at_full_power:Double = 4//0.002
-  //val fuel_consumption_per_sec_at_full_power:Double = 200
   
   def fuelConsumptionPerTact:Double = {
-    fuel_consumption_per_sec_at_full_power*(_power/max_power)*base_dt*timeMultiplier
+    fuel_consumption_per_sec_at_full_power*(_power/max_power)*base_dt
   }
 
   def stopMomentTacts = stop_moment_tacts

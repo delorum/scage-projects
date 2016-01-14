@@ -137,7 +137,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
   val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
-  //val ship_start_position = earth.coord + DVec(100, earth.radius + 200000)
+  //val ship_start_position = earth.coord + DVec(100, earth.radius + 180000)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
 
   //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
@@ -262,15 +262,6 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       }
       ship.currentState.mass = ship.mass/*currentMass(_tacts)*/
       system_evolution.step()
-      if(_stop_after_number_of_tacts > 0) {
-        _stop_after_number_of_tacts -= 1
-        if (_stop_after_number_of_tacts <= 0) {
-          if (timeMultiplier != realtime) {
-            timeMultiplier = realtime
-          }
-          pause()
-        }
-      }
       ship.updateShipState((tacts*base_dt*1000).toLong)
       ships.foreach(s => s.engines.foreach(e => {
         if(e.active) {
@@ -281,6 +272,15 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           } else e.active = false
         }
       }))
+      if(_stop_after_number_of_tacts > 0) {
+        _stop_after_number_of_tacts -= 1
+        if (_stop_after_number_of_tacts <= 0) {
+          if (timeMultiplier != realtime) {
+            timeMultiplier = realtime
+          }
+          pause()
+        }
+      }
     })
   }
   nextStep()
@@ -1280,14 +1280,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     print(s"${mOrKmOrMKm((100/globalScale/(if(drawMapMode) scale else 1.0)).toInt)}", b.toVec, DARK_GRAY)
 
     InterfaceHolder.update()
-    InterfaceHolder.strings.zipWithIndex.foreach {
-      case ((str, color), idx) => print(str, 20, (InterfaceHolder.strings.length+2 - idx)*20, ship.colorIfAliveOrRed(color))
-    }
-    //print(InterfaceHolder.minimizedStrings.map(_._1).mkString(" "), 20, 20, DARK_GRAY)
-    InterfaceHolder.minimizedStrings.zipWithIndex.foreach {
-      case ((i, color), idx) =>
-        print(i.shortDescr, 20+idx*40, 20, ship.colorIfAliveOrRed(color), align = "center")
-    }
+    InterfaceHolder.draw()
   }
 
   pause()

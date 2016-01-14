@@ -38,12 +38,12 @@ class Ship4(index:String,
 
   val draw_points = points :+ points.head
 
-  val four  = Engine("4",  position = Vec(-3.5, 0.0), force_dir = Vec(1.0, 0.0),  max_power = 1000000, default_power_percent = 1,   this)
-  val six   = Engine("6",  position = Vec(3.5, 0.0),  force_dir = Vec(-1.0, 0.0), max_power = 1000000, default_power_percent = 1,   this)
-  val seven = Engine("7",  position = Vec(-1.5, 9.0), force_dir = Vec(1.0, 0.0),  max_power = 10000,   default_power_percent = 100, this)
-  val nine  = Engine("9",  position = Vec(1.5, 9.0),  force_dir = Vec(-1.0, 0.0), max_power = 10000,   default_power_percent = 100, this)
-  val eight = Engine("8",  position = Vec(0.0, 10.5), force_dir = Vec(0.0, -1.0), max_power = 1000000, default_power_percent = 1,   this)
-  val two   = Engine("2",  position = Vec(0.0, -3.5), force_dir = Vec(0.0, 1.0),  max_power = 1000000, default_power_percent = 1,   this)
+  val four  = new Engine("4",  Vec(-3.5, 0.0), Vec(1.0, 0.0),  1000000, 1,   4,    this)
+  val six   = new Engine("6",  Vec(3.5, 0.0),  Vec(-1.0, 0.0), 1000000, 1,   4,    this)
+  val seven = new Engine("7",  Vec(-1.5, 9.0), Vec(1.0, 0.0),  10000,   100, 0.04, this)
+  val nine  = new Engine("9",  Vec(1.5, 9.0),  Vec(-1.0, 0.0), 10000,   100, 0.04, this)
+  val eight = new Engine("8",  Vec(0.0, 10.5), Vec(0.0, -1.0), 1000000, 1,   4,    this)
+  val two   = new Engine("2",  Vec(0.0, -3.5), Vec(0.0, 1.0),  1000000, 1,   4,    this)
 
   val engines = List(four, six, seven, nine, eight, two)
 

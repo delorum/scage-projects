@@ -42,12 +42,12 @@ class SpaceStation2(
     PolygonShape(List(DVec(90.0, -10.0), DVec(90.0, 10.0), DVec(130.0, 10.0), DVec(130.0, -10.0)).reverse, Nil)
   )
 
-  val four  = Engine("4", position = Vec(-130.0, 0.0),   force_dir = Vec(1.0, 0.0),  max_power = 10, default_power_percent = 1, this)
-  val six   = Engine("6", position = Vec(130.0, 0.0),    force_dir = Vec(-1.0, 0.0), max_power = 10, default_power_percent = 1, this)
-  val eight = Engine("8", position = Vec(0.0, 30.0),     force_dir = Vec(0.0, -1.0), max_power = 10, default_power_percent = 1, this)
-  val two   = Engine("2", position = Vec(0.0, -30.0),    force_dir = Vec(0.0, 1.0),  max_power = 10, default_power_percent = 1, this)
-  val one   = Engine("1", position = Vec(-120.0, -10.0), force_dir = Vec(0.0, 1.0),  max_power = 10, default_power_percent = 1, this)
-  val three = Engine("3", position = Vec(120.0, -10.0),  force_dir = Vec(0.0, 1.0),  max_power = 10, default_power_percent = 1, this)
+  val four  = new Engine("4", Vec(-130.0, 0.0),   Vec(1.0, 0.0),  10, 1, 4, this)
+  val six   = new Engine("6", Vec(130.0, 0.0),    Vec(-1.0, 0.0), 10, 1, 4, this)
+  val eight = new Engine("8", Vec(0.0, 30.0),     Vec(0.0, -1.0), 10, 1, 4, this)
+  val two   = new Engine("2", Vec(0.0, -30.0),    Vec(0.0, 1.0),  10, 1, 4, this)
+  val one   = new Engine("1", Vec(-120.0, -10.0), Vec(0.0, 1.0),  10, 1, 4, this)
+  val three = new Engine("3", Vec(120.0, -10.0),  Vec(0.0, 1.0),  10, 1, 4, this)
 
   val engines = List(four, six, eight, two, one, three)
 

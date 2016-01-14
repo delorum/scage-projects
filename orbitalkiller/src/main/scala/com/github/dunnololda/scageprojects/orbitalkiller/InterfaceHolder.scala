@@ -128,4 +128,15 @@ object InterfaceHolder {
       }
     }
   }
+
+  def draw(): Unit = {
+    strings.zipWithIndex.foreach {
+      case ((str, color), idx) => print(str, 20, (strings.length+2 - idx)*20, ship.colorIfAliveOrRed(color))
+    }
+    //print(minimizedStrings.map(_._1).mkString(" "), 20, 20, DARK_GRAY)
+    minimizedStrings.zipWithIndex.foreach {
+      case ((i, color), idx) =>
+        print(i.shortDescr, 20+idx*40, 20, ship.colorIfAliveOrRed(color), align = "center")
+    }
+  }
 }
