@@ -21,7 +21,7 @@ class Engine(val index:String,
       val prev = worktime_tacts
       worktime_tacts = new_worktime_tacts
       stop_moment_tacts = tacts + worktime_tacts
-      if(ship.fuelMassWhenEnginesOff < 0) {
+      if(ship.fuelMassWhenEnginesOff < 0 && new_worktime_tacts > prev) {
         val possible_fuel_for_this_engine = ship.fuelMassWhenEnginesOffWithoutEngine(this)
         if(worktime_tacts > prev && possible_fuel_for_this_engine > 0) {
           worktime_tacts = (possible_fuel_for_this_engine / fuelConsumptionPerTact).toLong

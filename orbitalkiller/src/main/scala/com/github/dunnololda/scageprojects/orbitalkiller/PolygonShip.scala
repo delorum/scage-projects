@@ -308,9 +308,6 @@ abstract class PolygonShip(
 
   def colorIfAliveOrRed(color: => ScageColor) = if(pilot_is_dead) RED else color
 
-  private var ship_removed = false
-  def isRemoved = ship_removed
-
   protected var ship_parts:List[MutableBodyState] = Nil
 
   private def crash(reason:String): Unit = {
@@ -390,7 +387,7 @@ abstract class PolygonShip(
     }
   }
 
-  def massStr = f"Масса корабля: $mass%.3f кг. Остаток топлива: $fuelMass%.3f кг"
+  def massStr = f"Масса корабля: ${gOrKg(mass)}. Остаток топлива: ${gOrKg(fuelMass)}"
 
   def shadowSideStr = {
     val in_shadow_of_planet:Option[String] = {

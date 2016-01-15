@@ -319,7 +319,7 @@ class Ship4(index:String,
 
   render {
     /*if(renderingEnabled) {*/
-      if(!drawMapMode && !isRemoved) {
+      if(!drawMapMode) {
         if(pilotIsAlive) {
           openglLocalTransform {
             openglMove(coord - base)

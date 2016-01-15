@@ -504,15 +504,27 @@ package object orbitalkiller {
   class MutableBodyState(body:BodyState) {
     val init_aabb = body.aabb
     val restitution = body.restitution
-    var mass = body.mass
-    def invMass = if(is_static || mass == 0) 0.0 else 1.0/mass
-    def I = mass*shape.wI
-    def invI = if(is_static || I == 0) 0.0 else 1.0/I
+
     val staticFriction = body.staticFriction
     val dynamicFriction = body.dynamicFriction
     val is_static = body.is_static
     val shape = body.shape
     val index = body.index
+
+    private var _mass = body.mass
+    def mass = _mass
+    def mass_=(m:Double): Unit = {
+      _mass = m
+      _invMass = if(is_static || _mass == 0) 0.0 else 1.0/_mass
+      _I = _mass*shape.wI
+      _invI = if(is_static || _I == 0) 0.0 else 1.0/_I
+    }
+    private var _invMass = if(is_static || _mass == 0) 0.0 else 1.0/_mass
+    def invMass = _invMass
+    private var _I = _mass*shape.wI
+    def I = _I
+    private var _invI = if(is_static || _I == 0) 0.0 else 1.0/_I
+    def invI = _invI
 
     // ===========================================
 
@@ -993,6 +1005,14 @@ package object orbitalkiller {
 
   def newtonOrKilonewton(newton:Number):String = {
     if(math.abs(newton.doubleValue()) < 1000) f"${newton.doubleValue()}%.2f Н" else f"${newton.doubleValue()/1000}%.2f кН"
+  }
+
+  def gOrKg(kg:Double):String = {
+    if(kg < 1) f"${kg*1000}%.0f г"
+    else {
+      if(kg % 1 == 0) f"$kg%.0f кг"
+      else f"${kg.toInt} кг ${(kg - kg.toInt)*1000}%.0f г"
+    }
   }
 
   /**

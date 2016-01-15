@@ -9,11 +9,16 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
     if(ship.flightMode != Free || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
       if(ship.engines.exists(_.active)) {
-        getFutureState(ship.engines.map(_.stopMomentTacts).max).get(ship.index) match {
+        val future_state = getFutureState(ship.engines.map(_.stopMomentTacts).max)
+        val future_planet_states = planetStates(future_state)
+        future_state.get(ship.index) match {
           case Some(bs) =>
-            val s = bs.vel
-            //f"${msecOrKmsec(s.norma)} (velx = ${msecOrKmsec(s.x)}, vely = ${msecOrKmsec(s.y)})"
-            msecOrKmsec(s.norma)
+            insideSphereOfInfluenceOfCelestialBody(bs.coord, bs.mass, future_planet_states) match {
+              case Some((planet, planet_state)) =>
+                s"${msecOrKmsec((bs.vel - planet_state.vel).norma)} (${planet.name}), ${msecOrKmsec(bs.vel.norma)} (абсолютная)"
+              case None =>
+                s"${msecOrKmsec(bs.vel.norma)} (абсолютная)"
+            }
           case None => "N/A"
         }
       } else {
