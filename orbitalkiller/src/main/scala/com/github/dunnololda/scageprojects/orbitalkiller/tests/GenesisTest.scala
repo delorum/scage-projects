@@ -7,15 +7,17 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 class PlanetPart(var m:Double, var coord:Vec, var vel:Vec) {
+  val id = GenesisTest.getId
   val r:Float = 1/*+m*0.001*/
 
   def aabb:AABB = AABB(coord, r*2, r*2)
   def isCollided(op:PlanetPart):Boolean = coord.dist(op.coord) < r + op.r
 
-  var new_coord = coord
+  var new_coord:Option[Vec] = None
 }
 
 class MySpace(val bodies:Seq[PlanetPart], val center:Vec, val width:Double, val height:Double) {
+  val id = GenesisTest.getId
   def this(bodies:Seq[PlanetPart], center:Vec) = {
     this(bodies, center, {
       val (init_min_x, init_max_x) = {
@@ -84,9 +86,15 @@ class MySpace(val bodies:Seq[PlanetPart], val center:Vec, val width:Double, val 
       new MySpace(bodies4, c4, w/2, h/2)
     )
   }
+
+  lazy val virtualCentralBody = new PlanetPart(
+    m = bodies.map(_.m).sum,
+    coord = bodies.map(_.coord).sum/bodies.length,
+    vel = bodies.map(_.vel).sum/bodies.length
+  )
 }
 
-object GenesisTest extends ScageScreenApp("Genesis Test", 800, 600) {
+object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
   private val G:Double = 1
   private val dt = 0.1
 
@@ -113,7 +121,7 @@ object GenesisTest extends ScageScreenApp("Genesis Test", 800, 600) {
   private var _selected_planet = 0
 
   private var id = 1
-  private def getId: Int = {
+  def getId: Int = {
     try {
       id
     } finally {
@@ -121,6 +129,15 @@ object GenesisTest extends ScageScreenApp("Genesis Test", 800, 600) {
     }
   }
 
+  /**
+   *
+   * @param space - начальное пространство, которое будем разделять
+   * @param max_level - сколько максимально может быть уровней вложенности пространств
+   * @param target - сколько максимально может быть тел внутри пространства
+   * @param level - текущий уровень вложенности
+   * @param spaces - результат, список пространств
+   * @return
+   */
   private def splitMySpace(space:MySpace, max_level:Int, target:Int, level:Int = 0, spaces:List[MySpace] = Nil):List[MySpace] = {
     if(space.bodies.length <= target) {
       space :: spaces
@@ -138,6 +155,20 @@ object GenesisTest extends ScageScreenApp("Genesis Test", 800, 600) {
   keyIgnorePause(KEY_S, 10, onKeyDown = {_center = center; _center += Vec(0, -5/globalScale); center = _center})
   keyIgnorePause(KEY_D, 10, onKeyDown = {_center = center; _center += Vec(5/globalScale, 0); center = _center})
   keyIgnorePause(KEY_SPACE, onKeyDown = {
+    val sorted_planets = planets.sortBy(-_.m)
+    planets.clear()
+    planets ++= sorted_planets
+    _selected_planet = 0
+    val p = planets(_selected_planet)
+    center = p.coord
+  })
+  keyIgnorePause(KEY_LEFT, onKeyDown = {
+    _selected_planet -= 1
+    if(_selected_planet < 0) _selected_planet = planets.length - 1
+    val p = planets(_selected_planet)
+    center = p.coord
+  })
+  keyIgnorePause(KEY_RIGHT, onKeyDown = {
     _selected_planet += 1
     if(_selected_planet >= planets.length) _selected_planet = 0
     val p = planets(_selected_planet)
@@ -179,64 +210,110 @@ object GenesisTest extends ScageScreenApp("Genesis Test", 800, 600) {
     println(globalScale)
   })
 
+  val start = System.currentTimeMillis()
+  def time = System.currentTimeMillis() - start
+
   action {
-    /*planets.zipWithIndex.foreach {
-      case (p, idx) =>
-        if(!to_remove.contains(p)) {
-          val collided = (planets.take(idx) ++ planets.drop(idx + 1)).filter(op => !to_remove.contains(op) && p.coord.dist(op.coord) < p.r + op.r)
-          if (collided.nonEmpty) {
-            to_remove += p
-            to_remove ++= collided
-            to_add += new Planet(
-              p.m + collided.map(_.m).sum,
-              (p.coord + collided.map(_.coord).sum) / (collided.length + 1),
-              (p.m * p.vel + collided.map(op => op.m * op.vel).sum) / (p.m + collided.map(_.m).sum))
+    println(s"[$time] splitting space...")
+    val spaces = splitMySpace(new MySpace(planets, windowCenter), 5, 20)
+    println(s"[$time] spaces = ${spaces.length}; ${spaces.map(_.bodies.length).mkString(" : ")}")
+
+    val interacted = mutable.HashSet[(Int, Int)]()
+    def setInteracted(id1:Int, id2:Int) {
+      if(id1 <= id2) interacted += ((id1, id2))
+      else interacted += ((id2, id1))
+    }
+    def checkInteracted(id1:Int, id2:Int): Boolean = {
+      if(id1 <= id2) interacted.contains((id1, id2))
+      else interacted.contains((id2, id1))
+    }
+
+    for {
+      (space, space_idx) <- spaces.zipWithIndex
+      if space.bodies.nonEmpty
+    } {
+      val collided = ArrayBuffer[(PlanetPart, PlanetPart)]()
+      val other_spaces = spaces.take(space_idx) ++ spaces.drop(space_idx+1)
+      for {
+        (p, idx) <- space.bodies.zipWithIndex
+      } {
+        val (outer_spaces, near_spaces) = other_spaces.partition(_.virtualCentralBody.coord.dist(p.coord) > 100)
+        val other_spaces_force = outer_spaces.map {
+          case os =>
+            val x = os.virtualCentralBody
+            G*p.m*x.m/p.coord.dist2(x.coord)*(x.coord - p.coord).n
+        }.sum
+        val p_acc = other_spaces_force / p.m
+        p.vel += p_acc * dt
+        if(p.new_coord.isEmpty) p.new_coord = Some(p.coord + p.vel * dt)
+        else p.new_coord = Some(p.new_coord.get + p.vel * dt)
+        near_spaces.filterNot(_.id == space.id).foreach {
+          case near_space => near_space.bodies.foreach {
+            case near_space_body =>
+              if(p.id != near_space_body.id && !checkInteracted(p.id, near_space_body.id)) {
+                val force = G * p.m * near_space_body.m / p.coord.dist2(near_space_body.coord) * (near_space_body.coord - p.coord).n
+                val p_acc = force / p.m
+                p.vel += p_acc * dt
+                if(p.new_coord.isEmpty) p.new_coord = Some(p.coord + p.vel * dt)
+                else p.new_coord = Some(p.new_coord.get + p.vel * dt)
+                val op_acc = -force / near_space_body.m
+                near_space_body.vel += op_acc * dt
+                if (near_space_body.new_coord.isEmpty) near_space_body.new_coord = Some(near_space_body.coord + near_space_body.vel * dt)
+                else near_space_body.new_coord = Some(near_space_body.new_coord.get + near_space_body.vel * dt)
+                setInteracted(p.id, near_space_body.id)
+              }
           }
         }
-    }*/
-
-    (for {
-      space <- {val ans = splitMySpace(new MySpace(planets, windowCenter), 5, 20); println(s"spaces = ${ans.length}; ${ans.map(_.bodies.length).mkString(" : ")}"); ans}
-      if space.bodies.length > 1
-      (p, idx) <- space.bodies.zipWithIndex.init
-      op <- space.bodies.drop(idx + 1)
-      if p.isCollided(op)
-    } yield {
-      List((p, op), (op, p))
-    }).flatten.groupBy(_._1).foreach {
-      case (p, collidedd) =>
-        if(!to_remove.contains(p)) {
-          val collided = collidedd.map(_._2).toSet
-          to_remove += p
-          to_remove ++= collided
-          val newp = new PlanetPart(
-            p.m + collided.map(_.m).sum,
-            (p.coord + collided.map(_.coord).sum) / (collided.size + 1),
-            (p.m * p.vel + collided.map(op => op.m * op.vel).sum) / (p.m + collided.map(_.m).sum))
-          to_add += newp
+        if(idx != space.bodies.length-1) {
+          for {
+            op <- space.bodies.drop(idx + 1)
+          } {
+            if(p.id != op.id && !checkInteracted(p.id, op.id)) {
+              if (p.isCollided(op)) {
+                collided ++= Seq((p, op), (op, p))
+              } else {
+                val force = G * p.m * op.m / p.coord.dist2(op.coord) * (op.coord - p.coord).n
+                val p_acc = force / p.m
+                p.vel += p_acc * dt
+                if (p.new_coord.isEmpty) p.new_coord = Some(p.coord + p.vel * dt)
+                else p.new_coord = Some(p.new_coord.get + p.vel * dt)
+                val op_acc = -force / op.m
+                op.vel += op_acc * dt
+                if (op.new_coord.isEmpty) op.new_coord = Some(op.coord + op.vel * dt)
+                else op.new_coord = Some(op.new_coord.get + op.vel * dt)
+              }
+              setInteracted(p.id, op.id)
+            }
+          }
         }
+      }
+      collided.groupBy(_._1.id).foreach {
+        case (_, collidedd) =>
+          val x = collidedd.head._1
+          if(!to_remove.contains(x)) {
+            val collided = collidedd.map(_._2).toSet
+            to_remove += x
+            to_remove ++= collided
+            val newp = new PlanetPart(
+              x.m + collided.map(_.m).sum,
+              (x.coord + collided.map(_.coord).sum) / (collided.size + 1),
+              (x.m * x.vel + collided.map(op => op.m * op.vel).sum) / (x.m + collided.map(_.m).sum))
+            to_add += newp
+          }
+      }
+      space.bodies.foreach(p => {
+        if(p.new_coord.nonEmpty) {
+          p.coord = p.new_coord.get
+          p.new_coord = None
+        }
+        if(_record_points) points += ((p.coord - center, p))
+      })
     }
 
     planets --= to_remove
     planets ++= to_add
     to_remove.clear()
     to_add.clear()
-
-    planets.zipWithIndex.foreach {
-      case (p, idx) =>
-        val force = (planets.take(idx) ++ planets.drop(idx+1)).map {
-          case op => {
-            G*p.m*op.m/p.coord.dist2(op.coord)*(op.coord - p.coord).n
-          }
-        }.sum
-        val acc = force/p.m
-        p.vel += acc*dt
-        p.new_coord = p.coord + p.vel*dt
-    }
-    planets.foreach(p => {
-      p.coord = p.new_coord
-      if(_record_points) points += ((p.coord - center, p))
-    })
   }
 
   center = _center
