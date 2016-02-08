@@ -13,7 +13,7 @@ class PlanetPart(var m:Double, var coord:Vec, var vel:Vec) {
   def aabb:AABB = AABB(coord, r*2, r*2)
   def isCollided(op:PlanetPart):Boolean = coord.dist(op.coord) < r + op.r
 
-  var new_coord:Option[Vec] = None
+  var new_force:Vec = Vec.zero
 }
 
 class MySpace(val bodies:Seq[PlanetPart], val center:Vec, val width:Double, val height:Double) {
@@ -95,9 +95,10 @@ class MySpace(val bodies:Seq[PlanetPart], val center:Vec, val width:Double, val 
 }
 
 object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
-  private val G:Double = 1
-  private val dt = 0.1
+  val G:Double = 1
+  val dt = 0.1
 
+  private val interacted = mutable.HashSet[(Int, Int)]()
   private val to_remove = mutable.HashSet[PlanetPart]()
   private val to_add = mutable.HashSet[PlanetPart]()
   private val planets = ArrayBuffer[PlanetPart]()
@@ -218,102 +219,50 @@ object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
     val spaces = splitMySpace(new MySpace(planets, windowCenter), 5, 20)
     println(s"[$time] spaces = ${spaces.length}; ${spaces.map(_.bodies.length).mkString(" : ")}")
 
-    val interacted = mutable.HashSet[(Int, Int)]()
-    def setInteracted(id1:Int, id2:Int) {
-      if(id1 <= id2) interacted += ((id1, id2))
-      else interacted += ((id2, id1))
-    }
-    def checkInteracted(id1:Int, id2:Int): Boolean = {
-      if(id1 <= id2) interacted.contains((id1, id2))
-      else interacted.contains((id2, id1))
-    }
-
-    for {
-      (space, space_idx) <- spaces.zipWithIndex
+    (for {
+      space <- spaces
       if space.bodies.nonEmpty
-    } {
-      val collided = ArrayBuffer[(PlanetPart, PlanetPart)]()
-      val other_spaces = spaces.take(space_idx) ++ spaces.drop(space_idx+1)
-      for {
-        (p, idx) <- space.bodies.zipWithIndex
-      } {
-        val (outer_spaces, near_spaces) = other_spaces.partition(_.virtualCentralBody.coord.dist(p.coord) > 100)
-        val other_spaces_force = outer_spaces.map {
-          case os =>
-            val x = os.virtualCentralBody
-            G*p.m*x.m/p.coord.dist2(x.coord)*(x.coord - p.coord).n
-        }.sum
-        val p_acc = other_spaces_force / p.m
-        p.vel += p_acc * dt
-        if(p.new_coord.isEmpty) p.new_coord = Some(p.coord + p.vel * dt)
-        else p.new_coord = Some(p.new_coord.get + p.vel * dt)
-        near_spaces.filterNot(_.id == space.id).foreach {
-          case near_space => near_space.bodies.foreach {
-            case near_space_body =>
-              if(p.id != near_space_body.id && !checkInteracted(p.id, near_space_body.id)) {
-                val force = G * p.m * near_space_body.m / p.coord.dist2(near_space_body.coord) * (near_space_body.coord - p.coord).n
-                val p_acc = force / p.m
-                p.vel += p_acc * dt
-                if(p.new_coord.isEmpty) p.new_coord = Some(p.coord + p.vel * dt)
-                else p.new_coord = Some(p.new_coord.get + p.vel * dt)
-                val op_acc = -force / near_space_body.m
-                near_space_body.vel += op_acc * dt
-                if (near_space_body.new_coord.isEmpty) near_space_body.new_coord = Some(near_space_body.coord + near_space_body.vel * dt)
-                else near_space_body.new_coord = Some(near_space_body.new_coord.get + near_space_body.vel * dt)
-                setInteracted(p.id, near_space_body.id)
-              }
-          }
+      (p, idx) <- space.bodies.zipWithIndex.init
+      op <- space.bodies.drop(idx + 1)
+      if p.isCollided(op)
+    } yield {
+        List((p, op), (op, p))
+      }).flatten.groupBy(_._1).foreach {
+      case (p, collidedd) =>
+        if(!to_remove.contains(p)) {
+          val collided = collidedd.map(_._2).toSet
+          to_remove += p
+          to_remove ++= collided
+          val newp = new PlanetPart(
+            p.m + collided.map(_.m).sum,
+            (p.coord + collided.map(_.coord).sum) / (collided.size + 1),
+            (p.m * p.vel + collided.map(op => op.m * op.vel).sum) / (p.m + collided.map(_.m).sum))
+          to_add += newp
         }
-        if(idx != space.bodies.length-1) {
-          for {
-            op <- space.bodies.drop(idx + 1)
-          } {
-            if(p.id != op.id && !checkInteracted(p.id, op.id)) {
-              if (p.isCollided(op)) {
-                collided ++= Seq((p, op), (op, p))
-              } else {
-                val force = G * p.m * op.m / p.coord.dist2(op.coord) * (op.coord - p.coord).n
-                val p_acc = force / p.m
-                p.vel += p_acc * dt
-                if (p.new_coord.isEmpty) p.new_coord = Some(p.coord + p.vel * dt)
-                else p.new_coord = Some(p.new_coord.get + p.vel * dt)
-                val op_acc = -force / op.m
-                op.vel += op_acc * dt
-                if (op.new_coord.isEmpty) op.new_coord = Some(op.coord + op.vel * dt)
-                else op.new_coord = Some(op.new_coord.get + op.vel * dt)
-              }
-              setInteracted(p.id, op.id)
-            }
-          }
-        }
-      }
-      collided.groupBy(_._1.id).foreach {
-        case (_, collidedd) =>
-          val x = collidedd.head._1
-          if(!to_remove.contains(x)) {
-            val collided = collidedd.map(_._2).toSet
-            to_remove += x
-            to_remove ++= collided
-            val newp = new PlanetPart(
-              x.m + collided.map(_.m).sum,
-              (x.coord + collided.map(_.coord).sum) / (collided.size + 1),
-              (x.m * x.vel + collided.map(op => op.m * op.vel).sum) / (x.m + collided.map(_.m).sum))
-            to_add += newp
-          }
-      }
-      space.bodies.foreach(p => {
-        if(p.new_coord.nonEmpty) {
-          p.coord = p.new_coord.get
-          p.new_coord = None
-        }
-        if(_record_points) points += ((p.coord - center, p))
-      })
     }
 
     planets --= to_remove
     planets ++= to_add
     to_remove.clear()
     to_add.clear()
+
+    for {
+      (p, idx) <- planets.zipWithIndex
+    } {
+      if(idx != planets.length-1) {
+        for {
+          op <- planets.drop(idx + 1)
+        } {
+          val force = GenesisTest.G * p.m * op.m / p.coord.dist2(op.coord) * (op.coord - p.coord).n
+          p.new_force += force
+          op.new_force -= force
+        }
+      }
+      p.vel += p.new_force/p.m*dt
+      p.coord += p.vel*dt
+      p.new_force = Vec.zero
+      if(_record_points) points += ((p.coord - center, p))
+    }
   }
 
   center = _center
