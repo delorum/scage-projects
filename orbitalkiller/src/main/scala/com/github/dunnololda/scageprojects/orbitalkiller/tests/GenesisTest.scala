@@ -6,7 +6,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.AABB
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class PlanetPart(var m:Double, var coord:Vec, var vel:Vec) {
+class PlanetPart(val m:Double, var coord:Vec, var vel:Vec) {
   val id = GenesisTest.getId
   val r:Float = 1/*+m*0.001*/
 
@@ -14,12 +14,19 @@ class PlanetPart(var m:Double, var coord:Vec, var vel:Vec) {
   def isCollided(op:PlanetPart):Boolean = coord.dist(op.coord) < r + op.r
 
   var new_force:Vec = Vec.zero
+  
+  override val hashCode:Int = id
+  def canEqual(other:Any):Boolean = other.isInstanceOf[PlanetPart]
+  override def equals(other:Any):Boolean = other match {
+    case that:PlanetPart => (that canEqual this) && this.hashCode == that.hashCode
+    case _ => false
+  }
 }
 
-class MySpace(val bodies:Seq[PlanetPart], val center:Vec, val width:Double, val height:Double) {
+class MySpace(val bodies:Seq[PlanetPart], val c:Vec, val w:Double, val h:Double) {
   val id = GenesisTest.getId
-  def this(bodies:Seq[PlanetPart], center:Vec) = {
-    this(bodies, center, {
+  def this(bodies:Seq[PlanetPart], c:Vec) = {
+    this(bodies, c, {
       val (init_min_x, init_max_x) = {
         bodies.headOption.map(b => {
           val AABB(c, w, _) = b.aabb
@@ -36,7 +43,7 @@ class MySpace(val bodies:Seq[PlanetPart], val center:Vec, val width:Double, val 
             if(new_max_x > res_max_x) new_max_x else res_max_x
             )
       }
-      math.max(math.abs(max_x - center.x)*2, math.abs(center.x - min_x)*2)
+      math.max(math.abs(max_x - c.x)*2, math.abs(c.x - min_x)*2)
     }, {
       val (init_min_y, init_max_y) = {
         bodies.headOption.map(b => {
@@ -54,11 +61,11 @@ class MySpace(val bodies:Seq[PlanetPart], val center:Vec, val width:Double, val 
             if(new_max_y > res_max_y) new_max_y else res_max_y
             )
       }
-      math.max(math.abs(max_y - center.y)*2, math.abs(center.y - min_y)*2)
+      math.max(math.abs(max_y - c.y)*2, math.abs(c.y - min_y)*2)
     })
   }
 
-  lazy val aabb:AABB = AABB(center, width, height)
+  lazy val aabb:AABB = AABB(c, w, h)
 
   lazy val quadSpaces:List[MySpace] = {
     val AABB(c, w, h) = aabb
@@ -98,22 +105,35 @@ object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
   val G:Double = 1
   val dt = 0.1
 
-  private val interacted = mutable.HashSet[(Int, Int)]()
-  private val to_remove = mutable.HashSet[PlanetPart]()
-  private val to_add = mutable.HashSet[PlanetPart]()
+  val interacted = mutable.HashSet[(Int, Int)]()
+  def setInteracted(id1:Int, id2:Int) {
+    if(id1 <= id2) interacted += ((id1, id2))
+    else interacted += ((id2, id1))
+  }
+  def checkInteracted(id1:Int, id2:Int): Boolean = {
+    if(id1 <= id2) interacted.contains((id1, id2))
+    else interacted.contains((id2, id1))
+  }
+
+  implicit class RichVec(v:Vec) {
+    def isNaN:Boolean = {
+      val ans = v.x.toDouble.isNaN || v.y.toDouble.isNaN
+      if(ans) {
+        "gotach1"
+      }
+      ans
+    }
+  }
+
+  private val to_remove = mutable.ArrayBuffer[mutable.HashSet[PlanetPart]]()
   private val planets = ArrayBuffer[PlanetPart]()
 
   private var _record_points = false
   private val points = ArrayBuffer[(Vec, PlanetPart)]()
 
   private def randomCoord:Vec = {
-    Vec((math.random*800).toFloat, (math.random*600).toFloat)
+    windowCenter + Vec((math.random*300/math.sqrt(2)).toFloat, (math.random*300/math.sqrt(2)).toFloat).rotateDeg(math.random*360)
   }
-
-  (1 to 3000).foreach(i => {
-    val c = randomCoord
-    planets += new PlanetPart(1, c, (c - windowCenter).n)
-  })
 
   /*planets += new Planet(5, windowCenter +Vec(-10,0), Vec.zero)
   planets += new Planet(5, windowCenter +Vec(10,0), Vec.zero)*/
@@ -123,12 +143,17 @@ object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
 
   private var id = 1
   def getId: Int = {
-    try {
-      id
-    } finally {
-      id += 1
-    }
+    val x = id
+    id += 1
+    x
   }
+
+  (1 to 3000).foreach(i => {
+    val c = randomCoord
+    planets += new PlanetPart(1, c,
+      (c - windowCenter).n/*(c - windowCenter).rotateDeg(90).n*/
+    )
+  })
 
   /**
    *
@@ -215,38 +240,145 @@ object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
   def time = System.currentTimeMillis() - start
 
   action {
+    if(planets.map(_.m).sum < 3000) {
+      println("gotcha!")
+    }
+    if(planets.map(_.m).sum > 3000) {
+      println("gotach!")
+    }
+
     println(s"[$time] splitting space...")
     val spaces = splitMySpace(new MySpace(planets, windowCenter), 5, 20)
     println(s"[$time] spaces = ${spaces.length}; ${spaces.map(_.bodies.length).mkString(" : ")}")
 
-    (for {
-      space <- spaces
+    interacted.clear()
+
+    for {
+      (space, space_idx) <- spaces.zipWithIndex
       if space.bodies.nonEmpty
-      (p, idx) <- space.bodies.zipWithIndex.init
-      op <- space.bodies.drop(idx + 1)
-      if p.isCollided(op)
-    } yield {
-        List((p, op), (op, p))
-      }).flatten.groupBy(_._1).foreach {
-      case (p, collidedd) =>
-        if(!to_remove.contains(p)) {
-          val collided = collidedd.map(_._2).toSet
-          to_remove += p
-          to_remove ++= collided
-          val newp = new PlanetPart(
-            p.m + collided.map(_.m).sum,
-            (p.coord + collided.map(_.coord).sum) / (collided.size + 1),
-            (p.m * p.vel + collided.map(op => op.m * op.vel).sum) / (p.m + collided.map(_.m).sum))
-          to_add += newp
+    } {
+      val other_spaces = spaces.take(space_idx) ++ spaces.drop(space_idx+1)
+      val (outer_spaces, near_spaces) = other_spaces.partition(_.virtualCentralBody.coord.dist(space.virtualCentralBody.coord) > 100)
+      val filtered_near_spaces = near_spaces.filterNot(_.id == space.id)
+      for {
+        (p, idx) <- space.bodies.zipWithIndex
+      } {
+        val outer_spaces_force = outer_spaces.map {
+          case os =>
+            val x = os.virtualCentralBody
+            val d = p.coord.dist2(x.coord)
+            if(d != 0) {
+              G*p.m*x.m/d*(x.coord - p.coord).n
+            }
+            else {
+              Vec.zero
+            }
+        }.sum
+        if(outer_spaces_force.isNaN) {
+          println("gotach!")
+        }
+        p.new_force += outer_spaces_force
+
+        filtered_near_spaces.foreach {
+          case near_space => near_space.bodies.foreach {
+            case near_space_body =>
+              if(p.id != near_space_body.id && !checkInteracted(p.id, near_space_body.id)) {
+                val force = G * p.m * near_space_body.m / p.coord.dist2(near_space_body.coord) * (near_space_body.coord - p.coord).n
+                if(force.isNaN) {
+                  println("gotach!")
+                }
+                p.new_force += force
+                near_space_body.new_force -= force
+                setInteracted(p.id, near_space_body.id)
+              }
+          }
+        }
+        if(idx != space.bodies.length-1) {
+          for {
+            op <- space.bodies.drop(idx + 1)
+          } {
+            if(p.id != op.id && !checkInteracted(p.id, op.id)) {
+              if(p.isCollided(op)) {
+                val sl = to_remove.filter(s => s.contains(p) || s.contains(op))
+                if(sl.nonEmpty) {
+                  if(sl.length == 1) {
+                    sl.head += p
+                    sl.head += op
+                  } else {
+                    sl.head += p
+                    sl.head += op
+                    sl.tail.foreach(x => sl.head ++= x)
+                    to_remove --= sl.tail
+                  }
+                  //println(s"${p.id} collides with ${op.id} : ${sl.head.map(_.id).mkString(" ")}")
+                } else {
+                  val s = mutable.HashSet(p, op)
+                  //println(s"${p.id} collides with ${op.id} : ${s.map(_.id).mkString(" ")}")
+                  to_remove += s
+                }
+              } else {
+                val force = G * p.m * op.m / p.coord.dist2(op.coord) * (op.coord - p.coord).n
+                if(force.isNaN) {
+                  println("gotach!")
+                }
+                p.new_force += force
+                op.new_force -= force
+              }
+              setInteracted(p.id, op.id)
+            }
+          }
+        }
+      }
+    }
+
+    if(planets.map(_.m).sum < 3000) {
+      println("gotcha!")
+    }
+    if(planets.map(_.m).sum > 3000) {
+      println("gotach!")
+    }
+
+    println("================================")
+    to_remove.foreach {
+      case ps =>
+        val psl = ps.toSeq
+        //println(psl.map(_.id).mkString(" "))
+        val newm = psl.map(_.m).sum
+        val newp = new PlanetPart(
+          newm,
+          psl.map(_.coord).sum / ps.size,
+          psl.map(op => op.m * op.vel).sum / newm)
+        //println(planets.map(_.m).sum)
+        //println(ps.forall(p => planets.contains(p)))
+        planets --= ps
+        //println(planets.map(_.m).sum)
+        planets += newp
+        //println(planets.map(_.m).sum)
+        if(planets.map(_.m).sum < 3000) {
+          println("gotcha!")
+        }
+        if(planets.map(_.m).sum > 3000) {
+          println("gotach!")
         }
     }
 
-    planets --= to_remove
-    planets ++= to_add
     to_remove.clear()
-    to_add.clear()
 
-    for {
+    planets.foreach {
+      case p =>
+        p.vel += p.new_force/p.m*dt
+        if(p.vel.isNaN) {
+          println("gotach!")
+        }
+        p.coord += p.vel*dt
+        if(p.coord.isNaN) {
+          println("gotach!")
+        }
+        p.new_force = Vec.zero
+        if(_record_points) points += ((p.coord - center, p))
+    }
+
+    /*for {
       (p, idx) <- planets.zipWithIndex
     } {
       if(idx != planets.length-1) {
@@ -262,7 +394,7 @@ object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
       p.coord += p.vel*dt
       p.new_force = Vec.zero
       if(_record_points) points += ((p.coord - center, p))
-    }
+    }*/
   }
 
   center = _center
@@ -287,6 +419,6 @@ object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
     print(f"Render/Action ${averageRenderTimeMsec*fps/(averageRenderTimeMsec*fps+averageActionTimeMsec*ticks)*100}%.2f%%/${1*averageActionTimeMsec*ticks/(averageRenderTimeMsec*fps+averageActionTimeMsec*ticks)*100}%.2f%%", windowWidth - 20, windowHeight - 60, align = "top-right", color = DARK_GRAY)
     print(f"Render/Action $averageRenderTimeMsec%.2f msec/$averageActionTimeMsec%.2f msec", windowWidth - 20, windowHeight - 80, align = "top-right", color = DARK_GRAY)
     print(s"Render/Action $currentRenderTimeMsec msec/$currentActionTimeMsec msec", windowWidth - 20, windowHeight - 100, align = "top-right", color = DARK_GRAY)
-    print(s"planets: ${planets.size}", 20, 20, GRAY)
+    print(s"planets: ${planets.size}, mass: ${planets.map(_.m).sum}", 20, 20, GRAY)
   }
 }

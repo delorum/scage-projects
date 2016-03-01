@@ -1000,7 +1000,11 @@ package object orbitalkiller {
   }
 
   def msecOrKmsec(msec:Number):String = {
-    if(math.abs(msec.doubleValue()) < 1000) f"${msec.doubleValue()}%.2f м/сек" else f"${msec.doubleValue()/1000}%.2f км/сек"
+    if(math.abs(msec.doubleValue()) < 1000) {
+      f"${msec.doubleValue()*3.6}%.2f км/ч"
+    } else {
+      f"${msec.doubleValue()/1000}%.2f км/сек"
+    }
   }
 
   def newtonOrKilonewton(newton:Number):String = {
