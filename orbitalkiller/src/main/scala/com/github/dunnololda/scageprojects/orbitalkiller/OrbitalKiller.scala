@@ -815,7 +815,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     if(drawMapMode) {
       left_up_corner = Some(absCoord(m))
     } else {
-      InterfaceHolder.determineInterfaceElem(m).foreach(i => if(i.isMinimized) i.showByUser() else i.hideByUser())
+      InterfaceHolder.clickInterfaceElem(m)
     }
   }, onBtnUp = m => {
     if(drawMapMode) {
@@ -835,11 +835,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           }
         }
       } else {
-        InterfaceHolder.determineInterfaceElem(m) match {
-          case Some(i) =>
-            if(i.isMinimized) i.showByUser() else i.hideByUser()
-          case None =>
-            set_stop_moment = true
+        if(!InterfaceHolder.clickInterfaceElem(m)) {
+          set_stop_moment = true
         }
       }
       left_up_corner = None
@@ -933,56 +930,62 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                         val orbital_point = h.orbitalPointInPoint(mouse_point)
                         drawFilledCircle(orbital_point*scale, 3 / globalScale, color2)
                         val flight_time_msec = h.travelTimeOnOrbitMsec(bs_coord, orbital_point, ccw)
-                        val flight_time = s"${timeStr(flight_time_msec)}"
+
                         if (set_stop_moment) {
                           _stop_after_number_of_tacts = (flight_time_msec / 1000 / base_dt).toLong
                           _stop_in_orbit_true_anomaly = mouse_teta_rad2Pi
                           set_stop_moment = false
 
-                          val p1 = h.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)
+                          /*val p1 = h.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)
                           println((50 to 300 by 50).map(num_iterations => {
                             val px = h.orbitalPointAfterTime(bs_coord, (_stop_after_number_of_tacts*base_dt).toLong, ccw, num_iterations)
                             mOrKmOrMKm(p1.dist(px))
-                          }).mkString(" : "))
+                          }).mkString(" : "))*/
                         }
-                        val vnorm = h.orbitalVelocityByTrueAnomalyRad(mouse_teta_rad2Pi)
-                        openglLocalTransform {
-                          openglMove(orbital_point * scale)
-                          print(s"  $flight_time : ${mOrKmOrMKm(h.distanceByTrueAnomalyRad(mouse_teta_rad2Pi) - planet.radius)} : ${msecOrKmsec(vnorm)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
+
+                        if(InterfaceHolder.orbParams.selectedVariant == 0) {
+                          val flight_time = s"${timeStr(flight_time_msec)}"
+                          val vnorm = h.orbitalVelocityByTrueAnomalyRad(mouse_teta_rad2Pi)
+                          openglLocalTransform {
+                            openglMove(orbital_point * scale)
+                            print(s"  $flight_time : ${mOrKmOrMKm(h.distanceByTrueAnomalyRad(mouse_teta_rad2Pi) - planet.radius)} : ${msecOrKmsec(vnorm)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
+                          }
+                          station_orbit_render.foreach(x => {
+                            x.ellipseOrbit.foreach(e => {
+                              val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
+                              drawCircle(position_after_time * scale, earth.radius * scale / 2f / globalScale, WHITE)
+                            })
+                          })
+                          moon_orbit_render.foreach(x => {
+                            x.ellipseOrbit.foreach(e => {
+                              val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
+                              drawCircle(position_after_time * scale, moon.radius * scale, WHITE)
+                              drawCircle(position_after_time * scale, moon.one_third_hill_radius * scale, color = DARK_GRAY)
+                            })
+                          })
                         }
+                      }
+                      if(InterfaceHolder.orbParams.selectedVariant == 0) {
                         station_orbit_render.foreach(x => {
                           x.ellipseOrbit.foreach(e => {
-                            val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec/1000)
-                            drawCircle(position_after_time*scale, earth.radius * scale / 2f / globalScale, WHITE)
+                            if (_stop_after_number_of_tacts > 0) {
+                              val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
+                              val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
+                              drawCircle(position_when_stop_moment * scale, earth.radius * scale / 2f / globalScale, GREEN)
+                            }
                           })
                         })
                         moon_orbit_render.foreach(x => {
                           x.ellipseOrbit.foreach(e => {
-                            val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec/1000)
-                            drawCircle(position_after_time*scale, moon.radius * scale, WHITE)
-                            drawCircle(position_after_time*scale, moon.one_third_hill_radius*scale, color = DARK_GRAY)
+                            if (_stop_after_number_of_tacts > 0) {
+                              val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
+                              val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
+                              drawCircle(position_when_stop_moment * scale, moon.radius * scale, GREEN)
+                              drawCircle(position_when_stop_moment * scale, moon.one_third_hill_radius * scale, color = DARK_GRAY)
+                            }
                           })
                         })
                       }
-                      station_orbit_render.foreach(x => {
-                        x.ellipseOrbit.foreach(e => {
-                          if(_stop_after_number_of_tacts > 0) {
-                            val time_to_stop_sec = (_stop_after_number_of_tacts*base_dt).toLong
-                            val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
-                            drawCircle(position_when_stop_moment*scale, earth.radius * scale / 2f / globalScale, GREEN)
-                          }
-                        })
-                      })
-                      moon_orbit_render.foreach(x => {
-                        x.ellipseOrbit.foreach(e => {
-                          if(_stop_after_number_of_tacts > 0) {
-                            val time_to_stop_sec = (_stop_after_number_of_tacts*base_dt).toLong
-                            val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
-                            drawCircle(position_when_stop_moment*scale, moon.radius * scale, GREEN)
-                            drawCircle(position_when_stop_moment*scale, moon.one_third_hill_radius*scale, color = DARK_GRAY)
-                          }
-                        })
-                      })
                     }
                   }
                 }))
@@ -1009,48 +1012,51 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                     val true_anomaly_rad = e.tetaRad2PiInPoint(mouse_point)
 
                     val flight_time_msec = e.travelTimeOnOrbitMsec(bs_coord, orbital_point, ccw)
-                    val flight_time_str = s"${timeStr(flight_time_msec)}"
+
                     if(set_stop_moment) {
                       _stop_after_number_of_tacts = (flight_time_msec/1000/base_dt).toLong
                       _stop_in_orbit_true_anomaly = true_anomaly_rad
                       set_stop_moment = false
 
-                      val p1 = e.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)
+                      /*val p1 = e.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)
                       println((50 to 300 by 50).map(num_iterations => {
                         val px = e.orbitalPointAfterTime(bs_coord, (_stop_after_number_of_tacts*base_dt).toLong, ccw, num_iterations)
                         mOrKmOrMKm(p1.dist(px))
-                      }).mkString(" : "))
+                      }).mkString(" : "))*/
                     }
-                    val (vt, vr) = e.orbitalVelocityByTrueAnomalyRad(true_anomaly_rad)
-                    val vnorm = math.sqrt(vr*vr + vt*vt)
-                    openglLocalTransform {
-                      openglMove(orbital_point * scale)
-                      print(s"  $flight_time_str : ${mOrKmOrMKm(e.distanceByTrueAnomalyRad(true_anomaly_rad) - planet.radius)} : ${msecOrKmsec(vnorm)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
+                    if(InterfaceHolder.orbParams.selectedVariant == 0) {
+                      val flight_time_str = s"${timeStr(flight_time_msec)}"
+                      val (vt, vr) = e.orbitalVelocityByTrueAnomalyRad(true_anomaly_rad)
+                      val vnorm = math.sqrt(vr * vr + vt * vt)
+                      openglLocalTransform {
+                        openglMove(orbital_point * scale)
+                        print(s"  $flight_time_str : ${mOrKmOrMKm(e.distanceByTrueAnomalyRad(true_anomaly_rad) - planet.radius)} : ${msecOrKmsec(vnorm)}", Vec.zero, size = (max_font_size / globalScale).toFloat, color2)
+                      }
+                      station_orbit_render.foreach(x => {
+                        x.ellipseOrbit.foreach(e => {
+                          val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
+                          drawCircle(position_after_time * scale, earth.radius * scale / 2f / globalScale, WHITE)
+                          if (_stop_after_number_of_tacts > 0) {
+                            val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
+                            val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
+                            drawCircle(position_when_stop_moment * scale, earth.radius * scale / 2f / globalScale, GREEN)
+                          }
+                        })
+                      })
+                      moon_orbit_render.foreach(x => {
+                        x.ellipseOrbit.foreach(e => {
+                          val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
+                          drawCircle(position_after_time * scale, moon.radius * scale, WHITE)
+                          drawCircle(position_after_time * scale, moon.one_third_hill_radius * scale, color = DARK_GRAY)
+                          if (_stop_after_number_of_tacts > 0) {
+                            val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
+                            val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
+                            drawCircle(position_when_stop_moment * scale, moon.radius * scale, GREEN)
+                            drawCircle(position_when_stop_moment * scale, moon.one_third_hill_radius * scale, color = DARK_GRAY)
+                          }
+                        })
+                      })
                     }
-                    station_orbit_render.foreach(x => {
-                      x.ellipseOrbit.foreach(e => {
-                        val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec/1000)
-                        drawCircle(position_after_time*scale, earth.radius * scale / 2f / globalScale, WHITE)
-                        if(_stop_after_number_of_tacts > 0) {
-                           val time_to_stop_sec = (_stop_after_number_of_tacts*base_dt).toLong
-                           val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
-                          drawCircle(position_when_stop_moment*scale, earth.radius * scale / 2f / globalScale, GREEN)
-                        }
-                      })
-                    })
-                    moon_orbit_render.foreach(x => {
-                      x.ellipseOrbit.foreach(e => {
-                        val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec/1000)
-                        drawCircle(position_after_time*scale, moon.radius * scale, WHITE)
-                        drawCircle(position_after_time*scale, moon.one_third_hill_radius*scale, color = DARK_GRAY)
-                        if(_stop_after_number_of_tacts > 0) {
-                          val time_to_stop_sec = (_stop_after_number_of_tacts*base_dt).toLong
-                          val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
-                          drawCircle(position_when_stop_moment*scale, moon.radius * scale, GREEN)
-                          drawCircle(position_when_stop_moment*scale, moon.one_third_hill_radius*scale, color = DARK_GRAY)
-                        }
-                      })
-                    })
                   }
                 }))
             }

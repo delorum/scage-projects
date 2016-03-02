@@ -1000,10 +1000,17 @@ package object orbitalkiller {
   }
 
   def msecOrKmsec(msec:Number):String = {
-    if(math.abs(msec.doubleValue()) < 1000) {
-      f"${msec.doubleValue()*3.6}%.2f км/ч"
-    } else {
-      f"${msec.doubleValue()/1000}%.2f км/сек"
+    InterfaceHolder.msecOrKmH.selectedVariant match {
+      case 0 => // m/sec
+        if(math.abs(msec.doubleValue()) < 1000) {
+          f"${msec.doubleValue()}%.2f м/сек"
+        } else {
+          f"${msec.doubleValue()/1000}%.2f км/сек"
+        }
+      case 1 => // km/h
+        f"${msec.doubleValue()*3.6}%.2f км/ч"
+      case _ =>
+        ""
     }
   }
 
@@ -1086,7 +1093,7 @@ package object orbitalkiller {
         }
 
         val time_to_stop_at_full_power = math.abs(v0y/(1000000/OrbitalKiller.ship.mass - planet_g))
-        val fall_time_str = if(fall_time_msec < 30000) s"[r Поверхность через ${timeStr(fall_time_msec)} (${timeStr((time_to_stop_at_full_power*1000l).toLong)})]" else s"Поверхность через ${timeStr(fall_time_msec)}"
+        val fall_time_str = if(fall_time_msec < 500) "" else if(fall_time_msec < 30000) s"[r Поверхность через ${timeStr(fall_time_msec)} (${timeStr((time_to_stop_at_full_power*1000l).toLong)})]" else s"Поверхность через ${timeStr(fall_time_msec)}"
 
         f"$prefix, суборбитальная, $dir, e = $e%.2f, r_p = ${mOrKmOrMKm(r_p - planet_radius)}, r_a = ${mOrKmOrMKm(r_a - planet_radius)}. $fall_time_str"
       } else {
@@ -1349,7 +1356,7 @@ package object orbitalkiller {
         }
 
         val time_to_stop_at_full_power = math.abs(v0y / (1000000 / OrbitalKiller.ship.mass - planet_g))
-        val fall_time_str = if (fall_time_msec < 30000) s"[r Поверхность через ${timeStr(fall_time_msec)} (${timeStr((time_to_stop_at_full_power * 1000l).toLong)})]" else s"Поверхность через ${timeStr(fall_time_msec)}"
+        val fall_time_str = if(fall_time_msec < 500) "" else if(fall_time_msec < 30000) s"[r Поверхность через ${timeStr(fall_time_msec)} (${timeStr((time_to_stop_at_full_power * 1000l).toLong)})]" else s"Поверхность через ${timeStr(fall_time_msec)}"
         f"$prefix, незамкнутая, суборбитальная $dir, $r_p_approach_str, e = $e%.2f, r_p = ${mOrKmOrMKm(r_p - planet_radius)}, $fall_time_str"
       } else {
         f"$prefix, незамкнутая, $dir, $r_p_approach_str, e = $e%.2f, r_p = ${mOrKmOrMKm(r_p - planet_radius)}"

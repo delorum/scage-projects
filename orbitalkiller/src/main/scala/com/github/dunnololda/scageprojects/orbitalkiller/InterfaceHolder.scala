@@ -2,6 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scageprojects.orbitalkiller.interfaceElements._
 import OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller.switchers.{OrbitParamsCalculation, MSecOrKmH}
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import com.github.dunnololda.scage.ScageLibD._
@@ -15,6 +16,9 @@ object InterfaceHolder {
     additional_messages -= keyword
   }
 
+  val msecOrKmH = new MSecOrKmH
+  val orbParams = new OrbitParamsCalculation
+
   val timeInfo = new TimeInfo
 
   val viewModeInfo = new ViewModeInfo
@@ -23,7 +27,7 @@ object InterfaceHolder {
   val sunRelativeInfo = new SunRelativeInfo
   val earthRelativeInfo = new EarthRelativeInfo
   val moonRelativeInfo = new MoonRelativeInfo
-  val nearestShipInfo = new NearestShipInfo
+  val nearestShipInfo = new ShipInfo(OrbitalKiller.station)
 
   val linearVelocityInfo = new LinearVelocityInfo
   val angularVelocityInfo = new AngularVelocityInfo
@@ -37,7 +41,7 @@ object InterfaceHolder {
 
   val shipParamsWhenEginesOff = new ShipParamsWhenEnginesOff
 
-  val interfaces = List(
+  private val interfaces = List(
     List(timeInfo),
     List(viewModeInfo, flightModeInfo),
     List(sunRelativeInfo, earthRelativeInfo, moonRelativeInfo, nearestShipInfo),
@@ -47,6 +51,9 @@ object InterfaceHolder {
     List(shipParamsWhenEginesOff)
   )
 
+  private val switchers = List[InterfaceSwitcher](msecOrKmH, orbParams)
+  //def switchers:Seq[InterfaceSwitcher] = _switchers
+
   def hideAllByUser(): Unit = {
     interfaces.flatten.foreach(_.hideByUser())
   }
@@ -55,21 +62,31 @@ object InterfaceHolder {
     interfaces.flatten.foreach(_.showByUser())
   }
 
-  def determineInterfaceElem(mouse_coord:DVec):Option[InterfaceElement] = {
-    if(10 < mouse_coord.y && mouse_coord.y < 30) {
+  def clickInterfaceElem(mouse_coord:DVec):Boolean = {
+    if(10 < mouse_coord.y && mouse_coord.y < 30) {  // мышкой кликнули на линии свернутых элементов
       _minimized_strings.zipWithIndex.find {
         case ((i, color), idx) =>
-          val pos = 20 + idx*40
-          pos < mouse_coord.x && mouse_coord.x < pos+40
-      }.map(_._1._1)
+          val minimized_elem_center_x = 20 + idx * between_minimized_elems
+          minimized_elem_center_x - 20 < mouse_coord.x && mouse_coord.x < minimized_elem_center_x + 20
+      }.exists(x => {
+        x._1._1.showByUser(); true
+      })
+    } else if(30 < mouse_coord.y && mouse_coord.y < 50) {  // мышкой кликнули на линии переключателей
+      switchers.zipWithIndex.find {
+        case (sw, idx) =>
+          val minimized_elem_center_x = 30 + idx * between_switchers
+          minimized_elem_center_x - 20 < mouse_coord.x && mouse_coord.x < minimized_elem_center_x + 20
+      }.exists(x => {
+        x._1.switch(); true
+      })
     } else {
-      if(mouse_coord.x > 20 && mouse_coord.x < 300) {
+      if(20 < mouse_coord.x && mouse_coord.x < 300) {
         val x = (_strings.length + 2) * 20 - mouse_coord.y
         _interface_elems_positions.find {
           case (i, pos) =>
             pos - 20 < x && x < pos + 20 * (i.data.length - 1)
-        }.map(_._1)
-      } else None
+        }.exists(x => {x._1.hideByUser(); true})
+      } else false
     }
   }
 
@@ -90,10 +107,10 @@ object InterfaceHolder {
   }
 
   private val _strings = ArrayBuffer[(String, ScageColor)]()
-  def strings:Seq[(String, ScageColor)] = _strings
+  //def strings:Seq[(String, ScageColor)] = _strings
 
   private val _minimized_strings = ArrayBuffer[(InterfaceElement, ScageColor)]()
-  def minimizedStrings:Seq[(InterfaceElement, ScageColor)] = _minimized_strings
+  //def minimizedStrings:Seq[(InterfaceElement, ScageColor)] = _minimized_strings
 
   private val _interface_elems_positions = ArrayBuffer[(InterfaceElement, Int)]()
 
@@ -129,14 +146,21 @@ object InterfaceHolder {
     }
   }
 
+  private val between_minimized_elems = 40
+  private val between_switchers = 100
+
   def draw(): Unit = {
-    strings.zipWithIndex.foreach {
-      case ((str, color), idx) => print(str, 20, (strings.length+2 - idx)*20, ship.colorIfAliveOrRed(color))
+    _strings.zipWithIndex.foreach {
+      case ((str, color), idx) => print(str, 20, (_strings.length+2 - idx)*20, ship.colorIfAliveOrRed(color))
+    }
+    switchers.zipWithIndex.foreach {
+      case (switcher, idx) =>
+        print(switcher.selectedStrVariant, 30+idx*between_switchers, 40, YELLOW, align = "center")
     }
     //print(minimizedStrings.map(_._1).mkString(" "), 20, 20, DARK_GRAY)
-    minimizedStrings.zipWithIndex.foreach {
+    _minimized_strings.zipWithIndex.foreach {
       case ((i, color), idx) =>
-        print(i.shortDescr, 20+idx*40, 20, ship.colorIfAliveOrRed(color), align = "center")
+        print(i.shortDescr, 20+idx*between_minimized_elems, 20, ship.colorIfAliveOrRed(color), align = "center")
     }
   }
 }
