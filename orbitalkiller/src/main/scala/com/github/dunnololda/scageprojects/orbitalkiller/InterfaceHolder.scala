@@ -27,7 +27,7 @@ object InterfaceHolder {
   val sunRelativeInfo = new SunRelativeInfo
   val earthRelativeInfo = new EarthRelativeInfo
   val moonRelativeInfo = new MoonRelativeInfo
-  val nearestShipInfo = new ShipInfo(OrbitalKiller.station)
+  val nearestShipInfo = new OtherShipInfo(OrbitalKiller.station)
 
   val linearVelocityInfo = new LinearVelocityInfo
   val angularVelocityInfo = new AngularVelocityInfo
@@ -155,7 +155,7 @@ object InterfaceHolder {
     }
     switchers.zipWithIndex.foreach {
       case (switcher, idx) =>
-        print(switcher.selectedStrVariant, 30+idx*between_switchers, 40, YELLOW, align = "center")
+        print(switcher.selectedStrVariant, 30+idx*between_switchers, 40, ship.colorIfAliveOrRed(YELLOW), align = "center")
     }
     //print(minimizedStrings.map(_._1).mkString(" "), 20, 20, DARK_GRAY)
     _minimized_strings.zipWithIndex.foreach {

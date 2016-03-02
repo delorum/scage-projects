@@ -4,7 +4,7 @@ import com.github.dunnololda.scage.support.ScageColor
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import OrbitalKiller._
 
-class ShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
+class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
   private val strings = Array("")
 
   override protected def _update(): Unit = {
@@ -66,10 +66,10 @@ class ShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
       }).getOrElse("N/A", "N/A")
     val dist = mOrKmOrMKm(ship.coord.dist(monitoring_ship.coord))
     val vel = msecOrKmsec((ship.linearVelocity - monitoring_ship.linearVelocity)* (ship.coord - monitoring_ship.coord).n)
-    strings(0) = s"${monitoring_ship.index} dist=$dist, vel=$vel, rendezvous data: $need_orbit_period_str"
+    strings(0) = s"${monitoring_ship.index}: dist=$dist, vel=$vel, rendezvous data: $need_orbit_period_str"
   }
   override def data: Seq[String] = strings
   override val color = ScageColor.MAGENTA
 
-  override val shortDescr: String = "SI"
+  override val shortDescr: String = "OS"
 }
