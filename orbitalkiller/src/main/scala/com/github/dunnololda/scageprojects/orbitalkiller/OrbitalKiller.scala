@@ -292,42 +292,44 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   def viewMode = view_mode
   def viewMode_=(new_view_mode:Int) {
-    new_view_mode match {
-      case 0 => // свободный
-        _center = center
-        center = _center
-        rotationAngle = 0
-        base = DVec.zero
-        view_mode = 0
-      case 1 => // фиксация на корабле
-        center = ship.coord + _ship_offset
-        base = if(ship.coord.norma < 100000) DVec.zero else ship.coord
-        rotationCenter = ship.coord
-        rotationAngleDeg = -ship.rotation
-        view_mode = 1
-      case 2 => // посадка на планету
-        center = ship.coord
-        rotationCenter = ship.coord
-        rotationAngleDeg = {
-          val nearest_body_coord = if(ship.coord.dist2(earth.coord) < ship.coord.dist2(moon.coord)) earth.coord else moon.coord
-          val vec = ship.coord - nearest_body_coord
-          if(vec.x >= 0) vec.deg(DVec(0, 1))
-          else vec.deg(DVec(0, 1)) * (-1)
-        }
-        view_mode = 2
-      case 3 => // фиксация на корабле, абсолютная ориентация
-        center = ship.coord + _ship_offset
-        base = if(ship.coord.norma < 100000) DVec.zero else ship.coord
-        rotationAngle = 0
-        view_mode = 3
-      case 4 => // в режиме карты зафиксировать центр орбиты в центре экрана
-        if(drawMapMode) {
-          _center = _center - orbitAroundCelestialInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass).map(_._2.center * scale).getOrElse(ship.coord)
-          center = orbitAroundCelestialInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass).map(_._2.center * scale).getOrElse(ship.coord) + _center
+    if(new_view_mode != view_mode) {
+      new_view_mode match {
+        case 0 => // свободный
+          _center = center
+          center = _center
           rotationAngle = 0
-          view_mode = 4
-        }
-      case _ =>
+          base = DVec.zero
+          view_mode = 0
+        case 1 => // фиксация на корабле
+          center = ship.coord + _ship_offset
+          base = if (ship.coord.norma < 100000) DVec.zero else ship.coord
+          rotationCenter = ship.coord
+          rotationAngleDeg = -ship.rotation
+          view_mode = 1
+        case 2 => // посадка на планету
+          center = ship.coord
+          rotationCenter = ship.coord
+          rotationAngleDeg = {
+            val nearest_body_coord = if (ship.coord.dist2(earth.coord) < ship.coord.dist2(moon.coord)) earth.coord else moon.coord
+            val vec = ship.coord - nearest_body_coord
+            if (vec.x >= 0) vec.deg(DVec(0, 1))
+            else vec.deg(DVec(0, 1)) * (-1)
+          }
+          view_mode = 2
+        case 3 => // фиксация на корабле, абсолютная ориентация
+          center = ship.coord + _ship_offset
+          base = if (ship.coord.norma < 100000) DVec.zero else ship.coord
+          rotationAngle = 0
+          view_mode = 3
+        case 4 => // в режиме карты зафиксировать центр орбиты в центре экрана
+          if (drawMapMode) {
+            _center = _center - orbitAroundCelestialInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass).map(_._2.center * scale).getOrElse(ship.coord)
+            center = orbitAroundCelestialInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass).map(_._2.center * scale).getOrElse(ship.coord) + _center
+            rotationAngle = 0
+            view_mode = 4
+          }
+        case _ =>
+      }
     }
   }
   def viewModeStr = view_mode match {
