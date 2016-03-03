@@ -4,11 +4,11 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
 class SpaceStation2(
-             index:String,
+             index:Int,
              init_coord:DVec,
              init_velocity:DVec = DVec.dzero,
              init_rotation:Double = 0.0
-             ) extends PolygonShip(index, init_coord, init_velocity, init_rotation) {
+             ) extends PolygonShip(index, "Станция Огонек", init_coord, init_velocity, init_rotation) {
   def mass:Double = _payload + _fuel_mass
   private val _payload:Double = 50*1000
   private var _fuel_mass:Double = 50*1000

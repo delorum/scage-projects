@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scage.handlers.{RendererD, Renderer}
+import com.github.dunnololda.scage.handlers.RendererD
 import com.github.dunnololda.scageprojects.orbitalkiller._
 
 import scala.collection.mutable
@@ -9,14 +9,14 @@ import scala.collection.mutable.ArrayBuffer
 
 object BodyStatesHolder {
   val system_evolution = new SystemEvolution()
-  val current_body_states = mutable.HashMap[String, BodyState]()
+  val current_body_states = mutable.HashMap[Int, BodyState]()
   /*def currentBodyState(index:String):Option[BodyState] = current_body_states.get(index)
   def currentBodyStates = current_body_states.values.toList*/
-  def currentBodyState(index:String):Option[BodyState] = system_evolution.bodyState(index).map(_.toImmutableBodyState)
+  def currentBodyState(index:Int):Option[BodyState] = system_evolution.bodyState(index).map(_.toImmutableBodyState)
   def currentBodyStates = system_evolution.allBodyStates
 }
 
-import BodyStatesHolder._
+import com.github.dunnololda.scageprojects.orbitalkiller.tests.BodyStatesHolder._
 
 object CollisionTests2 extends ScageScreenAppD("Collision Tests 2", 640, 480) {
   def futureSystemEvolutionFrom(time:Long, body_states:List[BodyState]) = systemEvolutionFrom(
@@ -37,7 +37,7 @@ object CollisionTests2 extends ScageScreenAppD("Collision Tests 2", 640, 480) {
   val dynamic_bodies = ArrayBuffer[MyBody]()
 
   def addCircleBody(i:Int) {
-    val c =  new MyCircle2(s"c$i", randomPos, randomSpeed, 5, 1f, this)
+    val c =  new MyCircle2(nextId, randomPos, randomSpeed, 5, 1f, this)
     /*if(dynamic_bodies.forall(b => maybeCollision(b.currentState, c.currentState).isEmpty) &&
       !coordOnRectCentered(c.coord, Vec(w+60, h-20), 30, 20) &&
       !coordOnRectCentered(c.coord, Vec(w-60, h-20), 30, 20))
@@ -46,13 +46,13 @@ object CollisionTests2 extends ScageScreenAppD("Collision Tests 2", 640, 480) {
     //} else addCircleBody(i)
   }
 
-  val w1 = new MyWall2("w1", Vec(w-100, h-100),  Vec(w-100, h+100), this)
+  val w1 = new MyWall2(nextId, Vec(w-100, h-100),  Vec(w-100, h+100), this)
   system_evolution.addBody(w1.currentState.toMutableBodyState)
-  val w2 = new MyWall2("w2", Vec(w-100, h+100),  Vec(w+100, h+100), this)
+  val w2 = new MyWall2(nextId, Vec(w-100, h+100),  Vec(w+100, h+100), this)
   system_evolution.addBody(w2.currentState.toMutableBodyState)
-  val w3 = new MyWall2("w3", Vec(w+100, h+100),  Vec(w+100, h-100), this)
+  val w3 = new MyWall2(nextId, Vec(w+100, h+100),  Vec(w+100, h-100), this)
   system_evolution.addBody(w3.currentState.toMutableBodyState)
-  val w4 = new MyWall2("w4", Vec(w+100, h-100),  Vec(w-100, h-100), this)
+  val w4 = new MyWall2(nextId, Vec(w+100, h-100),  Vec(w-100, h-100), this)
   system_evolution.addBody(w4.currentState.toMutableBodyState)
 
 
@@ -60,20 +60,20 @@ object CollisionTests2 extends ScageScreenAppD("Collision Tests 2", 640, 480) {
   dynamic_bodies += b1
   val b2 = new MyBox2("b2", Vec(w-60, h-40), Vec(0.0f, 0), 30, 20, 1, this)
   dynamic_bodies += b2*/
-  val p1 = new MyPentagon2("p1", Vec(w-60, h), Vec(0.0f, 0), 20, 1, this)
+  val p1 = new MyPentagon2(nextId, Vec(w-60, h), Vec(0.0f, 0), 20, 1, this)
   dynamic_bodies += p1
   system_evolution.addBody(p1.currentState.toMutableBodyState,
-    (tacts, helper) => DVec(0, -helper.bodyState("p1").map(_.mass).getOrElse(0.0)*9.81),
+    (tacts, helper) => DVec(0, -helper.bodyState(p1.index).map(_.mass).getOrElse(0.0)*9.81),
     (tacts, helper) => 0.0)
-  val p2 = new MyPentagon2("p2", Vec(w-60, h-40), Vec(0.0f, 0), 20, 1, this)
+  val p2 = new MyPentagon2(nextId, Vec(w-60, h-40), Vec(0.0f, 0), 20, 1, this)
   dynamic_bodies += p2
   system_evolution.addBody(p2.currentState.toMutableBodyState,
-    (tacts, helper) => DVec(0, -helper.bodyState("p2").map(_.mass).getOrElse(0.0)*9.81),
+    (tacts, helper) => DVec(0, -helper.bodyState(p2.index).map(_.mass).getOrElse(0.0)*9.81),
     (tacts, helper) => 0.0)
-  val p3 = new MyPentagon2("p3", Vec(w-60, h-80), Vec(0.0f, 0), 20, 1, this)
+  val p3 = new MyPentagon2(nextId, Vec(w-60, h-80), Vec(0.0f, 0), 20, 1, this)
   dynamic_bodies += p3
   system_evolution.addBody(p3.currentState.toMutableBodyState,
-    (tacts, helper) => DVec(0, -helper.bodyState("p3").map(_.mass).getOrElse(0.0)*9.81),
+    (tacts, helper) => DVec(0, -helper.bodyState(p3.index).map(_.mass).getOrElse(0.0)*9.81),
     (tacts, helper) => 0.0)
 
   private val real_system_evolution =
@@ -154,7 +154,7 @@ object CollisionTests2 extends ScageScreenAppD("Collision Tests 2", 640, 480) {
   }
 }
 
-class MyPentagon2(val index:String, init_coord:Vec, init_velocity:Vec, val len:Double, val mass:Double, screen:RendererD) extends MyBody {
+class MyPentagon2(val index:Int, init_coord:Vec, init_velocity:Vec, val len:Double, val mass:Double, screen:RendererD) extends MyBody {
   def currentState: BodyState = currentBodyState(index).getOrElse(
     BodyState(
       index,
@@ -223,7 +223,7 @@ class MyPentagon2(val index:String, init_coord:Vec, init_velocity:Vec, val len:D
   }
 }
 
-class MyCircle2(val index:String, init_coord:DVec, init_velocity:DVec, val radius:Double, val mass:Double, screen:RendererD) extends MyBody {
+class MyCircle2(val index:Int, init_coord:DVec, init_velocity:DVec, val radius:Double, val mass:Double, screen:RendererD) extends MyBody {
   def currentState:BodyState = currentBodyState(index).getOrElse(
     BodyState(
       index,
@@ -249,7 +249,7 @@ class MyCircle2(val index:String, init_coord:DVec, init_velocity:DVec, val radiu
   }
 }
 
-class MyBox2(val index:String, init_coord:DVec, init_velocity:DVec, val w:Double, val h:Double, val mass:Double, screen:RendererD) extends MyBody {
+class MyBox2(val index:Int, init_coord:DVec, init_velocity:DVec, val w:Double, val h:Double, val mass:Double, screen:RendererD) extends MyBody {
   def currentState:BodyState = currentBodyState(index).getOrElse(
     BodyState(
       index,
@@ -296,7 +296,7 @@ class MyBox2(val index:String, init_coord:DVec, init_velocity:DVec, val w:Double
   }
 }
 
-class MyWall2(index:String, from:DVec, to:DVec, screen:RendererD) extends MyBody {
+class MyWall2(index:Int, from:DVec, to:DVec, screen:RendererD) extends MyBody {
   def currentState:BodyState = currentBodyState(index).getOrElse(
     BodyState(
       index,

@@ -6,7 +6,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import scala.collection.Seq
 
 trait CelestialBody {
-  def index:String
+  def index:Int
   def name:String
   def coord:DVec
   def linearVelocity:DVec
@@ -23,7 +23,7 @@ trait CelestialBody {
   val g = G*mass/(radius*radius)  // ускорение свободного падения, м/с^2
 }
 
-class Planet(val index:String,
+class Planet(val index:Int,
              val name:String,
              val mass:Double,
              val init_coord:DVec,
@@ -136,7 +136,7 @@ class Planet(val index:String,
   }
 }
 
-class PlanetWithAir(index:String,
+class PlanetWithAir(index:Int,
                     name:String,
                     mass:Double,
                     init_coord:DVec,
@@ -219,7 +219,7 @@ class PlanetWithAir(index:String,
   }*/
 }
 
-class Star(val index:String,
+class Star(val index:Int,
            val name:String,
            val mass:Double,
            val coord:DVec,

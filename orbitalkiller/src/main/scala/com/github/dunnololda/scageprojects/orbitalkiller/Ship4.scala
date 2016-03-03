@@ -6,10 +6,10 @@ import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
 import scala.collection.mutable.ArrayBuffer
 
-class Ship4(index:String,
+class Ship4(index:Int,
             init_coord:DVec,
             init_velocity:DVec = DVec.dzero,
-            init_rotation:Double = 0.0) extends PolygonShip(index, init_coord, init_velocity, init_rotation) {
+            init_rotation:Double = 0.0) extends PolygonShip(index, "Снежинка", init_coord, init_velocity, init_rotation) {
   def mass:Double = _payload + _fuel_mass
   private val _payload:Double = 5*1000
   private var _fuel_mass:Double = 5*1000
@@ -377,13 +377,13 @@ class Ship4(index:String,
             openglLocalTransform {
               openglMove(mbs.coord - base)
               drawFilledCircle(DVec.zero, 0.3, GREEN)
-              mbs.contacts.foreach(x => {
+              /*mbs.contacts.foreach(x => {
                 if(x.a.index.contains("part") && x.b.index.contains("part")) {
                   drawFilledCircle(x.contact_point - mbs.coord, 0.3, YELLOW)
                   drawLine(x.contact_point - mbs.coord, x.contact_point - mbs.coord + x.normal.n, YELLOW)
                   drawCircle(x.contact_point - mbs.coord, x.separation, YELLOW)
                 }
-              })
+              })*/
               openglRotateDeg(mbs.ang)
               drawSlidingLines(mbs_points :+ mbs_points.head, colorIfAliveOrRed(RED))
             }

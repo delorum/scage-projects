@@ -44,7 +44,7 @@ object ConstraintsTest extends ScageScreenAppD("Constraints Test", 640, 480) {
   def randomSpeed = Vec(-1 + math.random*2, -1 + math.random*2).n*50f
 
   def addCircleBody(i:Int) = {
-    val c =  new MyCircle2(s"c$i", randomPos, randomSpeed, 5, 1f, this)
+    val c =  new MyCircle2(nextId, randomPos, randomSpeed, 5, 1f, this)
     /*if(dynamic_bodies.forall(b => maybeCollision(b.currentState, c.currentState).isEmpty) &&
       !coordOnRectCentered(c.coord, Vec(w+60, h-20), 30, 20) &&
       !coordOnRectCentered(c.coord, Vec(w-60, h-20), 30, 20))
@@ -56,15 +56,15 @@ object ConstraintsTest extends ScageScreenAppD("Constraints Test", 640, 480) {
 
   val dynamic_bodies = ArrayBuffer[MyBody]()
 
-  val w1 = new MyWall2("w1", Vec(w-100, h-100),  Vec(w-100, h+100), this)
-  val w2 = new MyWall2("w2", Vec(w-100, h+100),  Vec(w+100, h+100), this)
-  val w3 = new MyWall2("w3", Vec(w+100, h+100),  Vec(w+100, h-100), this)
-  val w4 = new MyWall2("w4", Vec(w+100, h-100),  Vec(w-100, h-100), this)
+  val w1 = new MyWall2(nextId, Vec(w-100, h-100),  Vec(w-100, h+100), this)
+  val w2 = new MyWall2(nextId, Vec(w-100, h+100),  Vec(w+100, h+100), this)
+  val w3 = new MyWall2(nextId, Vec(w+100, h+100),  Vec(w+100, h-100), this)
+  val w4 = new MyWall2(nextId, Vec(w+100, h-100),  Vec(w-100, h-100), this)
 
   /*val c1 = addCircleBody(1)
   val c2 = addCircleBody(2)*/
-  val c1 = new MyCircle2(s"c1", DVec(w,h), DVec(0, -10), 5, 1f, this)
-  val c2 = new MyCircle2(s"c2", DVec(w+80,h+80), DVec(0, -10), 5, 1f, this)
+  val c1 = new MyCircle2(nextId, DVec(w,h), DVec(0, -10), 5, 1f, this)
+  val c2 = new MyCircle2(nextId, DVec(w+80,h+80), DVec(0, -10), 5, 1f, this)
   dynamic_bodies += c1 += c2
 
   private val real_system_evolution =

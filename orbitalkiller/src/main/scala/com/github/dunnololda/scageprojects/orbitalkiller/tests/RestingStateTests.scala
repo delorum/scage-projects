@@ -4,13 +4,13 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 
 object RestingStateTests extends ScageScreenAppD("Resting State Tests", 800, 600) {
-  val w1 = BodyState("w1", 1, DVec.zero, DVec.zero, DVec(0, 0), 0.0, 0.0, 0.0, LineShape(DVec(windowWidth, 0)), is_static = true)
-  val w2 = BodyState("w2", 1, DVec.zero, DVec.zero, DVec(0, windowHeight), 0.0, 0.0, 0.0, LineShape(DVec(windowWidth, 0)), is_static = true)
-  val w3 = BodyState("w3", 1, DVec.zero, DVec.zero, DVec(0, 0), 0.0, 0.0, 0.0, LineShape(DVec(0, windowHeight)), is_static = true)
-  val w4 = BodyState("w4", 1, DVec.zero, DVec.zero, DVec(windowWidth, 0), 0.0, 0.0, 0.0, LineShape(DVec(0, windowHeight)), is_static = true)
+  val w1 = BodyState(nextId, 1, DVec.zero, DVec.zero, DVec(0, 0), 0.0, 0.0, 0.0, LineShape(DVec(windowWidth, 0)), is_static = true)
+  val w2 = BodyState(nextId, 1, DVec.zero, DVec.zero, DVec(0, windowHeight), 0.0, 0.0, 0.0, LineShape(DVec(windowWidth, 0)), is_static = true)
+  val w3 = BodyState(nextId, 1, DVec.zero, DVec.zero, DVec(0, 0), 0.0, 0.0, 0.0, LineShape(DVec(0, windowHeight)), is_static = true)
+  val w4 = BodyState(nextId, 1, DVec.zero, DVec.zero, DVec(windowWidth, 0), 0.0, 0.0, 0.0, LineShape(DVec(0, windowHeight)), is_static = true)
 
-  val init_b2 = BodyState("b2", 1, DVec.zero, DVec(0,0), DVec(windowWidth/2, windowHeight/2), 0.0, 0.0, 30.0, BoxShape(20, 20), is_static = false)
-  val init_b3 = BodyState("b3", 1, DVec.zero, DVec(0,0), DVec(windowWidth/2, windowHeight/2+100), 0.0, 0.0, 30.0, BoxShape(20, 20), is_static = false)
+  val init_b2 = BodyState(nextId, 1, DVec.zero, DVec(0,0), DVec(windowWidth/2, windowHeight/2), 0.0, 0.0, 30.0, BoxShape(20, 20), is_static = false)
+  val init_b3 = BodyState(nextId, 1, DVec.zero, DVec(0,0), DVec(windowWidth/2, windowHeight/2+100), 0.0, 0.0, 30.0, BoxShape(20, 20), is_static = false)
 
   var b2 = init_b2
   var b3 = init_b3
@@ -21,8 +21,8 @@ object RestingStateTests extends ScageScreenAppD("Resting State Tests", 800, 600
     base_dt = 1.0/63,
     force = (tacts, bs, other) => DVec(0, -9.81*bs.mass),
     changeFunction = (tacts, bodies) => (tacts, bodies.map(b => b.index match {
-      case "b2" => b2
-      case "b3" => b3
+      case init_b2.index => b2
+      case init_b3.index => b3
       case _ => b
     })))(0, List(w1,w2,w3,w4, init_b2, init_b3)).iterator
 

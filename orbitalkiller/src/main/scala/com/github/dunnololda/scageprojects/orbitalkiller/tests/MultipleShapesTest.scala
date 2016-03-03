@@ -8,7 +8,7 @@ import scala.collection.mutable
 
 object MultipleShapesTest extends ScageScreenAppD("Multiple Shapes Test", 640, 480) {
   val b1 = new MutableBodyState(BodyState(
-    index = "b1",
+    index = nextId,
     mass = 1,
     coord = DVec(100, 320),
     vel = DVec(20,0),
@@ -17,7 +17,7 @@ object MultipleShapesTest extends ScageScreenAppD("Multiple Shapes Test", 640, 4
   ))
 
   val b2 = new MutableBodyState(BodyState(
-    index = "b2",
+    index = nextId,
     mass = 1,
     coord = DVec(540, 323),
     vel = DVec(-20,0),

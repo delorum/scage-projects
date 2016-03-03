@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scage.support.DVec
+import com.github.dunnololda.scage.support.{ScageId, DVec}
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
 import scala.collection.mutable.ArrayBuffer
@@ -20,7 +20,8 @@ case object AbsoluteStop            extends FlightMode
 case object Maneuvering             extends FlightMode
 
 abstract class PolygonShip(
-  val index:String,
+  val index:Int,
+  val name:String,
   init_coord:DVec,
   init_velocity:DVec = DVec.dzero,
   init_rotation:Double = 0) {
@@ -318,7 +319,7 @@ abstract class PolygonShip(
     ship_parts = convex_parts.zipWithIndex.map(x => {
       val part_center = currentState.coord + x._1.points.sum/x._1.points.length
       val part_points = x._1.points.map(p => currentState.coord + p - part_center)
-      val part_index = s"${index}_part_${x._2}"
+      val part_index = ScageId.nextId
       val mbs = new MutableBodyState(BodyState(
         index = part_index,
         mass = mass/convex_parts.length,

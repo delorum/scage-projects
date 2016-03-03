@@ -475,7 +475,7 @@ package object orbitalkiller {
     }
   }
 
-  case class BodyState(index:String,
+  case class BodyState(index:Int,
                        mass:Double,
                        acc:DVec = DVec.zero,
                        vel:DVec = DVec.zero,
@@ -510,6 +510,7 @@ package object orbitalkiller {
     val is_static = body.is_static
     val shape = body.shape
     val index = body.index
+    val strIndex = index.toString
 
     private var _mass = body.mass
     def mass = _mass
@@ -558,13 +559,13 @@ package object orbitalkiller {
 
     def phys2dBody = {
       if(is_static) {
-        val x = new Phys2dStaticBody(index, shape.phys2dShape)
+        val x = new Phys2dStaticBody(strIndex, shape.phys2dShape)
         x.setPosition(coord.x, coord.y)
         x.setRotation(ang.toRad)
         x.setUserData((index, shape))
         x
       } else {
-        val x = new Phys2dBody(index, shape.phys2dShape, mass)
+        val x = new Phys2dBody(strIndex, shape.phys2dShape, mass)
         x.setPosition(coord.x, coord.y)
         x.setRotation(ang.toRad)
         x.adjustVelocity(vel.toPhys2dVecD)
@@ -576,13 +577,13 @@ package object orbitalkiller {
 
     def phys2dBodyWithShape(shape:Shape) = {
       if(is_static) {
-        val x = new Phys2dStaticBody(index, shape.phys2dShape)
+        val x = new Phys2dStaticBody(strIndex, shape.phys2dShape)
         x.setPosition(coord.x, coord.y)
         x.setRotation(ang.toRad)
         x.setUserData((index, shape))
         x
       } else {
-        val x = new Phys2dBody(index, shape.phys2dShape, mass)
+        val x = new Phys2dBody(strIndex, shape.phys2dShape, mass)
         x.setPosition(coord.x, coord.y)
         x.setRotation(ang.toRad)
         x.adjustVelocity(vel.toPhys2dVecD)
@@ -633,7 +634,7 @@ package object orbitalkiller {
   implicit class Phys2dBody2BodyState(pb:Phys2dBody) {
     def toBodyState:Option[BodyState] = {
       pb.getUserData match {
-        case (index:String, shape:Shape) =>
+        case (index:Int, shape:Shape) =>
           Some(BodyState(
             index = index,
             mass = pb.getMass,

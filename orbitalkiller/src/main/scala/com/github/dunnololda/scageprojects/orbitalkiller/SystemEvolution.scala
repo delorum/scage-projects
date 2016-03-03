@@ -13,7 +13,7 @@ case class MutableSystemPart(body:MutableBodyState,
 class SystemEvolution(val base_dt:Double = 1.0/63,
                       system_center:DVec = DVec.zero,
                       init_tacts:Long = 0) {
-  private val mutable_system = mutable.HashMap[String, MutableSystemPart]()
+  private val mutable_system = mutable.HashMap[Int, MutableSystemPart]()
   private val all_bodies = ArrayBuffer[MutableBodyState]()
   private val mutable_system_helper = new EvolutionHelper(mutable_system)
   var tacts = init_tacts
@@ -37,17 +37,17 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
     all_bodies += b
   }
 
-  def removeBodyByIndex(index:String): Unit = {
+  def removeBodyByIndex(index:Int): Unit = {
     mutable_system.remove(index).foreach(part => all_bodies -= part.body)
   }
 
-  def allBodyStates:mutable.Map[String, MutableBodyState] = {
+  def allBodyStates:mutable.Map[Int, MutableBodyState] = {
     mutable_system.map(kv => (kv._1, kv._2.body))
   }
-  def bodyStates(indicies:Set[String]):mutable.Map[String, MutableBodyState] = {
+  def bodyStates(indicies:Set[Int]):mutable.Map[Int, MutableBodyState] = {
     mutable_system.filter(kv => indicies.contains(kv._1)).map(kv => (kv._1, kv._2.body))
   }
-  def bodyState(index:String):Option[MutableBodyState] = mutable_system.get(index).map(_.body)
+  def bodyState(index:Int):Option[MutableBodyState] = mutable_system.get(index).map(_.body)
 
   def step(): Unit = {
     mutable_system.foreach(_._2.body.init())
@@ -110,27 +110,27 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
   }
 }
 
-class EvolutionHelper(mutable_system:mutable.HashMap[String, MutableSystemPart]) {
-  def gravityForceHelper(planet_index:String, ship_index:String):DVec = {
+class EvolutionHelper(mutable_system:mutable.HashMap[Int, MutableSystemPart]) {
+  def gravityForceHelper(planet_index:Int, ship_index:Int):DVec = {
     (for {
       planet <- mutable_system.get(planet_index).map(_.body)
       ship <- mutable_system.get(ship_index).map(_.body)
     } yield gravityForce(planet.coord, planet.mass, ship.coord, ship.mass, G)).getOrElse(DVec.zero)
   }
 
-  def funcOrDVecZero(body_index:String, func: MutableBodyState => DVec):DVec = {
+  def funcOrDVecZero(body_index:Int, func: MutableBodyState => DVec):DVec = {
     mutable_system.get(body_index).map(bs => func(bs.body)).getOrElse(DVec.zero)
   }
 
-  def funcOfArrayOrDVecZero(body_indicies:Array[String], func: Array[MutableBodyState] => DVec):DVec = {
+  def funcOfArrayOrDVecZero(body_indicies:Array[Int], func: Array[MutableBodyState] => DVec):DVec = {
     val bodies = body_indicies.flatMap(idx => mutable_system.get(idx).map(bs => bs.body))
     if(bodies.length == body_indicies.length) func(bodies) else DVec.zero
   }
 
-  def funcOrDoubleZero(body_index:String, func: MutableBodyState => Double):Double = {
+  def funcOrDoubleZero(body_index:Int, func: MutableBodyState => Double):Double = {
     mutable_system.get(body_index).map(bs => func(bs.body)).getOrElse(0.0)
   }
 
-  def bodyStates(indicies:Set[String]) = mutable_system.filter(kv => indicies.contains(kv._1)).map(kv => (kv._1, kv._2.body))
-  def bodyState(index:String) = mutable_system.get(index).map(_.body)
+  def bodyStates(indicies:Set[Int]) = mutable_system.filter(kv => indicies.contains(kv._1)).map(kv => (kv._1, kv._2.body))
+  def bodyState(index:Int) = mutable_system.get(index).map(_.body)
 }

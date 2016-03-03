@@ -66,7 +66,7 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
       }).getOrElse("N/A", "N/A")
     val dist = mOrKmOrMKm(ship.coord.dist(monitoring_ship.coord))
     val vel = msecOrKmsec((ship.linearVelocity - monitoring_ship.linearVelocity)* (ship.coord - monitoring_ship.coord).n)
-    strings(0) = s"${monitoring_ship.index}: dist=$dist, vel=$vel, rendezvous data: $need_orbit_period_str"
+    strings(0) = s"${monitoring_ship.name}: dist=$dist, vel=$vel, rendezvous data: $need_orbit_period_str"
   }
   override def data: Seq[String] = strings
   override val color = ScageColor.MAGENTA
