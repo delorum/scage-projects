@@ -1183,7 +1183,15 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         println(spaces.filter(_.bodies.length > 1).map(x => s"${x.bodies.length}").mkString(" : "))*/
 
         drawCircle(sun.coord*scale, sun.radius * scale, WHITE)
+        
         drawCircle(earth.coord*scale, earth.radius * scale, WHITE)
+        if(InterfaceHolder.namesSwitcher.showNames) {
+          openglLocalTransform {
+            openglMove(earth.coord.toVec * scale)
+            print(earth.name, Vec.zero, color = WHITE, size = (max_font_size / globalScale).toFloat)
+          }
+        }
+        
         //drawCircle(earth.coord*scale, equalGravityRadius(earth.currentState, moon.currentState)*scale, color = DARK_GRAY)
         drawCircle(earth.coord*scale, earth.one_third_hill_radius*scale, color = DARK_GRAY)
         drawLine(earth.coord*scale, earth.coord*scale + DVec(0, earth.radius*scale).rotateDeg(earth.currentState.ang), WHITE)
@@ -1208,17 +1216,37 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         }*/
 
         drawCircle(moon.coord*scale, moon.radius * scale, WHITE)
+        if(InterfaceHolder.namesSwitcher.showNames) {
+          openglLocalTransform {
+            openglMove(moon.coord.toVec * scale)
+            print(moon.name, Vec.zero, color = WHITE, size = (max_font_size / globalScale).toFloat)
+          }
+        }
         //drawCircle(moon.coord*scale, equalGravityRadius(moon.currentState, earth.currentState)*scale, color = DARK_GRAY)
         drawCircle(moon.coord*scale, moon.one_third_hill_radius*scale, color = DARK_GRAY)
         //drawCircle(moon.coord*scale, soi(moon.mass, earth.coord.dist(moon.coord), earth.mass)*scale, color = DARK_GRAY)
         drawLine(moon.coord*scale, moon.coord * scale + DVec(0, moon.radius * scale).rotateDeg(moon.currentState.ang), WHITE)
         drawSunTangents(moon.coord, moon.radius, sun.coord, sun.radius, 40000000)
         moon_orbit_render.foreach(_.render())
+
         earth_orbit_render.foreach(_.render())
+
         drawFilledCircle(ship.coord * scale, earth.radius * scale / 2f / globalScale, WHITE)
+        if(InterfaceHolder.namesSwitcher.showNames) {
+          openglLocalTransform {
+            openglMove(ship.coord.toVec * scale)
+            print(ship.name, Vec.zero, color = WHITE, size = (max_font_size / globalScale).toFloat)
+          }
+        }
         ship_orbit_render.foreach(_.render())
 
         drawFilledCircle(station.coord*scale, earth.radius * scale / 2f / globalScale, MAGENTA)
+        if(InterfaceHolder.namesSwitcher.showNames) {
+          openglLocalTransform {
+            openglMove(station.coord.toVec * scale)
+            print(station.name, Vec.zero, color = MAGENTA, size = (max_font_size / globalScale).toFloat)
+          }
+        }
         station_orbit_render.foreach(_.render())
 
         for {

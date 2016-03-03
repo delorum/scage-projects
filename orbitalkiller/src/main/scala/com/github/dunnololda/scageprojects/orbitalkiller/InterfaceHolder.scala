@@ -2,7 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scageprojects.orbitalkiller.interfaceElements._
 import OrbitalKiller._
-import com.github.dunnololda.scageprojects.orbitalkiller.switchers.{OrbitParamsCalculation, MSecOrKmH}
+import com.github.dunnololda.scageprojects.orbitalkiller.switchers.{NamesSwitcher, OrbitParamsCalculation, MSecOrKmH}
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import com.github.dunnololda.scage.ScageLibD._
@@ -18,6 +18,7 @@ object InterfaceHolder {
 
   val msecOrKmH = new MSecOrKmH
   val orbParams = new OrbitParamsCalculation
+  val namesSwitcher = new NamesSwitcher
 
   val timeInfo = new TimeInfo
 
@@ -51,7 +52,7 @@ object InterfaceHolder {
     List(shipParamsWhenEginesOff)
   )
 
-  private val switchers = List[InterfaceSwitcher](msecOrKmH, orbParams)
+  private val switchers = List[InterfaceSwitcher](msecOrKmH, orbParams, namesSwitcher)
   //def switchers:Seq[InterfaceSwitcher] = _switchers
 
   def hideAllByUser(): Unit = {

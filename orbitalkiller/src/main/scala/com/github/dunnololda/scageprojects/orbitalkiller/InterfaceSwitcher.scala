@@ -3,7 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 abstract class InterfaceSwitcher {
   def strVariants:Array[String]
   
-  private var selected_variant = 0
+  protected var selected_variant = 0
   def selectedVariant = selected_variant
   def selectedStrVariant = strVariants(selected_variant)
   
