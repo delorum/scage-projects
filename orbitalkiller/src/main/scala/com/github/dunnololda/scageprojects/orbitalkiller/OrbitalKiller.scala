@@ -281,7 +281,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         if(e.active) {
           if(e.workTimeTacts > 0) {
             e.workTimeTacts -= 1
-            InterfaceHolder.enginesInfo.addWorkTime(base_dt*1000*e.power/e.max_power)
+            //InterfaceHolder.enginesInfo.addWorkTime(base_dt*1000*e.power/e.max_power)
             e.ship.fuelMass -= e.fuelConsumptionPerTact
           } else e.active = false
         }
