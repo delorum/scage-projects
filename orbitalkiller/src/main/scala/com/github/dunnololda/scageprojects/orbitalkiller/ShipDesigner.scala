@@ -13,7 +13,14 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
   private val cell_size_half:Float = 0.5f*cell_size
   private val cell_size_quater:Float = 0.25f*cell_size
   private val cell_size_eights:Float = 0.125f*cell_size
-  private val points = collection.mutable.ArrayBuffer[Vec]()
+  private lazy val points = collection.mutable.ArrayBuffer[Vec](/*Vec(3.5, 2.5),
+    Vec(1.5, 6.5),
+    Vec(1.5, 10.5),
+    Vec(-1.5, 10.5),
+    Vec(-1.5, 6.5),
+    Vec(-3.5, 2.5),
+    Vec(-3.5, -3.5),
+    Vec(3.5, -3.5)*/).map(_ + mass_center)
   private var selected_point = 0
 
   private val engines = collection.mutable.ArrayBuffer[EngineData]()
@@ -23,7 +30,16 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
   private var mass_center = Vec(nearestDot(absCoord(windowCenter).x, -windowWidth/2, cell_size)+cell_size_half,
                                 nearestDot(absCoord(windowCenter).y, -windowHeight/2, cell_size)+cell_size_half)
 
-  private var mode = 0  // 0 - points, 1 - engines up, 2 - engines down, 3 - engines right, 4 - engines left, 5 - mass center set
+  /**
+   * 0 - points
+   * 1 - engines up
+   * 2 - engines down
+   * 3 - engines right
+   * 4 - engines left
+   * 5 - mass center
+   * 6 - mass center 2
+   */
+  private var mode = 0
 
   private def nearestDot(x:Float, a:Float, h:Float):Float = {
     val x1 = a + ((x - a)/h).toInt*h
@@ -69,7 +85,14 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
   key(KEY_DOWN,  onKeyDown = {if(mode != 2) mode = 2 else mode = 0})
   key(KEY_RIGHT, onKeyDown = {if(mode != 3) mode = 3 else mode = 0})
   key(KEY_LEFT,  onKeyDown = {if(mode != 4) mode = 4 else mode = 0})
-  key(KEY_M,     onKeyDown = {if(mode != 5) mode = 5 else mode = 0})
+  key(KEY_M,     onKeyDown = {
+    if(mode != 5 && mode != 6) {
+      mode = 5
+    } else if(mode == 5) {
+      mode = 6
+    } else {
+      mode = 0
+    }})
   
   key(KEY_NUMPAD8, onKeyDown = engines_mapping(selected_engine) = KEY_NUMPAD8)
   key(KEY_NUMPAD2, onKeyDown = engines_mapping(selected_engine) = KEY_NUMPAD2)
@@ -154,6 +177,11 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
         val ssm = absCoord(m)
         val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size)+cell_size_half,
                      nearestDot(ssm.y, -windowHeight/2, cell_size)+cell_size_half)
+        mass_center = sm
+      case 6 => // mass center set
+        val ssm = absCoord(m)
+        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size),
+                     nearestDot(ssm.y, -windowHeight/2, cell_size))
         mass_center = sm
       case _ =>
     }
@@ -261,7 +289,7 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
       case 3 => "engines right"
       case 4 => "engines left"
       case 5 => "mass center"
-      case 6 => "convex parts"
+      case 6 => "mass center 2"
       case _ => ""
     }
     print(status, 20, 20, WHITE)
