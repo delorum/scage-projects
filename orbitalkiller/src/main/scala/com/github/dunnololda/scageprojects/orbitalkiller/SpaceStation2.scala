@@ -84,14 +84,7 @@ class SpaceStation2(
           drawSlidingLines(draw_points, WHITE)
 
           engines.foreach {
-            case e =>
-              e.force_dir match {
-                case DVec(0, -1) => drawEngine(e, e.position + DVec(0, 2.5),  10, 5,  is_vertical = false)
-                case DVec(0, 1)  => drawEngine(e, e.position + DVec(0, -2.5), 10, 5,  is_vertical = false)
-                case DVec(-1, 0) => drawEngine(e, e.position + DVec(2.5, 0),  5,  10, is_vertical = true)
-                case DVec(1, 0)  => drawEngine(e, e.position + DVec(-2.5,0), 5,  10, is_vertical = true)
-                case _ =>
-              }
+            case e => drawEngine(e, 10)
           }
         }
       }

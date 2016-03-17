@@ -37,7 +37,6 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
    * 3 - engines right
    * 4 - engines left
    * 5 - mass center
-   * 6 - mass center 2
    */
   private var mode = 0
 
@@ -85,14 +84,7 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
   key(KEY_DOWN,  onKeyDown = {if(mode != 2) mode = 2 else mode = 0})
   key(KEY_RIGHT, onKeyDown = {if(mode != 3) mode = 3 else mode = 0})
   key(KEY_LEFT,  onKeyDown = {if(mode != 4) mode = 4 else mode = 0})
-  key(KEY_M,     onKeyDown = {
-    if(mode != 5 && mode != 6) {
-      mode = 5
-    } else if(mode == 5) {
-      mode = 6
-    } else {
-      mode = 0
-    }})
+  key(KEY_M,     onKeyDown = {if(mode != 5) mode = 5 else mode = 0})
   
   key(KEY_NUMPAD8, onKeyDown = engines_mapping(selected_engine) = KEY_NUMPAD8)
   key(KEY_NUMPAD2, onKeyDown = engines_mapping(selected_engine) = KEY_NUMPAD2)
@@ -140,6 +132,8 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
     }
   })
 
+  private def placeInCenter:Boolean = !keyPressed(KEY_RSHIFT) && !keyPressed(KEY_LSHIFT)
+
   leftMouse(onBtnDown = m => {
     mode match {
       case 0 =>
@@ -151,37 +145,32 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
         }
       case 1 => // engines up
         val ssm = absCoord(m)
-        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size) + cell_size_half,
+        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size) + (if(placeInCenter) cell_size_half else 0f),
                      nearestDot(ssm.y, -windowHeight/2, cell_size))
         engines += EngineData(sm, Vec(0, -1))
         selected_engine = engines.length-1
       case 2 => // engines down
         val ssm = absCoord(m)
-        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size) + cell_size_half,
+        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size) + (if(placeInCenter) cell_size_half else 0f),
                      nearestDot(ssm.y, -windowHeight/2, cell_size))
         engines += EngineData(sm, Vec(0, 1))
         selected_engine = engines.length-1
       case 3 => // engines right
         val ssm = absCoord(m)
         val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size),
-                     nearestDot(ssm.y, -windowHeight/2, cell_size) +cell_size_half)
+                     nearestDot(ssm.y, -windowHeight/2, cell_size) + (if(placeInCenter) cell_size_half else 0f))
         engines += EngineData(sm, Vec(-1, 0))
         selected_engine = engines.length-1
       case 4 => // engines left
         val ssm = absCoord(m)
         val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size),
-                     nearestDot(ssm.y, -windowHeight/2, cell_size) + cell_size_half)
+                     nearestDot(ssm.y, -windowHeight/2, cell_size) + (if(placeInCenter) cell_size_half else 0f))
         engines += EngineData(sm, Vec(1, 0))
         selected_engine = engines.length-1
       case 5 => // mass center set
         val ssm = absCoord(m)
-        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size)+cell_size_half,
-                     nearestDot(ssm.y, -windowHeight/2, cell_size)+cell_size_half)
-        mass_center = sm
-      case 6 => // mass center set
-        val ssm = absCoord(m)
-        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size),
-                     nearestDot(ssm.y, -windowHeight/2, cell_size))
+        val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size)  + (if(placeInCenter) cell_size_half else 0f),
+                     nearestDot(ssm.y, -windowHeight/2, cell_size) + (if(placeInCenter) cell_size_half else 0f))
         mass_center = sm
       case _ =>
     }

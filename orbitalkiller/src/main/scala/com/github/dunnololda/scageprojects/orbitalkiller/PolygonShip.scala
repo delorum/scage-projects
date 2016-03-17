@@ -165,7 +165,15 @@ abstract class PolygonShip(
     max_size*e.power/e.max_power
   }
 
-  def drawEngine(e:Engine, center:DVec, width:Double, height:Double, is_vertical:Boolean) {
+  def drawEngine(e:Engine, size:Double = 1) {
+    val is_vertical = e.force_dir.x == 0
+    val (center, width, height) = e.force_dir match {
+      case DVec(0, -1) => (e.position + DVec(0, 0.25)*size, 1*size, 0.5*size)
+      case DVec(0, 1)  => (e.position + DVec(0, -0.25)*size, 1*size, 0.5*size)
+      case DVec(-1, 0) => (e.position + DVec(0.25, 0)*size,  0.5*size,  1*size)
+      case DVec(1, 0)  => (e.position + DVec(-0.25, 0)*size,  0.5*size,  1*size)
+      case _ => throw new Exception("engine force dir other than vertical or horizontal is not supported")
+    }
     drawRectCentered(center, width, height, color = engineColor(e))
     if(isSelectedEngine(e)) drawRectCentered(center, width*1.5, height*1.5, color = engineColor(e))
     if(e.active && e.power > 0) {
