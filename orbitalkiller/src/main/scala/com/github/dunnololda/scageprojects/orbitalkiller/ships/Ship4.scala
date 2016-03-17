@@ -1,8 +1,9 @@
-package com.github.dunnololda.scageprojects.orbitalkiller
+package com.github.dunnololda.scageprojects.orbitalkiller.ships
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller._
 
 import scala.collection.mutable.ArrayBuffer
 

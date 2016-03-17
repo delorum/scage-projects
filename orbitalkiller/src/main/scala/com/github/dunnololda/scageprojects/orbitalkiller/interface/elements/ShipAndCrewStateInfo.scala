@@ -1,4 +1,4 @@
-package com.github.dunnololda.scageprojects.orbitalkiller.interfaceElements
+package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._

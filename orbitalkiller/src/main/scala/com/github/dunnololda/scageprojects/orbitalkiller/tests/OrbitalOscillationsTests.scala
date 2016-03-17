@@ -2,6 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller._
+import com.github.dunnololda.scageprojects.orbitalkiller.ships.SpaceStation2
 
 object OrbitalOscillationsTests extends ScageApp {
   val earth = new Star(nextId, "Земля", mass = 5.9746E24, coord = DVec.dzero, radius = 6400000)
@@ -19,7 +20,7 @@ object OrbitalOscillationsTests extends ScageApp {
   val planets = List(earth, moon)
   val planet_indexes = planets.map(_.index).toSet
   def currentPlanetStates = planets.map(_.currentState)
-  def planetByIndex(index:String):Option[CelestialBody] = planets.find(_.index == index)
+  def planetByIndex(index:Int):Option[CelestialBody] = planets.find(_.index == index)
 
   /*val ship_start_position = earth.coord + DVec(0, earth.radius + 100000)
   val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G)*/

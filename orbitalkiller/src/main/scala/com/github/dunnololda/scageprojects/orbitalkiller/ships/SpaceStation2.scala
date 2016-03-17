@@ -1,7 +1,8 @@
-package com.github.dunnololda.scageprojects.orbitalkiller
+package com.github.dunnololda.scageprojects.orbitalkiller.ships
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller.{Engine, OrbitalKiller, PolygonShape, PolygonShip}
 
 class SpaceStation2(
              index:Int,

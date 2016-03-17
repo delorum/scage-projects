@@ -1,8 +1,8 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
-import com.github.dunnololda.scageprojects.orbitalkiller.interfaceElements._
+import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements._
 import OrbitalKiller._
-import com.github.dunnololda.scageprojects.orbitalkiller.switchers.{NamesSwitcher, OrbitParamsCalculation, MSecOrKmH}
+import com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers.{NamesSwitcher, OrbitParamsCalculation, MSecOrKmH}
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import com.github.dunnololda.scage.ScageLibD._

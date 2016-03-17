@@ -14,6 +14,7 @@ import com.github.dunnololda.scage.ScageLibD.print
 import com.github.dunnololda.scage.ScageLibD.property
 import com.github.dunnololda.scage.ScageLibD.stopApp
 import com.github.dunnololda.scage.support.ScageId
+import com.github.dunnololda.scageprojects.orbitalkiller.ships.{SpaceStation2, Ship4}
 
 import scala.collection._
 
