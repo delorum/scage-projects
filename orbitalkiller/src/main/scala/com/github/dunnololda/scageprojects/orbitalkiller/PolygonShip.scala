@@ -59,6 +59,7 @@ abstract class PolygonShip(
   def fuelMass_=(m:Double):Unit
 
   def convex_parts:List[PolygonShape] = Nil
+  def wreck_parts:List[PolygonShape] = Nil
 
   def coord = if(pilotIsAlive) currentState.coord else ship_parts.headOption.map(_.coord).getOrElse(currentState.coord)
 
@@ -303,7 +304,7 @@ abstract class PolygonShip(
     case _ => ""
   }
 
-  def otherShipsNear:List[PolygonShip] = ships.filter(s => s.index != index && s.pilotIsAlive).sortBy(s => coord.dist(s.coord))
+  def otherShipsNear:List[PolygonShip] = OrbitalKiller.ships.filter(s => s.index != index && s.pilotIsAlive).sortBy(s => coord.dist(s.coord))
 
   protected val pilot_mass = 75
   protected val pilot_position = DVec(0, 8)
@@ -324,14 +325,14 @@ abstract class PolygonShip(
     pilot_death_reason = reason
     flightMode = Free
     OrbitalKiller.system_evolution.removeBodyByIndex(index)
-    ship_parts = convex_parts.zipWithIndex.map(x => {
+    ship_parts = wreck_parts.zipWithIndex.map(x => {
       val part_center = currentState.coord + x._1.points.sum/x._1.points.length
       val part_points = x._1.points.map(p => currentState.coord + p - part_center)
       val part_index = ScageId.nextId
       val mbs = new MutableBodyState(BodyState(
         index = part_index,
-        mass = mass/convex_parts.length,
-        vel = linearVelocity + randomSpeed,
+        mass = mass/wreck_parts.length,
+        vel = linearVelocity + randomSpeed(linearVelocity),
         coord = part_center,
         ang = rotation,
         shape = PolygonShape(part_points, Nil),
@@ -355,7 +356,10 @@ abstract class PolygonShip(
     })
   }
 
-  private def randomSpeed = Vec(-1 + math.random*2, -1 + math.random*2).n*20f
+  private def randomSpeed(vel:DVec) = {
+    val dir_deg = 140.0 + math.random*80.0
+    vel.n.rotateDeg(dir_deg)*20.0
+  }
 
   def updateShipState(time_msec:Long): Unit = {
     if(!pilot_is_dead) {
@@ -426,6 +430,7 @@ abstract class PolygonShip(
   }
 
   def points:List[DVec]
+  def draw_points:List[DVec]
 
   lazy val radius = {
     val x = points.map(_.x).max - points.map(_.x).min

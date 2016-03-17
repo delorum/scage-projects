@@ -139,8 +139,8 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
       case 0 =>
         val ssm = absCoord(m)
         if(points.forall(p => p.dist2(ssm) > cell_size2)) {
-          val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size).toInt,
-                       nearestDot(ssm.y, -windowHeight/2, cell_size).toInt)
+          val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size),
+                       nearestDot(ssm.y, -windowHeight/2, cell_size))
           points.insert(selected_point, sm)
         }
       case 1 => // engines up

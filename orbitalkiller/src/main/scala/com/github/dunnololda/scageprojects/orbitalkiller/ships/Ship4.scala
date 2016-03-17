@@ -37,6 +37,18 @@ class Ship4(index:Int,
     PolygonShape(List(DVec(-3.5, -3.5), DVec(-3.5, 2.5), DVec(3.5, 2.5), DVec(3.5, -3.5)).reverse, Nil)
   )
 
+  override val wreck_parts = List(
+    PolygonShape(List(DVec(-3.5, -1.5), DVec(0.5, -1.5), DVec(0.5, -3.5), DVec(-3.5, -3.5)), Nil),
+    PolygonShape(List(DVec(0.5, -1.5), DVec(3.5, -1.5), DVec(3.5, -3.5), DVec(0.5, -3.5)), Nil),
+    PolygonShape(List(DVec(1.5, 0.5), DVec(1.5, -1.5), DVec(-3.5, -1.5), DVec(-3.5, 0.5)), Nil),
+    PolygonShape(List(DVec(1.5, 2.5), DVec(3.5, 2.5), DVec(3.5, -1.5), DVec(1.5, -1.5)), Nil),
+    PolygonShape(List(DVec(1.5, 2.5), DVec(1.5, 0.5), DVec(-3.5, 0.5), DVec(-3.5, 2.5)), Nil),
+    PolygonShape(List(DVec(-1.5, 6.5), DVec(-0.5, 6.5), DVec(-0.5, 2.5), DVec(-3.5, 2.5)), Nil),
+    PolygonShape(List(DVec(-0.5, 6.5), DVec(1.5, 6.5), DVec(3.5, 2.5), DVec(-0.5, 2.5)), Nil),
+    PolygonShape(List(DVec(-1.5, 8.5), DVec(1.5, 8.5), DVec(1.5, 6.5), DVec(-1.5, 6.5)), Nil),
+    PolygonShape(List(DVec(1.5, 10.5), DVec(1.5, 8.5), DVec(-1.5, 8.5), DVec(-1.5, 10.5)), Nil)
+  )
+
   val draw_points = points :+ points.head
 
   val four  = new Engine("4",  Vec(-3.5, 0.0), Vec(1.0, 0.0),  1000000, 1,   4,    this)

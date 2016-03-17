@@ -1,85 +1,117 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
+import com.github.dunnololda.cli.AppProperties
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scage.support.DVec
 
 import scala.collection.mutable.ArrayBuffer
 
-object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", 640, 480) {
-  /*val points:List[DVec] = List(
-    DVec(3.5, 2.5),
-    DVec(1.5, 6.5),
-    DVec(1.5, 10.5),
-    DVec(-1.5, 10.5),
-    DVec(-1.5, 6.5),
-    DVec(-3.5, 2.5),
-    DVec(-3.5, -3.5),
-    DVec(3.5, -3.5)
-  )*/
+object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", property("screen.width", 640), property("screen.height", 480)) {
+  val ship_class_name = AppProperties.stringProperty("ship")
+
+  val ship = {
+    val constructor = Class.forName(s"com.github.dunnololda.scageprojects.orbitalkiller.ships.$ship_class_name").getConstructors()(0)
+    val args = Array(new java.lang.Integer(1), DVec.zero, DVec.zero, new java.lang.Double(0))
+    constructor.newInstance(args:_*).asInstanceOf[PolygonShip]
+  }
+
+  val ship_points = ship.points.map(_ + windowCenter)
+  val ship_draw_points = ship.draw_points.map(_ + windowCenter)
+
+  val whole_coords = ship_points.head.x % 1 == 0
+
+  private val cell_size:Int = property("cell_size", 1)
+  private val cell_size2 = cell_size*cell_size
+  private val cell_size_double = cell_size*2
+  private val cell_size_half:Float = 0.5f*cell_size
+  private val cell_size_quater:Float = 0.25f*cell_size
+  private val cell_size_eights:Float = 0.125f*cell_size
+  private lazy val points = collection.mutable.ArrayBuffer[DVec]()
+  private var selected_point = 0
+
+  private val mapped = ArrayBuffer[List[DVec]]()
 
   // ВАЖНО: следует перечислять точки ПРОТИВ ЧАСОВОЙ СТРЕЛКИ! Если по часовой перечислять, collision detection будет плохо работать
 
-  val points:List[DVec] = List(
-    DVec(-90.0, -10.0),
-    DVec(-130.0, -10.0),
-    DVec(-130.0, 10.0),
-    DVec(-90.0, 10.0),
-    DVec(-50.0, 30.0),
-    DVec(50.0, 30.0),
-    DVec(90.0, 10.0),
-    DVec(130.0, 10.0),
-    DVec(130.0, -10.0),
-    DVec(90.0, -10.0),
-    DVec(50.0, -30.0),
-    DVec(-50.0, -30.0)
-  )
-
-  private val cur_part = ArrayBuffer[Int]()
-
-  private def idx2str(idx:Int):String = {
-    if(idx <= 9) s"$idx"
-    else {
-      idx match {
-        case 10 => "A"
-        case 11 => "B"
-        case 12 => "C"
-        case 13 => "D"
-        case x => s"$x"
-      }
-    }
+  private def nearestDot(x:Double, a:Double, h:Double):Double = {
+    val x1 = a + ((x - a)/h).toInt*h
+    val x2 = x1+h
+    if(x - x1 < x2 - x) x1 else x2
   }
 
-  key(KEY_0, onKeyDown = {Predef.print("0"); cur_part += 0})
-  key(KEY_1, onKeyDown = {Predef.print("1"); cur_part += 1})
-  key(KEY_2, onKeyDown = {Predef.print("2"); cur_part += 2})
-  key(KEY_3, onKeyDown = {Predef.print("3"); cur_part += 3})
-  key(KEY_4, onKeyDown = {Predef.print("4"); cur_part += 4})
-  key(KEY_5, onKeyDown = {Predef.print("5"); cur_part += 5})
-  key(KEY_6, onKeyDown = {Predef.print("6"); cur_part += 6})
-  key(KEY_7, onKeyDown = {Predef.print("7"); cur_part += 7})
-  key(KEY_8, onKeyDown = {Predef.print("8"); cur_part += 8})
-  key(KEY_9, onKeyDown = {Predef.print("9"); cur_part += 9})
-  key(KEY_A, onKeyDown = {Predef.print("A"); cur_part += 10})
-  key(KEY_B, onKeyDown = {Predef.print("B"); cur_part += 11})
-  key(KEY_C, onKeyDown = {Predef.print("C"); cur_part += 12})
-  key(KEY_D, onKeyDown = {Predef.print("D"); cur_part += 13})
-
   key(KEY_SPACE, onKeyDown = {
-    println()
-    println(s"PolygonShape(List(${cur_part.map(x => s"DVec(${points(x).x}, ${points(x).y})").mkString(", ")}), Nil)")
-    cur_part.clear()
+    println(s"PolygonShape(List(${points.map(p => s"DVec(${p.x-windowWidth/2}, ${p.y-windowHeight/2})").mkString(", ")}), Nil),")
+    mapped += points.toList
+    points.clear()
+    selected_point = 0
   })
 
   key(KEY_Q, onKeyDown = if(keyPressed(KEY_RCONTROL) || keyPressed(KEY_LCONTROL)) stopApp())
 
-  center = DVec.zero
-  //globalScale = 20
+  leftMouse(onBtnDown = m => {
+    val ssm = absCoord(m)
+    if(points.forall(p => p.dist2(ssm) > cell_size2)) {
+      val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size)  - (if(!whole_coords) 0.5 else 0.0),
+                   nearestDot(ssm.y, -windowHeight/2, cell_size) - (if(!whole_coords) 0.5 else 0.0))
+      points.insert(selected_point, sm)
+    }
+  }, onBtnUp = m => {
+    val ssm = absCoord(m)
+    val sm = Vec(nearestDot(ssm.x, -windowWidth/2, cell_size)  - (if(!whole_coords) 0.5 else 0.0),
+                 nearestDot(ssm.y, -windowHeight/2, cell_size) - (if(!whole_coords) 0.5 else 0.0))
+    points(selected_point) = sm
+  })
+
+  rightMouse(onBtnDown = m => {
+    if(points.length > 0) {
+      points.remove(selected_point)
+    }
+    if(points.length > 0) selected_point = points.length-1
+    else selected_point = 0
+  })
+
+  mouseWheelDown(onWheelDown = m => {
+    selected_point -= 1
+    if(selected_point < 0) selected_point = points.length-1
+  })
+
+  mouseWheelUp(onWheelUp = m => {
+    selected_point += 1
+    if(selected_point >= points.length) selected_point = 0
+  })
+
+  leftMouseDrag(onDrag = m => {
+    val ssm = absCoord(m)
+    points.zipWithIndex.find(p => p._1.dist2(ssm) < cell_size2).foreach(p => {
+      selected_point = p._2
+      points(selected_point) = ssm
+    })
+  })
+
+  //center = DVec.zero
+  globalScale = 20f/cell_size
 
   render {
-    points.zipWithIndex.foreach {
-      case (p, idx) =>
-        drawFilledCircle(p, 3/globalScale, WHITE)
-        print(s"  ${idx2str(idx)}", p.toVec, (max_font_size/globalScale).toFloat, WHITE)
+    if(whole_coords) {
+      (0 to windowWidth by cell_size).foreach(x => drawLine(Vec(x, 0), Vec(x, windowHeight), DARK_GRAY))
+      (0 to windowHeight by cell_size).foreach(y => drawLine(Vec(0, y), Vec(windowWidth, y), DARK_GRAY))
+    } else {
+      (0.5 to windowWidth by cell_size).foreach(x => drawLine(Vec(x, 0.5), Vec(x, windowHeight), DARK_GRAY))
+      (0.5 to windowHeight by cell_size).foreach(y => drawLine(Vec(0.5, y), Vec(windowWidth, y), DARK_GRAY))
     }
+
+    ship_points.zipWithIndex.foreach {
+      case (p, idx) =>
+        drawFilledCircle(p, 3/globalScale, GRAY)
+    }
+    drawSlidingLines(ship_draw_points, GRAY)
+
+    if(points.length > 0) {
+      points.zipWithIndex.foreach(p => drawFilledCircle(p._1, 0.3f*cell_size, if(p._2 == selected_point) RED else WHITE))
+      drawSlidingLines(points.:+(points.head), WHITE)
+    }
+
+    mapped.foreach(pp => {
+      drawSlidingLines(pp.:+(pp.head), WHITE)
+    })
   }
 }
