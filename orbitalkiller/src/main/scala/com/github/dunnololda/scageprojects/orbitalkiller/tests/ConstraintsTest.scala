@@ -6,36 +6,11 @@ import com.github.dunnololda.scageprojects.orbitalkiller.tests.BodyStatesHolder.
 
 import scala.collection.mutable.ArrayBuffer
 
+import com.github.dunnololda.scageprojects.orbitalkiller.tests.BodyStatesHolder._
+
 object ConstraintsTest extends ScageScreenAppD("Constraints Test", 640, 480) {
   val base_dt = 1.0/63.0
   val dt = base_dt
-  def futureSystemEvolutionFrom(time:Long, body_states:List[BodyState]) = systemEvolutionFrom(
-    dt = dt, maxMultiplier = 1, base_dt = base_dt,
-    force = (time, bs, other_bodies) => {
-      DVec.zero/*DVec(0, -9.81*bs.mass)*/
-    },
-    torque = (time, bs, other_bodies) => {
-      0f
-    }/*, changeFunction = (tacts, body_states) => {
-      val mutable_body_states = body_states.map(_.toMutableBodyState)
-      for {
-        c1 <- mutable_body_states.find(_.body.index == "c1")
-        c2 <- mutable_body_states.find(_.body.index == "c2")
-      } {
-        val axis = c2.coord - c1.coord
-        val currentDistance = axis.norma
-        val unitAxis = axis.n
-        val relVel = (c2.vel - c1.vel)*unitAxis
-        val relDist = currentDistance - 80
-        val remove = relVel/*+relDist/dt*/
-        val impulse = remove/(c1.body.invMass + c2.body.invMass)
-        val I = unitAxis * impulse
-        c1.applyImpulse(I, unitAxis)
-        c2.applyImpulse(-I, unitAxis)
-      }
-
-      (tacts, mutable_body_states.map(_.toImmutableBodyState))
-    }*/)((time, body_states))
 
   val w = windowWidth/2
   val h = windowHeight/2
@@ -57,28 +32,28 @@ object ConstraintsTest extends ScageScreenAppD("Constraints Test", 640, 480) {
   val dynamic_bodies = ArrayBuffer[MyBody]()
 
   val w1 = new MyWall2(nextId, Vec(w-100, h-100),  Vec(w-100, h+100), this)
+  system_evolution.addBody(w1.currentState.toMutableBodyState)
   val w2 = new MyWall2(nextId, Vec(w-100, h+100),  Vec(w+100, h+100), this)
+  system_evolution.addBody(w2.currentState.toMutableBodyState)
   val w3 = new MyWall2(nextId, Vec(w+100, h+100),  Vec(w+100, h-100), this)
+  system_evolution.addBody(w3.currentState.toMutableBodyState)
   val w4 = new MyWall2(nextId, Vec(w+100, h-100),  Vec(w-100, h-100), this)
+  system_evolution.addBody(w4.currentState.toMutableBodyState)
 
   /*val c1 = addCircleBody(1)
   val c2 = addCircleBody(2)*/
-  val c1 = new MyCircle2(nextId, DVec(w,h), DVec(0, -10), 5, 1f, this)
-  val c2 = new MyCircle2(nextId, DVec(w+80,h+80), DVec(0, -10), 5, 1f, this)
+  val c1 = new MyCircle2(nextId, DVec(w,h), DVec(0, -30), 5, 1f, this)
+  val c1mbs = c1.currentState.toMutableBodyState
+  system_evolution.addBody(c1mbs)
+  val c2 = new MyCircle2(nextId, DVec(w+80,h+80), DVec(0, -30), 5, 1f, this)
+  val c2mbs = c2.currentState.toMutableBodyState
+  system_evolution.addBody(c2mbs)
   dynamic_bodies += c1 += c2
 
-  private val real_system_evolution =
-    futureSystemEvolutionFrom(0, dynamic_bodies.map(_.currentState).toList ::: List(
-      w1.currentState,
-      w2.currentState,
-      w3.currentState,
-      w4.currentState)).iterator
+  system_evolution.addJoint(Joint(c1mbs, DVec(0, 5), c2mbs, DVec(0, 5)))
 
   private def nextStep() {
-    val (_, body_states) = real_system_evolution.next()
-    body_states.foreach {
-      case bs => current_body_states(bs.index) = bs
-    }
+    system_evolution.step()
   }
   nextStep()
 

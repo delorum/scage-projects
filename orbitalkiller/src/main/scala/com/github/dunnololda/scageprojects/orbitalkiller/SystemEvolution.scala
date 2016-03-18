@@ -15,18 +15,18 @@ class SixDimVector(val a1:Double, val a2:Double, val a3:Double, val a4:Double, v
   def +(p:SixDimVector):SixDimVector = new SixDimVector(l.zip(p.l).map(kv => kv._1+kv._2))
 
   val bVel = DVec(a1, a2)
-  val bAngVel = a3
+  val bAngVelRad = a3
   val aVel = DVec(a4, a5)
-  val aAngVel = a6
+  val aAngVelRad = a6
 }
 
 // http://myselph.de/gamePhysics/equalityConstraints.html
 case class Joint(a:MutableBodyState, vertexA:DVec, b:MutableBodyState, vertexB:DVec) {
   def solveConstraint(_dt:Double) {
     val MInv = new SixDimVector(b.invMass, b.invMass, b.invI, a.invMass, a.invMass, a.invI)
-    val pA = a.coord + (vertexA - a.coord).rotateDeg(a.ang)
+    val pA = a.coord + vertexA.rotateDeg(a.ang)
     val cA = a.coord
-    val pB = b.coord + (vertexB - b.coord).rotateDeg(b.ang)
+    val pB = b.coord + vertexB.rotateDeg(b.ang)
     val cB = b.coord
     val J = {
       val e1 = pB - pA
@@ -38,15 +38,15 @@ case class Joint(a:MutableBodyState, vertexA:DVec, b:MutableBodyState, vertexB:D
     val C = (pA - pB)*(pA - pB)
     val bias = 0.2 / _dt * C
     (1 to 4).foreach(iteration => {
-      val v = new SixDimVector(b.vel.x, b.vel.y, b.ang_vel, a.vel.x, a.vel.y, a.ang_vel)
+      val v = new SixDimVector(b.vel.x, b.vel.y, b.ang_vel.toRad, a.vel.x, a.vel.y, a.ang_vel.toRad)
       val lambdaDenominator = J*(MInv**J)
       if(math.abs(lambdaDenominator) > 1E-15) {
         val lambda = -(J*v + bias) / lambdaDenominator
         val new_v = v + (MInv**(J*lambda))
         a.vel = new_v.aVel
-        a.ang_vel = new_v.aAngVel
+        a.ang_vel = new_v.aAngVelRad.toDeg
         b.vel = new_v.bVel
-        b.ang_vel = new_v.bAngVel
+        b.ang_vel = new_v.bAngVelRad.toDeg
       }
     })
   }
@@ -135,6 +135,9 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
 
     // Solve collisions
     if(collisions.nonEmpty) collisions.foreach(c => c.solveCollision(base_dt))
+
+    // Solve joints
+    joints.foreach(j => j.solveConstraint(base_dt))
 
     // Integrate velocities and forces last part
     mutable_system.foreach{ case (index, MutableSystemPart(mb, force, torque)) =>
