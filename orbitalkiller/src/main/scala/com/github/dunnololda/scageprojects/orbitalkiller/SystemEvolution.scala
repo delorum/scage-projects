@@ -6,6 +6,52 @@ import com.github.dunnololda.scage.support.DVec
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
+class SixDimVector(val a1:Double, val a2:Double, val a3:Double, val a4:Double, val a5:Double, val a6:Double) {
+  val l = List(a1,a2,a3,a4,a5,a6)
+  def this(l:Seq[Double]) = this(l.head, l(1), l(2), l(3), l(4), l(5))
+  def *(k:Double):SixDimVector = new SixDimVector(l.map(_ * k))
+  def *(p:SixDimVector):Double = l.zip(p.l).map(kv => kv._1*kv._2).sum
+  def **(p:SixDimVector):SixDimVector = new SixDimVector(l.zip(p.l).map(kv => kv._1*kv._2))
+  def +(p:SixDimVector):SixDimVector = new SixDimVector(l.zip(p.l).map(kv => kv._1+kv._2))
+
+  val bVel = DVec(a1, a2)
+  val bAngVel = a3
+  val aVel = DVec(a4, a5)
+  val aAngVel = a6
+}
+
+// http://myselph.de/gamePhysics/equalityConstraints.html
+case class Joint(a:MutableBodyState, vertexA:DVec, b:MutableBodyState, vertexB:DVec) {
+  def solveConstraint(_dt:Double) {
+    val MInv = new SixDimVector(b.invMass, b.invMass, b.invI, a.invMass, a.invMass, a.invI)
+    val pA = a.coord + (vertexA - a.coord).rotateDeg(a.ang)
+    val cA = a.coord
+    val pB = b.coord + (vertexB - b.coord).rotateDeg(b.ang)
+    val cB = b.coord
+    val J = {
+      val e1 = pB - pA
+      val e2 = (pA - pB)*/(pB - cB)
+      val e3 = pA - pB
+      val e4 = (pB - pA)*/(pA - cA)
+      new SixDimVector(e1.x, e1.y, e2, e3.x, e3.y, e4)*2
+    }
+    val C = (pA - pB)*(pA - pB)
+    val bias = 0.2 / _dt * C
+    (1 to 4).foreach(iteration => {
+      val v = new SixDimVector(b.vel.x, b.vel.y, b.ang_vel, a.vel.x, a.vel.y, a.ang_vel)
+      val lambdaDenominator = J*(MInv**J)
+      if(math.abs(lambdaDenominator) > 1E-15) {
+        val lambda = -(J*v + bias) / lambdaDenominator
+        val new_v = v + (MInv**(J*lambda))
+        a.vel = new_v.aVel
+        a.ang_vel = new_v.aAngVel
+        b.vel = new_v.bVel
+        b.ang_vel = new_v.bAngVel
+      }
+    })
+  }
+}
+
 case class MutableSystemPart(body:MutableBodyState,
                              force:(Long, EvolutionHelper) => DVec,
                              torque:(Long, EvolutionHelper) => Double)
@@ -16,6 +62,7 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
   private val mutable_system = mutable.HashMap[Int, MutableSystemPart]()
   private val all_bodies = ArrayBuffer[MutableBodyState]()
   private val mutable_system_helper = new EvolutionHelper(mutable_system)
+  private val joints = ArrayBuffer[Joint]()
   var tacts = init_tacts
 
   def addBody(new_part:MutableSystemPart): Unit = {
@@ -35,6 +82,14 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
      val new_part = MutableSystemPart(b, (t, h) => DVec.zero, (t, h) => 0.0)
     mutable_system += (b.index -> new_part)
     all_bodies += b
+  }
+
+  def addJoint(j:Joint): Unit = {
+    joints += j
+  }
+
+  def removeJoint(j:Joint): Unit = {
+    joints -= j
   }
 
   def removeBodyByIndex(index:Int): Unit = {

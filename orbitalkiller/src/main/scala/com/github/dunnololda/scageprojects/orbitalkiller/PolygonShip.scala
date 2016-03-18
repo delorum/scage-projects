@@ -323,7 +323,7 @@ abstract class PolygonShip(
   private def crash(reason:String): Unit = {
     pilot_is_dead = true
     pilot_death_reason = reason
-    if(this == OrbitalKiller.ship) {
+    if(this.index == OrbitalKiller.ship.index) {
       flightMode = Free
       viewMode = 2
     }
