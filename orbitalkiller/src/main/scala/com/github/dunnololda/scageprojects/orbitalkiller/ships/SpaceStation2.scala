@@ -36,14 +36,31 @@ class SpaceStation2(
   )
 
   override val convex_parts = List(
-    PolygonShape(List(DVec(-130.0, -10.0), DVec(-130.0, 10.0), DVec(-90.0, 10.0), DVec(-90.0, -10.0)).reverse, Nil),
-    PolygonShape(List(DVec(-90.0, -10.0), DVec(-90.0, 10.0), DVec(-50.0, 30.0), DVec(-50.0, -30.0)).reverse, Nil),
-    PolygonShape(List(DVec(-50.0, -30.0), DVec(-50.0, 30.0), DVec(50.0, 30.0), DVec(50.0, -30.0)).reverse, Nil),
-    PolygonShape(List(DVec(50.0, -30.0), DVec(50.0, 30.0), DVec(90.0, 10.0), DVec(90.0, -10.0)).reverse, Nil),
-    PolygonShape(List(DVec(90.0, -10.0), DVec(90.0, 10.0), DVec(130.0, 10.0), DVec(130.0, -10.0)).reverse, Nil)
+    PolygonShape(List(DVec(-130.0, -10.0), DVec(-90.0, -10.0), DVec(-90.0, 10.0), DVec(-130.0, 10.0)), Nil),
+    PolygonShape(List(DVec(-90.0, -10.0), DVec(-50.0, -30.0), DVec(-50.0, 30.0), DVec(-90.0, 10.0)), Nil),
+    PolygonShape(List(DVec(-50.0, -30.0), DVec(50.0, -30.0), DVec(50.0, 30.0), DVec(-50.0, 30.0)), Nil),
+    PolygonShape(List(DVec(50.0, -30.0), DVec(90.0, -10.0), DVec(90.0, 10.0), DVec(50.0, 30.0)), Nil),
+    PolygonShape(List(DVec(90.0, -10.0), DVec(130.0, -10.0), DVec(130.0, 10.0), DVec(90.0, 10.0)), Nil)
   )
 
-  override val wreck_parts = convex_parts
+  override val wreck_parts = List(
+    PolygonShape(List(DVec(-130.0, -10.0), DVec(-110.0, -10.0), DVec(-120.0, 10.0), DVec(-130.0, 10.0)), Nil),
+    PolygonShape(List(DVec(-110.0, -10.0), DVec(-90.0, -10.0), DVec(-90.0, 10.0), DVec(-110.0, 10.0)), Nil),
+    PolygonShape(List(DVec(-120.0, 10.0), DVec(-110.0, -10.0), DVec(-110.0, 10.0)), Nil),
+    PolygonShape(List(DVec(-90.0, -10.0), DVec(-70.0, -20.0), DVec(-90.0, 10.0)), Nil),
+    PolygonShape(List(DVec(-70.0, -20.0), DVec(-50.0, -30.0), DVec(-50.0, 30.0), DVec(-90.0, 10.0)), Nil),
+    PolygonShape(List(DVec(-50.0, -30.0), DVec(-20.0, -30.0), DVec(-10.0, 0.0), DVec(-50.0, 0.0)), Nil),
+    PolygonShape(List(DVec(-50.0, 30.0), DVec(-50.0, 0.0), DVec(-30.0, 0.0), DVec(-20.0, 30.0)), Nil),
+    PolygonShape(List(DVec(-30.0, 0.0), DVec(0.0, 0.0), DVec(10.0, 30.0), DVec(-20.0, 30.0)), Nil),
+    PolygonShape(List(DVec(-20.0, -30.0), DVec(20.0, -30.0), DVec(20.0, 0.0), DVec(-10.0, 0.0)), Nil),
+    PolygonShape(List(DVec(0.0, 0.0), DVec(20.0, 0.0), DVec(30.0, 30.0), DVec(10.0, 30.0)), Nil),
+    PolygonShape(List(DVec(20.0, -30.0), DVec(50.0, -30.0), DVec(50.0, 0.0), DVec(20.0, 0.0)), Nil),
+    PolygonShape(List(DVec(20.0, 0.0), DVec(90.0, 0.0), DVec(90.0, 10.0), DVec(50.0, 30.0)), Nil),
+    PolygonShape(List(DVec(30.0, 30.0), DVec(20.0, 0.0), DVec(50.0, 30.0)), Nil),
+    PolygonShape(List(DVec(50.0, -30.0), DVec(90.0, -10.0), DVec(90.0, 0.0), DVec(50.0, 0.0)), Nil),
+    PolygonShape(List(DVec(90.0, -10.0), DVec(100.0, -10.0), DVec(120.0, 10.0), DVec(90.0, 10.0)), Nil),
+    PolygonShape(List(DVec(100.0, -10.0), DVec(130.0, -10.0), DVec(130.0, 10.0), DVec(120.0, 10.0)), Nil)
+  )
 
   val four  = new Engine("4", Vec(-130.0, 0.0),   Vec(1.0, 0.0),  10, 1, 4, this)
   val six   = new Engine("6", Vec(130.0, 0.0),    Vec(-1.0, 0.0), 10, 1, 4, this)

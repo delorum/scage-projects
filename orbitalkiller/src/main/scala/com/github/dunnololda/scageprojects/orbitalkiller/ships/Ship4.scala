@@ -32,21 +32,20 @@ class Ship4(index:Int,
   )
 
   override val convex_parts = List(
-    PolygonShape(List(DVec(-1.5, 6.5), DVec(-1.5, 10.5), DVec(1.5, 10.5), DVec(1.5, 6.5)).reverse, Nil),
-    PolygonShape(List(DVec(-3.5, 2.5), DVec(-1.5, 6.5), DVec(1.5, 6.5), DVec(3.5, 2.5)).reverse, Nil),
-    PolygonShape(List(DVec(-3.5, -3.5), DVec(-3.5, 2.5), DVec(3.5, 2.5), DVec(3.5, -3.5)).reverse, Nil)
+    PolygonShape(List(DVec(-3.5, -3.5), DVec(3.5, -3.5), DVec(3.5, 2.5), DVec(-3.5, 2.5)), Nil),
+    PolygonShape(List(DVec(-3.5, 2.5), DVec(3.5, 2.5), DVec(1.5, 6.5), DVec(-1.5, 6.5)), Nil),
+    PolygonShape(List(DVec(-1.5, 10.5), DVec(-1.5, 6.5), DVec(1.5, 6.5), DVec(1.5, 10.5)), Nil)
   )
 
   override val wreck_parts = List(
-    PolygonShape(List(DVec(-3.5, -1.5), DVec(0.5, -1.5), DVec(0.5, -3.5), DVec(-3.5, -3.5)), Nil),
-    PolygonShape(List(DVec(0.5, -1.5), DVec(3.5, -1.5), DVec(3.5, -3.5), DVec(0.5, -3.5)), Nil),
-    PolygonShape(List(DVec(1.5, 0.5), DVec(1.5, -1.5), DVec(-3.5, -1.5), DVec(-3.5, 0.5)), Nil),
-    PolygonShape(List(DVec(1.5, 2.5), DVec(3.5, 2.5), DVec(3.5, -1.5), DVec(1.5, -1.5)), Nil),
-    PolygonShape(List(DVec(1.5, 2.5), DVec(1.5, 0.5), DVec(-3.5, 0.5), DVec(-3.5, 2.5)), Nil),
-    PolygonShape(List(DVec(-1.5, 6.5), DVec(-0.5, 6.5), DVec(-0.5, 2.5), DVec(-3.5, 2.5)), Nil),
-    PolygonShape(List(DVec(-0.5, 6.5), DVec(1.5, 6.5), DVec(3.5, 2.5), DVec(-0.5, 2.5)), Nil),
-    PolygonShape(List(DVec(-1.5, 8.5), DVec(1.5, 8.5), DVec(1.5, 6.5), DVec(-1.5, 6.5)), Nil),
-    PolygonShape(List(DVec(1.5, 10.5), DVec(1.5, 8.5), DVec(-1.5, 8.5), DVec(-1.5, 10.5)), Nil)
+    PolygonShape(List(DVec(-3.5, -3.5), DVec(-0.5, -3.5), DVec(-0.5, -0.5), DVec(-3.5, -0.5)), Nil),
+    PolygonShape(List(DVec(-0.5, -3.5), DVec(3.5, -3.5), DVec(3.5, -0.5), DVec(-0.5, -0.5)), Nil),
+    PolygonShape(List(DVec(-3.5, 2.5), DVec(-3.5, -0.5), DVec(0.5, -0.5), DVec(0.5, 2.5)), Nil),
+    PolygonShape(List(DVec(0.5, -0.5), DVec(3.5, -0.5), DVec(3.5, 2.5), DVec(0.5, 2.5)), Nil),
+    PolygonShape(List(DVec(-3.5, 2.5), DVec(-0.5, 2.5), DVec(-0.5, 6.5), DVec(-1.5, 6.5)), Nil),
+    PolygonShape(List(DVec(-0.5, 2.5), DVec(3.5, 2.5), DVec(1.5, 6.5), DVec(-0.5, 6.5)), Nil),
+    PolygonShape(List(DVec(-1.5, 6.5), DVec(1.5, 6.5), DVec(1.5, 8.5), DVec(-1.5, 8.5)), Nil),
+    PolygonShape(List(DVec(-1.5, 8.5), DVec(1.5, 8.5), DVec(1.5, 10.5), DVec(-1.5, 10.5)), Nil)
   )
 
   val draw_points = points :+ points.head

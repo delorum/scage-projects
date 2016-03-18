@@ -39,10 +39,28 @@ object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", 
   }
 
   key(KEY_SPACE, onKeyDown = {
-    println(s"PolygonShape(List(${points.map(p => s"DVec(${p.x-windowWidth/2}, ${p.y-windowHeight/2})").mkString(", ")}), Nil),")
-    mapped += points.toList
+    if(points.length > 2) {
+      val ps = points.reverse
+      val c = ps.sum / ps.length
+      val ccw = (ps :+ ps.head).map(_ - c).sliding(2).map {
+        case Seq(p1, p2) =>
+          // http://stackoverflow.com/questions/1165647/how-to-determine-if-a-list-of-polygon-points-are-in-clockwise-order
+          (p2.x - p1.x) * (p2.y + p1.y)
+      }.sum < 0
+      if(ccw) {
+        println(s"PolygonShape(List(${ps.map(p => s"DVec(${p.x - windowWidth / 2}, ${p.y - windowHeight / 2})").mkString(", ")}), Nil),")
+        mapped += points.toList
+      } else {
+        println("// NOT COUNTER-CLOCKWISE!")
+      }
+    }
     points.clear()
     selected_point = 0
+  })
+
+  key(KEY_C, onKeyDown = {
+    println("=====================================")
+    mapped.clear()
   })
 
   key(KEY_Q, onKeyDown = if(keyPressed(KEY_RCONTROL) || keyPressed(KEY_LCONTROL)) stopApp())
@@ -105,13 +123,16 @@ object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", 
     }
     drawSlidingLines(ship_draw_points, GRAY)
 
+    mapped.foreach(pp => {
+      drawFilledPolygon(pp, GRAY)
+      //drawSlidingLines(pp.:+(pp.head), WHITE)
+    })
+
     if(points.length > 0) {
       points.zipWithIndex.foreach(p => drawFilledCircle(p._1, 0.3f*cell_size, if(p._2 == selected_point) RED else WHITE))
       drawSlidingLines(points.:+(points.head), WHITE)
+      val c = points.sum/points.length
+      drawFilledCircle(c, 3/globalScale, WHITE)
     }
-
-    mapped.foreach(pp => {
-      drawSlidingLines(pp.:+(pp.head), WHITE)
-    })
   }
 }

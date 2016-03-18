@@ -323,7 +323,10 @@ abstract class PolygonShip(
   private def crash(reason:String): Unit = {
     pilot_is_dead = true
     pilot_death_reason = reason
-    flightMode = Free
+    if(this == OrbitalKiller.ship) {
+      flightMode = Free
+      viewMode = 2
+    }
     OrbitalKiller.system_evolution.removeBodyByIndex(index)
     ship_parts = wreck_parts.zipWithIndex.map(x => {
       val part_center = currentState.coord + x._1.points.sum/x._1.points.length
@@ -358,7 +361,7 @@ abstract class PolygonShip(
 
   private def randomSpeed(vel:DVec) = {
     val dir_deg = 140.0 + math.random*80.0
-    vel.n.rotateDeg(dir_deg)*20.0
+    vel.n.rotateDeg(dir_deg)*50.0
   }
 
   def updateShipState(time_msec:Long): Unit = {
