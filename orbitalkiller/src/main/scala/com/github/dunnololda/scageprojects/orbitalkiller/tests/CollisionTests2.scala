@@ -308,7 +308,7 @@ class MyWall2(index:Int, from:DVec, to:DVec, screen:RendererD) extends MyBody {
       ang_vel = 0f,
       ang = 0f,
       shape = LineShape(to-from),
-      is_static = true, restitution = 1))
+      is_static = true, restitution = 1, staticFriction = 0, dynamicFriction = 0))
 
   screen.render(0) {
     val color = WHITE
