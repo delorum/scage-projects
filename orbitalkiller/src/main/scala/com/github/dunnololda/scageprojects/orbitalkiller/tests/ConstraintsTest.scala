@@ -95,6 +95,11 @@ object ConstraintsTest extends ScageScreenAppD("Constraints Test", 640, 480) {
       b1.currentState.mass*9.81*b1.currentState.coord.y*/
     }).sum
 
+  render {
+    drawLine(c1mbs.coord + DVec(0, 5).rotateDeg(c1mbs.ang), c2mbs.coord + DVec(0, 5).rotateDeg(c2mbs.ang), WHITE)
+    drawLine(c1mbs.coord + DVec(0, -5).rotateDeg(c1mbs.ang), c2mbs.coord + DVec(0, -5).rotateDeg(c2mbs.ang), WHITE)
+  }
+
   interface {
     print(f"energy = $energy; distance = ${c1.coord.dist(c2.coord)}%.2f", 20, 20, WHITE)
     //print(f"energy = $energy", 20, 20, WHITE)

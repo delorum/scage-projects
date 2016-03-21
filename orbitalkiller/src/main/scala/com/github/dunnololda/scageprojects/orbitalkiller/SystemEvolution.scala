@@ -14,10 +14,10 @@ class SixDimVector(val a1:Double, val a2:Double, val a3:Double, val a4:Double, v
   def **(p:SixDimVector):SixDimVector = new SixDimVector(l.zip(p.l).map(kv => kv._1*kv._2))
   def +(p:SixDimVector):SixDimVector = new SixDimVector(l.zip(p.l).map(kv => kv._1+kv._2))
 
-  val bVel = DVec(a1, a2)
+  /*val bVel = DVec(a1, a2)
   val bAngVelRad = a3
   val aVel = DVec(a4, a5)
-  val aAngVelRad = a6
+  val aAngVelRad = a6*/
 }
 
 // http://myselph.de/gamePhysics/equalityConstraints.html
@@ -43,10 +43,10 @@ case class Joint(a:MutableBodyState, vertexA:DVec, b:MutableBodyState, vertexB:D
       if(math.abs(lambdaDenominator) > 1E-15) {
         val lambda = -(J*v + bias) / lambdaDenominator
         val new_v = v + (MInv**(J*lambda))
-        a.vel = new_v.aVel
-        a.ang_vel = new_v.aAngVelRad.toDeg
-        b.vel = new_v.bVel
-        b.ang_vel = new_v.bAngVelRad.toDeg
+        a.vel = DVec(new_v.a4, new_v.a5)
+        a.ang_vel = new_v.a6.toDeg
+        b.vel = DVec(new_v.a1, new_v.a2)
+        b.ang_vel = new_v.a3.toDeg
       }
     })
   }
