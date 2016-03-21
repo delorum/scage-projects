@@ -45,13 +45,13 @@ object ConstraintsTest extends ScageScreenAppD("Constraints Test", 640, 480) {
   val c1 = new MyCircle2(nextId, DVec(w,h), DVec(0, -30), 5, 1f, this)
   val c1mbs = c1.currentState.toMutableBodyState
   system_evolution.addBody(c1mbs)
-  val c2 = new MyCircle2(nextId, DVec(w+20,h), DVec(0, -20), 5, 1f, this)
+  val c2 = new MyCircle2(nextId, DVec(w+50,h), DVec(0, -20), 5, 1f, this)
   val c2mbs = c2.currentState.toMutableBodyState
   system_evolution.addBody(c2mbs)
   dynamic_bodies += c1 += c2
 
-  system_evolution.addJoint(Joint(c1mbs, DVec(20, 5), c2mbs, DVec(0, 5)))
-  system_evolution.addJoint(Joint(c1mbs, DVec(20, -5), c2mbs, DVec(0, -5)))
+  system_evolution.addJoint(Joint(c1mbs, DVec(25, 0), c2mbs, DVec(-25, 0)))
+  //system_evolution.addJoint(Joint(c1mbs, DVec(20, -5), c2mbs, DVec(0, -5)))
 
   private def nextStep() {
     system_evolution.step()
