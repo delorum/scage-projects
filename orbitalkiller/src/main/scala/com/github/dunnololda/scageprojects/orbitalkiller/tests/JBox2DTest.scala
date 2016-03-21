@@ -1,5 +1,6 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
+import com.github.dunnololda.cli.AppProperties
 import com.github.dunnololda.scage.ScageLib.{drawCircle => scageDrawCircle, _}
 import org.jbox2d.dynamics._
 import org.jbox2d.common._
@@ -8,6 +9,8 @@ import joints._
 import org.jbox2d.callbacks.DebugDraw
 
 object JBox2DTest extends ScageScreenApp("JBox2D Test", 640, 480) {
+  val testStr = AppProperties.property("test", "test1")
+
   val dt = 1f/63
   val world = new World(new Vec2(0, 0))
   private val debug_drawer = new ScageDrawer
@@ -151,7 +154,28 @@ object JBox2DTest extends ScageScreenApp("JBox2D Test", 640, 480) {
     List(c1,c2)
   }
 
-  val bodies = test5()
+  def test6() = {
+    val c1 = createCircle(randomPos, randomSpeed, 10)
+    val c2 = createCircle(randomPos, randomSpeed, 10)
+    val jd = new DistanceJointDef
+    jd.bodyA = c1
+    jd.localAnchorA.set(new Vec2(0,0))
+    jd.bodyB = c2
+    jd.localAnchorB.set(new Vec2(0,0))
+    jd.length = 50
+    world.createJoint(jd)
+    List(c1,c2)
+  }
+
+  val bodies = testStr match {
+    case "test1" => test1()
+    case "test2" => test2()
+    case "test3" => test3()
+    case "test4" => test4()
+    case "test5" => test5()
+    case "test6" => test6()
+    case _ => test1()
+  }
 
   def energy = {
     bodies.map(b => {
