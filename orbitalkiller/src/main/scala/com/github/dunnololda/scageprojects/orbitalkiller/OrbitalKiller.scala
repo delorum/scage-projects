@@ -177,9 +177,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   system_evolution.addBody(
     ship.currentState,
     (tacts, helper) => {
-      helper.gravityForceHelper(sun.index, ship.index) +
-      helper.gravityForceHelper(earth.index, ship.index) +
-      helper.gravityForceHelper(moon.index, ship.index) +
+      helper.gravityForceFromTo(sun.index, ship.index) +
+      helper.gravityForceFromTo(earth.index, ship.index) +
+      helper.gravityForceFromTo(moon.index, ship.index) +
       helper.funcOrDVecZero(ship.index, bs => ship.currentReactiveForce(tacts, bs)) +
       helper.funcOfArrayOrDVecZero(Array(ship.index, earth.index), l => {
         val bs = l(0)
@@ -194,9 +194,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   system_evolution.addBody(
     station.currentState,
     (tacts, helper) => {
-      helper.gravityForceHelper(sun.index, station.index) +
-      helper.gravityForceHelper(earth.index, station.index) +
-      helper.gravityForceHelper(moon.index, station.index) +
+      helper.gravityForceFromTo(sun.index, station.index) +
+      helper.gravityForceFromTo(earth.index, station.index) +
+      helper.gravityForceFromTo(moon.index, station.index) +
       helper.funcOrDVecZero(station.index, bs => station.currentReactiveForce(tacts, bs)) +
       helper.funcOfArrayOrDVecZero(Array(station.index, earth.index), l => {
         val bs = l(0)
@@ -211,8 +211,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   system_evolution.addBody(
     moon.currentState,
     (tacts, helper) => {
-      helper.gravityForceHelper(sun.index, moon.index) +
-      helper.gravityForceHelper(earth.index, moon.index)
+      helper.gravityForceFromTo(sun.index, moon.index) +
+      helper.gravityForceFromTo(earth.index, moon.index)
     },
     (tacts, helper) => {
       0.0
@@ -221,7 +221,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   system_evolution.addBody(
     earth.currentState,
     (tacts, helper) => {
-      helper.gravityForceHelper(sun.index, earth.index)
+      helper.gravityForceFromTo(sun.index, earth.index)
     },
     (tacts, helper) => {
       0.0

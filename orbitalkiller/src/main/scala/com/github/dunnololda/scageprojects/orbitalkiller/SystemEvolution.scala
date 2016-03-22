@@ -169,7 +169,7 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
 }
 
 class EvolutionHelper(mutable_system:mutable.HashMap[Int, MutableSystemPart]) {
-  def gravityForceHelper(planet_index:Int, ship_index:Int):DVec = {
+  def gravityForceFromTo(planet_index:Int, ship_index:Int):DVec = {
     (for {
       planet <- mutable_system.get(planet_index).map(_.body)
       ship <- mutable_system.get(ship_index).map(_.body)

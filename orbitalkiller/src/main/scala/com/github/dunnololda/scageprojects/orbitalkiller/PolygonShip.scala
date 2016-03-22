@@ -344,9 +344,9 @@ abstract class PolygonShip(
       ))
       OrbitalKiller.system_evolution.addBody(mbs,
         (tacts, helper) => {
-          helper.gravityForceHelper(sun.index, part_index) +
-            helper.gravityForceHelper(earth.index, part_index) +
-            helper.gravityForceHelper(moon.index, part_index) +
+          helper.gravityForceFromTo(sun.index, part_index) +
+            helper.gravityForceFromTo(earth.index, part_index) +
+            helper.gravityForceFromTo(moon.index, part_index) +
             helper.funcOfArrayOrDVecZero(Array(part_index, earth.index), l => {
               val bs = l(0)
               val e = l(1)

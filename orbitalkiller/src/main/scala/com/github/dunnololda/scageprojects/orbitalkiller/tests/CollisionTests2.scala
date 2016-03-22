@@ -297,22 +297,32 @@ class MyBox2(val index:Int, init_coord:DVec, init_velocity:DVec, val w:Double, v
 }
 
 class MyWall2(index:Int, from:DVec, to:DVec, screen:RendererD) extends MyBody {
+  val horizontal = to.y == from.y
   def currentState:BodyState = currentBodyState(index).getOrElse(
     BodyState(
       index,
       mass = -1,  // infinite mass
       acc = DVec.dzero,
       vel = DVec.dzero,
-      coord = from,
+      coord = from + 0.5*(to - from),
       ang_acc = 0f,
       ang_vel = 0f,
       ang = 0f,
-      shape = LineShape(to-from),
+      shape = if(horizontal) {
+        BoxShape(to.x-from.x, 2)
+      } else {
+        BoxShape(2, to.y-from.y)
+      },
       is_static = true, restitution = 1, staticFriction = 0, dynamicFriction = 0))
 
   screen.render(0) {
     val color = WHITE
-    drawLine(from.toVec, to.toVec, color)
+    if(horizontal) {
+      drawLine(from.toVec, to.toVec, color)
+      drawFilledRectCentered(currentState.coord, to.x-from.x, 2)
+    } else {
+      drawFilledRectCentered(currentState.coord, 2, to.y-from.y)
+    }
     /*val AABB(c, w, h) = currentState.aabb
     drawRectCentered(c.toVec, w.toFloat, h.toFloat, color)*/
   }

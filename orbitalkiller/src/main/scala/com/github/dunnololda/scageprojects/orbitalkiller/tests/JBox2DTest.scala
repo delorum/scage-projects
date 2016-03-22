@@ -22,21 +22,29 @@ object JBox2DTest extends ScageScreenApp("JBox2D Test", 640, 480) {
   def randomPos = Vec(w-95+math.random*190, h-95+math.random*190)
   def randomSpeed = Vec(-1 + math.random*2, -1 + math.random*2).n*50f
 
-  def createWall(fromx:Float, fromy:Float, tox:Float, toy:Float) {
+  def createWall(fromx:Float, fromy:Float, tox:Float, toy:Float) = {
+    val horizontal = fromy == toy
     val fd = new FixtureDef
     fd.restitution = 1
     fd.friction = 0
-    val sd = new EdgeShape
-    sd.set(new Vec2(fromx, fromy), new Vec2(tox, toy))
+    fd.density = 0.01f
+    val sd = new PolygonShape
+    if(horizontal) {
+      sd.setAsBox(0.5f * (tox - fromx), 2)
+    } else {
+      sd.setAsBox(2, 0.5f * (toy - fromy))
+    }
     fd.shape = sd
     val bd = new BodyDef
+    bd.position = new Vec2(fromx + 0.5f*(tox - fromx), fromy + 0.5f*(toy - fromy))
     val body = world.createBody(bd)
     body.createFixture(fd)
+    body
   }
-  createWall(w - 100, h - 100, w + 100, h - 100)
-  createWall(w - 100, h + 100, w + 100, h + 100)
-  createWall(w - 100, h - 100, w - 100, h + 100)
-  createWall(w + 100, h - 100, w + 100, h + 100)
+  val w1 = createWall(w - 100, h - 100, w + 100, h - 100)
+  val w2 = createWall(w - 100, h + 100, w + 100, h + 100)
+  val w3 = createWall(w - 100, h - 100, w - 100, h + 100)
+  val w4 = createWall(w + 100, h - 100, w + 100, h + 100)
 
   def createCircle(position:Vec, velocity:Vec, radius:Float) = {
     val fd = new FixtureDef
@@ -167,6 +175,26 @@ object JBox2DTest extends ScageScreenApp("JBox2D Test", 640, 480) {
     List(c1,c2)
   }
 
+  def test7() = {
+    val c1 = createCircle(randomPos, randomSpeed, 10)
+    val c2 = createCircle(randomPos, randomSpeed, 10)
+    val jd1 = new DistanceJointDef
+    jd1.bodyA = c1
+    jd1.localAnchorA.set(new Vec2(0,0))
+    jd1.bodyB = c2
+    jd1.localAnchorB.set(new Vec2(0,0))
+    jd1.length = 50
+    world.createJoint(jd1)
+    val jd2 = new DistanceJointDef
+    jd2.bodyA = c1
+    jd2.localAnchorA.set(new Vec2(0,0))
+    jd2.bodyB = w2
+    jd2.localAnchorB.set(new Vec2(0,0))
+    jd2.length = 50
+    world.createJoint(jd2)
+    List(c1,c2)
+  }
+
   val bodies = testStr match {
     case "test1" => test1()
     case "test2" => test2()
@@ -174,6 +202,7 @@ object JBox2DTest extends ScageScreenApp("JBox2D Test", 640, 480) {
     case "test4" => test4()
     case "test5" => test5()
     case "test6" => test6()
+    case "test7" => test7()
     case _ => test1()
   }
 
