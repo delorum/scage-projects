@@ -77,8 +77,6 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     1
   }*/
 
-  def dt = timeMultiplier*base_dt
-
   val system_evolution = new SystemEvolution(base_dt)
   def tacts:Long = system_evolution.tacts
 
@@ -259,8 +257,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   var _stop_in_orbit_true_anomaly:Double = 0
 
   private def nextStep() {
-    val steps = math.max((dt/base_dt).toInt, 1)
-    (1 to steps).foreach(step => {
+    (1 to timeMultiplier).foreach(step => {
       ships.foreach(s => s.engines.foreach(e => {
         if(e.active) {
           if(e.workTimeTacts <= 0 || ship.fuelMass <= 0) {

@@ -82,10 +82,10 @@ class Ship4(index:Int,
     /*if(a == 0) tacts
     else if(a > 0) {
       if(from >= to) tacts
-      else howManyTacts(to, from + a*dt, a, dt, tacts+1)
+      else howManyTacts(to, from + a*dt, a, base_dt, tacts+1)
     } else {
       if(from <= to) tacts
-      else howManyTacts(to, from + a*dt, a, dt, tacts+1)
+      else howManyTacts(to, from + a*dt, a, base_dt, tacts+1)
     }*/
   }
 
@@ -95,7 +95,7 @@ class Ship4(index:Int,
         val power = max_power*0.01*percent
         val force = force_dir*power
         val acc = force / mass
-        val (_, result_to) = howManyTacts(to, from, acc, dt)
+        val (_, result_to) = howManyTacts(to, from, acc, base_dt)
         (percent, math.abs(to - result_to))
     }.filter(_._2 < max_diff).sortBy(_._2).headOption.map(_._1*max_power*0.01).getOrElse(max_power*0.01)*/
 
@@ -104,7 +104,7 @@ class Ship4(index:Int,
         val power = max_power*0.01*percent
         val force = force_dir*power
         val acc = force / mass
-        val (_, result_to) = howManyTacts(to, from, acc, dt)
+        val (_, result_to) = howManyTacts(to, from, acc, base_dt)
         math.abs(to - result_to) < max_diff
     }.map(percent => max_power*0.01*percent).getOrElse(max_power*0.01)
 
@@ -112,7 +112,7 @@ class Ship4(index:Int,
       case power =>
         val force = force_dir*power
         val acc = force / mass
-        val (_, result_to) = howManyTacts(to, from, acc, dt)
+        val (_, result_to) = howManyTacts(to, from, acc, base_dt)
         math.abs(to - result_to) < max_diff
     }.getOrElse(max_power*0.01)*/
   }
@@ -123,7 +123,7 @@ class Ship4(index:Int,
         val power = max_power*0.01*percent
         val torque = (-force_dir*power)*/position
         val ang_acc = (torque / I).toDeg
-        val (_, result_to) = howManyTacts(to, from, ang_acc, dt)
+        val (_, result_to) = howManyTacts(to, from, ang_acc, base_dt)
         math.abs(to - result_to) < max_diff
     }.map(percent => max_power*0.01*percent).getOrElse(max_power*0.01)
   }
@@ -135,7 +135,7 @@ class Ship4(index:Int,
       seven.power = power
       //six.power = power
       val ang_acc = (seven.torque / currentState.I).toDeg
-      val (tacts, _) = howManyTacts(ang_vel_deg, angularVelocity, ang_acc, dt)
+      val (tacts, _) = howManyTacts(ang_vel_deg, angularVelocity, ang_acc, base_dt)
       activateOnlyTheseEngines(seven/*, six*/)
       seven.workTimeTacts = tacts
       //six.workTimeTacts = tacts
@@ -144,7 +144,7 @@ class Ship4(index:Int,
       nine.power = power
       //four.power = power
       val ang_acc = (nine.torque / currentState.I).toDeg
-      val (tacts, _) = howManyTacts(ang_vel_deg, angularVelocity, ang_acc, dt)
+      val (tacts, _) = howManyTacts(ang_vel_deg, angularVelocity, ang_acc, base_dt)
       activateOnlyTheseEngines(nine/*, four*/)
       nine.workTimeTacts = tacts
       //four.workTimeTacts = tacts
@@ -166,7 +166,7 @@ class Ship4(index:Int,
 
       eight.power = power
       val acc = (eight.force / mass).y
-      val (tacts, result_to) = howManyTacts(ss_n, ship_velocity_n, acc, dt)
+      val (tacts, result_to) = howManyTacts(ss_n, ship_velocity_n, acc, base_dt)
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
       eight.workTimeTacts = tacts
@@ -175,7 +175,7 @@ class Ship4(index:Int,
       val power = maxPossiblePowerForLinearMovement(two.max_power, two.force_dir.y, mass, ss_n, ship_velocity_n, linear_velocity_error)
       two.power = power
       val acc = (two.force / mass).y
-      val (tacts, result_to) = howManyTacts(ss_n, ship_velocity_n, acc, dt)
+      val (tacts, result_to) = howManyTacts(ss_n, ship_velocity_n, acc, base_dt)
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
       two.workTimeTacts = tacts
@@ -189,7 +189,7 @@ class Ship4(index:Int,
       val power = maxPossiblePowerForLinearMovement(six.max_power, six.force_dir.x, mass, ss_p, ship_velocity_p, linear_velocity_error)
       six.power = power
       val acc = (six.force / mass).x
-      val (tacts, _) = howManyTacts(ss_p, ship_velocity_p, acc, dt)
+      val (tacts, _) = howManyTacts(ss_p, ship_velocity_p, acc, base_dt)
       /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
       println("===========================")*/
       six.workTimeTacts = tacts
@@ -198,7 +198,7 @@ class Ship4(index:Int,
       val power = maxPossiblePowerForLinearMovement(four.max_power, four.force_dir.x, mass, ss_p, ship_velocity_p, linear_velocity_error)
       four.power = power
       val acc = (four.force / mass).x
-      val (tacts, _) = howManyTacts(ss_p, ship_velocity_p, acc, dt)
+      val (tacts, _) = howManyTacts(ss_p, ship_velocity_p, acc, base_dt)
       /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
       println("===========================")*/
       four.workTimeTacts = tacts
