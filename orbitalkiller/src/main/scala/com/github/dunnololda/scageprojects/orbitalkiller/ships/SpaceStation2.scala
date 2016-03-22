@@ -62,7 +62,7 @@ class SpaceStation2(
     PolygonShape(List(DVec(100.0, -10.0), DVec(130.0, -10.0), DVec(130.0, 10.0), DVec(120.0, 10.0)), Nil)
   )
 
-  override val docking_points = List(DockingPoints(DVec(-130.0, 1.5), DVec(-130.0, -1.5)))
+  override val docking_points = List(new DockingPoints(DVec(-130.0, 1.5), DVec(-130.0, -1.5), this))
 
   val four  = new Engine("4", Vec(-130.0, 0.0),   Vec(1.0, 0.0),  10, 1, 4, this)
   val six   = new Engine("6", Vec(130.0, 0.0),    Vec(-1.0, 0.0), 10, 1, 4, this)
@@ -112,6 +112,8 @@ class SpaceStation2(
                   drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(GREEN))
                   drawFilledCircle(dp.p2, 0.3, colorIfAliveOrRed(GREEN))
                 } else {
+                  drawLine(dp.p1, dp.p1+(dp.p1-dp.p2).n.rotateDeg(90)*100, colorIfAliveOrRed(RED))
+                  drawLine(dp.p2, dp.p2+(dp.p1-dp.p2).n.rotateDeg(90)*100, colorIfAliveOrRed(RED))
                   drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(RED))
                   drawFilledCircle(dp.p2, 0.3, colorIfAliveOrRed(RED))
                 }

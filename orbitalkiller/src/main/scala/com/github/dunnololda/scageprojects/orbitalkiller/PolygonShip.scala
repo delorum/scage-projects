@@ -19,9 +19,11 @@ case object NearestPlanetVelocity   extends FlightMode
 case object AbsoluteStop            extends FlightMode
 case object Maneuvering             extends FlightMode
 
-case class DockingPoints(p1:DVec, p2:DVec) {
+class DockingPoints(val p1:DVec, val p2:DVec, ship:PolygonShip) {
+  def curP1 = ship.currentState.coord + p1.rotateDeg(ship.currentState.ang)
+  def curP2 = ship.currentState.coord + p2.rotateDeg(ship.currentState.ang)
   def pointsMatch(other_ship_docking_points:DockingPoints):Boolean = {
-    p1.dist(other_ship_docking_points.p1) < 0.05 && p2.dist(other_ship_docking_points.p2) < 0.05
+    curP1.dist(other_ship_docking_points.curP1) < 1 && curP2.dist(other_ship_docking_points.curP2) < 1
   }
 }
 case class DockData(dock_to_ship:PolygonShip, joints:List[Joint])
@@ -271,7 +273,11 @@ abstract class PolygonShip(
     last_correction_or_check_moment = 0l
     if(flight_mode == Maneuvering) {
       val ten_min_or_max_time_at_full_power = math.min((fuelMass/engines.map(_.maxFuelConsumptionPerTact).max).toLong, 37800)
-      engines.foreach(e => e.power = e.max_power*0.5)
+      if(InterfaceHolder.dockingSwitcher.dockingEnabled) {
+        engines.foreach(e => e.power = 10000)
+      } else {
+        engines.foreach(e => e.power = e.max_power*0.5)
+      }
       engines.filterNot(_.active).foreach(e => e.workTimeTacts = ten_min_or_max_time_at_full_power)     // 10 minutes in tacts (10*60*63)
       val active_engines = engines.filter(_.active)
       if(active_engines.map(ae => ae.fuelConsumptionPerTact*ten_min_or_max_time_at_full_power).sum <= fuelMass) {
@@ -284,6 +290,8 @@ abstract class PolygonShip(
       if(flight_mode == Free) {
         engines.foreach(e => e.active = false)
       } else if(flight_mode == Killrot && prev_flight_mode == Maneuvering) {
+        saveFlightModeAndEngineStates(prev_flight_mode)
+      } else if(flight_mode == NearestShipVelocity && prev_flight_mode == Maneuvering) {
         saveFlightModeAndEngineStates(prev_flight_mode)
       } else if(flight_mode == NearestPlanetVelocity) {
         vertical_speed_msec = 0
@@ -332,7 +340,6 @@ abstract class PolygonShip(
   def canDockWithNearestShipUsingDockPoints(dp:DockingPoints):Boolean = {
     otherShipsNear.headOption.toList.flatMap(_.docking_points).exists(osdp => dp.pointsMatch(osdp))
   }
-
 
   protected val pilot_mass = 75
   protected val pilot_position = DVec(0, 8)

@@ -48,7 +48,7 @@ class Ship4(index:Int,
     PolygonShape(List(DVec(-1.5, 8.5), DVec(1.5, 8.5), DVec(1.5, 10.5), DVec(-1.5, 10.5)), Nil)
   )
 
-  override val docking_points = List(DockingPoints(DVec(-1.5, 10.5), DVec(1.5, 10.5)))
+  override val docking_points = List(new DockingPoints(DVec(-1.5, 10.5), DVec(1.5, 10.5), this))
 
   val draw_points = points :+ points.head
 
@@ -219,12 +219,14 @@ class Ship4(index:Int,
   override def updateShipState(time_msec:Long): Unit = {
     super.updateShipState(time_msec)
     if(InterfaceHolder.dockingSwitcher.dockingEnabled) {
-      if(canDockWithNearestShip && dock_data.isEmpty && InterfaceHolder.dockUndock.selectedVariant == 1) {
+      println(f"${docking_points.head.curP1.dist(OrbitalKiller.station.docking_points.head.curP1)}%.2f")
+      if(canDockWithNearestShip && dock_data.isEmpty) {
         dockPointsWithNearestShip.headOption.foreach {
           case (dp, os, osdp) =>
             val j1 = system_evolution.addJoint(currentState, dp.p1, os.currentState, osdp.p1)
             val j2 = system_evolution.addJoint(currentState, dp.p2, os.currentState, osdp.p2)
             dock_data = Some(DockData(os, List(j1, j2)))
+            InterfaceHolder.dockUndock.setDocked()
         }
       } else if(dock_data.nonEmpty && InterfaceHolder.dockUndock.selectedVariant == 0) {
         dock_data.foreach {
@@ -291,10 +293,12 @@ class Ship4(index:Int,
                   if (linearVelocity.dist(ss) > linear_velocity_error) {
                     preserveVelocity(ss)
                   } else {
-                    flightMode = Free
+                    if(haveSavedFlightMode) restoreFlightModeAndEngineStates()
+                    else flightMode = Free
                   }
                 case None =>
-                  flightMode = Free
+                  if(haveSavedFlightMode) restoreFlightModeAndEngineStates()
+                  else flightMode = Free
               }
             } else preserveAngularVelocity(0)
           }
