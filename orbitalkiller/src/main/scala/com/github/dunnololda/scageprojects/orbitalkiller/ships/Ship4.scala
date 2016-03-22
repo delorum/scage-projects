@@ -48,6 +48,8 @@ class Ship4(index:Int,
     PolygonShape(List(DVec(-1.5, 8.5), DVec(1.5, 8.5), DVec(1.5, 10.5), DVec(-1.5, 10.5)), Nil)
   )
 
+  override val docking_points = List(DockingPoints(DVec(-1.5, 10.5), DVec(1.5, 10.5)))
+
   val draw_points = points :+ points.head
 
   val four  = new Engine("4",  Vec(-3.5, 0.0), Vec(1.0, 0.0),  1000000, 1,   4,    this)
@@ -214,6 +216,26 @@ class Ship4(index:Int,
     if(x > 180) 360 - x else x
   }
 
+  override def updateShipState(time_msec:Long): Unit = {
+    super.updateShipState(time_msec)
+    if(InterfaceHolder.dockingSwitcher.dockingEnabled) {
+      if(canDockWithNearestShip && dock_data.isEmpty && InterfaceHolder.dockUndock.selectedVariant == 1) {
+        dockPointsWithNearestShip.headOption.foreach {
+          case (dp, os, osdp) =>
+            val j1 = system_evolution.addJoint(currentState, dp.p1, os.currentState, osdp.p1)
+            val j2 = system_evolution.addJoint(currentState, dp.p2, os.currentState, osdp.p2)
+            dock_data = Some(DockData(os, List(j1, j2)))
+        }
+      } else if(dock_data.nonEmpty && InterfaceHolder.dockUndock.selectedVariant == 0) {
+        dock_data.foreach {
+          case DockData(os, joints) =>
+            joints.foreach(j => system_evolution.removeJoint(j))
+        }
+        dock_data = None
+      }
+    }
+  }
+
   action {
     if(fuelMass <= 0 && flightMode != Free) {
       flightMode = Free
@@ -371,6 +393,20 @@ class Ship4(index:Int,
 
             openglRotateDeg(rotation)
             drawSlidingLines(draw_points, colorIfAliveOrRed(WHITE))
+
+            if (OrbitalKiller.globalScale >= 0.8) {
+              if(InterfaceHolder.dockingSwitcher.dockingEnabled) {
+                docking_points.foreach(dp => {
+                  if(canDockWithNearestShipUsingDockPoints(dp)) {
+                    drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(GREEN))
+                    drawFilledCircle(dp.p2, 0.3, colorIfAliveOrRed(GREEN))
+                  } else {
+                    drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(RED))
+                    drawFilledCircle(dp.p2, 0.3, colorIfAliveOrRed(RED))
+                  }
+                })
+              }
+            }
 
             engines.foreach {
               case e => drawEngine(e)

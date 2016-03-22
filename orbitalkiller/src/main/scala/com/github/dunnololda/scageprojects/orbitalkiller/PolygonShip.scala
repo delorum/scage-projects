@@ -19,6 +19,13 @@ case object NearestPlanetVelocity   extends FlightMode
 case object AbsoluteStop            extends FlightMode
 case object Maneuvering             extends FlightMode
 
+case class DockingPoints(p1:DVec, p2:DVec) {
+  def pointsMatch(other_ship_docking_points:DockingPoints):Boolean = {
+    p1.dist(other_ship_docking_points.p1) < 0.05 && p2.dist(other_ship_docking_points.p2) < 0.05
+  }
+}
+case class DockData(dock_to_ship:PolygonShip, joints:List[Joint])
+
 abstract class PolygonShip(
   val index:Int,
   val name:String,
@@ -60,6 +67,9 @@ abstract class PolygonShip(
 
   def convex_parts:List[PolygonShape] = Nil
   def wreck_parts:List[PolygonShape] = Nil
+  def docking_points:List[DockingPoints] = Nil
+
+  protected var dock_data:Option[DockData] = None
 
   def coord = if(pilotIsAlive) currentState.coord else ship_parts.headOption.map(_.coord).getOrElse(currentState.coord)
 
@@ -305,6 +315,24 @@ abstract class PolygonShip(
   }
 
   def otherShipsNear:List[PolygonShip] = OrbitalKiller.ships.filter(s => s.index != index && s.pilotIsAlive).sortBy(s => coord.dist(s.coord))
+  def canDockWithNearestShip:Boolean = {
+    docking_points.exists(dp => {
+      otherShipsNear.headOption.toList.flatMap(_.docking_points).exists(osdp => dp.pointsMatch(osdp))
+    })
+  }
+  def dockPointsWithNearestShip:List[(DockingPoints, PolygonShip, DockingPoints)] = {
+    for {
+      dp <- docking_points
+      os <- otherShipsNear.headOption.toList
+      osdp <- os.docking_points
+      if dp.pointsMatch(osdp)
+    } yield (dp, os, osdp)
+  }
+
+  def canDockWithNearestShipUsingDockPoints(dp:DockingPoints):Boolean = {
+    otherShipsNear.headOption.toList.flatMap(_.docking_points).exists(osdp => dp.pointsMatch(osdp))
+  }
+
 
   protected val pilot_mass = 75
   protected val pilot_position = DVec(0, 8)
@@ -367,18 +395,22 @@ abstract class PolygonShip(
   def updateShipState(time_msec:Long): Unit = {
     if(!pilot_is_dead) {
       val dvel = currentState.dvel.norma
-      if (dvel > 10) { // crash tolerance = 10 m/s
-        crash(f"Корабль уничтожен в результате столкновения (${dvel/OrbitalKiller.base_dt/{earth.g}}%.2fg)")
+      if (dvel > 10) {
+        // crash tolerance = 10 m/s
+        val crash_g = dvel / OrbitalKiller.base_dt / earth.g
+        crash(f"Корабль уничтожен в результате столкновения ($crash_g%.2fg)")
+        return
       } else {
         val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(currentState, earth.currentState, 28, 0.5)
         val centrifugial_force = if (angularVelocity == 0) DVec.zero else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.rotateDeg(rotation)
         val pilot_acc = reactive_force / mass + centrifugial_force / pilot_mass + currentState.dacc
         pilot_accs += ((pilot_acc, time_msec))
         if (time_msec - pilot_accs.head._2 >= 1000) {
-          pilot_average_g = (pilot_accs.map(_._1).sum / pilot_accs.length).norma/earth.g
+          pilot_average_g = (pilot_accs.map(_._1).sum / pilot_accs.length).norma / earth.g
           pilot_accs.clear()
-          if(pilot_average_g > 100) {
+          if (pilot_average_g > 100) {
             crash(f"Корабль разрушился вследствие критической перегрузки ($pilot_average_g%.2fg)")
+            return
           }
         }
       }
@@ -389,6 +421,7 @@ abstract class PolygonShip(
           currentState.coord = currentState.coord + (currentState.coord - planet.coord).n*(planet.radius + radius - planet.coord.dist(currentState.coord))
           currentState.vel = planet.linearVelocity
           crash("Корабль врезался в планету")
+          return
       }
     }
   }

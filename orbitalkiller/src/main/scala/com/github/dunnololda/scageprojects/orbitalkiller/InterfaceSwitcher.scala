@@ -13,4 +13,6 @@ abstract class InterfaceSwitcher {
       selected_variant = 0
     }
   }
+
+  def active:Boolean = true
 }

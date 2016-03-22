@@ -41,7 +41,7 @@ object ConstraintsTest extends ScageScreenAppD("Constraints Test", 640, 480) {
     val c2 = new MyCircle2(nextId, DVec(w+50,h), DVec(0, -20), 5, 1f, this)
     val c2mbs = c2.currentState.toMutableBodyState
     system_evolution.addBody(c2mbs)
-    system_evolution.addJoint(Joint(c1mbs, DVec(25, 0), c2mbs, DVec(-25, 0)))
+    system_evolution.addJoint(c1mbs, DVec(25, 0), c2mbs, DVec(-25, 0))
     //List(c1mbs, c2mbs)
   }
 
@@ -52,8 +52,8 @@ object ConstraintsTest extends ScageScreenAppD("Constraints Test", 640, 480) {
     val c2 = new MyCircle2(nextId, DVec(w+50,h), randomSpeed, 5, 1f, this)
     val c2mbs = c2.currentState.toMutableBodyState
     system_evolution.addBody(c2mbs, (time, helper) => DVec(0, -9.81*c2mbs.mass), (time, helper) => 0.0)
-    system_evolution.addJoint(Joint(c1mbs, DVec(45, 0), c2mbs, DVec(-5, 0)))
-    system_evolution.addJoint(Joint(c1mbs, DVec(0, 5), w2mbs, DVec(0, -95)))
+    system_evolution.addJoint(c1mbs, DVec(45, 0), c2mbs, DVec(-5, 0))
+    system_evolution.addJoint(c1mbs, DVec(0, 5), w2mbs, DVec(0, -95))
     val bodies = List(c1mbs, c2mbs)
     render {
       drawLine(c1mbs.coord, c2mbs.coord, WHITE)

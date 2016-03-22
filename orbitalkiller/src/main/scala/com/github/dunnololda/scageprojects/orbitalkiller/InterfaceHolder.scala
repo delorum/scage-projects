@@ -2,7 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements._
 import OrbitalKiller._
-import com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers.{NamesSwitcher, OrbitParamsCalculation, MSecOrKmH}
+import com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import com.github.dunnololda.scage.ScageLibD._
@@ -18,7 +18,9 @@ object InterfaceHolder {
 
   val msecOrKmH = new MSecOrKmH
   val orbParams = new OrbitParamsCalculation
-  val namesSwitcher = new NamesSwitcher
+  val namesSwitcher = new NamesOnOff
+  val dockingSwitcher = new DockingOnOff
+  val dockUndock = new DockUndock
 
   val timeInfo = new TimeInfo
 
@@ -52,8 +54,13 @@ object InterfaceHolder {
     List(shipParamsWhenEginesOff)
   )
 
-  private val switchers = List[InterfaceSwitcher](msecOrKmH, orbParams, namesSwitcher)
-  //def switchers:Seq[InterfaceSwitcher] = _switchers
+  private val switchers = List[InterfaceSwitcher](
+    msecOrKmH,
+    orbParams,
+    namesSwitcher,
+    dockingSwitcher,
+    dockUndock)
+  private def activeSwitchers = switchers.filter(_.active)
 
   def hideAllByUser(): Unit = {
     interfaces.flatten.foreach(_.hideByUser())
@@ -73,7 +80,7 @@ object InterfaceHolder {
         x._1._1.showByUser(); true
       })
     } else if(30 < mouse_coord.y && mouse_coord.y < 50) {  // мышкой кликнули на линии переключателей
-      switchers.zipWithIndex.find {
+      activeSwitchers.zipWithIndex.find {
         case (sw, idx) =>
           val minimized_elem_center_x = 30 + idx * between_switchers
           minimized_elem_center_x - 20 < mouse_coord.x && mouse_coord.x < minimized_elem_center_x + 20
@@ -154,7 +161,7 @@ object InterfaceHolder {
     _strings.zipWithIndex.foreach {
       case ((str, color), idx) => print(str, 20, (_strings.length+2 - idx)*20, ship.colorIfAliveOrRed(color))
     }
-    switchers.zipWithIndex.foreach {
+    activeSwitchers.zipWithIndex.foreach {
       case (switcher, idx) =>
         print(switcher.selectedStrVariant, 30+idx*between_switchers, 40, ship.colorIfAliveOrRed(YELLOW), align = "center")
     }

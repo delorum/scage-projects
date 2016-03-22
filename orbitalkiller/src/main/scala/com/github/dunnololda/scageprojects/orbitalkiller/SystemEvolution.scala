@@ -21,7 +21,7 @@ class SixDimVector(val a1:Double, val a2:Double, val a3:Double, val a4:Double, v
 }
 
 // http://myselph.de/gamePhysics/equalityConstraints.html
-case class Joint(a:MutableBodyState, vertexA:DVec, b:MutableBodyState, vertexB:DVec) {
+class Joint (a:MutableBodyState, vertexA:DVec, b:MutableBodyState, vertexB:DVec) {
   def solveConstraint(_dt:Double) {
     val MInv = new SixDimVector(b.invMass, b.invMass, b.invI, a.invMass, a.invMass, a.invI)
     val pA = a.coord + vertexA.rotateDeg(a.ang)
@@ -84,8 +84,10 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
     all_bodies += b
   }
 
-  def addJoint(j:Joint): Unit = {
+  def addJoint(a:MutableBodyState, vertexA:DVec, b:MutableBodyState, vertexB:DVec):Joint = {
+    val j = new Joint(a, vertexA, b, vertexB)
     joints += j
+    j
   }
 
   def removeJoint(j:Joint): Unit = {

@@ -2,7 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.ships
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
-import com.github.dunnololda.scageprojects.orbitalkiller.{Engine, OrbitalKiller, PolygonShape, PolygonShip}
+import com.github.dunnololda.scageprojects.orbitalkiller._
 
 class SpaceStation2(
              index:Int,
@@ -62,6 +62,8 @@ class SpaceStation2(
     PolygonShape(List(DVec(100.0, -10.0), DVec(130.0, -10.0), DVec(130.0, 10.0), DVec(120.0, 10.0)), Nil)
   )
 
+  override val docking_points = List(DockingPoints(DVec(-130.0, 1.5), DVec(-130.0, -1.5)))
+
   val four  = new Engine("4", Vec(-130.0, 0.0),   Vec(1.0, 0.0),  10, 1, 4, this)
   val six   = new Engine("6", Vec(130.0, 0.0),    Vec(-1.0, 0.0), 10, 1, 4, this)
   val eight = new Engine("8", Vec(0.0, 30.0),     Vec(0.0, -1.0), 10, 1, 4, this)
@@ -96,12 +98,26 @@ class SpaceStation2(
         openglLocalTransform {
           openglMove(coord - base)
           drawFilledCircle(DVec.zero, 2, GREEN)                                // mass center
-          if(OrbitalKiller.globalScale >= 0.2) {
+          if(OrbitalKiller.globalScale >= 0.8) {
             drawArrow(DVec.zero, relativeLinearVelocity.n * 100, CYAN) // current velocity
           }
 
           openglRotateDeg(rotation)
           drawSlidingLines(draw_points, WHITE)
+
+          if (OrbitalKiller.globalScale >= 0.8) {
+            if(InterfaceHolder.dockingSwitcher.dockingEnabled) {
+              docking_points.foreach(dp => {
+                if(canDockWithNearestShipUsingDockPoints(dp)) {
+                  drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(GREEN))
+                  drawFilledCircle(dp.p2, 0.3, colorIfAliveOrRed(GREEN))
+                } else {
+                  drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(RED))
+                  drawFilledCircle(dp.p2, 0.3, colorIfAliveOrRed(RED))
+                }
+              })
+            }
+          }
 
           engines.foreach {
             case e => drawEngine(e, 10)
