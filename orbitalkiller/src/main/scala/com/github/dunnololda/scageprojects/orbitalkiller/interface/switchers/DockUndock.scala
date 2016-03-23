@@ -9,6 +9,14 @@ class DockUndock extends InterfaceSwitcher {
     selected_variant = 1
   }
 
+  def needUndock = {
+    selected_variant == 0
+  }
+
+  def needDock = {
+    selected_variant == 1
+  }
+
   override def active:Boolean = {
     InterfaceHolder.dockingSwitcher.dockingEnabled && OrbitalKiller.ship.canDockWithNearestShip
   }

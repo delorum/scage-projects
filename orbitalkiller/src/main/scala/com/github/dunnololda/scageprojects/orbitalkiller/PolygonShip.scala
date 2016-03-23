@@ -71,7 +71,29 @@ abstract class PolygonShip(
   def wreck_parts:List[PolygonShape] = Nil
   def docking_points:List[DockingPoints] = Nil
 
-  protected var dock_data:Option[DockData] = None
+  private var dock_data:Option[DockData] = None
+  def isDocked:Boolean = dock_data.nonEmpty
+  def notDocked:Boolean = dock_data.isEmpty
+  def dock(): Unit = {
+    dockPointsWithNearestShip.headOption.foreach {
+      case (dp, os, osdp) =>
+        val j1 = system_evolution.addJoint(currentState, dp.p1, os.currentState, osdp.p1)
+        val j2 = system_evolution.addJoint(currentState, dp.p2, os.currentState, osdp.p2)
+        setDocked(Some(DockData(os, List(j1, j2))))
+        os.setDocked(Some(DockData(this, List(j1, j2))))
+    }
+  }
+  def undock(): Unit = {
+    dock_data.foreach {
+      case DockData(os, joints) =>
+        joints.foreach(j => system_evolution.removeJoint(j))
+        os.setDocked(None)
+    }
+    dock_data = None
+  }
+  def setDocked(d:Option[DockData]): Unit = {
+    dock_data = d
+  }
 
   def coord = if(pilotIsAlive) currentState.coord else ship_parts.headOption.map(_.coord).getOrElse(currentState.coord)
 
@@ -363,6 +385,9 @@ abstract class PolygonShip(
       viewMode = 2
     }
     OrbitalKiller.system_evolution.removeBodyByIndex(index)
+    if(isDocked) {
+      undock()
+    }
     ship_parts = wreck_parts.zipWithIndex.map(x => {
       val part_center = currentState.coord + x._1.points.sum/x._1.points.length
       val part_points = x._1.points.map(p => currentState.coord + p - part_center)

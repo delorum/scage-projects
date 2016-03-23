@@ -219,21 +219,15 @@ class Ship4(index:Int,
   override def updateShipState(time_msec:Long): Unit = {
     super.updateShipState(time_msec)
     if(InterfaceHolder.dockingSwitcher.dockingEnabled) {
-      println(f"${docking_points.head.curP1.dist(OrbitalKiller.station.docking_points.head.curP1)}%.2f")
-      if(canDockWithNearestShip && dock_data.isEmpty) {
-        dockPointsWithNearestShip.headOption.foreach {
-          case (dp, os, osdp) =>
-            val j1 = system_evolution.addJoint(currentState, dp.p1, os.currentState, osdp.p1)
-            val j2 = system_evolution.addJoint(currentState, dp.p2, os.currentState, osdp.p2)
-            dock_data = Some(DockData(os, List(j1, j2)))
-            InterfaceHolder.dockUndock.setDocked()
+      if(canDockWithNearestShip && notDocked &&
+        (InterfaceHolder.dockingSwitcher.dockingAuto || (InterfaceHolder.dockingSwitcher.dockingManual && InterfaceHolder.dockUndock.needDock))) {
+        dock()
+        if(isDocked) {
+          InterfaceHolder.dockUndock.setDocked()
+          InterfaceHolder.dockingSwitcher.setDockingManual()
         }
-      } else if(dock_data.nonEmpty && InterfaceHolder.dockUndock.selectedVariant == 0) {
-        dock_data.foreach {
-          case DockData(os, joints) =>
-            joints.foreach(j => system_evolution.removeJoint(j))
-        }
-        dock_data = None
+      } else if(isDocked && InterfaceHolder.dockUndock.needUndock) {
+        undock()
       }
     }
   }
