@@ -393,15 +393,15 @@ class Ship4(index:Int,
             drawSlidingLines(draw_points, colorIfAliveOrRed(WHITE))
 
             if (OrbitalKiller.globalScale >= 0.8) {
-              if(InterfaceHolder.dockingSwitcher.dockingEnabled) {
+              if(isDocked) {
+                dockData.foreach(d => {
+                  drawFilledCircle(d.our_dp.p1, 0.3, colorIfAliveOrRed(GREEN))
+                  drawFilledCircle(d.our_dp.p2, 0.3, colorIfAliveOrRed(GREEN))
+                })
+              } else if(InterfaceHolder.dockingSwitcher.dockingEnabled) {
                 docking_points.foreach(dp => {
-                  if(canDockWithNearestShipUsingDockPoints(dp)) {
-                    drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(GREEN))
-                    drawFilledCircle(dp.p2, 0.3, colorIfAliveOrRed(GREEN))
-                  } else {
-                    drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(RED))
-                    drawFilledCircle(dp.p2, 0.3, colorIfAliveOrRed(RED))
-                  }
+                  drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(RED))
+                  drawFilledCircle(dp.p2, 0.3, colorIfAliveOrRed(RED))
                 })
               }
             }

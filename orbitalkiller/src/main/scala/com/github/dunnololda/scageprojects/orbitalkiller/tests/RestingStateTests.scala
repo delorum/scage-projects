@@ -30,10 +30,10 @@ object RestingStateTests extends ScageScreenAppD("Resting State Tests", 800, 600
 
   action {
     val x = evolution.next()
-    x._2.find(_.index == "b2").foreach(y => {
+    x._2.find(_.index == b2.index).foreach(y => {
       b2 = y
     })
-    x._2.find(_.index == "b3").foreach(y => {
+    x._2.find(_.index == b3.index).foreach(y => {
       b3 = y
     })
   }

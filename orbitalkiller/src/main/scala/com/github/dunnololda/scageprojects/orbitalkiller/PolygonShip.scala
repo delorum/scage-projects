@@ -35,7 +35,7 @@ class DockingPoints(val p1:DVec, val p2:DVec, ship:PolygonShip) {
   
   def pointsOnTheRightWay(dp:DockingPoints):(Boolean, Boolean) = {
     val vv1 = (dp.curP1-dp.curP2).n
-    val vv2 = vv1.perpendicular
+    val vv2 = if(dp.p1*vv1.perpendicular < 0) -vv1.perpendicular else vv1.perpendicular
 
     val p1_on_the_right_way = _checkAllConditions(
       () => (curP1 - (dp.curP1 + vv1)).perpendicular*vv2 < 0 && (curP1 - (dp.curP1 - vv1)).perpendicular*vv2 > 0,     // p1_inside_line
@@ -54,7 +54,7 @@ class DockingPoints(val p1:DVec, val p2:DVec, ship:PolygonShip) {
     (p1_on_the_right_way, p2_on_the_right_way)
   }
 }
-case class DockData(dock_to_ship:PolygonShip, joints:List[Joint])
+case class DockData(dock_to_ship:PolygonShip, joints:List[Joint], our_dp:DockingPoints, other_ship_dp:DockingPoints)
 
 abstract class PolygonShip(
   val index:Int,
@@ -100,20 +100,21 @@ abstract class PolygonShip(
   def docking_points:List[DockingPoints] = Nil
 
   private var dock_data:Option[DockData] = None
+  def dockData = dock_data
   def isDocked:Boolean = dock_data.nonEmpty
   def notDocked:Boolean = dock_data.isEmpty
   def dock(): Unit = {
-    dockPointsWithNearestShip.headOption.foreach {
+    possibleDockPointsWithNearestShip.headOption.foreach {
       case (dp, os, osdp) =>
         val j1 = system_evolution.addJoint(currentState, dp.p1, os.currentState, osdp.p1)
         val j2 = system_evolution.addJoint(currentState, dp.p2, os.currentState, osdp.p2)
-        setDocked(Some(DockData(os, List(j1, j2))))
-        os.setDocked(Some(DockData(this, List(j1, j2))))
+        setDocked(Some(DockData(os, List(j1, j2), dp, osdp)))
+        os.setDocked(Some(DockData(this, List(j1, j2), osdp, dp)))
     }
   }
   def undock(): Unit = {
     dock_data.foreach {
-      case DockData(os, joints) =>
+      case DockData(os, joints, our_dp, other_ship_dp) =>
         joints.foreach(j => system_evolution.removeJoint(j))
         os.setDocked(None)
     }
@@ -374,11 +375,13 @@ abstract class PolygonShip(
 
   def otherShipsNear:List[PolygonShip] = OrbitalKiller.ships.filter(s => s.index != index && s.pilotIsAlive).sortBy(s => coord.dist(s.coord))
   def canDockWithNearestShip:Boolean = {
-    docking_points.exists(dp => {
-      otherShipsNear.headOption.toList.flatMap(_.docking_points).exists(osdp => dp.pointsMatch(osdp))
+    otherShipsNear.headOption.exists(os => {
+      os.coord.dist2(coord) < 1000000 && docking_points.exists(dp => {
+        os.docking_points.exists(osdp => dp.pointsMatch(osdp))
+      })
     })
   }
-  def dockPointsWithNearestShip:List[(DockingPoints, PolygonShip, DockingPoints)] = {
+  def possibleDockPointsWithNearestShip:List[(DockingPoints, PolygonShip, DockingPoints)] = {
     for {
       dp <- docking_points
       os <- otherShipsNear.headOption.toList

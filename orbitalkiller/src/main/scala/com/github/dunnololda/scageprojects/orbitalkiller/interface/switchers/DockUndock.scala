@@ -18,6 +18,6 @@ class DockUndock extends InterfaceSwitcher {
   }
 
   override def active:Boolean = {
-    InterfaceHolder.dockingSwitcher.dockingEnabled && OrbitalKiller.ship.canDockWithNearestShip
+    InterfaceHolder.dockingSwitcher.dockingEnabled && OrbitalKiller.ship.canDockWithNearestShip || OrbitalKiller.ship.isDocked
   }
 }

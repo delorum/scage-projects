@@ -62,7 +62,8 @@ class SpaceStation2(
     PolygonShape(List(DVec(100.0, -10.0), DVec(130.0, -10.0), DVec(130.0, 10.0), DVec(120.0, 10.0)), Nil)
   )
 
-  override val docking_points = List(new DockingPoints(DVec(-130.0, 1.5), DVec(-130.0, -1.5), this))
+  override val docking_points = List(new DockingPoints(DVec(-130.0, 1.5), DVec(-130.0, -1.5), this),
+                                     new DockingPoints(DVec(130.0, -1.5), DVec(130.0, 1.5), this))
 
   val four  = new Engine("4", Vec(-130.0, 0.0),   Vec(1.0, 0.0),  10, 1, 4, this)
   val six   = new Engine("6", Vec(130.0, 0.0),    Vec(-1.0, 0.0), 10, 1, 4, this)
@@ -106,28 +107,28 @@ class SpaceStation2(
           drawSlidingLines(draw_points, WHITE)
 
           if (OrbitalKiller.globalScale >= 0.8) {
-            if(InterfaceHolder.dockingSwitcher.dockingEnabled) {
+            if(isDocked) {
+              dockData.foreach(d => {
+                drawFilledCircle(d.our_dp.p1, 0.3, colorIfAliveOrRed(GREEN))
+                drawFilledCircle(d.our_dp.p2, 0.3, colorIfAliveOrRed(GREEN))
+              })
+            } else if(InterfaceHolder.dockingSwitcher.dockingEnabled) {
               docking_points.foreach(dp => {
-                if(canDockWithNearestShipUsingDockPoints(dp)) {
-                  drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(GREEN))
-                  drawFilledCircle(dp.p2, 0.3, colorIfAliveOrRed(GREEN))
-                } else {
-                  val (p1_on_the_right_way, p2_on_the_right_way) = OrbitalKiller.ship.docking_points.headOption.map(_.pointsOnTheRightWay(dp)).getOrElse((false, false))
+                val (p1_on_the_right_way, p2_on_the_right_way) = OrbitalKiller.ship.docking_points.headOption.map(_.pointsOnTheRightWay(dp)).getOrElse((false, false))
 
-                  val c1 = if(p1_on_the_right_way) GREEN else RED
-                  val c2 = if(p2_on_the_right_way) GREEN else RED
+                val c1 = if(p1_on_the_right_way) GREEN else RED
+                val c2 = if(p2_on_the_right_way) GREEN else RED
 
-                  val v1 = (dp.p1-dp.p2).n
-                  val v2 = v1.perpendicular
+                val v1 = (dp.p1-dp.p2).n
+                val v2 = if(dp.p1*v1.perpendicular < 0) -v1.perpendicular else v1.perpendicular
 
-                  drawLine(dp.p1, dp.p1+v2*100, colorIfAliveOrRed(c1))
-                  drawLine(dp.p2, dp.p2+v2*100, colorIfAliveOrRed(c2))
+                drawLine(dp.p1, dp.p1+v2*100, colorIfAliveOrRed(c1))
+                drawLine(dp.p2, dp.p2+v2*100, colorIfAliveOrRed(c2))
 
-                  drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(RED))
-                  drawCircle(dp.p1, 1, colorIfAliveOrRed(RED))
-                  drawFilledCircle(dp.p2, 0.3, colorIfAliveOrRed(RED))
-                  drawCircle(dp.p2, 1, colorIfAliveOrRed(RED))
-                }
+                drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(RED))
+                drawCircle(dp.p1, 1, colorIfAliveOrRed(RED))
+                drawFilledCircle(dp.p2, 0.3, colorIfAliveOrRed(RED))
+                drawCircle(dp.p2, 1, colorIfAliveOrRed(RED))
               })
             }
           }
