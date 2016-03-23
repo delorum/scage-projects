@@ -45,7 +45,7 @@ object CirclesTangentsTest extends ScageScreenAppD("Circles Tangents Test", 600,
 
   val r0 = 10
 
-  val r1 = 100
+  val r1 = 20
   val p1 = Vec(300, 300)
 
   var alpha = 0.0

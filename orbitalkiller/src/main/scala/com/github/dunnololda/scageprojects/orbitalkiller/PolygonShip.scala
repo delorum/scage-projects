@@ -21,9 +21,37 @@ case object Maneuvering             extends FlightMode
 
 class DockingPoints(val p1:DVec, val p2:DVec, ship:PolygonShip) {
   def curP1 = ship.currentState.coord + p1.rotateDeg(ship.currentState.ang)
+  def curP1vel = ship.currentState.vel + (ship.currentState.ang_vel*p1.rotateDeg(90))
   def curP2 = ship.currentState.coord + p2.rotateDeg(ship.currentState.ang)
+  def curP2vel = ship.currentState.vel + (ship.currentState.ang_vel*p2.rotateDeg(90))
   def pointsMatch(other_ship_docking_points:DockingPoints):Boolean = {
     curP1.dist(other_ship_docking_points.curP1) < 1 && curP2.dist(other_ship_docking_points.curP2) < 1
+  }
+  private def _checkAllConditions(conditions:(() => Boolean)*):Boolean = {
+    if(conditions.isEmpty) true
+    else if(conditions.head()) _checkAllConditions(conditions.tail:_*)
+    else false
+  }
+  
+  def pointsOnTheRightWay(dp:DockingPoints):(Boolean, Boolean) = {
+    val vv1 = (dp.curP1-dp.curP2).n
+    val vv2 = vv1.perpendicular
+
+    val p1_on_the_right_way = _checkAllConditions(
+      () => (curP1 - (dp.curP1 + vv1)).perpendicular*vv2 < 0 && (curP1 - (dp.curP1 - vv1)).perpendicular*vv2 > 0,     // p1_inside_line
+      () => {                                                                                                         // p1_norm_speed
+        val x = dp.curP1vel - curP1vel
+        x * (curP1 - dp.curP1) > 0 && x.norma < 10
+      }
+    )
+    val p2_on_the_right_way = _checkAllConditions(
+      () => (curP2 - (dp.curP2 + vv1)).perpendicular * vv2 < 0 && (curP2 - (dp.curP2 - vv1)).perpendicular * vv2 > 0, // p2_inside_line
+      () => {                                                                                                         // p2_norm_speed
+        val x = dp.curP2vel - curP2vel
+        x * (curP2 - dp.curP2) > 0 && x.norma < 10
+      }
+    )
+    (p1_on_the_right_way, p2_on_the_right_way)
   }
 }
 case class DockData(dock_to_ship:PolygonShip, joints:List[Joint])

@@ -37,7 +37,7 @@ class Joint (a:MutableBodyState, vertexA:DVec, b:MutableBodyState, vertexB:DVec)
     }
     val C = (pA - pB)*(pA - pB)
     val bias = 0.2 / _dt * C
-    (1 to 1000).foreach(iteration => {
+    (1 to 4).foreach(iteration => {
       val v = new SixDimVector(b.vel.x, b.vel.y, b.ang_vel.toRad, a.vel.x, a.vel.y, a.ang_vel.toRad)
       val lambdaDenominator = J*(MInv**J)
       if(math.abs(lambdaDenominator) > 1E-15) {

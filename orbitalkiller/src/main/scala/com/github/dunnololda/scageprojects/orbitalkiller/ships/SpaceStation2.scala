@@ -112,10 +112,21 @@ class SpaceStation2(
                   drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(GREEN))
                   drawFilledCircle(dp.p2, 0.3, colorIfAliveOrRed(GREEN))
                 } else {
-                  drawLine(dp.p1, dp.p1+(dp.p1-dp.p2).n.rotateDeg(90)*100, colorIfAliveOrRed(RED))
-                  drawLine(dp.p2, dp.p2+(dp.p1-dp.p2).n.rotateDeg(90)*100, colorIfAliveOrRed(RED))
+                  val (p1_on_the_right_way, p2_on_the_right_way) = OrbitalKiller.ship.docking_points.headOption.map(_.pointsOnTheRightWay(dp)).getOrElse((false, false))
+
+                  val c1 = if(p1_on_the_right_way) GREEN else RED
+                  val c2 = if(p2_on_the_right_way) GREEN else RED
+
+                  val v1 = (dp.p1-dp.p2).n
+                  val v2 = v1.perpendicular
+
+                  drawLine(dp.p1, dp.p1+v2*100, colorIfAliveOrRed(c1))
+                  drawLine(dp.p2, dp.p2+v2*100, colorIfAliveOrRed(c2))
+
                   drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(RED))
+                  drawCircle(dp.p1, 1, colorIfAliveOrRed(RED))
                   drawFilledCircle(dp.p2, 0.3, colorIfAliveOrRed(RED))
+                  drawCircle(dp.p2, 1, colorIfAliveOrRed(RED))
                 }
               })
             }
