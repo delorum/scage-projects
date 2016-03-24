@@ -317,8 +317,7 @@ class Ship4(index:Int,
                   } else {
                     preserveAngularVelocity(0)
                   }
-                }
-                else preserveAngle(angle)
+                } else preserveAngle(angle)
               case None =>
                 if(haveSavedFlightMode) restoreFlightModeAndEngineStates()
                 else flightMode = FreeFlightMode
@@ -334,7 +333,31 @@ class Ship4(index:Int,
             // 4. Смотрим, где мы находимся на перпендикуляре линии стыковки. Если требуется, даем импульс и движемся вправо или влево.
             // 5. Если мы на линии стыковки ниже точки стыковки, то даем импульс и движемся наверх.
             // 6. Если мы в зоне стыковки - стыкуемся, и переводим режим полета в "свободный".
-
+            if(isDocked) {
+              flightMode = FreeFlightMode
+            } else {
+              otherShipsNear.flatMap(_.docking_points).sortBy(osdp => osdp.curP1.dist(coord)).headOption match {
+                case Some(osdp) =>
+                  if(osdp.curP1.dist(coord) > 2000) {
+                    flightMode = FreeFlightMode
+                  } else {
+                    val vv1 = (osdp.curP1-osdp.curP2).n
+                    val docking_point = osdp.curP1 + 0.5*(osdp.curP2 - osdp.curP1)
+                    val docking_dir = if(osdp.p1*vv1.perpendicular < 0) vv1.perpendicular else -vv1.perpendicular
+                    val angle = DVec(0, 1).deg360(docking_dir)
+                    if (angleMinDiff(rotation, angle) < angle_error) {
+                      if (math.abs(angularVelocity) < angular_velocity_error) {
+                        // CONTINUE HERE
+                        flightMode = FreeFlightMode
+                      } else {
+                        preserveAngularVelocity(0)
+                      }
+                    } else preserveAngle(angle)
+                  }
+                case None =>
+                  flightMode = FreeFlightMode
+              }
+            }
           }
         case NearestPlanetVelocity => // уравнять скорость с ближайшей планетой
           (for {
@@ -370,8 +393,7 @@ class Ship4(index:Int,
                 } else {
                   if (horizontal_diff > linear_velocity_error) {
                     preserveVelocity((planet.groundSpeedMsec + horizontal_speed_msec) * (coord - planet_state.coord).p + planet_state.vel)
-                  } else {
-                  }
+                  } else {}
                 }
               }
             case None =>
