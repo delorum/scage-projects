@@ -6,7 +6,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
 class ShipParamsWhenEnginesOff extends InterfaceElement {
   def linearSpeedStrWhenEnginesOff:String = {
-    if(ship.flightMode != Free || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
+    if(ship.flightMode != FreeFlightMode || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
       if(ship.engines.exists(_.active)) {
         val future_state = getFutureState(ship.engines.map(_.stopMomentTacts).max)
@@ -29,7 +29,7 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
   }
 
   def angularSpeedStrWhenEnginesOff:String = {
-    if(ship.flightMode != Free || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
+    if(ship.flightMode != FreeFlightMode || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
       if(ship.engines.exists(_.active)) {
         getFutureState(ship.engines.map(_.stopMomentTacts).max).get(ship.index) match {
@@ -45,7 +45,7 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
   }
 
   def orbitParametersStrWhenEnginesOff:String = {
-    if(ship.flightMode != Free || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
+    if(ship.flightMode != FreeFlightMode || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
       if(ship.engines.exists(_.active)) {
         val lbs = getFutureState(ship.engines.map(_.stopMomentTacts).max)
@@ -64,7 +64,7 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
   }
 
   def fuelMassWhenEnginesOff:String = {
-    if(ship.flightMode != Free || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
+    if(ship.flightMode != FreeFlightMode || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
       if(ship.engines.exists(_.active)) {
         f"${ship.fuelMass - ship.engines.filter(e => e.active).map(e => e.workTimeTacts*e.fuelConsumptionPerTact).sum}%.1f кг"

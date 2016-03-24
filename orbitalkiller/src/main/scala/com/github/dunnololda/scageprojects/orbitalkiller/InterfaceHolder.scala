@@ -102,7 +102,7 @@ object InterfaceHolder {
     /*if(ship.otherShipsNear.isEmpty) {
       nearestShipInfo.hideByConstraint()
     } else nearestShipInfo.showByConstraint()*/
-    if(ship.flightMode != Free || !ship.engines.exists(_.active)) {
+    if(ship.flightMode != FreeFlightMode || !ship.engines.exists(_.active)) {
       shipParamsWhenEginesOff.hideByConstraint()
     } else {
       shipParamsWhenEginesOff.showByConstraint()

@@ -6,18 +6,22 @@ import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
 import scala.collection.mutable.ArrayBuffer
 
-sealed trait FlightMode
+sealed trait FlightMode {
+  def rusStr:String
+}
 
-case object Free                    extends FlightMode
-case object Killrot                 extends FlightMode
-case object AxisAligned             extends FlightMode
-case object VelocityAligned         extends FlightMode
-case object OppositeVelocityAligned extends FlightMode
-case object CirclularOrbit          extends FlightMode
-case object NearestShipVelocity     extends FlightMode
-case object NearestPlanetVelocity   extends FlightMode
-case object AbsoluteStop            extends FlightMode
-case object Maneuvering             extends FlightMode
+case object FreeFlightMode          extends FlightMode {override def rusStr: String = "свободный"}  // 1
+case object Killrot                 extends FlightMode {override def rusStr: String = "запрет вращения"}  // 2
+//case object AxisAligned             extends FlightMode
+case object VelocityAligned         extends FlightMode {override def rusStr: String = "ориентация по траектории"}  // 3
+case object OppositeVelocityAligned extends FlightMode {override def rusStr: String = "ориентация против траектории"}  // shift+3
+case object CirclularOrbit          extends FlightMode {override def rusStr: String = "выход на круговую орбиту"}  // 4
+case object NearestShipVelocity     extends FlightMode {override def rusStr: String = "уравнять скорость с кораблем"}  // 5
+case object NearestShipAligned      extends FlightMode {override def rusStr: String = "ориентация на корабль"}  // 6
+case object NearestShipAutoDocking      extends FlightMode {override def rusStr: String = "стыковка с кораблем"}  // 7
+case object NearestPlanetVelocity   extends FlightMode {override def rusStr: String = "уравнять скорость с ближайшей планетой"}  // 8
+//case object AbsoluteStop            extends FlightMode
+case object Maneuvering             extends FlightMode {override def rusStr: String = "маневрирование"}  // 0
 
 class DockingPoints(val p1:DVec, val p2:DVec, ship:PolygonShip) {
   def curP1 = ship.currentState.coord + p1.rotateDeg(ship.currentState.ang)
@@ -324,7 +328,7 @@ abstract class PolygonShip(
     }
   }
 
-  private var flight_mode:FlightMode = Free
+  private var flight_mode:FlightMode = FreeFlightMode
   def flightMode:FlightMode = flight_mode
   def flightMode_=(new_flight_mode:FlightMode) {
     val prev_flight_mode = flight_mode
@@ -346,11 +350,14 @@ abstract class PolygonShip(
         active_engines.foreach(e => e.workTimeTacts = (fuel_for_every_active_engine/e.fuelConsumptionPerTact).toLong)
       }
     } else {
-      if(flight_mode == Free) {
+      if(flight_mode == FreeFlightMode) {
         engines.foreach(e => e.active = false)
-      } else if(flight_mode == Killrot && prev_flight_mode == Maneuvering) {
-        saveFlightModeAndEngineStates(prev_flight_mode)
-      } else if(flight_mode == NearestShipVelocity && prev_flight_mode == Maneuvering) {
+      } else if(prev_flight_mode == Maneuvering &&
+        (flight_mode == Killrot ||
+         flight_mode == NearestShipVelocity ||
+         flight_mode == NearestShipAligned ||
+         flight_mode == VelocityAligned ||
+         flight_mode == OppositeVelocityAligned)) {
         saveFlightModeAndEngineStates(prev_flight_mode)
       } else if(flight_mode == NearestPlanetVelocity) {
         vertical_speed_msec = 0
@@ -368,17 +375,8 @@ abstract class PolygonShip(
   def horizontal_speed_msec_=(x:Int) {}
 
   def flightModeStr:String = flight_mode match {
-    case Free => "свободный"
-    case Killrot => "запрет вращения"
-    case AxisAligned => "ориентация по осям"
-    case VelocityAligned => "ориентация по траектории"
-    case OppositeVelocityAligned => "ориентация против траектории"
-    case CirclularOrbit => "выход на круговую орбиту"
-    case NearestShipVelocity => "уравнять скорость с кораблем"
     case NearestPlanetVelocity => s"уравнять скорость с ближайшей планетой: ${msecOrKmsec(vertical_speed_msec)}, ${msecOrKmsec(horizontal_speed_msec)}"
-    case AbsoluteStop => "остановиться"
-    case Maneuvering => "маневрирование"
-    case _ => ""
+    case x => x.rusStr
   }
 
   def otherShipsNear:List[PolygonShip] = OrbitalKiller.ships.filter(s => s.index != index && s.pilotIsAlive).sortBy(s => coord.dist(s.coord))
@@ -420,8 +418,8 @@ abstract class PolygonShip(
     pilot_is_dead = true
     pilot_death_reason = reason
     if(this.index == OrbitalKiller.ship.index) {
-      flightMode = Free
-      viewMode = 2
+      flightMode = FreeFlightMode
+      viewMode = FixedOnShipAbsolute
     }
     OrbitalKiller.system_evolution.removeBodyByIndex(index)
     if(isDocked) {

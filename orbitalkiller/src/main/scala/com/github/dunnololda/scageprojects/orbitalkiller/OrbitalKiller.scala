@@ -38,6 +38,15 @@ case class BodyOrbitRender(bs_coord:DVec,
   }
 }
 
+sealed trait ViewMode {
+  def rusStr:String
+}
+case object FreeViewMode extends ViewMode        {override def rusStr: String = "свободный"}
+case object FixedOnShip extends ViewMode         {override def rusStr: String = "фиксация на корабле"}
+case object FixedOnShipAbsolute extends ViewMode {override def rusStr: String = "фиксация на корабле, абсолютная ориентация"}
+case object Landing extends ViewMode             {override def rusStr: String = "посадка на планету"}
+case object FixedOnOrbit extends ViewMode        {override def rusStr: String = "фиксация на орбите корабля"}
+
 object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("screen.width", 1280), property("screen.height", 768)) {
   val k:Double = 1 // доля секунды симуляции, которая обрабатывается за одну реальную секунду, если не применяется ускорение
 
@@ -297,25 +306,25 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   }
   nextStep()
 
-  private var view_mode = 0
+  private var view_mode:ViewMode = FreeViewMode
 
   def viewMode = view_mode
-  def viewMode_=(new_view_mode:Int) {
+  def viewMode_=(new_view_mode:ViewMode) {
     if(new_view_mode != view_mode) {
       new_view_mode match {
-        case 0 => // свободный
+        case FreeViewMode => // свободный
           _center = center
           center = _center
           rotationAngle = 0
           base = DVec.zero
-          view_mode = 0
-        case 1 => // фиксация на корабле
+          view_mode = FreeViewMode
+        case FixedOnShip => // фиксация на корабле
           center = ship.coord + _ship_offset
           base = if (ship.coord.norma < 100000) DVec.zero else ship.coord
           rotationCenter = ship.coord
           rotationAngleDeg = -ship.rotation
-          view_mode = 1
-        case 2 => // посадка на планету
+          view_mode = FixedOnShip
+        case Landing => // посадка на планету
           center = ship.coord
           rotationCenter = ship.coord
           rotationAngleDeg = {
@@ -324,30 +333,22 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
             if (vec.x >= 0) vec.deg(DVec(0, 1))
             else vec.deg(DVec(0, 1)) * (-1)
           }
-          view_mode = 2
-        case 3 => // фиксация на корабле, абсолютная ориентация
+          view_mode = Landing
+        case FixedOnShipAbsolute => // фиксация на корабле, абсолютная ориентация
           center = ship.coord + _ship_offset
           base = if (ship.coord.norma < 100000) DVec.zero else ship.coord
           rotationAngle = 0
-          view_mode = 3
-        case 4 => // в режиме карты зафиксировать центр орбиты в центре экрана
+          view_mode = FixedOnShipAbsolute
+        case FixedOnOrbit => // в режиме карты зафиксировать центр орбиты в центре экрана
           if (drawMapMode) {
             _center = _center - orbitAroundCelestialInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass).map(_._2.center * scale).getOrElse(ship.coord)
             center = orbitAroundCelestialInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass).map(_._2.center * scale).getOrElse(ship.coord) + _center
             rotationAngle = 0
-            view_mode = 4
+            view_mode = FixedOnOrbit
           }
         case _ =>
       }
     }
-  }
-  def viewModeStr = view_mode match {
-    case 0 => "свободный"
-    case 1 => "фиксация на корабле"
-    case 2 => "посадка"
-    case 3 => "фиксация на корабле, абсолютная ориентация"
-    case 4 => "фиксация на орбите корабля"
-    case _ => ""
   }
 
   def satelliteSpeedStrInPoint(coord:DVec, velocity:DVec, mass:Double):String = {
@@ -418,28 +419,28 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
             case ellipse:EllipseOrbit =>
               val b = BoxShape(2*ellipse.a, 2*ellipse.b)
               val aabb = b.aabb(ellipse.center, Vec(-1,0).signedDeg(ellipse.f2-ellipse.f))
-              viewMode = 0
+              viewMode = FreeViewMode
               globalScale = 750 / (aabb.height * scale)
               _center = ellipse.center*scale
-              viewMode = 4
+              viewMode = FixedOnOrbit
             case hyperbola:HyperbolaOrbit =>
               val b = BoxShape(2*hyperbola.a, 2*hyperbola.b)
               val aabb = b.aabb(hyperbola.half_center, Vec(1,0).signedDeg(hyperbola.f_minus_center_n))
-              viewMode = 0
+              viewMode = FreeViewMode
               globalScale = 750 / (aabb.height * scale)
               _center = hyperbola.half_center*scale
-              viewMode = 4
+              viewMode = FixedOnOrbit
           }
         case None =>
-          viewMode = 0
+          viewMode = FreeViewMode
           globalScale = 1
           _center = earth.coord*scale
-          viewMode = 4
+          viewMode = FixedOnOrbit
       }
     } else {
       _draw_map_mode = false
       globalScale = 10
-      viewMode = 1
+      viewMode = FixedOnShip
     }
   }
 
@@ -757,23 +758,25 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   })
 
-  keyIgnorePause(KEY_1, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = Free)
+  keyIgnorePause(KEY_1, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = FreeFlightMode)
   keyIgnorePause(KEY_2, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = Killrot)
-  keyIgnorePause(KEY_3, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = AxisAligned)              // не нужно
-  keyIgnorePause(KEY_4, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = VelocityAligned)
-  keyIgnorePause(KEY_5, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = OppositeVelocityAligned)
-  keyIgnorePause(KEY_6, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = CirclularOrbit)
-  keyIgnorePause(KEY_7, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = NearestShipVelocity)
+  keyIgnorePause(KEY_3, onKeyDown = if(ship.pilotIsAlive) {
+    if(keyPressed(KEY_LSHIFT) || keyPressed(KEY_RSHIFT)) ship.flightMode = OppositeVelocityAligned else ship.flightMode = VelocityAligned
+  })
+  keyIgnorePause(KEY_4, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = CirclularOrbit)
+  keyIgnorePause(KEY_5, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = NearestShipVelocity)
+  keyIgnorePause(KEY_6, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = NearestShipAligned)
+  keyIgnorePause(KEY_7, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = NearestShipAutoDocking)
   keyIgnorePause(KEY_8, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = NearestPlanetVelocity)
-  keyIgnorePause(KEY_9, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = AbsoluteStop)             // не нужно
+  //keyIgnorePause(KEY_9, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = AbsoluteStop)
   keyIgnorePause(KEY_0, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = Maneuvering)
 
   keyIgnorePause(KEY_P, onKeyDown = switchPause())
 
   keyIgnorePause(KEY_F1, onKeyDown = {pause(); holdCounters {HelpScreen.run()}})
-  keyIgnorePause(KEY_F2, onKeyDown = if(!drawMapMode) viewMode = 1 else viewMode = 0)     // фиксация на корабле, в режиме карты: свободный режим
-  keyIgnorePause(KEY_F3, onKeyDown = if(!drawMapMode) viewMode = 3 else viewMode = 4)     // фиксация на корабле, абсолютная ориентация, в режиме карты: фиксация на орбите
-  keyIgnorePause(KEY_F4, onKeyDown = if(!drawMapMode) viewMode = 2)                       // посадка на планету, если не в режиме карты
+  keyIgnorePause(KEY_F2, onKeyDown = if(!drawMapMode) viewMode = FixedOnShip else viewMode = FreeViewMode)     // фиксация на корабле, в режиме карты: свободный режим
+  keyIgnorePause(KEY_F3, onKeyDown = if(!drawMapMode) viewMode = FixedOnShipAbsolute else viewMode = FixedOnOrbit)     // фиксация на корабле, абсолютная ориентация, в режиме карты: фиксация на орбите
+  keyIgnorePause(KEY_F4, onKeyDown = if(!drawMapMode) viewMode = Landing)                       // посадка на планету, если не в режиме карты
 
   keyIgnorePause(KEY_F5, onKeyDown = saveGame())                          // сохранить текущее состояние системы
   keyIgnorePause(KEY_F6, onKeyDown = loadGame())                          // загрузить из файла состояние системы
@@ -837,7 +840,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           if h*globalScale > 10
         } {
           globalScale = math.min(1000000, 750 / h)
-          if(viewMode == 4) {
+          if(viewMode == FixedOnOrbit) {
             _center = c - orbitAroundCelestialInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass).map(_._2.center * scale).getOrElse(ship.coord)
           } else {
             _center = c
@@ -868,7 +871,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def shipOffset = _ship_offset
   center = _center
   windowCenter = DVec((windowWidth-1024)+1024/2, windowHeight/2)
-  viewMode = 1
+  viewMode = FixedOnShip
   globalScale = 10
 
   val scale = 1e-6
