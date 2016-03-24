@@ -249,6 +249,14 @@ abstract class PolygonShip(
     }
   }
 
+  def drawDashedLine(from:DVec, to:DVec, dash_len:Double, color:ScageColor): Unit = {
+    val line_len = (to - from).norma
+    val normal = (to - from).n
+    (0.0 to line_len-dash_len by dash_len*2).foreach {
+      case dash_from => drawLine(from + normal*dash_from, from+normal*(dash_from + dash_len), color)
+    }
+  }
+
   def preserveAngularVelocity(ang_vel_deg:Double)
   def preserveVelocity(vel:DVec)
 

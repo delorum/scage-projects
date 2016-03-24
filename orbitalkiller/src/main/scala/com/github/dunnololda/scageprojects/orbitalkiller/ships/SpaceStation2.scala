@@ -122,8 +122,8 @@ class SpaceStation2(
                 val v1 = (dp.p1-dp.p2).n
                 val v2 = if(dp.p1*v1.perpendicular < 0) -v1.perpendicular else v1.perpendicular
 
-                drawLine(dp.p1, dp.p1+v2*100, colorIfAliveOrRed(c1))
-                drawLine(dp.p2, dp.p2+v2*100, colorIfAliveOrRed(c2))
+                drawDashedLine(dp.p1, dp.p1+v2*100, 2.5, colorIfAliveOrRed(c1))
+                drawDashedLine(dp.p2, dp.p2+v2*100, 2.5, colorIfAliveOrRed(c2))
 
                 drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(RED))
                 drawCircle(dp.p1, 1, colorIfAliveOrRed(RED))
