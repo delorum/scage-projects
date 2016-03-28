@@ -27,7 +27,7 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
             case Some(osdp) =>
               val vv1 = (osdp.curP1-osdp.curP2).n
               val docking_point = osdp.curP1 + 0.5*(osdp.curP2 - osdp.curP1)
-              val docking_dir = if(osdp.p1*vv1.perpendicular < 0) vv1.perpendicular else -vv1.perpendicular
+              val docking_dir = -vv1.perpendicular
               val A = ship_docking_point.x
               val B = ship_docking_point.y
               val C = docking_point.x

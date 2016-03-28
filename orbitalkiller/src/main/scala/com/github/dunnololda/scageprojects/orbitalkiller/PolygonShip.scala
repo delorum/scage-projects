@@ -39,7 +39,7 @@ class DockingPoints(val p1:DVec, val p2:DVec, ship:PolygonShip) {
   
   def pointsOnTheRightWay(dp:DockingPoints):(Boolean, Boolean) = {
     val vv1 = (dp.curP1-dp.curP2).n
-    val vv2 = if(dp.p1*vv1.perpendicular < 0) -vv1.perpendicular else vv1.perpendicular
+    val vv2 = vv1.perpendicular
 
     val p1_on_the_right_way = _checkAllConditions(
       () => (curP1 - (dp.curP1 + vv1)).perpendicular*vv2 < 0 && (curP1 - (dp.curP1 - vv1)).perpendicular*vv2 > 0,     // p1_inside_line

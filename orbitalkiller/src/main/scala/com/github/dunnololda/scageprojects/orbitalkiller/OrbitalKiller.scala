@@ -156,7 +156,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   //val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
   //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
-  val ship_start_position = earth.coord + DVec(100, earth.radius + 200000)
+  val ship_start_position = earth.coord + DVec(1000, earth.radius + 200000)
   val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
 
   //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
