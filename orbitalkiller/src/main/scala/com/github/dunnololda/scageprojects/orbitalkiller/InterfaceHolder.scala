@@ -107,7 +107,7 @@ object InterfaceHolder {
     } else {
       shipParamsWhenEginesOff.showByConstraint()
     }
-    if(ship.flightMode == NearestPlanetVelocity) {
+    if(ship.flightMode == NearestPlanetVelocity || ship.flightMode == NearestShipAutoDocking) {
       enginesInfo.hideByConstraint()
     } else {
       enginesInfo.showByConstraint()

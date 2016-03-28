@@ -232,6 +232,15 @@ class Ship4(index:Int,
     }
   }
 
+  private def decideSpeedValue(dist:Double):Double = {
+    val dist_abs = math.abs(dist)
+    val ans = if(dist_abs > 10) 10
+    else if(dist_abs > 1) 1
+    else if(dist_abs > 0) 0.2
+    else 0
+    if(dist >= 0) ans else -ans
+  }
+
   action {
     if(fuelMass <= 0 && flightMode != FreeFlightMode) {
       flightMode = FreeFlightMode
@@ -325,6 +334,7 @@ class Ship4(index:Int,
           }
         case NearestShipAutoDocking =>
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, 1000)) {
+            InterfaceHolder.dockingSwitcher.setDockingAuto()
             // 0. если пристыкованы - ничего не делаем
             // 1. определяем ближайшую точку стыковки
             // 2. определяем ориентацию относительно стыковочного узла. Если не соориентированы, ориентируемся параллельно ей
@@ -336,23 +346,56 @@ class Ship4(index:Int,
             if(isDocked) {
               flightMode = FreeFlightMode
             } else {
-              otherShipsNear.flatMap(_.docking_points).sortBy(osdp => osdp.curP1.dist(coord)).headOption match {
-                case Some(osdp) =>
-                  if(osdp.curP1.dist(coord) > 2000) {
-                    flightMode = FreeFlightMode
-                  } else {
-                    val vv1 = (osdp.curP1-osdp.curP2).n
-                    val docking_point = osdp.curP1 + 0.5*(osdp.curP2 - osdp.curP1)
-                    val docking_dir = if(osdp.p1*vv1.perpendicular < 0) vv1.perpendicular else -vv1.perpendicular
-                    val angle = DVec(0, 1).deg360(docking_dir)
-                    if (angleMinDiff(rotation, angle) < angle_error) {
-                      if (math.abs(angularVelocity) < angular_velocity_error) {
-                        // CONTINUE HERE
+              otherShipsNear.headOption match {
+                case Some(os) =>
+                  val ship_docking_point = docking_points.head.curP1 + 0.5*(docking_points.head.curP2 - docking_points.head.curP1)
+                  os.docking_points.sortBy(osdp => osdp.curP1.dist(ship_docking_point)).headOption match {
+                    case Some(osdp) =>
+                      if(osdp.curP1.dist(ship_docking_point) > 2000) {
                         flightMode = FreeFlightMode
                       } else {
-                        preserveAngularVelocity(0)
+                        val vv1 = (osdp.curP1-osdp.curP2).n
+                        val docking_point = osdp.curP1 + 0.5*(osdp.curP2 - osdp.curP1)
+                        val docking_dir = if(osdp.p1*vv1.perpendicular < 0) vv1.perpendicular else -vv1.perpendicular
+                        val angle = DVec(0, 1).deg360(docking_dir)
+                        if (angleMinDiff(rotation, angle) < angle_error) {
+                          if (math.abs(angularVelocity) < angular_velocity_error) {
+                            val A = ship_docking_point.x
+                            val B = ship_docking_point.y
+                            val C = docking_point.x
+                            val D = docking_point.y
+                            val a1 = vv1.x
+                            val a2 = vv1.y
+                            val b1 = docking_dir.x
+                            val b2 = docking_dir.y
+                            // координаты точки стыковки корабля в системе координат с началом в docking_point и базисными векторами (vv1, docking_dir)
+                            val x = (b2*(A-C) - b1*(B-D))/(a1*b2 - a2*b1)
+                            val y = (a2*(A-C) - a1*(B-D))/(a2*b1 - a1*b2)
+                            // если x примерно 0 - мы на линии стыковки
+                            if(math.abs(x) <= 0.5 && y < 0) {
+                              println("A")
+                              preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y))
+                            } else {
+                              // в противном случае мы не на линии стыковки, и сначала будем разбираться с y
+                              // y должен быть примерно -20. Если нет, летим назад
+                              val dist_y = y - (-20)
+                              if(math.abs(dist_y) <= 0.5) {
+                                println("B")
+                                preserveVelocity(os.linearVelocity - vv1 * decideSpeedValue(x))
+                              } else {
+                                println("C")
+                                preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(dist_y))
+                              }
+                            }
+                          } else {
+                            preserveAngularVelocity(0)
+                          }
+                        } else {
+                          preserveAngle(angle)
+                        }
                       }
-                    } else preserveAngle(angle)
+                    case None =>
+                      flightMode = FreeFlightMode
                   }
                 case None =>
                   flightMode = FreeFlightMode

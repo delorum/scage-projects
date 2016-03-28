@@ -382,7 +382,7 @@ abstract class PolygonShip(
   def otherShipsNear:List[PolygonShip] = OrbitalKiller.ships.filter(s => s.index != index && s.pilotIsAlive).sortBy(s => coord.dist(s.coord))
   def canDockWithNearestShip:Boolean = {
     otherShipsNear.headOption.exists(os => {
-      os.coord.dist2(coord) < 1000000 && docking_points.exists(dp => {
+      os.coord.dist(coord) < 1000 && docking_points.exists(dp => {
         os.docking_points.exists(osdp => dp.pointsMatch(osdp))
       })
     })
