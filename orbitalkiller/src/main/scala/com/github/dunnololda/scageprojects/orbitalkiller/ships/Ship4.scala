@@ -234,10 +234,14 @@ class Ship4(index:Int,
 
   private def decideSpeedValue(dist:Double):Double = {
     val dist_abs = math.abs(dist)
-    val ans = if(dist_abs > 10) 10
-    else if(dist_abs > 1) 1
-    else if(dist_abs > 0) 0.2
-    else 0
+    val ans = if(dist_abs > 500) 100
+    else if(dist_abs > 250) 100
+    else if(dist_abs > 125) 50
+    else if(dist_abs > 50) 25
+    else if(dist_abs > 25) 10
+    else if(dist_abs > 10) 5
+    /*else if(dist_abs > 5) 2*/
+    else 2
     if(dist >= 0) ans else -ans
   }
 
@@ -334,7 +338,6 @@ class Ship4(index:Int,
           }
         case NearestShipAutoDocking =>
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, 1000)) {
-            InterfaceHolder.dockingSwitcher.setDockingAuto()
             // 0. если пристыкованы - ничего не делаем
             // 1. определяем ближайшую точку стыковки
             // 2. определяем ориентацию относительно стыковочного узла. Если не соориентированы, ориентируемся параллельно ей
@@ -346,6 +349,7 @@ class Ship4(index:Int,
             if(isDocked) {
               flightMode = FreeFlightMode
             } else {
+              InterfaceHolder.dockingSwitcher.setDockingAuto()
               otherShipsNear.headOption match {
                 case Some(os) =>
                   val ship_docking_point = docking_points.head.curP1 + 0.5*(docking_points.head.curP2 - docking_points.head.curP1)
@@ -371,20 +375,22 @@ class Ship4(index:Int,
                             // координаты точки стыковки корабля в системе координат с началом в docking_point и базисными векторами (vv1, docking_dir)
                             val x = (b2*(A-C) - b1*(B-D))/(a1*b2 - a2*b1)
                             val y = (a2*(A-C) - a1*(B-D))/(a2*b1 - a1*b2)
-                            // если x примерно 0 - мы на линии стыковки
-                            if(math.abs(x) <= 0.5 && y < 0) {
-                              println("A")
-                              preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y))
+                            if(y > 0) { // если мы выше точки стыковки
+                              println("C")
+                              // летим вниз пока не окажемся на 20 метров ниже линии стыковки
+                              preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y - (-20)))
                             } else {
-                              // в противном случае мы не на линии стыковки, и сначала будем разбираться с y
-                              // y должен быть примерно -20. Если нет, летим назад
-                              val dist_y = y - (-20)
-                              if(math.abs(dist_y) <= 0.5) {
+                              if(math.abs(x) <= 0.2) {  // если мы ниже точки стыковки и на линии стыковки
+                                println("A")
+                                // летим стыковаться
+                                preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y))
+                              } else if(math.abs(x) <= 1) { // если мы ниже точки стыковки и не очень далеко в стороне от линии стыковки
                                 println("B")
-                                preserveVelocity(os.linearVelocity - vv1 * decideSpeedValue(x))
-                              } else {
-                                println("C")
-                                preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(dist_y))
+                                // движемся в сторону линии стыковки и в сторону точки стыковки (продолжаем стыковаться)
+                                preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y) - vv1 * decideSpeedValue(x))
+                              } else { // если мы ниже точки стыковки и далеко от линии стыковки
+                                // летим пока не окажемся на 20 метров ниже линии стыковки и одновременно движемся в сторону линии стыковки
+                                preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y - (-20)) - vv1 * decideSpeedValue(x))
                               }
                             }
                           } else {
