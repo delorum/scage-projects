@@ -355,7 +355,7 @@ class Ship4(index:Int,
                   val ship_docking_point = docking_points.head.curP1 + 0.5*(docking_points.head.curP2 - docking_points.head.curP1)
                   os.docking_points.sortBy(osdp => osdp.curP1.dist(ship_docking_point)).headOption match {
                     case Some(osdp) =>
-                      if(osdp.curP1.dist(ship_docking_point) > 2000) {
+                      if(osdp.curP1.dist(ship_docking_point) > 2000) {  // система стыковки начинает работать с расстояния двух километров
                         flightMode = FreeFlightMode
                       } else {
                         val vv1 = (osdp.curP1-osdp.curP2).n
@@ -376,16 +376,13 @@ class Ship4(index:Int,
                             val x = (b2*(A-C) - b1*(B-D))/(a1*b2 - a2*b1)
                             val y = (a2*(A-C) - a1*(B-D))/(a2*b1 - a1*b2)
                             if(y > 0) { // если мы выше точки стыковки
-                              println("C")
                               // летим вниз пока не окажемся на 20 метров ниже линии стыковки
                               preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y - (-20)))
                             } else {
                               if(math.abs(x) <= 0.2) {  // если мы ниже точки стыковки и на линии стыковки
-                                println("A")
                                 // летим стыковаться
                                 preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y))
                               } else if(math.abs(x) <= 1) { // если мы ниже точки стыковки и не очень далеко в стороне от линии стыковки
-                                println("B")
                                 // движемся в сторону линии стыковки и в сторону точки стыковки (продолжаем стыковаться)
                                 preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y) - vv1 * decideSpeedValue(x))
                               } else { // если мы ниже точки стыковки и далеко от линии стыковки
