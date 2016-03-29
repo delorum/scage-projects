@@ -1,7 +1,8 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.ships
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller.{Engine, PolygonShape, PolygonShip}
+import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller._
 
 class Satellite1(index:Int,
                  init_coord:DVec,
@@ -70,7 +71,7 @@ class Satellite1(index:Int,
     PolygonShape(List(DVec(-5.0, -1.0), DVec(-4.0, -1.0), DVec(-4.0, 2.0)), Nil)
   )
 
-  val docking_points = Nil
+  val docking_points:List[DockingPoints] = Nil
 
   val two = new Engine("2", position = DVec(0.0, -4.0), force_dir = DVec(0.0, 1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
   val eight = new Engine("8", position = DVec(0.0, 1.0), force_dir = DVec(0.0, -1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
@@ -92,4 +93,25 @@ class Satellite1(index:Int,
 
   def preserveVelocity(vel:DVec) {}
   def preserveAngularVelocity(ang_vel_deg: Double) {}
+
+  render {
+    /*if(renderingEnabled) {*/
+    if(!drawMapMode && coord.dist2(ship.coord) < 100000*100000) {
+      openglLocalTransform {
+        openglMove(coord - base)
+        drawFilledCircle(DVec.zero, 0.3, GREEN)                                // mass center
+        if(OrbitalKiller.globalScale >= 0.8) {
+          drawArrow(DVec.zero, relativeLinearVelocity.n * 20, CYAN) // current velocity
+        }
+
+        openglRotateDeg(rotation)
+        drawSlidingLines(draw_points, WHITE)
+
+        engines.foreach {
+          case e => drawEngine(e, 1)
+        }
+      }
+    }
+    /*}*/
+  }
 }

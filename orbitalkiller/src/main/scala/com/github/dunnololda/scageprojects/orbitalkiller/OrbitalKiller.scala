@@ -14,7 +14,7 @@ import com.github.dunnololda.scage.ScageLibD.print
 import com.github.dunnololda.scage.ScageLibD.property
 import com.github.dunnololda.scage.ScageLibD.stopApp
 import com.github.dunnololda.scage.support.ScageId
-import com.github.dunnololda.scageprojects.orbitalkiller.ships.{SpaceStation2, Ship4}
+import com.github.dunnololda.scageprojects.orbitalkiller.ships.{Satellite1, SpaceStation2, Ship4}
 
 import scala.collection._
 
@@ -125,6 +125,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     radius = 6.9551E8
   )
 
+  system_evolution.addBody(
+    sun.currentState,
+    (tacts, helper) => {
+      DVec.zero
+    },
+    (tacts, helper) => {
+      0.0
+    }
+  )
+
   val earth_start_position = DVec.dzero
   val earth_init_velocity = satelliteSpeed(earth_start_position, sun.coord, sun.linearVelocity, sun.mass, G, counterclockwise = true)
   val earth = new PlanetWithAir(
@@ -142,6 +152,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     M = 0.02896,
     R = 8.314)
 
+  system_evolution.addBody(
+    earth.currentState,
+    (tacts, helper) => {
+      helper.gravityForceFromTo(sun.index, earth.index)
+    },
+    (tacts, helper) => {
+      0.0
+    }
+  )
+
   val moon_start_position = DVec(-269000000, 269000000)
   val moon_init_velocity = satelliteSpeed(moon_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
   val moon = new Planet(
@@ -152,6 +172,17 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     init_ang_vel = 360.0/(26l*24*60*60 + 8l*60*60 + 59l*60 + 44),   // период орбиты луны в данной симуляции: 26 д. 8 ч. 59 мин. 44 сек, равен периоду обращения вокруг собственной оси
     radius = 1737000,
     earth, 2000)
+
+  system_evolution.addBody(
+    moon.currentState,
+    (tacts, helper) => {
+      helper.gravityForceFromTo(sun.index, moon.index) +
+        helper.gravityForceFromTo(earth.index, moon.index)
+    },
+    (tacts, helper) => {
+      0.0
+    }
+  )
 
   //val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
   //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
@@ -173,6 +204,24 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     init_rotation = 0
   )
 
+  system_evolution.addBody(
+    ship.currentState,
+    (tacts, helper) => {
+      helper.gravityForceFromTo(sun.index, ship.index) +
+        helper.gravityForceFromTo(earth.index, ship.index) +
+        helper.gravityForceFromTo(moon.index, ship.index) +
+        helper.funcOrDVecZero(ship.index, bs => ship.currentReactiveForce(tacts, bs)) +
+        helper.funcOfArrayOrDVecZero(Array(ship.index, earth.index), l => {
+          val bs = l(0)
+          val e = l(1)
+          earth.airResistance(bs, e, 28, 0.5)
+        })
+    },
+    (tacts, helper) => {
+      helper.funcOrDoubleZero(ship.index, bs => ship.currentTorque(tacts))
+    }
+  )
+
   val station_start_position = earth.coord + DVec(0, earth.radius + 200000)
   val station_init_velocity = satelliteSpeed(station_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
   val station = new SpaceStation2(ScageId.nextId,
@@ -181,23 +230,6 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     init_rotation = 45
   )
 
-  system_evolution.addBody(
-    ship.currentState,
-    (tacts, helper) => {
-      helper.gravityForceFromTo(sun.index, ship.index) +
-      helper.gravityForceFromTo(earth.index, ship.index) +
-      helper.gravityForceFromTo(moon.index, ship.index) +
-      helper.funcOrDVecZero(ship.index, bs => ship.currentReactiveForce(tacts, bs)) +
-      helper.funcOfArrayOrDVecZero(Array(ship.index, earth.index), l => {
-        val bs = l(0)
-        val e = l(1)
-        earth.airResistance(bs, e, 28, 0.5)
-      })
-    },
-    (tacts, helper) => {
-      helper.funcOrDoubleZero(ship.index, bs => ship.currentTorque(tacts))
-    }
-  )
   system_evolution.addBody(
     station.currentState,
     (tacts, helper) => {
@@ -215,32 +247,30 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       helper.funcOrDoubleZero(station.index, bs => station.currentTorque(tacts))
     }
   )
-  system_evolution.addBody(
-    moon.currentState,
-    (tacts, helper) => {
-      helper.gravityForceFromTo(sun.index, moon.index) +
-      helper.gravityForceFromTo(earth.index, moon.index)
-    },
-    (tacts, helper) => {
-      0.0
-    }
+
+  val sat1_start_position = earth.coord + DVec(1050, earth.radius + 200000)
+  val sat1_init_velocity = satelliteSpeed(sat1_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
+  val sat1 = new Satellite1(ScageId.nextId,
+    init_coord = sat1_start_position,
+    init_velocity = sat1_init_velocity,
+    init_rotation = 45
   )
+
   system_evolution.addBody(
-    earth.currentState,
+    sat1.currentState,
     (tacts, helper) => {
-      helper.gravityForceFromTo(sun.index, earth.index)
+      helper.gravityForceFromTo(sun.index, sat1.index) +
+        helper.gravityForceFromTo(earth.index, sat1.index) +
+        helper.gravityForceFromTo(moon.index, sat1.index) +
+        helper.funcOrDVecZero(sat1.index, bs => sat1.currentReactiveForce(tacts, bs)) +
+        helper.funcOfArrayOrDVecZero(Array(sat1.index, earth.index), l => {
+          val bs = l(0)
+          val e = l(1)
+          earth.airResistance(bs, e, 28, 0.5)
+        })
     },
     (tacts, helper) => {
-      0.0
-    }
-  )
-  system_evolution.addBody(
-    sun.currentState,
-    (tacts, helper) => {
-      DVec.zero
-    },
-    (tacts, helper) => {
-      0.0
+      helper.funcOrDoubleZero(sat1.index, bs => sat1.currentTorque(tacts))
     }
   )
 
