@@ -1,5 +1,6 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
+import com.github.dunnololda.cli.AppProperties
 import com.github.dunnololda.scage.ScageLib._
 
 case class EngineData(coord:Vec, force_dir:Vec)
@@ -7,28 +8,46 @@ case class EngineData(coord:Vec, force_dir:Vec)
 // ВАЖНО: Точки корабля следует описывать против часовой стрелки!
 
 object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.width", 640), property("screen.height", 480)) {
+  val ship_class_name = AppProperties.optStringProperty("ship")
+
+  val ship:Option[PolygonShip] = {
+    ship_class_name.map(n => {
+      val constructor = Class.forName(s"com.github.dunnololda.scageprojects.orbitalkiller.ships.$n").getConstructors()(0)
+      val args = Array(new java.lang.Integer(1), DVec.zero, DVec.zero, new java.lang.Double(0))
+      constructor.newInstance(args:_*).asInstanceOf[PolygonShip]
+    })
+  }
+
   private val cell_size:Int = property("cell_size", 1)
   private val cell_size2 = cell_size*cell_size
   private val cell_size_double = cell_size*2
   private val cell_size_half:Float = 0.5f*cell_size
   private val cell_size_quater:Float = 0.25f*cell_size
   private val cell_size_eights:Float = 0.125f*cell_size
-  private lazy val points = collection.mutable.ArrayBuffer[Vec](/*Vec(3.5, 2.5),
-    Vec(1.5, 6.5),
-    Vec(1.5, 10.5),
-    Vec(-1.5, 10.5),
-    Vec(-1.5, 6.5),
-    Vec(-3.5, 2.5),
-    Vec(-3.5, -3.5),
-    Vec(3.5, -3.5)*/).map(_ + mass_center)
+
+  private var mass_center = {
+    ship.map(s => {
+      if(s.points.head.x % 1 == 0) {
+        Vec(nearestDot(absCoord(windowCenter).x, -windowWidth/2, cell_size),
+            nearestDot(absCoord(windowCenter).y, -windowHeight/2, cell_size))
+      } else {
+        Vec(nearestDot(absCoord(windowCenter).x, -windowWidth/2, cell_size)+cell_size_half,
+            nearestDot(absCoord(windowCenter).y, -windowHeight/2, cell_size)+cell_size_half)
+      }
+    }).getOrElse(Vec(nearestDot(absCoord(windowCenter).x, -windowWidth/2, cell_size)+cell_size_half,
+                     nearestDot(absCoord(windowCenter).y, -windowHeight/2, cell_size)+cell_size_half))
+
+  }
+  private lazy val points = collection.mutable.ArrayBuffer[Vec](ship.toSeq.flatMap(_.points.map(_.toVec)):_*).map(_ + mass_center)
   private var selected_point = 0
 
-  private val engines = collection.mutable.ArrayBuffer[EngineData]()
-  private val engines_mapping = collection.mutable.HashMap[Int, Int]()
+  private val engines = collection.mutable.ArrayBuffer[EngineData](ship.toSeq.flatMap(_.engines.map(e => EngineData(e.position.toVec + mass_center, e.force_dir.toVec))):_*)
+  private val engines_mapping = collection.mutable.HashMap[Int, Int](engines.zipWithIndex.map {
+    case (ed, idx) =>
+      val x = ship.flatMap(s => s.engines_mapping.find(kv => kv._2.position.toVec == ed.coord - mass_center).map(_._1)).getOrElse(0)
+      (idx, x)
+  }:_*)
   private var selected_engine = 0
-
-  private var mass_center = Vec(nearestDot(absCoord(windowCenter).x, -windowWidth/2, cell_size)+cell_size_half,
-                                nearestDot(absCoord(windowCenter).y, -windowHeight/2, cell_size)+cell_size_half)
 
   /**
    * 0 - points
@@ -101,17 +120,31 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
   key(KEY_P, onKeyDown = {
     if(points.length > 1) {
       println("====================================")
+      println("private val _payload:Double = 5*1000")
+      println("private var _fuel_mass:Double = 5*1000")
+      println("def mass:Double = _payload + _fuel_mass")
+      println("override def fuelMass: Double = _fuel_mass")
+      println("override def fuelMass_=(m: Double): Unit = {_fuel_mass = m}")
+      println()
       //val mass_center = polygonCentroid(points)
       println(points.map(p => {
         val pp = p - mass_center
         s"  DVec(${pp.x}, ${pp.y})"
       }).mkString("val points:List[DVec] = List(\n", ",\n", "\n)"))
       println()
+      println("val draw_points = points :+ points.head")
+      println()
+      println("val convex_parts = Nil")
+      println()
+      println("val wreck_parts = Nil")
+      println()
+      println("val docking_points = Nil")
+      println()
       engines.zipWithIndex.foreach {case (e, idx) =>
         val mapping = engines_mapping.getOrElse(idx, 0)
         val (index, val_name, _) = engineMappingStr(mapping)
         val position = e.coord - mass_center
-        println(s"""val $val_name = Engine("$index", position = Vec(${position.x}, ${position.y}), force_dir = Vec(${e.force_dir.x}, ${e.force_dir.y}), max_power = 10, default_power_percent = 1, this)""")
+        println(s"""val $val_name = new Engine("$index", position = DVec(${position.x}, ${position.y}), force_dir = DVec(${e.force_dir.x}, ${e.force_dir.y}), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)""")
       }
       println()
       println(engines.zipWithIndex.map {case (e, idx) =>
@@ -127,7 +160,8 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
           s"  $key_name -> $val_name"
       }.mkString("val engines_mapping = Map(\n", ",\n", "\n)"))
       println()
-      println("val draw_points = points :+ points.head")
+      println("def preserveVelocity(vel:DVec) {}")
+      println("def preserveAngularVelocity(ang_vel_deg: Double) {}")
       println("====================================")
     }
   })

@@ -10,9 +10,9 @@ class SpaceStation2(
              init_velocity:DVec = DVec.dzero,
              init_rotation:Double = 0.0
              ) extends PolygonShip(index, "Станция Огонек", init_coord, init_velocity, init_rotation) {
-  def mass:Double = _payload + _fuel_mass
   private val _payload:Double = 50*1000
   private var _fuel_mass:Double = 50*1000
+  def mass:Double = _payload + _fuel_mass
   override def fuelMass: Double = _fuel_mass
 
   override def fuelMass_=(m: Double): Unit = {
@@ -35,7 +35,7 @@ class SpaceStation2(
     DVec(-50.0, -30.0)
   )
 
-  override val convex_parts = List(
+  val convex_parts = List(
     PolygonShape(List(DVec(-130.0, -10.0), DVec(-90.0, -10.0), DVec(-90.0, 10.0), DVec(-130.0, 10.0)), Nil),
     PolygonShape(List(DVec(-90.0, -10.0), DVec(-50.0, -30.0), DVec(-50.0, 30.0), DVec(-90.0, 10.0)), Nil),
     PolygonShape(List(DVec(-50.0, -30.0), DVec(50.0, -30.0), DVec(50.0, 30.0), DVec(-50.0, 30.0)), Nil),
@@ -43,7 +43,7 @@ class SpaceStation2(
     PolygonShape(List(DVec(90.0, -10.0), DVec(130.0, -10.0), DVec(130.0, 10.0), DVec(90.0, 10.0)), Nil)
   )
 
-  override val wreck_parts = List(
+  val wreck_parts = List(
     PolygonShape(List(DVec(-130.0, -10.0), DVec(-110.0, -10.0), DVec(-120.0, 10.0), DVec(-130.0, 10.0)), Nil),
     PolygonShape(List(DVec(-110.0, -10.0), DVec(-90.0, -10.0), DVec(-90.0, 10.0), DVec(-110.0, 10.0)), Nil),
     PolygonShape(List(DVec(-120.0, 10.0), DVec(-110.0, -10.0), DVec(-110.0, 10.0)), Nil),
@@ -62,8 +62,8 @@ class SpaceStation2(
     PolygonShape(List(DVec(100.0, -10.0), DVec(130.0, -10.0), DVec(130.0, 10.0), DVec(120.0, 10.0)), Nil)
   )
 
-  override val docking_points = List(new DockingPoints(DVec(-130.0, 1.5), DVec(-130.0, -1.5), this),
-                                     new DockingPoints(DVec(130.0, -1.5), DVec(130.0, 1.5), this))
+  val docking_points = List(new DockingPoints(DVec(-130.0, 1.5), DVec(-130.0, -1.5), this),
+                            new DockingPoints(DVec(130.0, -1.5), DVec(130.0, 1.5), this))
 
   val four  = new Engine("4", Vec(-130.0, 0.0),   Vec(1.0, 0.0),  10, 1, 4, this)
   val six   = new Engine("6", Vec(130.0, 0.0),    Vec(-1.0, 0.0), 10, 1, 4, this)
@@ -85,13 +85,8 @@ class SpaceStation2(
 
   val draw_points = points :+ points.head
 
-  def preserveVelocity(vel:DVec) {
-
-  }
-
-  def preserveAngularVelocity(ang_vel_deg: Double) {
-
-  }
+  def preserveVelocity(vel:DVec) {}
+  def preserveAngularVelocity(ang_vel_deg: Double) {}
 
   render {
     /*if(renderingEnabled) {*/

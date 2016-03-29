@@ -99,9 +99,9 @@ abstract class PolygonShip(
   def fuelMass:Double
   def fuelMass_=(m:Double):Unit
 
-  def convex_parts:List[PolygonShape] = Nil
-  def wreck_parts:List[PolygonShape] = Nil
-  def docking_points:List[DockingPoints] = Nil
+  def convex_parts:List[PolygonShape]
+  def wreck_parts:List[PolygonShape]
+  def docking_points:List[DockingPoints]
 
   private var dock_data:Option[DockData] = None
   def dockData = dock_data
