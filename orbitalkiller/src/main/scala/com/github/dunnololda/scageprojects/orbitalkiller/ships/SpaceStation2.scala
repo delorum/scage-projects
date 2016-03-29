@@ -125,8 +125,8 @@ class SpaceStation2(
                 drawDashedLine(dp.p1, dp.p1+v2*100, 2.5, colorIfAliveOrRed(c1))
                 drawDashedLine(dp.p2, dp.p2+v2*100, 2.5, colorIfAliveOrRed(c2))
 
-                drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(YELLOW))
-                drawCircle(dp.p1, 1, colorIfAliveOrRed(YELLOW))
+                drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(RED))
+                drawCircle(dp.p1, 1, colorIfAliveOrRed(RED))
                 drawFilledCircle(dp.p2, 0.3, colorIfAliveOrRed(RED))
                 drawCircle(dp.p2, 1, colorIfAliveOrRed(RED))
               })

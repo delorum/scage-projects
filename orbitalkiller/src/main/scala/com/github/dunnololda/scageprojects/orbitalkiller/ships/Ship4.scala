@@ -500,7 +500,7 @@ class Ship4(index:Int,
                 })
               } else if(InterfaceHolder.dockingSwitcher.dockingEnabled) {
                 docking_points.foreach(dp => {
-                  drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(YELLOW))
+                  drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(RED))
                   drawFilledCircle(dp.p2, 0.3, colorIfAliveOrRed(RED))
                 })
               }
