@@ -1194,6 +1194,20 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }
 
+  def inShadowOfPlanet(coord:DVec):Option[(CelestialBody, MutableBodyState)] = {
+    val ship_sun_dist = coord.dist(sun.coord)
+    currentPlanetStates.filterNot(_._1.index == sun.index).find {
+      case (planet, planet_state) =>
+        ship_sun_dist > planet.coord.dist(sun.coord) && (tangentsFromCircleToCircle(planet.coord, planet.radius, sun.coord, sun.radius) match {
+          case Some((c1, c2, b1, b2)) =>
+            val a1 = (c1 - b1).perpendicular * (coord - b1) > 0
+            val a2 = (c2 - b2).perpendicular * (coord - b2) < 0
+            a1 && a2
+          case None => false
+        })
+    }
+  }
+
   private def drawSunTangents(planet_coord:DVec, planet_radius:Double, sun_coord:DVec, sun_radius:Double, dist:Double) {
     tangentsFromCircleToCircle(planet_coord, planet_radius, sun_coord, sun_radius) match {
       case Some((c1, c2, b1, b2)) =>

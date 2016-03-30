@@ -47,8 +47,6 @@ class Ship4(index:Int,
 
   val docking_points = List(new DockingPoints(DVec(-1.5, 10.5), DVec(1.5, 10.5), this))
 
-  val draw_points = points :+ points.head
-
   val four  = new Engine("4",  Vec(-3.5, 0.0), Vec(1.0, 0.0),  1000000, 1,   4,    this)
   val six   = new Engine("6",  Vec(3.5, 0.0),  Vec(-1.0, 0.0), 1000000, 1,   4,    this)
   val seven = new Engine("7",  Vec(-1.5, 9.0), Vec(1.0, 0.0),  10000,   100, 0.04, this)
@@ -483,10 +481,34 @@ class Ship4(index:Int,
             }
 
             /*val pa = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*70000
-          val pb = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*(-70000)
-          drawLine(pa, pb, WHITE)*/
+            val pb = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*(-70000)
+            drawLine(pa, pb, WHITE)*/
 
             openglRotateDeg(rotation)
+
+            // ниже алгоритм рисует линии корпуса корабля темносерым или белым в зависимости, в тени эта линия или нет
+            /*val cur_draw_lines =  curDrawLines
+            val cur_sun_coord = sun.coord
+            draw_points.zipWithIndex.sliding(2).foreach {
+              case List((p1, p1idx), (p2, p2idx)) =>
+                val curP1 = coord + p1.rotateDeg(rotation)
+                val curP1InShadow = inShadowOfPlanet(curP1).nonEmpty || cur_draw_lines.filterNot(x => x(0)._1 == curP1 || x(1)._1 == curP1).exists(x => {
+                  val res = areLinesIntersect(curP1, cur_sun_coord, x(0)._1, x(1)._1)
+                  res
+                })
+                val curP2 = coord + p2.rotateDeg(rotation)
+                val curP2InShadow = inShadowOfPlanet(curP1).nonEmpty || cur_draw_lines.filterNot(x => x(0)._1 == curP2 || x(1)._1 == curP2).exists(x => {
+                  areLinesIntersect(curP2, cur_sun_coord, x(0)._1, x(1)._1)
+                })
+                if(!curP1InShadow && !curP2InShadow) {
+                  drawLine(p1, p2, colorIfAliveOrRed(WHITE))
+                } else {
+                  drawLine(p1, p2, colorIfAliveOrRed(DARK_GRAY))
+                }
+                /*print(s"$p1idx", p1.toVec, color = WHITE, size = (max_font_size / globalScale).toFloat)
+                print(s"$p2idx", p2.toVec, color = WHITE, size = (max_font_size / globalScale).toFloat)*/
+            }*/
+
             drawSlidingLines(draw_points, colorIfAliveOrRed(WHITE))
 
             if (OrbitalKiller.globalScale >= 0.8) {

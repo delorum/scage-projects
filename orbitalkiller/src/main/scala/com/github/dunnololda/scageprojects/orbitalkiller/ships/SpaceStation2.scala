@@ -83,8 +83,6 @@ class SpaceStation2(
     KEY_NUMPAD3 -> three
   )
 
-  val draw_points = points :+ points.head
-
   def preserveVelocity(vel:DVec) {}
   def preserveAngularVelocity(ang_vel_deg: Double) {}
 

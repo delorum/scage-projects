@@ -225,8 +225,8 @@ abstract class PolygonShip(
     engines.forall(!_.active)
   }
 
-  def engineColor(e:Engine):ScageColor = {
-    if(pilot_is_dead || e.active) RED else WHITE
+  def engineColor(e:Engine, in_shadow:Boolean):ScageColor = {
+    if(pilot_is_dead || e.active) RED else if(in_shadow) DARK_GRAY else WHITE
   }
 
   def engineActiveSize(e:Engine, max_size:Double):Double = {
@@ -242,15 +242,32 @@ abstract class PolygonShip(
       case DVec(1, 0)  => (e.position + DVec(-0.25, 0)*size,  0.5*size,  1*size)
       case _ => throw new Exception("engine force dir other than vertical or horizontal is not supported")
     }
-    drawRectCentered(center, width, height, color = engineColor(e))
-    if(isSelectedEngine(e)) drawRectCentered(center, width*1.5, height*1.5, color = engineColor(e))
+
+    val in_shadow = {
+      // ниже код вычисляет, в тени находится двигатель или нет
+      /*val curP = coord + e.position.rotateDeg(rotation)
+      inShadowOfPlanet(curP).nonEmpty || curDrawLines.filterNot(x => math.abs((x(1)._1 - x(0)._1).perpendicular*(curP - x(0)._1)) < 0.1).exists(x => {
+        val res = areLinesIntersect(curP, sun.coord, x(0)._1, x(1)._1)
+        /*if(res) {
+          if(e.index == "6" || e.index == "9")
+          println(s"${e.index} intersects with line ${x(0)._2} - ${x(1)._2}")
+        }*/
+        //println(s"areLinesIntersect($curP1, $cur_sun_coord, ${x(0)}, ${x(1)}) = $res")
+        res
+      })*/
+      false
+    }
+
+    drawRectCentered(center, width, height, color = engineColor(e, in_shadow))
+    if(isSelectedEngine(e)) drawRectCentered(center, width*1.5, height*1.5, color = engineColor(e, in_shadow))
     if(e.active && e.power > 0) {
       if(is_vertical) {
-        drawFilledRectCentered(center, width, engineActiveSize(e, height), color = engineColor(e))
+        drawFilledRectCentered(center, width, engineActiveSize(e, height), color = engineColor(e, in_shadow))
       } else {
-        drawFilledRectCentered(center, engineActiveSize(e, width), height, color = engineColor(e))
+        drawFilledRectCentered(center, engineActiveSize(e, width), height, color = engineColor(e, in_shadow))
       }
     }
+    //print(s"${e.index}", e.position.toVec, color = WHITE, size = (max_font_size / globalScale).toFloat)
   }
 
   def drawDashedLine(from:DVec, to:DVec, dash_len:Double, color:ScageColor): Unit = {
@@ -508,21 +525,8 @@ abstract class PolygonShip(
   def massStr = f"Масса корабля: ${gOrKg(mass)}. Остаток топлива: ${gOrKg(fuelMass)}"
 
   def shadowSideStr = {
-    val in_shadow_of_planet:Option[String] = {
-      val ship_sun_dist = coord.dist(sun.coord)
-      currentPlanetStates.filterNot(_._1.index == sun.index).find {
-        case (planet, planet_state) =>
-          ship_sun_dist > planet.coord.dist(sun.coord) && (tangentsFromCircleToCircle(planet.coord, planet.radius, sun.coord, sun.radius) match {
-            case Some((c1, c2, b1, b2)) =>
-              val a1 = (c1 - b1).perpendicular * (coord - b1) > 0
-              val a2 = (c2 - b2).perpendicular * (coord - b2) < 0
-              a1 && a2
-            case None => false
-          })
-      }.map(_._1.name)
-    }
-    in_shadow_of_planet match {
-      case Some(planet_name) =>
+    inShadowOfPlanet(coord) match {
+      case Some((planet, planet_state)) =>
         /*planet_name match {
           case moon.name => "Корабль находится в тени Луны"
           case earth.name => "Корабль находится в тени Земли"
@@ -534,8 +538,24 @@ abstract class PolygonShip(
     }
   }
 
+  /**
+   * Точки, обозначающие корпус корабля. Задаются координатами относительно центра масс. Фактическую координату точки в данный момент времени
+   * можно получить, повернув на текущий угол и прибавив координату ц.м.
+   * @return
+   */
   def points:List[DVec]
-  def draw_points:List[DVec]
+  lazy val draw_points = points :+ points.head
+
+  /**
+   * Точки, обозначающие корпус корабля, группируются по два, получаются отрезки. Для каждой точки вычисляется фактическая текущая координата.
+   * Получается набор фактических текущих координат корпуса, собранных по два.
+   * @return List<List<DVec>> - Во внутреннем списке всегда два элемента.
+   */
+  def curDrawLines = draw_points.zipWithIndex.sliding(2).map {
+    case List((p1, p1idx), (p2, p2idx)) =>
+      List((coord + p1.rotateDeg(rotation), p1idx), (coord + p2.rotateDeg(rotation), p2idx))
+  }.toList
+
 
   lazy val radius = {
     val x = points.map(_.x).max - points.map(_.x).min

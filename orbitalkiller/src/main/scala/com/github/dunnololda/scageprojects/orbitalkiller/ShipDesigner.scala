@@ -132,8 +132,6 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
         s"  DVec(${pp.x}, ${pp.y})"
       }).mkString("val points:List[DVec] = List(\n", ",\n", "\n)"))
       println()
-      println("val draw_points = points :+ points.head")
-      println()
       println("val convex_parts = Nil")
       println()
       println("val wreck_parts = Nil")

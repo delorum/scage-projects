@@ -15,70 +15,79 @@ class Satellite1(index:Int,
   override def fuelMass_=(m: Double): Unit = {_fuel_mass = m}
 
   val points:List[DVec] = List(
-    DVec(-3.0, -2.0),
-    DVec(-3.0, 0.0),
-    DVec(-4.0, 0.0),
-    DVec(-4.0, -1.0),
-    DVec(-11.0, -1.0),
-    DVec(-11.0, 2.0),
-    DVec(-4.0, 2.0),
-    DVec(-4.0, 1.0),
-    DVec(-3.0, 1.0),
-    DVec(3.0, 1.0),
-    DVec(4.0, 1.0),
-    DVec(4.0, 2.0),
-    DVec(11.0, 2.0),
-    DVec(11.0, -1.0),
-    DVec(4.0, -1.0),
-    DVec(4.0, 0.0),
-    DVec(3.0, 0.0),
-    DVec(3.0, -2.0),
-    DVec(1.0, -4.0),
-    DVec(-1.0, -4.0)
+    DVec(-12.0, -8.0),
+    DVec(-12.0, 0.0),
+    DVec(-16.0, 0.0),
+    DVec(-16.0, -4.0),
+    DVec(-44.0, -4.0),
+    DVec(-44.0, 8.0),
+    DVec(-16.0, 8.0),
+    DVec(-16.0, 4.0),
+    DVec(-12.0, 4.0),
+    DVec(12.0, 4.0),
+    DVec(16.0, 4.0),
+    DVec(16.0, 8.0),
+    DVec(44.0, 8.0),
+    DVec(44.0, -4.0),
+    DVec(16.0, -4.0),
+    DVec(16.0, 0.0),
+    DVec(12.0, 0.0),
+    DVec(12.0, -8.0),
+    DVec(4.0, -16.0),
+    DVec(-4.0, -16.0)
   )
-
-  val draw_points = points :+ points.head
 
   val convex_parts = List(
-    PolygonShape(List(DVec(-11.0, -1.0), DVec(-4.0, -1.0), DVec(-4.0, 2.0), DVec(-11.0, 2.0)), Nil),
-    PolygonShape(List(DVec(-4.0, 0.0), DVec(4.0, 0.0), DVec(4.0, 1.0), DVec(-4.0, 1.0)), Nil),
-    PolygonShape(List(DVec(4.0, 2.0), DVec(4.0, -1.0), DVec(11.0, -1.0), DVec(11.0, 2.0)), Nil),
-    PolygonShape(List(DVec(-3.0, -2.0), DVec(3.0, -2.0), DVec(3.0, 0.0), DVec(-3.0, 0.0)), Nil),
-    PolygonShape(List(DVec(-3.0, -2.0), DVec(-1.0, -4.0), DVec(-1.0, -2.0)), Nil),
-    PolygonShape(List(DVec(-1.0, -4.0), DVec(1.0, -4.0), DVec(1.0, -2.0), DVec(-1.0, -2.0)), Nil),
-    PolygonShape(List(DVec(1.0, -4.0), DVec(3.0, -2.0), DVec(1.0, -2.0)), Nil)
+    PolygonShape(List(DVec(-44.0, -4.0), DVec(-16.0, -4.0), DVec(-16.0, 8.0), DVec(-44.0, 8.0)), Nil),
+    PolygonShape(List(DVec(-16.0, 0.0), DVec(16.0, 0.0), DVec(16.0, 4.0), DVec(-16.0, 4.0)), Nil),
+    PolygonShape(List(DVec(16.0, 8.0), DVec(16.0, -4.0), DVec(44.0, -4.0), DVec(44.0, 8.0)), Nil),
+    PolygonShape(List(DVec(-12.0, -8.0), DVec(12.0, -8.0), DVec(12.0, 0.0), DVec(-12.0, 0.0)), Nil),
+    PolygonShape(List(DVec(-12.0, -8.0), DVec(-4.0, -16.0), DVec(-4.0, -8.0)), Nil),
+    PolygonShape(List(DVec(-4.0, -16.0), DVec(4.0, -16.0), DVec(4.0, -8.0), DVec(-4.0, -8.0)), Nil),
+    PolygonShape(List(DVec(4.0, -16.0), DVec(12.0, -8.0), DVec(4.0, -8.0)), Nil)
   )
 
+  convex_parts.foreach(p => {
+    println(s"PolygonShape(List(${p.points.map(p => s"DVec(${p.x}, ${p.y})").mkString(", ")}), Nil),")
+  })
+  println("==========================")
+
   val wreck_parts = List(
-    PolygonShape(List(DVec(-11.0, 2.0), DVec(-11.0, -1.0), DVec(-9.0, -1.0)), Nil),
-    PolygonShape(List(DVec(-11.0, 2.0), DVec(-9.0, -1.0), DVec(-8.0, -1.0), DVec(-8.0, 2.0)), Nil),
-    PolygonShape(List(DVec(-8.0, -1.0), DVec(-6.0, -1.0), DVec(-7.0, 2.0), DVec(-8.0, 2.0)), Nil),
-    PolygonShape(List(DVec(-7.0, 2.0), DVec(-6.0, -1.0), DVec(-6.0, 2.0)), Nil),
-    PolygonShape(List(DVec(-6.0, -1.0), DVec(-5.0, -1.0), DVec(-4.0, 2.0), DVec(-6.0, 2.0)), Nil),
-    PolygonShape(List(DVec(-4.0, 1.0), DVec(-4.0, 0.0), DVec(-1.0, 0.0), DVec(-1.0, 1.0)), Nil),
-    PolygonShape(List(DVec(-1.0, 0.0), DVec(1.0, 0.0), DVec(1.0, 1.0), DVec(-1.0, 1.0)), Nil),
-    PolygonShape(List(DVec(1.0, 0.0), DVec(4.0, 0.0), DVec(4.0, 1.0), DVec(1.0, 1.0)), Nil),
-    PolygonShape(List(DVec(-3.0, 0.0), DVec(-3.0, -2.0), DVec(-1.0, -2.0), DVec(-1.0, 0.0)), Nil),
-    PolygonShape(List(DVec(-3.0, -2.0), DVec(-1.0, -4.0), DVec(1.0, -4.0), DVec(0.0, -2.0)), Nil),
-    PolygonShape(List(DVec(-1.0, 0.0), DVec(-1.0, -2.0), DVec(2.0, -2.0), DVec(3.0, 0.0)), Nil),
-    PolygonShape(List(DVec(0.0, -2.0), DVec(1.0, -4.0), DVec(3.0, -2.0)), Nil),
-    PolygonShape(List(DVec(2.0, -2.0), DVec(3.0, -2.0), DVec(3.0, 0.0)), Nil),
-    PolygonShape(List(DVec(4.0, 2.0), DVec(4.0, -1.0), DVec(6.0, -1.0), DVec(7.0, 2.0)), Nil),
-    PolygonShape(List(DVec(6.0, -1.0), DVec(8.0, -1.0), DVec(9.0, 2.0), DVec(7.0, 2.0)), Nil),
-    PolygonShape(List(DVec(8.0, -1.0), DVec(10.0, -1.0), DVec(9.0, 2.0)), Nil),
-    PolygonShape(List(DVec(9.0, 2.0), DVec(10.0, -1.0), DVec(10.0, 2.0)), Nil),
-    PolygonShape(List(DVec(10.0, -1.0), DVec(11.0, -1.0), DVec(11.0, 2.0), DVec(10.0, 2.0)), Nil),
-    PolygonShape(List(DVec(-5.0, -1.0), DVec(-4.0, -1.0), DVec(-4.0, 2.0)), Nil)
+    PolygonShape(List(DVec(-44.0, 8.0), DVec(-44.0, -4.0), DVec(-36.0, -4.0)), Nil),
+    PolygonShape(List(DVec(-44.0, 8.0), DVec(-36.0, -4.0), DVec(-32.0, -4.0), DVec(-32.0, 8.0)), Nil),
+    PolygonShape(List(DVec(-32.0, -4.0), DVec(-24.0, -4.0), DVec(-28.0, 8.0), DVec(-32.0, 8.0)), Nil),
+    PolygonShape(List(DVec(-28.0, 8.0), DVec(-24.0, -4.0), DVec(-24.0, 8.0)), Nil),
+    PolygonShape(List(DVec(-24.0, -4.0), DVec(-20.0, -4.0), DVec(-16.0, 8.0), DVec(-24.0, 8.0)), Nil),
+    PolygonShape(List(DVec(-16.0, 4.0), DVec(-16.0, 0.0), DVec(-4.0, 0.0), DVec(-4.0, 4.0)), Nil),
+    PolygonShape(List(DVec(-4.0, 0.0), DVec(4.0, 0.0), DVec(4.0, 4.0), DVec(-4.0, 4.0)), Nil),
+    PolygonShape(List(DVec(4.0, 0.0), DVec(16.0, 0.0), DVec(16.0, 4.0), DVec(4.0, 4.0)), Nil),
+    PolygonShape(List(DVec(-12.0, 0.0), DVec(-12.0, -8.0), DVec(-4.0, -8.0), DVec(-4.0, 0.0)), Nil),
+    PolygonShape(List(DVec(-12.0, -8.0), DVec(-4.0, -16.0), DVec(4.0, -16.0), DVec(0.0, -8.0)), Nil),
+    PolygonShape(List(DVec(-4.0, 0.0), DVec(-4.0, -8.0), DVec(8.0, -8.0), DVec(12.0, 0.0)), Nil),
+    PolygonShape(List(DVec(0.0, -8.0), DVec(4.0, -16.0), DVec(12.0, -8.0)), Nil),
+    PolygonShape(List(DVec(8.0, -8.0), DVec(12.0, -8.0), DVec(12.0, 0.0)), Nil),
+    PolygonShape(List(DVec(16.0, 8.0), DVec(16.0, -4.0), DVec(24.0, -4.0), DVec(28.0, 8.0)), Nil),
+    PolygonShape(List(DVec(24.0, -4.0), DVec(32.0, -4.0), DVec(36.0, 8.0), DVec(28.0, 8.0)), Nil),
+    PolygonShape(List(DVec(32.0, -4.0), DVec(40.0, -4.0), DVec(36.0, 8.0)), Nil),
+    PolygonShape(List(DVec(36.0, 8.0), DVec(40.0, -4.0), DVec(40.0, 8.0)), Nil),
+    PolygonShape(List(DVec(40.0, -4.0), DVec(44.0, -4.0), DVec(44.0, 8.0), DVec(40.0, 8.0)), Nil),
+    PolygonShape(List(DVec(-20.0, -4.0), DVec(-16.0, -4.0), DVec(-16.0, 8.0)), Nil)
   )
+
+  wreck_parts.foreach(p => {
+    println(s"PolygonShape(List(${p.points.map(p => s"DVec(${p.x}, ${p.y})").mkString(", ")}), Nil),")
+  })
+
+  println("==========================")
 
   val docking_points:List[DockingPoints] = Nil
 
-  val two = new Engine("2", position = DVec(0.0, -4.0), force_dir = DVec(0.0, 1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
-  val eight = new Engine("8", position = DVec(0.0, 1.0), force_dir = DVec(0.0, -1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
-  val one = new Engine("1", position = DVec(-9.5, -1.0), force_dir = DVec(0.0, 1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
-  val three = new Engine("3", position = DVec(9.5, -1.0), force_dir = DVec(0.0, 1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
-  val four = new Engine("4", position = DVec(-11.0, 0.0), force_dir = DVec(1.0, 0.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
-  val six = new Engine("6", position = DVec(11.0, 0.0), force_dir = DVec(-1.0, 0.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
+  val two = new Engine("2", position = DVec(0.0, -16.0), force_dir = DVec(0.0, 1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
+  val eight = new Engine("8", position = DVec(0.0, 4.0), force_dir = DVec(0.0, -1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
+  val one = new Engine("1", position = DVec(-38.0, -4.0), force_dir = DVec(0.0, 1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
+  val three = new Engine("3", position = DVec(38.0, -4.0), force_dir = DVec(0.0, 1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
+  val four = new Engine("4", position = DVec(-44.0, 0.0), force_dir = DVec(1.0, 0.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
+  val six = new Engine("6", position = DVec(44.0, 0.0), force_dir = DVec(-1.0, 0.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
 
   val engines = List(two, eight, one, three, four, six)
 
@@ -108,7 +117,7 @@ class Satellite1(index:Int,
         drawSlidingLines(draw_points, WHITE)
 
         engines.foreach {
-          case e => drawEngine(e, 1)
+          case e => drawEngine(e, 2)
         }
       }
     }
