@@ -472,10 +472,10 @@ class Ship4(index:Int,
                 // direction to moon
                 drawArrow(Vec.zero, (moon.coord - coord).n * 20, colorIfAliveOrRed(InterfaceHolder.moonRelativeInfo.color))
               }
-              if (!InterfaceHolder.nearestShipInfo.isMinimized) {
+              if (!InterfaceHolder.stationInfo.isMinimized) {
                 // direction to nearest ship
                 otherShipsNear.headOption.foreach(x => {
-                  drawArrow(Vec.zero, (x.coord - coord).n * 20, colorIfAliveOrRed(InterfaceHolder.nearestShipInfo.color))
+                  drawArrow(Vec.zero, (x.coord - coord).n * 20, colorIfAliveOrRed(InterfaceHolder.stationInfo.color))
                 })
               }
             }

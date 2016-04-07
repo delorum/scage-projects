@@ -30,7 +30,10 @@ object InterfaceHolder {
   val sunRelativeInfo = new SunRelativeInfo
   val earthRelativeInfo = new EarthRelativeInfo
   val moonRelativeInfo = new MoonRelativeInfo
-  val nearestShipInfo = new OtherShipInfo(OrbitalKiller.station)
+  
+  val stationInfo = new OtherShipInfo(OrbitalKiller.station)
+  val sat1Info = new OtherShipInfo(OrbitalKiller.sat1)
+  def shipsMinimized = List(stationInfo, sat1Info).filter(_.isMinimized)
 
   val linearVelocityInfo = new LinearVelocityInfo
   val angularVelocityInfo = new AngularVelocityInfo
@@ -47,7 +50,8 @@ object InterfaceHolder {
   private val interfaces = List(
     List(timeInfo),
     List(viewModeInfo, flightModeInfo),
-    List(sunRelativeInfo, earthRelativeInfo, moonRelativeInfo, nearestShipInfo),
+    List(sunRelativeInfo, earthRelativeInfo, moonRelativeInfo),
+    List(stationInfo, sat1Info),
     List(linearVelocityInfo, angularVelocityInfo, pilotStateInfo),
     List(planetsInfluenceInfo, /*satelliteEscapeVelocityInfo, */orbitInfo),
     List(enginesInfo),
@@ -72,12 +76,26 @@ object InterfaceHolder {
 
   def clickInterfaceElem(mouse_coord:DVec):Boolean = {
     if(10 < mouse_coord.y && mouse_coord.y < 30) {  // мышкой кликнули на линии свернутых элементов
-      _minimized_strings.zipWithIndex.find {
-        case ((i, color), idx) =>
-          val minimized_elem_center_x = 20 + idx * between_minimized_elems
+      var x_offset = 20                     // левый край очередной надписи по x
+      _minimized_strings.map {
+        case (i, color) =>
+          val s = i.shortDescr              // надпись
+          val s_len = messageBounds(s).ix     // длина надписи
+          val x = x_offset+s_len/2            // центр надписи по x
+          print(s, x, 20, ship.colorIfAliveOrRed(color), align = "center")
+          x_offset = x_offset + s_len + between_minimized_elems
+          ((i, color), x)
+      }.find {
+        case ((i, color), minimized_elem_center_x) =>
           minimized_elem_center_x - 20 < mouse_coord.x && mouse_coord.x < minimized_elem_center_x + 20
       }.exists(x => {
-        x._1._1.showByUser(); true
+        val i = x._1._1
+        if(i.isInstanceOf[OtherShipInfoMinimized]) {
+          shipsMinimized.headOption.foreach(_.showByUser())
+        } else {
+          i.showByUser()
+        }
+        true
       })
     } else if(30 < mouse_coord.y && mouse_coord.y < 50) {  // мышкой кликнули на линии переключателей
       activeSwitchers.zipWithIndex.find {
@@ -87,7 +105,7 @@ object InterfaceHolder {
       }.exists(x => {
         x._1.switch(); true
       })
-    } else {
+    } else {                                       // кликаем на развернутых элементах интерфейса
       if(20 < mouse_coord.x && mouse_coord.x < 300) {
         val x = (_strings.length + 2) * 20 - mouse_coord.y
         _interface_elems_positions.find {
@@ -129,6 +147,8 @@ object InterfaceHolder {
     _minimized_strings.clear()
     _interface_elems_positions.clear()
     var offset = 0
+    var minimized_ship_exists = false
+    var first_minimized_ship_position = 0
     interfaces.foreach {
       case l =>
         var non_minimized_exists = false
@@ -145,12 +165,21 @@ object InterfaceHolder {
               } else {
                 _minimized_strings += ((i, i.color))
               }
+              if(!minimized_ship_exists && i.isInstanceOf[OtherShipInfo]) {
+                minimized_ship_exists = true
+                first_minimized_ship_position = _minimized_strings.length
+              }
             }
         }
       if(non_minimized_exists) {
         _strings += (("", YELLOW))
         offset += 20
       }
+    }
+    if(minimized_ship_exists) {
+      val minimized_ships = _minimized_strings.filter(_._1.isInstanceOf[OtherShipInfo])
+      _minimized_strings.insert(first_minimized_ship_position, (new OtherShipInfoMinimized(minimized_ships.length), MAGENTA))
+      _minimized_strings --= minimized_ships
     }
   }
 
@@ -166,9 +195,14 @@ object InterfaceHolder {
         print(switcher.selectedStrVariant, 30+idx*between_switchers, 40, ship.colorIfAliveOrRed(YELLOW), align = "center")
     }
     //print(minimizedStrings.map(_._1).mkString(" "), 20, 20, DARK_GRAY)
-    _minimized_strings.zipWithIndex.foreach {
-      case ((i, color), idx) =>
-        print(i.shortDescr, 20+idx*between_minimized_elems, 20, ship.colorIfAliveOrRed(color), align = "center")
+    var x_offset = 20                     // левый край очередной надписи по x
+    _minimized_strings.foreach {
+      case (i, color) =>
+        val s = i.shortDescr              // надпись
+        val s_len = messageBounds(s).ix   // длина надписи
+        val x = x_offset+s_len/2          // центр надписи по x
+        print(s, x, 20, ship.colorIfAliveOrRed(color), align = "center")
+        x_offset = x_offset + s_len + between_minimized_elems
     }
   }
 }
