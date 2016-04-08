@@ -1,5 +1,6 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 
+import com.github.dunnololda.scage.support.messages.ScageMessage
 import com.github.dunnololda.scageprojects.orbitalkiller.{OrbitalKiller, InterfaceElement}
 
 class AngularVelocityInfo extends InterfaceElement {

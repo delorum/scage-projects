@@ -33,7 +33,8 @@ object InterfaceHolder {
   
   val stationInfo = new OtherShipInfo(OrbitalKiller.station)
   val sat1Info = new OtherShipInfo(OrbitalKiller.sat1)
-  def shipsMinimized = List(stationInfo, sat1Info).filter(_.isMinimized)
+  val ship_interfaces = List(stationInfo, sat1Info)
+  def shipsMinimized = ship_interfaces.filter(_.isMinimized)
 
   val linearVelocityInfo = new LinearVelocityInfo
   val angularVelocityInfo = new AngularVelocityInfo
@@ -51,7 +52,7 @@ object InterfaceHolder {
     List(timeInfo),
     List(viewModeInfo, flightModeInfo),
     List(sunRelativeInfo, earthRelativeInfo, moonRelativeInfo),
-    List(stationInfo, sat1Info),
+    ship_interfaces,
     List(linearVelocityInfo, angularVelocityInfo, pilotStateInfo),
     List(planetsInfluenceInfo, /*satelliteEscapeVelocityInfo, */orbitInfo),
     List(enginesInfo),
@@ -76,20 +77,11 @@ object InterfaceHolder {
 
   def clickInterfaceElem(mouse_coord:DVec):Boolean = {
     if(10 < mouse_coord.y && mouse_coord.y < 30) {  // мышкой кликнули на линии свернутых элементов
-      var x_offset = 20                     // левый край очередной надписи по x
-      _minimized_strings.map {
-        case (i, color) =>
-          val s = i.shortDescr              // надпись
-          val s_len = messageBounds(s).ix     // длина надписи
-          val x = x_offset+s_len/2            // центр надписи по x
-          print(s, x, 20, ship.colorIfAliveOrRed(color), align = "center")
-          x_offset = x_offset + s_len + between_minimized_elems
-          ((i, color), x)
-      }.find {
-        case ((i, color), minimized_elem_center_x) =>
-          minimized_elem_center_x - 20 < mouse_coord.x && mouse_coord.x < minimized_elem_center_x + 20
+      _minimized_strings.find {
+        case (i, color, minimized_elem_center_x) =>
+          minimized_elem_center_x - i.shortDescrLen/2 < mouse_coord.x && mouse_coord.x < minimized_elem_center_x + i.shortDescrLen/2
       }.exists(x => {
-        val i = x._1._1
+        val i = x._1
         if(i.isInstanceOf[OtherShipInfoMinimized]) {
           shipsMinimized.headOption.foreach(_.showByUser())
         } else {
@@ -135,7 +127,7 @@ object InterfaceHolder {
   private val _strings = ArrayBuffer[(String, ScageColor)]()
   //def strings:Seq[(String, ScageColor)] = _strings
 
-  private val _minimized_strings = ArrayBuffer[(InterfaceElement, ScageColor)]()
+  private val _minimized_strings = ArrayBuffer[(InterfaceElement, ScageColor, Int)]()
   //def minimizedStrings:Seq[(InterfaceElement, ScageColor)] = _minimized_strings
 
   private val _interface_elems_positions = ArrayBuffer[(InterfaceElement, Int)]()
@@ -147,8 +139,8 @@ object InterfaceHolder {
     _minimized_strings.clear()
     _interface_elems_positions.clear()
     var offset = 0
+    var minimized_x_offset = 20                         // левый край очередной свернутой надписи по x
     var minimized_ship_exists = false
-    var first_minimized_ship_position = 0
     interfaces.foreach {
       case l =>
         var non_minimized_exists = false
@@ -160,14 +152,22 @@ object InterfaceHolder {
              _interface_elems_positions += ((i, offset))
               offset += i.data.length*20
             } else {
-              if(i.isMinimizedByConstraint) {
-                _minimized_strings += ((i, DARK_GRAY))
+              if(!i.isInstanceOf[OtherShipInfo]) {
+                val x = minimized_x_offset+i.shortDescrLen/2    // центр надписи по x
+                if(i.isMinimizedByConstraint) {
+                  _minimized_strings += ((i, DARK_GRAY, x))
+                } else {
+                  _minimized_strings += ((i, i.color, x))
+                }
+                minimized_x_offset = minimized_x_offset + i.shortDescrLen + between_minimized_elems
               } else {
-                _minimized_strings += ((i, i.color))
-              }
-              if(!minimized_ship_exists && i.isInstanceOf[OtherShipInfo]) {
-                minimized_ship_exists = true
-                first_minimized_ship_position = _minimized_strings.length
+                if(!minimized_ship_exists) {
+                  val j = new OtherShipInfoMinimized(shipsMinimized.length)
+                  val x = minimized_x_offset+j.shortDescrLen/2    // центр надписи по x
+                  _minimized_strings += ((j, j.color, x))
+                  minimized_ship_exists = true
+                  minimized_x_offset = minimized_x_offset + j.shortDescrLen + between_minimized_elems
+                }
               }
             }
         }
@@ -176,14 +176,9 @@ object InterfaceHolder {
         offset += 20
       }
     }
-    if(minimized_ship_exists) {
-      val minimized_ships = _minimized_strings.filter(_._1.isInstanceOf[OtherShipInfo])
-      _minimized_strings.insert(first_minimized_ship_position, (new OtherShipInfoMinimized(minimized_ships.length), MAGENTA))
-      _minimized_strings --= minimized_ships
-    }
   }
 
-  private val between_minimized_elems = 40
+  private val between_minimized_elems = 20
   private val between_switchers = 100
 
   def draw(): Unit = {
@@ -195,14 +190,9 @@ object InterfaceHolder {
         print(switcher.selectedStrVariant, 30+idx*between_switchers, 40, ship.colorIfAliveOrRed(YELLOW), align = "center")
     }
     //print(minimizedStrings.map(_._1).mkString(" "), 20, 20, DARK_GRAY)
-    var x_offset = 20                     // левый край очередной надписи по x
     _minimized_strings.foreach {
-      case (i, color) =>
-        val s = i.shortDescr              // надпись
-        val s_len = messageBounds(s).ix   // длина надписи
-        val x = x_offset+s_len/2          // центр надписи по x
-        print(s, x, 20, ship.colorIfAliveOrRed(color), align = "center")
-        x_offset = x_offset + s_len + between_minimized_elems
+      case (i, color, x) =>
+        print(i.shortDescr, x, 20, ship.colorIfAliveOrRed(color), align = "center")
     }
   }
 }

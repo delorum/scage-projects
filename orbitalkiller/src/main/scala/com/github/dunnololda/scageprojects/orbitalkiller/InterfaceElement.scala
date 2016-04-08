@@ -1,9 +1,11 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.support.ScageColor
+import com.github.dunnololda.scage.support.messages.ScageMessage
 
 abstract class InterfaceElement {
-  def shortDescr:String
+  def shortDescr:String // подразумевается, что в потомках это будет val - неизменяемое значение
+  lazy val shortDescrLen: Int = ScageMessage.messageBounds(shortDescr).ix
 
   private var _minimized_by_user = false
   final def isMinimizedByUser = _minimized_by_user
