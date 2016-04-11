@@ -427,7 +427,7 @@ abstract class PolygonShip(
   def pilotIsDead = pilot_is_dead
   def pilotIsAlive = !pilot_is_dead
 
-  def colorIfAliveOrRed(color: => ScageColor) = if(pilot_is_dead) RED else color
+  def colorIfPlayerAliveOrRed(color: => ScageColor) = if(OrbitalKiller.ship.pilotIsDead) RED else color
 
   protected var ship_parts:List[MutableBodyState] = Nil
 
@@ -576,4 +576,6 @@ abstract class PolygonShip(
     is_static = false)
 
   lazy val currentState:MutableBodyState = initState.toMutableBodyState
+
+  var orbitRender:Option[BodyOrbitRender] = None
 }

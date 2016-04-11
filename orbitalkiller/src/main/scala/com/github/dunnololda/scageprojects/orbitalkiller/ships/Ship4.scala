@@ -450,34 +450,33 @@ class Ship4(index:Int,
         if(pilotIsAlive) {
           openglLocalTransform {
             openglMove(coord - base)
-            drawFilledCircle(DVec.zero, 0.3, colorIfAliveOrRed(GREEN)) // mass center
+            drawFilledCircle(DVec.zero, 0.3, colorIfPlayerAliveOrRed(GREEN)) // mass center
 
             if (OrbitalKiller.globalScale >= 0.8) {
               if (!InterfaceHolder.linearVelocityInfo.isMinimized) {
 
                 // current velocity
-                drawArrow(DVec.zero, linearVelocity.n * 20, colorIfAliveOrRed(BLUE))
-                drawArrow(DVec.zero, relativeLinearVelocity.n * 20, colorIfAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
+                drawArrow(DVec.zero, linearVelocity.n * 20, colorIfPlayerAliveOrRed(BLUE))
+                drawArrow(DVec.zero, relativeLinearVelocity.n * 20, colorIfPlayerAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
               }
               //drawArrow(DVec.zero, linearAcceleration.n * 100, ORANGE)        // current acceleration
               if (!InterfaceHolder.sunRelativeInfo.isMinimized) {
                 // direction to earth
-                drawArrow(Vec.zero, (sun.coord - coord).n * 20, colorIfAliveOrRed(InterfaceHolder.sunRelativeInfo.color))
+                drawArrow(Vec.zero, (sun.coord - coord).n * 20, colorIfPlayerAliveOrRed(InterfaceHolder.sunRelativeInfo.color))
               }
               if (!InterfaceHolder.earthRelativeInfo.isMinimized) {
                 // direction to earth
-                drawArrow(Vec.zero, (earth.coord - coord).n * 20, colorIfAliveOrRed(InterfaceHolder.earthRelativeInfo.color))
+                drawArrow(Vec.zero, (earth.coord - coord).n * 20, colorIfPlayerAliveOrRed(InterfaceHolder.earthRelativeInfo.color))
               }
               if (!InterfaceHolder.moonRelativeInfo.isMinimized) {
                 // direction to moon
-                drawArrow(Vec.zero, (moon.coord - coord).n * 20, colorIfAliveOrRed(InterfaceHolder.moonRelativeInfo.color))
+                drawArrow(Vec.zero, (moon.coord - coord).n * 20, colorIfPlayerAliveOrRed(InterfaceHolder.moonRelativeInfo.color))
               }
-              if (!InterfaceHolder.stationInfo.isMinimized) {
-                // direction to nearest ship
-                otherShipsNear.headOption.foreach(x => {
-                  drawArrow(Vec.zero, (x.coord - coord).n * 20, colorIfAliveOrRed(InterfaceHolder.stationInfo.color))
-                })
-              }
+              InterfaceHolder.ship_interfaces.foreach(si => {
+                if(!si.isMinimized) {
+                  drawArrow(Vec.zero, (si.monitoring_ship.coord - coord).n * 20, colorIfPlayerAliveOrRed(si.color))
+                }
+              })
             }
 
             /*val pa = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*70000
@@ -509,18 +508,18 @@ class Ship4(index:Int,
                 print(s"$p2idx", p2.toVec, color = WHITE, size = (max_font_size / globalScale).toFloat)*/
             }*/
 
-            drawSlidingLines(draw_points, colorIfAliveOrRed(WHITE))
+            drawSlidingLines(draw_points, colorIfPlayerAliveOrRed(WHITE))
 
             if (OrbitalKiller.globalScale >= 0.8) {
               if(isDocked) {
                 dockData.foreach(d => {
-                  drawFilledCircle(d.our_dp.p1, 0.3, colorIfAliveOrRed(GREEN))
-                  drawFilledCircle(d.our_dp.p2, 0.3, colorIfAliveOrRed(GREEN))
+                  drawFilledCircle(d.our_dp.p1, 0.3, colorIfPlayerAliveOrRed(GREEN))
+                  drawFilledCircle(d.our_dp.p2, 0.3, colorIfPlayerAliveOrRed(GREEN))
                 })
               } else if(InterfaceHolder.dockingSwitcher.dockingEnabled) {
                 docking_points.foreach(dp => {
-                  drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(RED))
-                  drawFilledCircle(dp.p2, 0.3, colorIfAliveOrRed(RED))
+                  drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
+                  drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
                 })
               }
             }
@@ -543,7 +542,7 @@ class Ship4(index:Int,
                 }
               })*/
               openglRotateDeg(mbs.ang)
-              drawSlidingLines(mbs_points :+ mbs_points.head, colorIfAliveOrRed(RED))
+              drawSlidingLines(mbs_points :+ mbs_points.head, colorIfPlayerAliveOrRed(RED))
             }
           })
         }

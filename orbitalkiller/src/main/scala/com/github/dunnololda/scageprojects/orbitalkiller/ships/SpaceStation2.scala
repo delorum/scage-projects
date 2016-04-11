@@ -1,6 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.ships
 
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 
@@ -89,46 +90,65 @@ class SpaceStation2(
   render {
     /*if(renderingEnabled) {*/
       if(!drawMapMode && coord.dist2(ship.coord) < 100000*100000) {
-        openglLocalTransform {
-          openglMove(coord - base)
-          drawFilledCircle(DVec.zero, 2, GREEN)                                // mass center
-          if(OrbitalKiller.globalScale >= 0.8) {
-            drawArrow(DVec.zero, relativeLinearVelocity.n * 100, CYAN) // current velocity
-          }
+        if(pilotIsAlive) {
+          openglLocalTransform {
+            openglMove(coord - base)
+            drawFilledCircle(DVec.zero, 2, GREEN) // mass center
+            if (OrbitalKiller.globalScale >= 0.8) {
+              drawArrow(DVec.zero, relativeLinearVelocity.n * 100, CYAN) // current velocity
+            }
 
-          openglRotateDeg(rotation)
-          drawSlidingLines(draw_points, WHITE)
+            openglRotateDeg(rotation)
+            drawSlidingLines(draw_points, WHITE)
 
-          if (OrbitalKiller.globalScale >= 0.8) {
-            if(isDocked) {
-              dockData.foreach(d => {
-                drawFilledCircle(d.our_dp.p1, 0.3, colorIfAliveOrRed(GREEN))
-                drawFilledCircle(d.our_dp.p2, 0.3, colorIfAliveOrRed(GREEN))
-              })
-            } else if(InterfaceHolder.dockingSwitcher.dockingEnabled) {
-              docking_points.foreach(dp => {
-                val (p1_on_the_right_way, p2_on_the_right_way) = OrbitalKiller.ship.docking_points.headOption.map(_.pointsOnTheRightWay(dp)).getOrElse((false, false))
+            if (OrbitalKiller.globalScale >= 0.8) {
+              if (isDocked) {
+                dockData.foreach(d => {
+                  drawFilledCircle(d.our_dp.p1, 0.3, colorIfPlayerAliveOrRed(GREEN))
+                  drawFilledCircle(d.our_dp.p2, 0.3, colorIfPlayerAliveOrRed(GREEN))
+                })
+              } else if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
+                docking_points.foreach(dp => {
+                  val (p1_on_the_right_way, p2_on_the_right_way) = OrbitalKiller.ship.docking_points.headOption.map(_.pointsOnTheRightWay(dp)).getOrElse((false, false))
 
-                val c1 = if(p1_on_the_right_way) GREEN else RED
-                val c2 = if(p2_on_the_right_way) GREEN else RED
+                  val c1 = if (p1_on_the_right_way) GREEN else RED
+                  val c2 = if (p2_on_the_right_way) GREEN else RED
 
-                val v1 = (dp.p1-dp.p2).n
-                val v2 = v1.perpendicular
+                  val v1 = (dp.p1 - dp.p2).n
+                  val v2 = v1.perpendicular
 
-                drawDashedLine(dp.p1, dp.p1+v2*100, 2.5, colorIfAliveOrRed(c1))
-                drawDashedLine(dp.p2, dp.p2+v2*100, 2.5, colorIfAliveOrRed(c2))
+                  drawDashedLine(dp.p1, dp.p1 + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c1))
+                  drawDashedLine(dp.p2, dp.p2 + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c2))
 
-                drawFilledCircle(dp.p1, 0.3, colorIfAliveOrRed(RED))
-                drawCircle(dp.p1, 1, colorIfAliveOrRed(RED))
-                drawFilledCircle(dp.p2, 0.3, colorIfAliveOrRed(RED))
-                drawCircle(dp.p2, 1, colorIfAliveOrRed(RED))
-              })
+                  drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
+                  drawCircle(dp.p1, 1, colorIfPlayerAliveOrRed(RED))
+                  drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
+                  drawCircle(dp.p2, 1, colorIfPlayerAliveOrRed(RED))
+                })
+              }
+            }
+
+            engines.foreach {
+              case e => drawEngine(e, 10)
             }
           }
-
-          engines.foreach {
-            case e => drawEngine(e, 10)
-          }
+        } else {
+          ship_parts.foreach(mbs => {
+            val mbs_points = mbs.shape.asInstanceOf[PolygonShape].points
+            openglLocalTransform {
+              openglMove(mbs.coord - base)
+              drawFilledCircle(DVec.zero, 0.3, GREEN)
+              /*mbs.contacts.foreach(x => {
+                if(x.a.index.contains("part") && x.b.index.contains("part")) {
+                  drawFilledCircle(x.contact_point - mbs.coord, 0.3, YELLOW)
+                  drawLine(x.contact_point - mbs.coord, x.contact_point - mbs.coord + x.normal.n, YELLOW)
+                  drawCircle(x.contact_point - mbs.coord, x.separation, YELLOW)
+                }
+              })*/
+              openglRotateDeg(mbs.ang)
+              drawSlidingLines(mbs_points :+ mbs_points.head, colorIfPlayerAliveOrRed(WHITE))
+            }
+          })
         }
       }
     /*}*/

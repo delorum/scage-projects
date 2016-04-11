@@ -248,8 +248,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   )
 
-  val sat1_start_position = earth.coord + DVec(1050, earth.radius + 200000)
-  val sat1_init_velocity = satelliteSpeed(sat1_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
+  val sat1_start_position = earth.coord + DVec(1050, earth.radius + 200050)
+  val sat1_init_velocity = satelliteSpeed(sat1_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*0.85
   val sat1 = new Satellite1(ScageId.nextId,
     init_coord = sat1_start_position,
     init_velocity = sat1_init_velocity,
@@ -274,7 +274,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   )
 
-  val ships = List(ship, station)
+  val ships = List(ship, station, sat1)
   val ship_indexes = ships.map(_.index).toSet
   def shipByIndex(index:Int):Option[PolygonShip] = ships.find(_.index == index)
 
@@ -297,32 +297,36 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   private def nextStep() {
     (1 to timeMultiplier).foreach(step => {
-      ships.foreach(s => s.engines.foreach(e => {
-        if(e.active) {
-          if(e.workTimeTacts <= 0 || ship.fuelMass <= 0) {
-            e.active = false
-          } else {
-            if(e.ship.fuelMass - e.fuelConsumptionPerTact <= 0) {
+      ships.foreach(s => {
+        s.engines.foreach(e => {
+          if(e.active) {
+            if(e.workTimeTacts <= 0 || ship.fuelMass <= 0) {
               e.active = false
+            } else {
+              if(e.ship.fuelMass - e.fuelConsumptionPerTact <= 0) {
+                e.active = false
+              }
             }
           }
+        })
+        if(s.currentState.ang_vel != 0 && math.abs(s.currentState.ang_vel) < 0.01) {
+          s.currentState.ang_vel = 0
         }
-      }))
-      if(ship.currentState.ang_vel != 0 && math.abs(ship.currentState.ang_vel) < 0.01) {
-        ship.currentState.ang_vel = 0
-      }
-      ship.currentState.mass = ship.mass/*currentMass(_tacts)*/
+        s.currentState.mass = s.mass/*currentMass(_tacts)*/
+      })
       system_evolution.step()
-      ship.updateShipState((tacts*base_dt*1000).toLong)
-      ships.foreach(s => s.engines.foreach(e => {
-        if(e.active) {
-          if(e.workTimeTacts > 0) {
-            e.workTimeTacts -= 1
-            //InterfaceHolder.enginesInfo.addWorkTime(base_dt*1000*e.power/e.max_power)
-            e.ship.fuelMass -= e.fuelConsumptionPerTact
-          } else e.active = false
-        }
-      }))
+      ships.foreach(s => {
+        s.updateShipState((tacts*base_dt*1000).toLong)
+        s.engines.foreach(e => {
+          if(e.active) {
+            if(e.workTimeTacts > 0) {
+              e.workTimeTacts -= 1
+              //InterfaceHolder.enginesInfo.addWorkTime(base_dt*1000*e.power/e.max_power)
+              e.ship.fuelMass -= e.fuelConsumptionPerTact
+            } else e.active = false
+          }
+        })
+      })
       if(_stop_after_number_of_tacts > 0) {
         _stop_after_number_of_tacts -= 1
         if (_stop_after_number_of_tacts <= 0) {
@@ -958,7 +962,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                     if(h.tetaRad2PiValid(mouse_teta_rad2Pi)) {
                       val away_from_rp = (bs_coord - h.f) * (bs_vel - planet_state_vel) >= 0 // приближаемся к перигею или удаляемся от него?
 
-                      val (allow) = {
+                      val mouse_point_further_on_the_way = {
                         if(ccw) {
                           (away_from_rp  && ship_teta_rad2Pi <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= h.teta_rad_min) ||
                           (!away_from_rp && ((ship_teta_rad2Pi <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= 360) || (0 <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= h.teta_rad_min)))
@@ -968,7 +972,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                         }
                       }
 
-                      if(allow) {
+                      if(mouse_point_further_on_the_way) {
                         val orbital_point = h.orbitalPointInPoint(mouse_point)
                         drawFilledCircle(orbital_point*scale, 3 / globalScale, ellipse_color)
                         val flight_time_msec = h.travelTimeOnOrbitMsec(bs_coord, orbital_point, ccw)
@@ -985,14 +989,14 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                           }).mkString(" : "))*/
                         }
 
-                        if(InterfaceHolder.orbParams.selectedVariant == 0) {
+                        if(InterfaceHolder.orbParams.calculationOn) {
                           val flight_time = s"${timeStr(flight_time_msec)}"
                           val vnorm = h.orbitalVelocityByTrueAnomalyRad(mouse_teta_rad2Pi)
                           openglLocalTransform {
                             openglMove(orbital_point * scale)
                             print(s"  $flight_time : ${mOrKmOrMKm(h.distanceByTrueAnomalyRad(mouse_teta_rad2Pi) - planet.radius)} : ${msecOrKmsec(vnorm)}", Vec.zero, size = (max_font_size / globalScale).toFloat, ellipse_color)
                           }
-                          station_orbit_render.foreach(x => {
+                          InterfaceHolder.ship_interfaces.filter(!_.isMinimized).flatMap(_.monitoring_ship.orbitRender).foreach(x => {
                             x.ellipseOrbit.foreach(e => {
                               val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
                               drawCircle(position_after_time * scale, earth.radius * scale / 2f / globalScale, YELLOW)
@@ -1007,8 +1011,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                           })
                         }
                       }
-                      if(InterfaceHolder.orbParams.selectedVariant == 0) {
-                        station_orbit_render.foreach(x => {
+                      if(InterfaceHolder.orbParams.calculationOn) {
+                        InterfaceHolder.ship_interfaces.filter(!_.isMinimized).flatMap(_.monitoring_ship.orbitRender).foreach(x => {
                           x.ellipseOrbit.foreach(e => {
                             if (_stop_after_number_of_tacts > 0) {
                               val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
@@ -1066,7 +1070,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                         mOrKmOrMKm(p1.dist(px))
                       }).mkString(" : "))*/
                     }
-                    if(InterfaceHolder.orbParams.selectedVariant == 0) {
+                    if(InterfaceHolder.orbParams.calculationOn) {
                       val flight_time_str = s"${timeStr(flight_time_msec)}"
                       val (vt, vr) = e.orbitalVelocityByTrueAnomalyRad(true_anomaly_rad)
                       val vnorm = math.sqrt(vr * vr + vt * vt)
@@ -1074,7 +1078,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                         openglMove(orbital_point * scale)
                         print(s"  $flight_time_str : ${mOrKmOrMKm(e.distanceByTrueAnomalyRad(true_anomaly_rad) - planet.radius)} : ${msecOrKmsec(vnorm)}", Vec.zero, size = (max_font_size / globalScale).toFloat, ellipse_color)
                       }
-                      station_orbit_render.foreach(x => {
+                      InterfaceHolder.ship_interfaces.filter(!_.isMinimized).flatMap(_.monitoring_ship.orbitRender).foreach(x => {
                         x.ellipseOrbit.foreach(e => {
                           val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
                           drawCircle(position_after_time * scale, earth.radius * scale / 2f / globalScale, YELLOW)
@@ -1108,8 +1112,6 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }
 
-  private var ship_orbit_render:Option[BodyOrbitRender] = None
-  private var station_orbit_render:Option[BodyOrbitRender] = None
   private var moon_orbit_render:Option[BodyOrbitRender] = None
   private var earth_orbit_render:Option[BodyOrbitRender] = None
 
@@ -1118,28 +1120,34 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   private def updateOrbits() {
     //println("updateOrbits")
     if(ship.flightMode != Maneuvering) {
-      ship_orbit_render = if(ship.engines.exists(_.active)) {
+      ship.orbitRender = if(ship.engines.exists(_.active)) {
         if(!onPause) {
-          shipOrbitRender(ship.index, ship.colorIfAliveOrRed(YELLOW), ship.colorIfAliveOrRed(YELLOW), system_evolution.allBodyStates)
+          shipOrbitRender(ship.index, ship.colorIfPlayerAliveOrRed(YELLOW), ship.colorIfPlayerAliveOrRed(YELLOW), system_evolution.allBodyStates)
         } else {
           // получаем состояние системы, когда двигатели отработали
           val system_state_when_engines_off = getFutureState(ship.engines.map(_.stopMomentTacts).max)
-          shipOrbitRender(ship.index, ship.colorIfAliveOrRed(YELLOW), ship.colorIfAliveOrRed(YELLOW), system_state_when_engines_off)
+          shipOrbitRender(ship.index, ship.colorIfPlayerAliveOrRed(YELLOW), ship.colorIfPlayerAliveOrRed(YELLOW), system_state_when_engines_off)
         }
       } else {
         // двигатели корабля не работают - можем работать с текущим состоянием
-        shipOrbitRender(ship.index, ship.colorIfAliveOrRed(YELLOW), ship.colorIfAliveOrRed(YELLOW), system_evolution.allBodyStates)
+        shipOrbitRender(ship.index, ship.colorIfPlayerAliveOrRed(YELLOW), ship.colorIfPlayerAliveOrRed(YELLOW), system_evolution.allBodyStates)
       }
     } else {
-      ship_orbit_render = if(ship.engines.exists(_.active)) {
-        shipOrbitRender(ship.index, ship.colorIfAliveOrRed(YELLOW), ship.colorIfAliveOrRed(YELLOW), system_evolution.allBodyStates)
+      ship.orbitRender = if(ship.engines.exists(_.active)) {
+        shipOrbitRender(ship.index, ship.colorIfPlayerAliveOrRed(YELLOW), ship.colorIfPlayerAliveOrRed(YELLOW), system_evolution.allBodyStates)
       } else {
-        shipOrbitRender(ship.index, ship.colorIfAliveOrRed(YELLOW), ship.colorIfAliveOrRed(YELLOW), system_evolution.allBodyStates)
+        shipOrbitRender(ship.index, ship.colorIfPlayerAliveOrRed(YELLOW), ship.colorIfPlayerAliveOrRed(YELLOW), system_evolution.allBodyStates)
       }
     }
-    station_orbit_render = shipOrbitRender(station.index, ship.colorIfAliveOrRed(MAGENTA), ship.colorIfAliveOrRed(MAGENTA), system_evolution.allBodyStates)
-    moon_orbit_render =  shipOrbitRender(moon.index, ship.colorIfAliveOrRed(GREEN), ship.colorIfAliveOrRed(GREEN), system_evolution.allBodyStates, Set(earth.index, sun.index))
-    earth_orbit_render =  shipOrbitRender(earth.index, ship.colorIfAliveOrRed(ORANGE), ship.colorIfAliveOrRed(ORANGE), system_evolution.allBodyStates, Set(sun.index))
+    InterfaceHolder.ship_interfaces.foreach(si => {
+      if(!si.isMinimized) {
+        si.monitoring_ship.orbitRender = {
+          shipOrbitRender(si.monitoring_ship.index, ship.colorIfPlayerAliveOrRed(MAGENTA), ship.colorIfPlayerAliveOrRed(MAGENTA), system_evolution.allBodyStates)
+        }
+      }
+    })
+    moon_orbit_render =  shipOrbitRender(moon.index, ship.colorIfPlayerAliveOrRed(GREEN), ship.colorIfPlayerAliveOrRed(GREEN), system_evolution.allBodyStates, Set(earth.index, sun.index))
+    earth_orbit_render =  shipOrbitRender(earth.index, ship.colorIfPlayerAliveOrRed(ORANGE), ship.colorIfPlayerAliveOrRed(ORANGE), system_evolution.allBodyStates, Set(sun.index))
     _calculate_orbits = false
   }
   updateOrbits()
@@ -1283,16 +1291,20 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
             print(ship.name, Vec.zero, color = WHITE, size = (max_font_size / globalScale).toFloat)
           }
         }
-        ship_orbit_render.foreach(_.render())
+        ship.orbitRender.foreach(_.render())
 
-        drawFilledCircle(station.coord*scale, earth.radius * scale / 2f / globalScale, MAGENTA)
-        if(InterfaceHolder.namesSwitcher.showNames) {
-          openglLocalTransform {
-            openglMove(station.coord.toVec * scale)
-            print(station.name, Vec.zero, color = MAGENTA, size = (max_font_size / globalScale).toFloat)
+        InterfaceHolder.ship_interfaces.foreach(si => {
+          if(!si.isMinimized) {
+            drawFilledCircle(si.monitoring_ship.coord*scale, earth.radius * scale / 2f / globalScale, MAGENTA)
+            if(InterfaceHolder.namesSwitcher.showNames) {
+              openglLocalTransform {
+                openglMove(si.monitoring_ship.coord.toVec * scale)
+                print(si.monitoring_ship.name, Vec.zero, color = MAGENTA, size = (max_font_size / globalScale).toFloat)
+              }
+            }
+            si.monitoring_ship.orbitRender.foreach(x => x.render())
           }
-        }
-        station_orbit_render.foreach(_.render())
+        })
 
         for {
           x <- left_up_corner
