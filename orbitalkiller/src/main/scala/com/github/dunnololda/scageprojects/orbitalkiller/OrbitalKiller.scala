@@ -184,11 +184,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   )
 
-  //val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
-  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
+  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
-  val ship_start_position = earth.coord + DVec(1000, earth.radius + 200000)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
+  //val ship_start_position = earth.coord + DVec(1000, earth.radius + 200000)
+  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
 
   //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
   //val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
@@ -248,8 +248,15 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   )
 
-  val sat1_start_position = earth.coord + DVec(1050, earth.radius + 200050)
-  val sat1_init_velocity = satelliteSpeed(sat1_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*0.85
+  // случайная орбита с перигеем от 200 до 1000 км, и апогеем от 0 до 3000 км выше перигея
+  val sat1_start_position = earth.coord + DVec(0, 1).rotateDeg(math.random*360)*(earth.radius + 200000 + math.random*800000)
+  val sat1_init_velocity = {
+    val r_p = sat1_start_position.dist(earth.coord)
+    val r_a = r_p + math.random*3000000
+    val mu = earth.mass*G
+    earth.linearVelocity + math.sqrt(-2*mu/(r_p + r_a) + 2*mu/r_p)*(sat1_start_position - earth.coord).p
+  }
+  //val sat1_init_velocity = satelliteSpeed(sat1_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
   val sat1 = new Satellite1(ScageId.nextId,
     init_coord = sat1_start_position,
     init_velocity = sat1_init_velocity,
