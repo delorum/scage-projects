@@ -647,7 +647,7 @@ abstract class PolygonShip(
         }
       } else if(before_death_counter != 100) {
         if(pilot_average_g <= 1.09) {
-          val rate = 100.0/30*base_dt // восстановление после критической перегрузки за 30 секунд
+          val rate = 100.0/60*base_dt // восстановление после критической перегрузки за 60 секунд
           before_death_counter += rate
           if(before_death_counter >= 100) {
             before_death_counter = 100
@@ -670,7 +670,7 @@ abstract class PolygonShip(
     if(!pilot_is_dead) {
       if (pilot_average_g < 0.1) {
         if(before_death_counter != 100) {
-          val rate = 100.0/30*base_dt
+          val rate = 100.0/60*base_dt // восстановление после критической перегрузки за 60 секунд
           val time_to_restore_msec = (((100 - before_death_counter)/rate)*base_dt*1000).toLong
           f"Пилот в состоянии невесомости. Восстанавливается после перегрузки (${timeStr(time_to_restore_msec)})"
         } else {
@@ -678,7 +678,7 @@ abstract class PolygonShip(
         }
       } else if (pilot_average_g <= 1.09) {
         if(before_death_counter != 100) {
-          val rate = 100.0/30*base_dt
+          val rate = 100.0/60*base_dt // восстановление после критической перегрузки за 60 секунд
           val time_to_restore_msec = (((100 - before_death_counter)/rate)*base_dt*1000).toLong
           f"Пилот испытывает силу тяжести $pilot_average_g%.1fg. Восстанавливается после перегрузки (${timeStr(time_to_restore_msec)})"
         } else {
