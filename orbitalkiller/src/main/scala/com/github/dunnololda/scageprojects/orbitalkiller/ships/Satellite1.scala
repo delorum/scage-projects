@@ -103,44 +103,4 @@ class Satellite1(index:Int,
 
   def preserveVelocity(vel:DVec) {}
   def preserveAngularVelocity(ang_vel_deg: Double) {}
-
-  render {
-    /*if(renderingEnabled) {*/
-    if(!drawMapMode && coord.dist2(ship.coord) < 100000*100000) {
-      if(pilotIsAlive) {
-        openglLocalTransform {
-          openglMove(coord - base)
-          drawFilledCircle(DVec.zero, 0.3, GREEN) // mass center
-          if (OrbitalKiller.globalScale >= 0.8) {
-            drawArrow(DVec.zero, relativeLinearVelocity.n * 20, CYAN) // current velocity
-          }
-
-          openglRotateDeg(rotation)
-          drawSlidingLines(draw_points, WHITE)
-
-          engines.foreach {
-            case e => drawEngine(e, 2)
-          }
-        }
-      } else {
-        ship_parts.foreach(mbs => {
-          val mbs_points = mbs.shape.asInstanceOf[PolygonShape].points
-          openglLocalTransform {
-            openglMove(mbs.coord - base)
-            drawFilledCircle(DVec.zero, 0.3, GREEN)
-            /*mbs.contacts.foreach(x => {
-              if(x.a.index.contains("part") && x.b.index.contains("part")) {
-                drawFilledCircle(x.contact_point - mbs.coord, 0.3, YELLOW)
-                drawLine(x.contact_point - mbs.coord, x.contact_point - mbs.coord + x.normal.n, YELLOW)
-                drawCircle(x.contact_point - mbs.coord, x.separation, YELLOW)
-              }
-            })*/
-            openglRotateDeg(mbs.ang)
-            drawSlidingLines(mbs_points :+ mbs_points.head, colorIfPlayerAliveOrRed(WHITE))
-          }
-        })
-      }
-    }
-    /*}*/
-  }
 }

@@ -233,7 +233,7 @@ abstract class PolygonShip(
     max_size*e.power/e.max_power
   }
 
-  def drawEngine(e:Engine, size:Double = 1) {
+  protected def drawEngine(e:Engine, size:Double = 1) {
     val is_vertical = e.force_dir.x == 0
     val (center, width, height) = e.force_dir match {
       case DVec(0, -1) => (e.position + DVec(0, 0.25)*size, 1*size, 0.5*size)
@@ -270,12 +270,89 @@ abstract class PolygonShip(
     //print(s"${e.index}", e.position.toVec, color = WHITE, size = (max_font_size / globalScale).toFloat)
   }
 
-  def drawDashedLine(from:DVec, to:DVec, dash_len:Double, color:ScageColor): Unit = {
+  protected def drawDashedLine(from:DVec, to:DVec, dash_len:Double, color:ScageColor): Unit = {
     val line_len = (to - from).norma
     val normal = (to - from).n
     (0.0 to line_len-dash_len by dash_len*2).foreach {
       case dash_from => drawLine(from + normal*dash_from, from+normal*(dash_from + dash_len), color)
     }
+  }
+
+  protected def drawShip(): Unit = {
+    if(!drawMapMode && coord.dist2(ship.coord) < 100000*100000) {
+      if(pilotIsAlive) {
+        openglLocalTransform {
+          openglMove(coord - base)
+          drawFilledCircle(DVec.zero, 2, GREEN) // mass center
+          if (OrbitalKiller.globalScale >= 0.8) {
+            drawArrow(DVec.zero, relativeLinearVelocity.n * 100, CYAN) // current velocity
+          }
+
+          openglRotateDeg(rotation)
+          drawSlidingLines(draw_points, WHITE)
+
+          if (OrbitalKiller.globalScale >= 0.8) {
+            if (isDocked) {
+              dockData.foreach(d => {
+                drawFilledCircle(d.our_dp.p1, 0.3, colorIfPlayerAliveOrRed(GREEN))
+                drawFilledCircle(d.our_dp.p2, 0.3, colorIfPlayerAliveOrRed(GREEN))
+              })
+            } else if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
+              docking_points.foreach(dp => {
+                val (p1_on_the_right_way, p2_on_the_right_way) = OrbitalKiller.ship.docking_points.headOption.map(_.pointsOnTheRightWay(dp)).getOrElse((false, false))
+
+                val c1 = if (p1_on_the_right_way) GREEN else RED
+                val c2 = if (p2_on_the_right_way) GREEN else RED
+
+                val v1 = (dp.p1 - dp.p2).n
+                val v2 = v1.perpendicular
+
+                drawDashedLine(dp.p1, dp.p1 + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c1))
+                drawDashedLine(dp.p2, dp.p2 + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c2))
+
+                drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
+                drawCircle(dp.p1, 1, colorIfPlayerAliveOrRed(RED))
+                drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
+                drawCircle(dp.p2, 1, colorIfPlayerAliveOrRed(RED))
+              })
+            }
+          }
+
+          engines.foreach {
+            case e => drawEngine(e, 10)
+          }
+        }
+      } else {
+        if(shipIsCrashed) {
+          ship_parts.foreach(mbs => {
+            val mbs_points = mbs.shape.asInstanceOf[PolygonShape].points
+            openglLocalTransform {
+              openglMove(mbs.coord - base)
+              drawFilledCircle(DVec.zero, 0.3, GREEN)
+              /*mbs.contacts.foreach(x => {
+              if(x.a.index.contains("part") && x.b.index.contains("part")) {
+                drawFilledCircle(x.contact_point - mbs.coord, 0.3, YELLOW)
+                drawLine(x.contact_point - mbs.coord, x.contact_point - mbs.coord + x.normal.n, YELLOW)
+                drawCircle(x.contact_point - mbs.coord, x.separation, YELLOW)
+              }
+            })*/
+              openglRotateDeg(mbs.ang)
+              drawSlidingLines(mbs_points :+ mbs_points.head, colorIfPlayerAliveOrRed(WHITE))
+            }
+          })
+        } else {
+          openglLocalTransform {
+            openglMove(coord - base)
+            openglRotateDeg(rotation)
+            drawSlidingLines(draw_points, colorIfPlayerAliveOrRed(WHITE))
+          }
+        }
+      }
+    }
+  }
+
+  render {
+    drawShip()
   }
 
   def preserveAngularVelocity(ang_vel_deg:Double)
@@ -427,50 +504,94 @@ abstract class PolygonShip(
   def pilotIsDead = pilot_is_dead
   def pilotIsAlive = !pilot_is_dead
 
+  private var ship_is_crashed = false
+  def shipIsCrashed = ship_is_crashed
+
+  /**
+   * Если на пилота действует перегрузка, уменьшается этот счетчик. Скорость его уменьшения зависит от величины перегрузки.
+   * Если счетчик дойдет до нуля, пилот умирает. При отсутствии перегрузки (ускорение 1g или меньше), счетчик примерно за 30 секунд
+   * возвращается до 100.
+   */
+  private var before_death_counter:Double = 100
+
+  /**
+   *
+   * @param gs - перегрузка в единицах g
+   * @return
+   */
+  private def deatchCounterDecreaseRate(gs:Double):Double = {
+    def _linearFunc(p1:(Double, Double), p2:(Double, Double)):Double = {
+      val a = (p1._2 - p2._2)/(p1._1 - p2._1)
+      val b = p1._2 - a*p1._1
+      val sec = a*gs + b  // за столько секунд счетчик дойдет от ста до нуля при данном значении перегрузки
+      100.0/sec
+    }
+
+    val ans = if(gs <= 4) 0
+    else if(gs <= 6) {
+      _linearFunc((4, 660), (6, 240))
+    } else if(gs <= 8) {
+      _linearFunc((6, 240), (8, 60))
+    } else if(gs <= 10) {
+      _linearFunc((8, 60), (10, 24))
+    } else if(gs <= 11) {
+      _linearFunc((10, 24), (11, 6))
+    } else if(gs <= 20) {
+      _linearFunc((11, 6), (20, 1))
+    } else if(gs <= 27) {
+      _linearFunc((20, 1), (27, 0.3))
+    } else 100.0/0.01
+    ans*base_dt
+  }
+
   def colorIfPlayerAliveOrRed(color: => ScageColor) = if(OrbitalKiller.ship.pilotIsDead) RED else color
 
   protected var ship_parts:List[MutableBodyState] = Nil
 
-  private def crash(reason:String): Unit = {
+  private def kill(reason:String, crash:Boolean): Unit = {
     pilot_is_dead = true
     pilot_death_reason = reason
+    flightMode = FreeFlightMode
+    engines.foreach(_.active = false)
     if(this.index == OrbitalKiller.ship.index) {
-      flightMode = FreeFlightMode
       viewMode = FixedOnShipAbsolute
     }
-    OrbitalKiller.system_evolution.removeBodyByIndex(index)
     if(isDocked) {
       undock()
     }
-    ship_parts = wreck_parts.zipWithIndex.map(x => {
-      val part_center = currentState.coord + x._1.points.sum/x._1.points.length
-      val part_points = x._1.points.map(p => currentState.coord + p - part_center)
-      val part_index = ScageId.nextId
-      val mbs = new MutableBodyState(BodyState(
-        index = part_index,
-        mass = mass/wreck_parts.length,
-        vel = linearVelocity + randomSpeed(linearVelocity),
-        coord = part_center,
-        ang = rotation,
-        shape = PolygonShape(part_points, Nil),
-        is_static = false,
-        restitution = 0.8
-      ))
-      OrbitalKiller.system_evolution.addBody(mbs,
-        (tacts, helper) => {
-          helper.gravityForceFromTo(sun.index, part_index) +
-            helper.gravityForceFromTo(earth.index, part_index) +
-            helper.gravityForceFromTo(moon.index, part_index) +
-            helper.funcOfArrayOrDVecZero(Array(part_index, earth.index), l => {
-              val bs = l(0)
-              val e = l(1)
-              earth.airResistance(bs, e, 28, 0.5)
-            })
-        },
-        (tacts, helper) => 0.0
-      )
-      mbs
-    })
+    if(crash) {
+      OrbitalKiller.system_evolution.removeBodyByIndex(index)
+      ship_parts = wreck_parts.zipWithIndex.map(x => {
+        val part_center = currentState.coord + x._1.points.sum / x._1.points.length
+        val part_points = x._1.points.map(p => currentState.coord + p - part_center)
+        val part_index = ScageId.nextId
+        val mbs = new MutableBodyState(BodyState(
+          index = part_index,
+          mass = mass / wreck_parts.length,
+          vel = linearVelocity + randomSpeed(linearVelocity),
+          coord = part_center,
+          ang = rotation,
+          shape = PolygonShape(part_points, Nil),
+          is_static = false,
+          restitution = 0.8
+        ))
+        OrbitalKiller.system_evolution.addBody(mbs,
+          (tacts, helper) => {
+            helper.gravityForceFromTo(sun.index, part_index) +
+              helper.gravityForceFromTo(earth.index, part_index) +
+              helper.gravityForceFromTo(moon.index, part_index) +
+              helper.funcOfArrayOrDVecZero(Array(part_index, earth.index), l => {
+                val bs = l(0)
+                val e = l(1)
+                earth.airResistance(bs, e, 28, 0.5)
+              })
+          },
+          (tacts, helper) => 0.0
+        )
+        mbs
+      })
+      ship_is_crashed = true
+    }
   }
 
   private def randomSpeed(vel:DVec) = {
@@ -484,7 +605,7 @@ abstract class PolygonShip(
       if (dvel > 10) {
         // crash tolerance = 10 m/s
         val crash_g = dvel / OrbitalKiller.base_dt / earth.g
-        crash(f"Корабль уничтожен в результате столкновения ($crash_g%.2fg)")
+        kill(f"Корабль уничтожен в результате столкновения ($crash_g%.2fg)", crash = true)
         return
       } else {
         val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(currentState, earth.currentState, 28, 0.5)
@@ -495,7 +616,7 @@ abstract class PolygonShip(
           pilot_average_g = (pilot_accs.map(_._1).sum / pilot_accs.length).norma / earth.g
           pilot_accs.clear()
           if (pilot_average_g > 100) {
-            crash(f"Корабль разрушился вследствие критической перегрузки ($pilot_average_g%.2fg)")
+            kill(f"Корабль разрушился вследствие критической перегрузки ($pilot_average_g%.2fg)", crash = true)
             return
           }
         }
@@ -506,17 +627,56 @@ abstract class PolygonShip(
         case (planet, planet_state) =>
           currentState.coord = currentState.coord + (currentState.coord - planet.coord).n*(planet.radius + radius - planet.coord.dist(currentState.coord))
           currentState.vel = planet.linearVelocity
-          crash("Корабль врезался в планету")
+          kill("Корабль врезался в планету", crash = true)
           return
+      }
+      if(pilot_average_g > 4) {
+        val rate = deatchCounterDecreaseRate(pilot_average_g)
+        before_death_counter -= rate
+        if(before_death_counter <= 0) {
+          kill(f"Пилот умер от сильной перегрузки ($pilot_average_g%.2fg)", crash = false)
+        }
+      } else if(before_death_counter != 100) {
+        if(pilot_average_g <= 1.09) {
+          val rate = 100.0/30*base_dt // восстановление после критической перегрузки за 30 секунд
+          before_death_counter += rate
+          if(before_death_counter >= 100) {
+            before_death_counter = 100
+          }
+        }
       }
     }
   }
 
   def pilotStateStr:String = {
     if(!pilot_is_dead) {
-      if (pilot_average_g < 0.1) "Пилот в состоянии невесомости"
-      else if (pilot_average_g <= 1) f"Пилот испытывает силу тяжести $pilot_average_g%.1fg"
-      else f"Пилот испытывает перегрузку $pilot_average_g%.1fg"
+      if (pilot_average_g < 0.1) {
+        if(before_death_counter != 100) {
+          "Пилот в состоянии невесомости. Восстанавливается после перегрузки"
+        } else {
+          "Пилот в состоянии невесомости"
+        }
+      } else if (pilot_average_g <= 1.09) {
+        if(before_death_counter != 100) {
+          val rate = 100.0/30*base_dt
+          val time_to_restore_msec = (((100 - before_death_counter)/rate)*base_dt*1000).toLong
+          f"Пилот испытывает силу тяжести $pilot_average_g%.1fg. Восстанавливается после перегрузки (${timeStr(time_to_restore_msec)})"
+        } else {
+          f"Пилот испытывает силу тяжести $pilot_average_g%.1fg"
+        }
+      } else {
+        if(pilot_average_g > 4) {
+          val rate = deatchCounterDecreaseRate(pilot_average_g)
+          val time_before_death_msec = ((before_death_counter/rate)*base_dt*1000).toLong
+          f"[rПилот испытывает критическую перегрузку $pilot_average_g%.1fg. Смерть через ${timeStr(time_before_death_msec)}]"
+        } else {
+          if(before_death_counter != 100) {
+            f"Пилот испытывает перегрузку $pilot_average_g%.1fg. [oТребуется отдых после критической перегрузки]"
+          } else {
+            f"Пилот испытывает перегрузку $pilot_average_g%.1fg"
+          }
+        }
+      }
     } else {
       pilot_death_reason
     }
