@@ -71,6 +71,16 @@ class Ship4(index:Int,
   private val angular_velocity_error = 0.01
   private val angle_error = 0.1
 
+  /**
+   * Сколько тактов работы двигателя потребуется, чтобы достичь скорости to, при условии, что текущая скорость равна from,
+   * ускорение равно a, один такт равен dt секунд
+   *
+   * @param to - скорость, которой хотим достичь
+   * @param from - текущая скорость
+   * @param a - ускорение
+   * @param dt - сколько секунд в одном такте
+   * @return два значения: сколько тактов потребуется, какой значения скорости фактически достигнем
+   */
   private def howManyTacts(to:Double, from:Double, a:Double, dt:Double):(Int, Double) = {
     val tacts = ((to - from)/(a*dt)).toInt + 1
     val result_to = from + tacts*a*dt
@@ -86,17 +96,27 @@ class Ship4(index:Int,
     }*/
   }
 
+  /**
+   * Рассчитывает значение тяги двигателя, которую можно развить, чтобы за минимально возможное количество тактов работы этого двигателя
+   * достичь требуемой скорости
+   *
+   * @param max_power - максимальная сила, которую можем приложить (максимальная тяга двигателя)
+   * @param force_dir - фактически, 1 или -1
+   * @param mass - наша масса
+   * @param to - скорость, которой хотим достичь
+   * @param from - наша текущая скорость
+   * @param max_diff - максимальная допустимая разница между скоростью, которой достигнем, и желаемой скоростью
+   * @return
+   */
   private def maxPossiblePowerForLinearMovement(max_power:Double, force_dir:Double, mass:Double, to:Double, from:Double, max_diff:Double):Double = {
-    /*(99.99 to 0.01 by -0.01).map {
-      case percent =>
-        val power = max_power*0.01*percent
-        val force = force_dir*power
-        val acc = force / mass
-        val (_, result_to) = howManyTacts(to, from, acc, base_dt)
-        (percent, math.abs(to - result_to))
-    }.filter(_._2 < max_diff).sortBy(_._2).headOption.map(_._1*max_power*0.01).getOrElse(max_power*0.01)*/
+    val max_percent = { // сколько процентов тяги двигателя максимально можем использовать в соответствии с ограничением InterfaceHolder.gSwitcher
+      if(InterfaceHolder.gSwitcher.maxG == -1) 99
+      else {
+        math.min(mass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g / max_power * 99, 99).toInt
+      }
+    }
 
-    (99 to 1 by -1).find {
+    (max_percent to 1 by -1).find {
       case percent =>
         val power = max_power*0.01*percent
         val force = force_dir*power
@@ -104,14 +124,6 @@ class Ship4(index:Int,
         val (_, result_to) = howManyTacts(to, from, acc, base_dt)
         math.abs(to - result_to) < max_diff
     }.map(percent => max_power*0.01*percent).getOrElse(max_power*0.01)
-
-    /*(max_power to 1 by -1).find {
-      case power =>
-        val force = force_dir*power
-        val acc = force / mass
-        val (_, result_to) = howManyTacts(to, from, acc, base_dt)
-        math.abs(to - result_to) < max_diff
-    }.getOrElse(max_power*0.01)*/
   }
 
   private def maxPossiblePowerForRotation(max_power:Double, force_dir:DVec, position:DVec, I:Double, to:Double, from:Double, max_diff:Double):Double = {
@@ -122,7 +134,7 @@ class Ship4(index:Int,
         val ang_acc = (torque / I).toDeg
         val (_, result_to) = howManyTacts(to, from, ang_acc, base_dt)
         math.abs(to - result_to) < max_diff
-    }.map(percent => max_power*0.01*percent).getOrElse(max_power*0.01)
+    }.map(percent => max_power*0.01*percent).getOrElse(max_power*0.1)
   }
 
   override def preserveAngularVelocity(ang_vel_deg: Double) {

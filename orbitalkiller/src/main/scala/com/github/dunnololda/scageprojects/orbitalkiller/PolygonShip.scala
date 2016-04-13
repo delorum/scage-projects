@@ -106,6 +106,7 @@ abstract class PolygonShip(
   private var dock_data:Option[DockData] = None
   def dockData = dock_data
   def isDocked:Boolean = dock_data.nonEmpty
+  def isDockedToShip(other_ship:PolygonShip):Boolean = dock_data.exists(_.dock_to_ship.index == other_ship.index)
   def notDocked:Boolean = dock_data.isEmpty
   def dock(): Unit = {
     possibleDockPointsWithNearestShip.headOption.foreach {
@@ -155,8 +156,8 @@ abstract class PolygonShip(
     }
   }
 
-  def currentReactiveForce(time:Long, bs:MutableBodyState):DVec = {
-    engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(DVec.dzero) {
+  def currentReactiveForce(tacts:Long, bs:MutableBodyState):DVec = {
+    engines.filter(e => e.active && tacts < e.stopMomentTacts).foldLeft(DVec.dzero) {
       case (sum, e) => sum + e.force.rotateDeg(bs.ang)
     }
   }
@@ -262,9 +263,9 @@ abstract class PolygonShip(
     if(isSelectedEngine(e)) drawRectCentered(center, width*1.5, height*1.5, color = engineColor(e, in_shadow))
     if(e.active && e.power > 0) {
       if(is_vertical) {
-        drawFilledRectCentered(center, width, engineActiveSize(e, height), color = engineColor(e, in_shadow))
-      } else {
         drawFilledRectCentered(center, engineActiveSize(e, width), height, color = engineColor(e, in_shadow))
+      } else {
+        drawFilledRectCentered(center, width, engineActiveSize(e, height), color = engineColor(e, in_shadow))
       }
     }
     //print(s"${e.index}", e.position.toVec, color = WHITE, size = (max_font_size / globalScale).toFloat)
@@ -433,7 +434,15 @@ abstract class PolygonShip(
       if(InterfaceHolder.dockingSwitcher.dockingEnabled) {
         engines.foreach(e => e.power = 10000)
       } else {
-        engines.foreach(e => e.power = e.max_power*0.5)
+        engines.foreach(e => e.power = {
+          if(InterfaceHolder.gSwitcher.maxG != -1) {
+            math.min(
+              mass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + earth.airResistance(currentState, earth.currentState, 28, 0.5).norma,
+              e.max_power * 0.5)
+          } else {
+            e.max_power * 0.5
+          }
+        })
       }
       engines.filterNot(_.active).foreach(e => e.workTimeTacts = ten_min_or_max_time_at_full_power)     // 10 minutes in tacts (10*60*63)
       val active_engines = engines.filter(_.active)
@@ -602,13 +611,13 @@ abstract class PolygonShip(
   def updateShipState(time_msec:Long): Unit = {
     if(!pilot_is_dead) {
       val dvel = currentState.dvel.norma
+      val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(currentState, earth.currentState, 28, 0.5)
       if (dvel > 10) {
         // crash tolerance = 10 m/s
         val crash_g = dvel / OrbitalKiller.base_dt / earth.g
         kill(f"Корабль уничтожен в результате столкновения ($crash_g%.2fg)", crash = true)
         return
       } else {
-        val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(currentState, earth.currentState, 28, 0.5)
         val centrifugial_force = if (angularVelocity == 0) DVec.zero else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.rotateDeg(rotation)
         val pilot_acc = reactive_force / mass + centrifugial_force / pilot_mass + currentState.dacc
         pilot_accs += ((pilot_acc, time_msec))
@@ -645,6 +654,15 @@ abstract class PolygonShip(
           }
         }
       }
+      if(InterfaceHolder.gSwitcher.maxG != -1 && pilot_average_g > InterfaceHolder.gSwitcher.maxG) {
+        val active_engines = engines.filter(e => e.active && 0 < e.stopMomentTacts)
+        val cur_force = reactive_force.norma
+        val allowed_force = mass*InterfaceHolder.gSwitcher.maxG*OrbitalKiller.earth.g
+        val force_diff = cur_force - allowed_force
+        val force_diff_for_engine = force_diff/active_engines.length
+        active_engines.foreach(e => e.power -= force_diff_for_engine)
+
+      }
     }
   }
 
@@ -652,7 +670,9 @@ abstract class PolygonShip(
     if(!pilot_is_dead) {
       if (pilot_average_g < 0.1) {
         if(before_death_counter != 100) {
-          "Пилот в состоянии невесомости. Восстанавливается после перегрузки"
+          val rate = 100.0/30*base_dt
+          val time_to_restore_msec = (((100 - before_death_counter)/rate)*base_dt*1000).toLong
+          f"Пилот в состоянии невесомости. Восстанавливается после перегрузки (${timeStr(time_to_restore_msec)})"
         } else {
           "Пилот в состоянии невесомости"
         }

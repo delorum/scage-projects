@@ -21,6 +21,7 @@ object InterfaceHolder {
   val namesSwitcher = new NamesOnOff
   val dockingSwitcher = new DockingOnOff
   val dockUndock = new DockUndock
+  val gSwitcher = new GSwitcher
 
   val timeInfo = new TimeInfo
 
@@ -64,7 +65,8 @@ object InterfaceHolder {
     orbParams,
     namesSwitcher,
     dockingSwitcher,
-    dockUndock)
+    dockUndock,
+    gSwitcher)
   private def activeSwitchers = switchers.filter(_.active)
 
   def hideAllByUser(): Unit = {
