@@ -651,7 +651,7 @@ abstract class PolygonShip(
         } else {
           val time_before_death_msec = ((before_death_counter/rate)*base_dt*1000).toLong
           if(time_before_death_msec <= 1000) {      // 1 секунда до гибели от перегрузки
-            if(InterfaceHolder.gSwitcher.maxGSet) { // если стоит ограничение g
+            if(engines.exists(_.active)) {          // если работают какие-то двигатели
               flightMode = FreeFlightMode           // отключаем двигатели
               engines.foreach(_.active = false)
             }
