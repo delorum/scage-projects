@@ -435,7 +435,7 @@ abstract class PolygonShip(
         engines.foreach(e => e.power = 10000)
       } else {
         engines.foreach(e => e.power = {
-          if(InterfaceHolder.gSwitcher.maxG != -1) {
+          if(InterfaceHolder.gSwitcher.maxGSet) {
             math.min(
               mass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + earth.airResistance(currentState, earth.currentState, 28, 0.5).norma,
               e.max_power * 0.5)
@@ -536,6 +536,8 @@ abstract class PolygonShip(
       100.0/sec
     }
 
+    // https://en.wikipedia.org/wiki/G-force#Human_tolerance_of_g-force
+    // http://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19980223621.pdf (p. 30, fig. 8)
     val ans = if(gs <= 4) 0
     else if(gs <= 6) {
       _linearFunc((4, 660), (6, 240))
@@ -609,9 +611,9 @@ abstract class PolygonShip(
   }
 
   def updateShipState(time_msec:Long): Unit = {
-    if(!pilot_is_dead) {
+    val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(currentState, earth.currentState, 28, 0.5)
+    if(!ship_is_crashed) {
       val dvel = currentState.dvel.norma
-      val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(currentState, earth.currentState, 28, 0.5)
       if (dvel > 10) {
         // crash tolerance = 10 m/s
         val crash_g = dvel / OrbitalKiller.base_dt / earth.g
@@ -634,19 +636,29 @@ abstract class PolygonShip(
         case (planet, planet_state) => planet.coord.dist(currentState.coord) < planet.radius
       }.foreach {
         case (planet, planet_state) =>
-          currentState.coord = currentState.coord + (currentState.coord - planet.coord).n*(planet.radius + radius - planet.coord.dist(currentState.coord))
+          currentState.coord = currentState.coord + (currentState.coord - planet.coord).n * (planet.radius + radius - planet.coord.dist(currentState.coord))
           currentState.vel = planet.linearVelocity
           kill("Корабль врезался в планету", crash = true)
           return
       }
-      if(pilot_average_g > 4) {
+    }
+    if(!pilot_is_dead) {
+      if(pilot_average_g > 4) { // пилот может испытывать перегрузку больше 4g только ограниченный период времени, потом наступает смерть
         val rate = deatchCounterDecreaseRate(pilot_average_g)
         before_death_counter -= rate
         if(before_death_counter <= 0) {
           kill(f"Пилот умер от сильной перегрузки ($pilot_average_g%.2fg)", crash = false)
+        } else {
+          val time_before_death_msec = ((before_death_counter/rate)*base_dt*1000).toLong
+          if(time_before_death_msec <= 1000) {      // 1 секунда до гибели от перегрузки
+            if(InterfaceHolder.gSwitcher.maxGSet) { // если стоит ограничение g
+              flightMode = FreeFlightMode           // отключаем двигатели
+              engines.foreach(_.active = false)
+            }
+          }
         }
       } else if(before_death_counter != 100) {
-        if(pilot_average_g <= 1.09) {
+        if(pilot_average_g <= 1.09) { // пилот может восстанавливаться после перегрузки, только если текущая ускорение не выше 1.09g
           val rate = 100.0/60*base_dt // восстановление после критической перегрузки за 60 секунд
           before_death_counter += rate
           if(before_death_counter >= 100) {
@@ -654,13 +666,15 @@ abstract class PolygonShip(
           }
         }
       }
-      if(InterfaceHolder.gSwitcher.maxG != -1 && pilot_average_g > InterfaceHolder.gSwitcher.maxG) {
+      if(InterfaceHolder.gSwitcher.maxGSet && pilot_average_g > InterfaceHolder.gSwitcher.maxG) {
         val active_engines = engines.filter(e => e.active && 0 < e.stopMomentTacts)
         val cur_force = reactive_force.norma
         val allowed_force = mass*InterfaceHolder.gSwitcher.maxG*OrbitalKiller.earth.g
         val force_diff = cur_force - allowed_force
         val force_diff_for_engine = force_diff/active_engines.length
-        active_engines.foreach(e => e.power -= force_diff_for_engine)
+        active_engines.foreach(e => if(force_diff_for_engine < e. power) {
+          e.power -= force_diff_for_engine
+        })
 
       }
     }

@@ -962,6 +962,23 @@ package object orbitalkiller {
     _escapeVelocity(from_planet_to_body, planet_velocity, planet_mass, G, counterclockwise)
   }
 
+  /**
+   * Возвращает скорость, которую надо иметь кораблю, чтобы быть в перигее орбите с заданными параметрами
+   * @param perigee_coord - текущая координата корабля, и это будет координата перигея
+   * @param apogee_diff - возвышение апогея, насколько апогей выше перигея (он обязательно должен быть выше)
+   * @param planet_coord - координата планеты
+   * @param planet_velocity - скорость планеты
+   * @param planet_mass - масса планеты
+   * @param G - гравитационная постоянная
+   * @return двумерный вектор скорости
+   */
+  def speedToHaveOrbitWithParams(perigee_coord:DVec, apogee_diff:Double, planet_coord:DVec, planet_velocity:DVec, planet_mass:Double, G:Double):DVec = {
+    val r_p = perigee_coord.dist(planet_coord)
+    val r_a = r_p + apogee_diff
+    val mu = planet_mass*G
+    planet_velocity + math.sqrt(-2*mu/(r_p + r_a) + 2*mu/r_p)*(perigee_coord - planet_coord).p
+  }
+
   def timeStr(time_msec:Long,add_plus_sign:Boolean = false):String = {
     val is_below_zero = time_msec < 0
     val abs_time_msec = math.abs(time_msec)

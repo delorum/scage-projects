@@ -60,7 +60,7 @@ class Engine(val index:String,
   def powerPercent_=(new_power_percent:Long) {
     if(new_power_percent >= 0 && new_power_percent <= 100) {
       val new_power = {
-        if(InterfaceHolder.gSwitcher.maxG != -1) {
+        if(InterfaceHolder.gSwitcher.maxGSet) {
           math.min(
             max_power * new_power_percent / 100.0,
             ship.mass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + earth.airResistance(ship.currentState, earth.currentState, 28, 0.5).norma
