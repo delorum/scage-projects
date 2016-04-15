@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scage.support.ScageColor
+import com.github.dunnololda.scage.support.{DVec, ScageColor}
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import OrbitalKiller._
 
@@ -40,9 +40,10 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
                 val b1 = docking_dir.x
                 val b2 = docking_dir.y
                 // координаты точки стыковки корабля в системе координат с началом в docking_point и базисными векторами (vv1, docking_dir)
+                val angle = DVec(0, 1).deg360(docking_dir) - ship.rotation
                 val x = (b2*(A-C) - b1*(B-D))/(a1*b2 - a2*b1)
                 val y = (a2*(A-C) - a1*(B-D))/(a2*b1 - a1*b2)
-                ("N/A", f"docking data: x=$x%.2f y=$y%.2f м")
+                ("N/A", f"docking data: a=$angle%.2f x=$x%.2f y=$y%.2f")
               case None =>
                 ("N/A", "N/A")
             }

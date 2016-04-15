@@ -189,16 +189,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   // суборбитальная траектория
-  val ship_start_position = earth.coord + DVec(500, earth.radius + 100000)
-  val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
+  //val ship_start_position = earth.coord + DVec(500, earth.radius + 100000)
+  //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
 
   // на круговой орбите в 200 км от поверхности Земли
   //val ship_start_position = earth.coord + DVec(1000, earth.radius + 200000)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
 
   // стоим на поверхности Луны
-  //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
-  //val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
+  val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
 
   // на орбите в 1000 км от поверхности Луны
@@ -423,11 +423,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     s"${mOrKmOrMKm(curvatureRadiusInPoint(body_state))}"
   }
 
-  def orbitStrInPointWithVelocity(coord:DVec, velocity:DVec, mass:Double, planet_states:Seq[(CelestialBody, MutableBodyState)]):String = {
+  def orbitStrInPointWithVelocity(coord:DVec, velocity:DVec, radius:Double, mass:Double, planet_states:Seq[(CelestialBody, MutableBodyState)]):String = {
     insideSphereOfInfluenceOfCelestialBody(coord, mass, planet_states) match {
       case Some((planet, planet_state)) =>
         val orbit = calculateOrbit(planet_state.mass, planet_state.coord, mass, coord - planet_state.coord, velocity - planet_state.vel, G)
-        orbit.strDefinition(planet.name, planetByIndex(planet_state.index).get.radius, planet_state.vel, planet.g, coord, velocity)
+        orbit.strDefinition(planet.name, planetByIndex(planet_state.index).get.radius, planet_state.vel, planet.groundSpeedMsec, planet.g, coord, velocity, radius)
       case None => "N/A"
     }
   }

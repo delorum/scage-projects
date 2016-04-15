@@ -54,11 +54,11 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
               val celestials = lbs.filter(kv => planet_indexes.contains(kv._1)).flatMap(kv => {
                 planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
               }).values.toSeq.sortBy(_._2.mass)
-              orbitStrInPointWithVelocity(bs.coord, bs.vel, bs.mass, celestials)
+              orbitStrInPointWithVelocity(bs.coord, bs.vel, ship.radius, bs.mass, celestials)
             case None => "N/A"
           }
         } else {
-        orbitStrInPointWithVelocity(ship.coord, ship.linearVelocity, ship.mass, currentPlanetStates)
+        orbitStrInPointWithVelocity(ship.coord, ship.linearVelocity, ship.radius, ship.mass, currentPlanetStates)
       }
     }
   }

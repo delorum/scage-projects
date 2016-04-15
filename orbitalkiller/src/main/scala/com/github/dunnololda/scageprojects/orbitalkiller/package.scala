@@ -1060,7 +1060,14 @@ package object orbitalkiller {
     def e:Double
     def f:DVec
     def center:DVec
-    def strDefinition(prefix:String, planet_radius:Double, planet_velocity:DVec, planet_g:Double, ship_coord:DVec, ship_velocity:DVec):String
+    def strDefinition(prefix:String,
+                      planet_radius:Double,
+                      planet_velocity:DVec,
+                      planet_groundSpeedMsec:Double,
+                      planet_g:Double,
+                      ship_coord:DVec,
+                      ship_velocity:DVec,
+                      ship_radius:Double):String
   }
 
   class EllipseOrbit(
@@ -1076,7 +1083,14 @@ package object orbitalkiller {
     val f2:DVec,              // координаты второго фокуса
     val center:DVec,          // координаты центра
     mu:Double) extends KeplerOrbit {  // гравитационный параметр: произведение гравитационной постоянной G на сумму масс притягивающего центра и корабля на орбите
-    def strDefinition(prefix:String, planet_radius:Double, planet_velocity:DVec, planet_g:Double, ship_coord:DVec, ship_velocity:DVec):String = {
+    def strDefinition(prefix:String,
+                      planet_radius:Double,
+                      planet_velocity:DVec,
+                      planet_groundSpeedMsec:Double,
+                      planet_g:Double,
+                      ship_coord:DVec,
+                      ship_velocity:DVec,
+                      ship_radius:Double):String = {
       val ccw = (ship_coord - f).perpendicular*(ship_velocity - planet_velocity) >= 0   // летим против часовой?
       val dir = if(ccw) {
         "\u21b6"  // против часовой стрелки
@@ -1103,7 +1117,13 @@ package object orbitalkiller {
           if(launch_before_apogee) t_LA + t_AT else -t_LA + t_AT
         }*/
 
-        val fall_time_msec = if(ccw) {
+        /*val ship_planet_vertical_speed = (ship_velocity - planet_velocity) * (ship_coord - f).n
+        val ship_planet_tangent_speed = ((ship_velocity - planet_velocity) * (ship_coord - f).p) / ship_coord.dist(f) * planet_radius - planet_groundSpeedMsec*/
+        val fall_time_msec = if((ship_coord.dist(f) - planet_radius) < ship_radius/* &&
+                                ship_planet_vertical_speed.abs < 0.5 &&
+                                ship_planet_tangent_speed.abs < 0.5*/) {
+          0
+        } else if(ccw) {
           val fall_teta_rad = -math.acos((p/(planet_radius+3) - 1)/e) + 2*math.Pi
           travelTimeOnOrbitMsecCCW(ship_coord, orbitalPointByTrueAnomalyRad(fall_teta_rad))
         } else {
@@ -1358,7 +1378,14 @@ package object orbitalkiller {
     val half_center = f - f_minus_center_n*(center.dist(f)*0.5)
     val inv_n = a*math.sqrt(a/mu)
 
-    def strDefinition(prefix:String, planet_radius:Double, planet_velocity:DVec, planet_g:Double, ship_coord:DVec, ship_velocity:DVec):String = {
+    def strDefinition(prefix:String,
+                      planet_radius:Double,
+                      planet_velocity:DVec,
+                      planet_groundSpeedMsec:Double,
+                      planet_g:Double,
+                      ship_coord:DVec,
+                      ship_velocity:DVec,
+                      ship_radius:Double):String = {
       val ccw = (ship_coord - f).perpendicular*(ship_velocity - planet_velocity) >= 0   // летим против часовой?
       val dir = if(ccw) "\u21b6" else "\u21b7"
       val r_p_approach = (ship_coord - f)*(ship_velocity - planet_velocity) >= 0
@@ -1366,7 +1393,14 @@ package object orbitalkiller {
       if(r_p - planet_radius < 0 && !r_p_approach) {
         val y_axis = (ship_coord - f).n
         val v0y = (ship_velocity - planet_velocity) * y_axis
-        val fall_time_msec = if (ccw) {
+
+        /*val ship_earth_vertical_speed = (ship_velocity - planet_velocity) * (ship_coord - f).n
+        val ship_earth_tangent_speed = ((ship_velocity - planet_velocity) * (ship_coord - f).p) / ship_coord.dist(f) * planet_radius - planet_groundSpeedMsec*/
+        val fall_time_msec = if((ship_coord.dist(f) - planet_radius) < ship_radius/* &&
+                                ship_earth_vertical_speed.abs < 0.5 &&
+                                ship_earth_tangent_speed.abs < 0.5*/) {
+          0
+        } else if (ccw) {
           val fall_teta_rad = -math.acos((p / (planet_radius + 3) - 1) / e) + 2 * math.Pi
           travelTimeOnOrbitMsecCCW(ship_coord, orbitalPointByTrueAnomalyRad(fall_teta_rad))
         } else {
