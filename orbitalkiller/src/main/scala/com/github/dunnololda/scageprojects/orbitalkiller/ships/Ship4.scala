@@ -243,10 +243,24 @@ class Ship4(index:Int,
 
   private def decideSpeedValue(dist:Double):Double = {
     val dist_abs = math.abs(dist)
-    val ans = if(dist_abs > 500) 100
-    else if(dist_abs > 250) 100
-    else if(dist_abs > 125) 50
-    else if(dist_abs > 50) 25
+    // разные значения скоростей для разных ограничений перегрузок - потому что если ограничение на перегрузку, можем просто не успеть затормозить с высокой скорости и врезаться
+    val max_speed1 = InterfaceHolder.gSwitcher.maxG match {
+      case 1 => 25
+      case 4 => 50
+      case _ => 100
+    }
+    val max_speed2 = InterfaceHolder.gSwitcher.maxG match {
+      case 1 => 15
+      case _ => 50
+    }
+    val max_speed3 = InterfaceHolder.gSwitcher.maxG match {
+      case 1 => 10
+      case _ => 25
+    }
+    val ans = if(dist_abs > 500) max_speed1
+    else if(dist_abs > 250) max_speed1
+    else if(dist_abs > 125) max_speed2
+    else if(dist_abs > 50) max_speed3
     else if(dist_abs > 25) 10
     else if(dist_abs > 10) 5
     /*else if(dist_abs > 5) 2*/

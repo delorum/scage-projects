@@ -24,12 +24,13 @@ case object NearestPlanetVelocity   extends FlightMode {override def rusStr: Str
 case object Maneuvering             extends FlightMode {override def rusStr: String = "маневрирование"}  // 0
 
 class DockingPoints(val p1:DVec, val p2:DVec, ship:PolygonShip) {
+  val dock_dist = 0.5 // в метрах, при каком расстоянии между точками стыковки двух кораблей происходит захватю Для простоты это значение - одинаковая для всех константа. Вынесли сюда, чтобы было одно место, где поменять.
   def curP1 = ship.currentState.coord + p1.rotateDeg(ship.currentState.ang)
   def curP1vel = ship.currentState.vel + (ship.currentState.ang_vel*p1.rotateDeg(90))
   def curP2 = ship.currentState.coord + p2.rotateDeg(ship.currentState.ang)
   def curP2vel = ship.currentState.vel + (ship.currentState.ang_vel*p2.rotateDeg(90))
   def pointsMatch(other_ship_docking_points:DockingPoints):Boolean = {
-    curP1.dist(other_ship_docking_points.curP1) < 1 && curP2.dist(other_ship_docking_points.curP2) < 1
+    curP1.dist(other_ship_docking_points.curP1) < dock_dist && curP2.dist(other_ship_docking_points.curP2) < dock_dist
   }
   private def _checkAllConditions(conditions:(() => Boolean)*):Boolean = {
     if(conditions.isEmpty) true
@@ -38,7 +39,7 @@ class DockingPoints(val p1:DVec, val p2:DVec, ship:PolygonShip) {
   }
   
   def pointsOnTheRightWay(dp:DockingPoints):(Boolean, Boolean) = {
-    val vv1 = (dp.curP1-dp.curP2).n
+    val vv1 = (dp.curP1-dp.curP2).n*dock_dist
     val vv2 = vv1.perpendicular
 
     val p1_on_the_right_way = _checkAllConditions(
@@ -312,9 +313,9 @@ abstract class PolygonShip(
                 drawDashedLine(dp.p2, dp.p2 + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c2))
 
                 drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
-                drawCircle(dp.p1, 1, colorIfPlayerAliveOrRed(RED))
+                drawCircle(dp.p1, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
                 drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
-                drawCircle(dp.p2, 1, colorIfPlayerAliveOrRed(RED))
+                drawCircle(dp.p2, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
               })
             }
           }
