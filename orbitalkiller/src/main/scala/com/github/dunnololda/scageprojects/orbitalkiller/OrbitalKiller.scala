@@ -185,16 +185,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   )
 
   // стоим на поверхности Земли
-  val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
-  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  //val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
+  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   // суборбитальная траектория
   //val ship_start_position = earth.coord + DVec(500, earth.radius + 100000)
   //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
 
   // на круговой орбите в 200 км от поверхности Земли
-  //val ship_start_position = earth.coord + DVec(1000, earth.radius + 200000)
-  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
+  val ship_start_position = earth.coord + DVec(1000, earth.radius + 200000)
+  val ship_init_velocity = DVec.zero/*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/*/
 
   // стоим на поверхности Луны
   //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
@@ -211,19 +211,24 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     init_velocity = ship_init_velocity,
     init_rotation = 0
   )
+  init {
+    ship.flightMode = Maneuvering
+    ship.eight.power = 5.0 * earth.g * ship.mass
+    ship.eight.active = true
+  }
 
   system_evolution.addBody(
     ship.currentState,
     (tacts, helper) => {
-      helper.gravityForceFromTo(sun.index, ship.index) +
-        helper.gravityForceFromTo(earth.index, ship.index) +
-        helper.gravityForceFromTo(moon.index, ship.index) +
-        helper.funcOrDVecZero(ship.index, bs => ship.currentReactiveForce(tacts, bs)) +
+      /*helper.gravityForceFromTo(sun.index, ship.index) +*/
+        /*helper.gravityForceFromTo(earth.index, ship.index) +*/
+        /*helper.gravityForceFromTo(moon.index, ship.index) +*/
+        helper.funcOrDVecZero(ship.index, bs => ship.currentReactiveForce(tacts, bs))/* +
         helper.funcOfArrayOrDVecZero(Array(ship.index, earth.index), l => {
           val bs = l(0)
           val e = l(1)
           earth.airResistance(bs, e, 28, 0.5)
-        })
+        })*/
     },
     (tacts, helper) => {
       helper.funcOrDoubleZero(ship.index, bs => ship.currentTorque(tacts))
@@ -332,7 +337,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
             if(e.workTimeTacts > 0) {
               e.workTimeTacts -= 1
               //InterfaceHolder.enginesInfo.addWorkTime(base_dt*1000*e.power/e.max_power)
-              e.ship.fuelMass -= e.fuelConsumptionPerTact
+              //e.ship.fuelMass -= e.fuelConsumptionPerTact
             } else e.active = false
           }
         })

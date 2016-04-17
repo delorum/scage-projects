@@ -12,7 +12,7 @@ class Ship4(index:Int,
             init_velocity:DVec = DVec.dzero,
             init_rotation:Double = 0.0) extends PolygonShip(index, "Снежинка", init_coord, init_velocity, init_rotation) {
   private val _payload:Double = 5*1000
-  private var _fuel_mass:Double = 3*1000
+  private var _fuel_mass:Double = 5*1000
   def mass:Double = _payload + _fuel_mass
   override def fuelMass: Double = _fuel_mass
   override def fuelMass_=(m: Double): Unit = {_fuel_mass = m}
@@ -225,6 +225,8 @@ class Ship4(index:Int,
     if(x > 180) 360 - x else x
   }
 
+  val x = ArrayBuffer[DVec]()
+
   override def updateShipState(time_msec:Long): Unit = {
     super.updateShipState(time_msec)
     if(InterfaceHolder.dockingSwitcher.dockingEnabled) {
@@ -239,7 +241,32 @@ class Ship4(index:Int,
         undock()
       }
     }
+    if(time_msec % 2000 == 0) {
+      val prev = x.lastOption
+      val p = coord + DVec(0, 8).rotateDeg(rotation)
+      x += p
+      prev.foreach(pp => println(s"${mOrKmOrMKm(p.dist(pp))}"))
+    }
   }
+
+  render {
+    openglLocalTransform {
+      openglMove(coord - base)
+      drawSlidingLines(x.map(_ - coord), WHITE)
+    }
+  }
+
+  override def initState:BodyState = BodyState(
+    index,
+    mass,
+    acc = DVec.zero,
+    vel = init_velocity,
+    coord = init_coord,
+    ang_acc = 0,
+    ang_vel = math.sqrt(5.0*earth.g/8.0).toDeg,
+    ang = init_rotation,
+    shape = PolygonShape(points, convex_parts),
+    is_static = false)
 
   private def decideSpeedValue(dist:Double):Double = {
     val dist_abs = math.abs(dist)

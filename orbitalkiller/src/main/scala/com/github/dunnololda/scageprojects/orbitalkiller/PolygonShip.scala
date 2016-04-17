@@ -622,7 +622,7 @@ abstract class PolygonShip(
         return
       } else {
         // ниже мы рассчитаем отдельно вертикальную и горизонтальную перегрузки и потом сложим их. Так надо считать, потому что к вертикальной перегрузке прибавляется центробежная сила, а к горизонтальной нет.
-        val v_vert = pilot_position.rotateDeg(rotation).n  // единичный вектор спина-грудь пилота
+        val v_vert = pilot_position.rotateDeg(rotation).n  // единичный 22вектор спина-грудь пилота
         val v_hor = -v_vert.perpendicular // единичный вектор левая рука - права рука пилота
         val centrifugial_force = if (angularVelocity == 0) 0.0 else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.norma
         val pilot_acc_vert = reactive_force / mass * v_vert + centrifugial_force / pilot_mass + currentState.dacc*v_vert
@@ -694,7 +694,7 @@ abstract class PolygonShip(
           val time_to_restore_msec = (((100 - before_death_counter)/rate)*base_dt*1000).toLong
           f"Пилот в состоянии невесомости. Восстанавливается после перегрузки (${timeStr(time_to_restore_msec)})"
         } else {
-          "Пилот в состоянии невесомости"
+          s"Пилот в состоянии невесомости ($pilot_average_g)"
         }
       } else if (pilot_average_g <= 1.09) {
         if(before_death_counter != 100) {
