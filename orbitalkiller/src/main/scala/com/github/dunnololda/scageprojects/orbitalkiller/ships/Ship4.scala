@@ -12,7 +12,7 @@ class Ship4(index:Int,
             init_velocity:DVec = DVec.dzero,
             init_rotation:Double = 0.0) extends PolygonShip(index, "Снежинка", init_coord, init_velocity, init_rotation) {
   private val _payload:Double = 5*1000
-  private var _fuel_mass:Double = 5*1000
+  private var _fuel_mass:Double = 3*1000
   def mass:Double = _payload + _fuel_mass
   override def fuelMass: Double = _fuel_mass
   override def fuelMass_=(m: Double): Unit = {_fuel_mass = m}

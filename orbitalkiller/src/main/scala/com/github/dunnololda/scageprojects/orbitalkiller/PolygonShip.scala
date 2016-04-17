@@ -503,8 +503,8 @@ abstract class PolygonShip(
     otherShipsNear.headOption.toList.flatMap(_.docking_points).exists(osdp => dp.pointsMatch(osdp))
   }
 
-  protected val pilot_mass = 75
-  protected val pilot_position = DVec(0, 8)
+  val pilot_mass = 75
+  val pilot_position = DVec(0, 8)
   private var pilot_average_g:Double = 0.0
   private val pilot_accs = ArrayBuffer[(DVec, Long)]()
 
@@ -620,8 +620,13 @@ abstract class PolygonShip(
         kill(f"Корабль уничтожен в результате столкновения ($crash_g%.2fg)", crash = true)
         return
       } else {
-        val centrifugial_force = if (angularVelocity == 0) DVec.zero else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.rotateDeg(rotation)
-        val pilot_acc = reactive_force / mass + centrifugial_force / pilot_mass + currentState.dacc
+        // ниже мы рассчитаем отдельно вертикальную и горизонтальную перегрузки и потом сложим их. Так надо считать, потому что к вертикальной перегрузке прибавляется центробежная сила, а к горизонтальной нет.
+        val v_vert = pilot_position.rotateDeg(rotation).n  // единичный вектор спина-грудь пилота
+        val v_hor = -v_vert.perpendicular // единичный вектор левая рука - права рука пилота
+        val centrifugial_force = if (angularVelocity == 0) 0.0 else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.norma
+        val pilot_acc_vert = reactive_force / mass * v_vert + centrifugial_force / pilot_mass + currentState.dacc*v_vert
+        val pilot_acc_hor = reactive_force / mass * v_hor + currentState.dacc*v_hor
+        val pilot_acc = pilot_acc_vert*DVec(0, 1) + pilot_acc_hor*DVec(1,0) // тут мы умножаем на единичные векторы в системе координат: начало в центре масс, вертикальный вектор - от центра масс к пилоту
         pilot_accs += ((pilot_acc, time_msec))
         if (time_msec - pilot_accs.head._2 >= 1000) {
           pilot_average_g = (pilot_accs.map(_._1).sum / pilot_accs.length).norma / earth.g
