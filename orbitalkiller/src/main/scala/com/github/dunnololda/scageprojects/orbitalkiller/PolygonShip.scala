@@ -130,6 +130,27 @@ abstract class PolygonShip(
     dock_data = d
   }
 
+  def isLanded:Boolean = {
+    insideSphereOfInfluenceOfCelestialBody(coord, mass, OrbitalKiller.currentPlanetStates) match {
+      case Some((planet, planet_state)) =>
+        val ship_planet_vertical_speed = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).n
+        val ship_planet_tangent_speed = ((linearVelocity - planet_state.vel) * (coord - planet_state.coord).p) / coord.dist(planet_state.coord) * planet.radius - planet.groundSpeedMsec
+        coord.dist(planet_state.coord) - planet.radius < radius &&
+        ship_planet_vertical_speed.abs < 0.5 &&
+        ship_planet_tangent_speed.abs < 0.5
+      case None =>
+        false
+    }
+  }
+
+  def isLandedOnPlanet(planet:CelestialBody):Boolean = {
+    val ship_planet_vertical_speed = (linearVelocity - planet.linearVelocity) * (coord - planet.coord).n
+    val ship_planet_tangent_speed = ((linearVelocity - planet.linearVelocity) * (coord - planet.coord).p) / coord.dist(planet.coord) * planet.radius - planet.groundSpeedMsec
+    coord.dist(planet.coord) - planet.radius < radius &&
+    ship_planet_vertical_speed.abs < 0.5 &&
+    ship_planet_tangent_speed.abs < 0.5
+  }
+
   def coord = if(pilotIsAlive) currentState.coord else ship_parts.headOption.map(_.coord).getOrElse(currentState.coord)
 
   def linearVelocity = if(pilotIsAlive) currentState.vel else ship_parts.headOption.map(_.vel).getOrElse(currentState.vel)
@@ -625,8 +646,9 @@ abstract class PolygonShip(
         val v_vert = pilot_position.rotateDeg(rotation).n  // единичный вектор спина-грудь пилота
         val v_hor = -v_vert.perpendicular // единичный вектор левая рука - права рука пилота
         val centrifugial_force = if (angularVelocity == 0) 0.0 else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.norma
-        val pilot_acc_vert = reactive_force / mass * v_vert + centrifugial_force / pilot_mass + currentState.dacc*v_vert
-        val pilot_acc_hor = reactive_force / mass * v_hor + currentState.dacc*v_hor
+        // reactive_force берем с минусом, потому что пилота вжимает под действием этой силы в противоположную сторону
+        val pilot_acc_vert = -reactive_force / mass * v_vert + centrifugial_force / pilot_mass + currentState.dacc*v_vert
+        val pilot_acc_hor = -reactive_force / mass * v_hor + currentState.dacc*v_hor
         val pilot_acc = pilot_acc_vert*DVec(0, 1) + pilot_acc_hor*DVec(1,0) // тут мы умножаем на единичные векторы в системе координат: начало в центре масс, вертикальный вектор - от центра масс к пилоту
         pilot_accs += ((pilot_acc, time_msec))
         if (time_msec - pilot_accs.head._2 >= 1000) {

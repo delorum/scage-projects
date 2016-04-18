@@ -124,6 +124,11 @@ object InterfaceHolder {
     } else {
       enginesInfo.showByConstraint()
     }
+    if(ship.isLanded) {
+      angularVelocityInfo.hideByConstraint()
+    } else {
+      angularVelocityInfo.showByConstraint()
+    }
   }
 
   private val _strings = ArrayBuffer[(String, ScageColor)]()
