@@ -213,8 +213,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   )
   init {
     ship.flightMode = Maneuvering
-    ship.eight.power = 5.0 * earth.g * ship.mass
-    ship.eight.active = true
+    ship.two.power = 5.0 * earth.g * ship.mass
+    ship.two.active = true
   }
 
   system_evolution.addBody(

@@ -241,7 +241,7 @@ class Ship4(index:Int,
         undock()
       }
     }
-    if(time_msec % 2000 == 0) {
+    if(time_msec % 10 == 0) {
       val prev = x.lastOption
       val p = coord + DVec(0, 8).rotateDeg(rotation)
       x += p
