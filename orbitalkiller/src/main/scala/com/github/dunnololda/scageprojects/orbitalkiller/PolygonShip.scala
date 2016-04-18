@@ -95,6 +95,8 @@ abstract class PolygonShip(
   def fuelMass:Double
   def fuelMass_=(m:Double):Unit
 
+  def engine_size:Double
+
   def convex_parts:List[PolygonShape]
   def wreck_parts:List[PolygonShape]
   def docking_points:List[DockingPoints]
@@ -250,13 +252,13 @@ abstract class PolygonShip(
     max_size*e.power/e.max_power
   }
 
-  protected def drawEngine(e:Engine, size:Double = 1) {
+  protected def drawEngine(e:Engine) {
     val is_vertical = e.force_dir.x == 0
     val (center, width, height) = e.force_dir match {
-      case DVec(0, -1) => (e.position + DVec(0, 0.25)*size, 1*size, 0.5*size)
-      case DVec(0, 1)  => (e.position + DVec(0, -0.25)*size, 1*size, 0.5*size)
-      case DVec(-1, 0) => (e.position + DVec(0.25, 0)*size,  0.5*size,  1*size)
-      case DVec(1, 0)  => (e.position + DVec(-0.25, 0)*size,  0.5*size,  1*size)
+      case DVec(0, -1) => (e.position + DVec(0, 0.25)*engine_size, 1*engine_size, 0.5*engine_size)
+      case DVec(0, 1)  => (e.position + DVec(0, -0.25)*engine_size, 1*engine_size, 0.5*engine_size)
+      case DVec(-1, 0) => (e.position + DVec(0.25, 0)*engine_size,  0.5*engine_size,  1*engine_size)
+      case DVec(1, 0)  => (e.position + DVec(-0.25, 0)*engine_size,  0.5*engine_size,  1*engine_size)
       case _ => throw new Exception("engine force dir other than vertical or horizontal is not supported")
     }
 
@@ -302,7 +304,7 @@ abstract class PolygonShip(
           openglMove(coord - base)
           drawFilledCircle(DVec.zero, 2, GREEN) // mass center
           if (OrbitalKiller.globalScale >= 0.8) {
-            drawArrow(DVec.zero, relativeLinearVelocity.n * 100, CYAN) // current velocity
+            drawArrow(DVec.zero, relativeLinearVelocity.n * radius, CYAN) // current velocity
           }
 
           openglRotateDeg(rotation)
@@ -336,7 +338,7 @@ abstract class PolygonShip(
           }
 
           engines.foreach {
-            case e => drawEngine(e, 10)
+            case e => drawEngine(e)
           }
         }
       } else {

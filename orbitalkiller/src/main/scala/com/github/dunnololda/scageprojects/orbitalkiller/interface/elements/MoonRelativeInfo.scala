@@ -10,7 +10,11 @@ class MoonRelativeInfo extends InterfaceElement {
 
   override protected def _update(): Unit = {
     //val ship_moon_angular_speed = f"${(ship.linearVelocity - moon.linearVelocity)*(ship.coord - moon.coord).p/ship.coord.dist(moon.coord) - moon.currentState.ang_vel}%.3f град/сек"
-    val ship_moon_position = f"${correctAngle(DVec(0, 1).deg360(ship.coord - moon.coord) - moon.currentState.ang)}%.3f град."
+    val ship_moon_position = if(InterfaceHolder.degOrKm.selectedVariant == 0) {
+      f"${correctAngle(DVec(0, 1).deg360(ship.coord - moon.coord) - moon.currentState.ang)}%.3f град."
+    } else {
+      f"${(correctAngle(DVec(0, 1).deg360(ship.coord - moon.coord) - moon.currentState.ang)/360.0*moon.length)/1000}%.2f км"
+    }
     if(ship.isLandedOnPlanet(moon)) {
       strings(0) = s"Луна: dist=${mOrKmOrMKm(ship.coord.dist(moon.coord) - moon.radius)}, landed, pos=$ship_moon_position"
     } else {

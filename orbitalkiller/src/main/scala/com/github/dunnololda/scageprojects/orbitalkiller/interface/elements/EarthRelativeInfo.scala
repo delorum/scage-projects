@@ -10,7 +10,11 @@ class EarthRelativeInfo extends InterfaceElement {
 
   override protected def _update() {
     //val ship_earth_angular_speed = f"${(ship.linearVelocity - earth.linearVelocity)*(ship.coord - earth.coord).p/ship.coord.dist(earth.coord) - earth.currentState.ang_vel}%.3f град/сек"
-    val ship_earth_position = f"${correctAngle(DVec(0, 1).deg360(ship.coord - earth.coord) - earth.currentState.ang)}%.3f град."
+    val ship_earth_position = if(InterfaceHolder.degOrKm.selectedVariant == 0) {
+      f"${correctAngle(DVec(0, 1).deg360(ship.coord - earth.coord) - earth.currentState.ang)}%.3f град."
+    } else {
+      f"${(correctAngle(DVec(0, 1).deg360(ship.coord - earth.coord) - earth.currentState.ang)/360.0*earth.length)/1000}%.2f км"
+    }
     if(ship.isLandedOnPlanet(earth)) {
       strings(0) = s"Земля: dist=${mOrKmOrMKm(ship.coord.dist(earth.coord) - earth.radius)}, landed, pos=$ship_earth_position"
     } else {

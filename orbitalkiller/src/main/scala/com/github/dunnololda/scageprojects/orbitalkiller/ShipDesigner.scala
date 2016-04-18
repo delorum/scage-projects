@@ -126,6 +126,8 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
       println("override def fuelMass: Double = _fuel_mass")
       println("override def fuelMass_=(m: Double): Unit = {_fuel_mass = m}")
       println()
+      println(s"lazy val engine_size:Double = $cell_size_half")
+      println()
       //val mass_center = polygonCentroid(points)
       println(points.map(p => {
         val pp = p - mass_center

@@ -20,6 +20,7 @@ class SpaceStation2(
     _fuel_mass = m
   }
 
+  lazy val engine_size:Double = 10
 
   val points:List[DVec] = List(
     DVec(-90.0, -10.0),

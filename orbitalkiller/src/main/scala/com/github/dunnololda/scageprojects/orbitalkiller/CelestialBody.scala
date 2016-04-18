@@ -19,6 +19,7 @@ trait CelestialBody {
   val currentState:MutableBodyState = initState.toMutableBodyState
   val ground_length_km = (2*math.Pi*radius/1000).toInt
   def groundSpeedMsec = currentState.ang_vel.toRad*radius
+  val length = 2*math.Pi*radius
 
   val g = G*mass/(radius*radius)  // ускорение свободного падения, м/с^2
 }

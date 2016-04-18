@@ -15,6 +15,8 @@ class Satellite1(index:Int,
   override def fuelMass: Double = _fuel_mass
   override def fuelMass_=(m: Double): Unit = {_fuel_mass = m}
 
+  lazy val engine_size:Double = 2
+
   val points:List[DVec] = List(
     DVec(-12.0, -8.0),
     DVec(-12.0, 0.0),

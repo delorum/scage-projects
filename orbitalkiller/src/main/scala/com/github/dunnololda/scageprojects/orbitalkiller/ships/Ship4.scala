@@ -17,6 +17,8 @@ class Ship4(index:Int,
   override def fuelMass: Double = _fuel_mass
   override def fuelMass_=(m: Double): Unit = {_fuel_mass = m}
 
+  lazy val engine_size:Double = 1
+
   val points:List[DVec] = List(
     DVec(3.5, 2.5),
     DVec(1.5, 6.5),
@@ -483,25 +485,25 @@ class Ship4(index:Int,
             if (!InterfaceHolder.linearVelocityInfo.isMinimized) {
 
               // current velocity
-              drawArrow(DVec.zero, linearVelocity.n * 20, colorIfPlayerAliveOrRed(BLUE))
-              drawArrow(DVec.zero, relativeLinearVelocity.n * 20, colorIfPlayerAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
+              drawArrow(DVec.zero, linearVelocity.n * radius, colorIfPlayerAliveOrRed(BLUE))
+              drawArrow(DVec.zero, relativeLinearVelocity.n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
             }
             //drawArrow(DVec.zero, linearAcceleration.n * 100, ORANGE)        // current acceleration
             if (!InterfaceHolder.sunRelativeInfo.isMinimized) {
               // direction to earth
-              drawArrow(Vec.zero, (sun.coord - coord).n * 20, colorIfPlayerAliveOrRed(InterfaceHolder.sunRelativeInfo.color))
+              drawArrow(Vec.zero, (sun.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.sunRelativeInfo.color))
             }
             if (!InterfaceHolder.earthRelativeInfo.isMinimized) {
               // direction to earth
-              drawArrow(Vec.zero, (earth.coord - coord).n * 20, colorIfPlayerAliveOrRed(InterfaceHolder.earthRelativeInfo.color))
+              drawArrow(Vec.zero, (earth.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.earthRelativeInfo.color))
             }
             if (!InterfaceHolder.moonRelativeInfo.isMinimized) {
               // direction to moon
-              drawArrow(Vec.zero, (moon.coord - coord).n * 20, colorIfPlayerAliveOrRed(InterfaceHolder.moonRelativeInfo.color))
+              drawArrow(Vec.zero, (moon.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.moonRelativeInfo.color))
             }
             InterfaceHolder.ship_interfaces.foreach(si => {
               if(!si.isMinimized) {
-                drawArrow(Vec.zero, (si.monitoring_ship.coord - coord).n * 20, colorIfPlayerAliveOrRed(si.color))
+                drawArrow(Vec.zero, (si.monitoring_ship.coord - coord).n * radius, colorIfPlayerAliveOrRed(si.color))
               }
             })
           }
