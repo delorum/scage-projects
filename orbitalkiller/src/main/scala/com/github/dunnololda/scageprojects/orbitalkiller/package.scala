@@ -1764,4 +1764,10 @@ package object orbitalkiller {
       if(scalar >= 0) v1.rad(v2) else 2*math.Pi - v1.rad(v2)
     }
   }
+
+  def checkAllConditions(conditions:(() => Boolean)*):Boolean = {
+    if(conditions.isEmpty) true
+    else if(conditions.head()) checkAllConditions(conditions.tail:_*)
+    else false
+  }
 }

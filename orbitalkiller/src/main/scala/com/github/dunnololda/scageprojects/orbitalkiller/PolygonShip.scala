@@ -32,24 +32,19 @@ class DockingPoints(val p1:DVec, val p2:DVec, ship:PolygonShip) {
   def pointsMatch(other_ship_docking_points:DockingPoints):Boolean = {
     curP1.dist(other_ship_docking_points.curP1) < dock_dist && curP2.dist(other_ship_docking_points.curP2) < dock_dist
   }
-  private def _checkAllConditions(conditions:(() => Boolean)*):Boolean = {
-    if(conditions.isEmpty) true
-    else if(conditions.head()) _checkAllConditions(conditions.tail:_*)
-    else false
-  }
   
   def pointsOnTheRightWay(dp:DockingPoints):(Boolean, Boolean) = {
     val vv1 = (dp.curP1-dp.curP2).n*dock_dist
     val vv2 = vv1.perpendicular
 
-    val p1_on_the_right_way = _checkAllConditions(
+    val p1_on_the_right_way = checkAllConditions(
       () => (curP1 - (dp.curP1 + vv1)).perpendicular*vv2 < 0 && (curP1 - (dp.curP1 - vv1)).perpendicular*vv2 > 0,     // p1_inside_line
       () => {                                                                                                         // p1_norm_speed
         val x = dp.curP1vel - curP1vel
         x * (curP1 - dp.curP1) > 0 && x.norma < 10
       }
     )
-    val p2_on_the_right_way = _checkAllConditions(
+    val p2_on_the_right_way = checkAllConditions(
       () => (curP2 - (dp.curP2 + vv1)).perpendicular * vv2 < 0 && (curP2 - (dp.curP2 - vv1)).perpendicular * vv2 > 0, // p2_inside_line
       () => {                                                                                                         // p2_norm_speed
         val x = dp.curP2vel - curP2vel
@@ -133,22 +128,21 @@ abstract class PolygonShip(
   def isLanded:Boolean = {
     insideSphereOfInfluenceOfCelestialBody(coord, mass, OrbitalKiller.currentPlanetStates) match {
       case Some((planet, planet_state)) =>
-        val ship_planet_vertical_speed = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).n
-        val ship_planet_tangent_speed = ((linearVelocity - planet_state.vel) * (coord - planet_state.coord).p) / coord.dist(planet_state.coord) * planet.radius - planet.groundSpeedMsec
-        coord.dist(planet_state.coord) - planet.radius < radius &&
-        ship_planet_vertical_speed.abs < 0.5 &&
-        ship_planet_tangent_speed.abs < 0.5
+        checkAllConditions(
+          () => coord.dist(planet_state.coord) - planet.radius < radius,
+          () => ((linearVelocity - planet_state.vel) * (coord - planet_state.coord).n).abs < 0.5,
+          () => (((linearVelocity - planet_state.vel) * (coord - planet_state.coord).p) / coord.dist(planet_state.coord) * planet.radius - planet.groundSpeedMsec).abs < 0.5)
       case None =>
         false
     }
   }
 
   def isLandedOnPlanet(planet:CelestialBody):Boolean = {
-    val ship_planet_vertical_speed = (linearVelocity - planet.linearVelocity) * (coord - planet.coord).n
-    val ship_planet_tangent_speed = ((linearVelocity - planet.linearVelocity) * (coord - planet.coord).p) / coord.dist(planet.coord) * planet.radius - planet.groundSpeedMsec
-    coord.dist(planet.coord) - planet.radius < radius &&
-    ship_planet_vertical_speed.abs < 0.5 &&
-    ship_planet_tangent_speed.abs < 0.5
+    checkAllConditions(
+      () => coord.dist(planet.coord) - planet.radius < radius,
+      () => ((linearVelocity - planet.linearVelocity) * (coord - planet.coord).n).abs < 0.5,
+      () => (((linearVelocity - planet.linearVelocity) * (coord - planet.coord).p) / coord.dist(planet.coord) * planet.radius - planet.groundSpeedMsec).abs < 0.5
+    )
   }
 
   def coord = if(pilotIsAlive) currentState.coord else ship_parts.headOption.map(_.coord).getOrElse(currentState.coord)
