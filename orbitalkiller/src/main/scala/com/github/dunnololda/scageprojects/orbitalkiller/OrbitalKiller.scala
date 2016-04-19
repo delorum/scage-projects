@@ -185,16 +185,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   )
 
   // стоим на поверхности Земли
-  //val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
-  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
+  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   // суборбитальная траектория
   //val ship_start_position = earth.coord + DVec(500, earth.radius + 100000)
   //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
 
   // на круговой орбите в 200 км от поверхности Земли
-  val ship_start_position = earth.coord + DVec(1000, earth.radius + 200000)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
+  //val ship_start_position = earth.coord + DVec(1000, earth.radius + 200000)
+  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
 
   // стоим на поверхности Луны
   //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
@@ -319,7 +319,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
             }
           }
         })
-        if(s.currentState.ang_vel != 0 && math.abs(s.currentState.ang_vel) < 0.01) {
+        if(s.currentState.ang_vel != 0 && math.abs(s.currentState.ang_vel) < OrbitalKiller.ship.angular_velocity_error) {
           s.currentState.ang_vel = 0
         }
         s.currentState.mass = s.mass/*currentMass(_tacts)*/
@@ -505,10 +505,10 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     if(planet_states.isEmpty) None
     else if(planet_states.length == 1) Some(planet_states.head)
     else {
-      val x = planet_states.sliding(2).find {
-        case Seq((smaller_planet, smaller_planet_state), (bigger_planet, bigger_planet_state)) =>
-          ship_coord.dist(smaller_planet_state.coord) <= smaller_planet.one_third_hill_radius
-      }.flatMap(x => x.headOption)
+      val x = planet_states.find {
+        case (smaller_planet, smaller_planet_state) =>
+          ship_coord.dist(smaller_planet_state.coord) <= smaller_planet.half_hill_radius
+      }
       if(x.nonEmpty) x else Some(planet_states.last)
     }
   }
@@ -1016,7 +1016,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                             x.ellipseOrbit.foreach(e => {
                               val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
                               drawCircle(position_after_time * scale, moon.radius * scale, YELLOW)
-                              drawCircle(position_after_time * scale, moon.one_third_hill_radius * scale, color = DARK_GRAY)
+                              drawCircle(position_after_time * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
                             })
                           })
                         }
@@ -1037,7 +1037,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                               val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
                               val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
                               drawCircle(position_when_stop_moment * scale, moon.radius * scale, GREEN)
-                              drawCircle(position_when_stop_moment * scale, moon.one_third_hill_radius * scale, color = DARK_GRAY)
+                              drawCircle(position_when_stop_moment * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
                             }
                           })
                         })
@@ -1103,12 +1103,12 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                         x.ellipseOrbit.foreach(e => {
                           val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
                           drawCircle(position_after_time * scale, moon.radius * scale, YELLOW)
-                          drawCircle(position_after_time * scale, moon.one_third_hill_radius * scale, color = DARK_GRAY)
+                          drawCircle(position_after_time * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
                           if (_stop_after_number_of_tacts > 0) {
                             val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
                             val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
                             drawCircle(position_when_stop_moment * scale, moon.radius * scale, GREEN)
-                            drawCircle(position_when_stop_moment * scale, moon.one_third_hill_radius * scale, color = DARK_GRAY)
+                            drawCircle(position_when_stop_moment * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
                           }
                         })
                       })
@@ -1255,8 +1255,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           }
         }
         
-        //drawCircle(earth.coord*scale, equalGravityRadius(earth.currentState, moon.currentState)*scale, color = DARK_GRAY)
-        drawCircle(earth.coord*scale, earth.one_third_hill_radius*scale, color = DARK_GRAY)
+        drawCircle(earth.coord*scale, equalGravityRadius(earth.currentState, moon.currentState)*scale, color = DARK_GRAY)
+        drawCircle(earth.coord*scale, equalGravityRadius(earth.currentState, sun.currentState)*scale, color = DARK_GRAY)
+        //drawCircle(earth.coord*scale, earth.half_hill_radius*scale, color = DARK_GRAY)
         drawLine(earth.coord*scale, earth.coord*scale + DVec(0, earth.radius*scale).rotateDeg(earth.currentState.ang), WHITE)
         drawSunTangents(earth.coord, earth.radius, sun.coord, sun.radius, 500000000)
         /*openglLocalTransform {
@@ -1285,8 +1286,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
             print(moon.name, Vec.zero, color = WHITE, size = (max_font_size / globalScale).toFloat)
           }
         }
-        //drawCircle(moon.coord*scale, equalGravityRadius(moon.currentState, earth.currentState)*scale, color = DARK_GRAY)
-        drawCircle(moon.coord*scale, moon.one_third_hill_radius*scale, color = DARK_GRAY)
+        drawCircle(moon.coord*scale, equalGravityRadius(moon.currentState, earth.currentState)*scale, color = DARK_GRAY)
+        //drawCircle(moon.coord*scale, moon.half_hill_radius*scale, color = DARK_GRAY)
         //drawCircle(moon.coord*scale, soi(moon.mass, earth.coord.dist(moon.coord), earth.mass)*scale, color = DARK_GRAY)
         drawLine(moon.coord*scale, moon.coord * scale + DVec(0, moon.radius * scale).rotateDeg(moon.currentState.ang), WHITE)
         drawSunTangents(moon.coord, moon.radius, sun.coord, sun.radius, 40000000)

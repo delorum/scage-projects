@@ -419,6 +419,7 @@ abstract class PolygonShip(
     }
   }
 
+  protected val correction_check_period = 180
   protected var last_correction_or_check_moment:Long = 0l
 
   private var prev_flight_mode_and_engine_states:Option[(FlightMode, List[(Long, Double, Boolean)])] = None
@@ -775,10 +776,8 @@ abstract class PolygonShip(
   }.toList
 
 
-  lazy val radius = {
-    val x = points.map(_.x).max - points.map(_.x).min
-    val y = points.map(_.y).max - points.map(_.y).min
-    math.max(x,y)
+  lazy val radius:Double = {
+    points.map(_.norma).max
   }
 
   def initState:BodyState = BodyState(

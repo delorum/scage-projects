@@ -12,7 +12,7 @@ class Ship4(index:Int,
             init_velocity:DVec = DVec.dzero,
             init_rotation:Double = 0.0) extends PolygonShip(index, "Снежинка", init_coord, init_velocity, init_rotation) {
   private val _payload:Double = 5*1000
-  private var _fuel_mass:Double = 100
+  private var _fuel_mass:Double = 1000
   def mass:Double = _payload + _fuel_mass
   override def fuelMass: Double = _fuel_mass
   override def fuelMass_=(m: Double): Unit = {_fuel_mass = m}
@@ -70,7 +70,7 @@ class Ship4(index:Int,
   )
 
   private val linear_velocity_error = 0.1
-  private val angular_velocity_error = 0.01
+  val angular_velocity_error = 0.0102 // значение подобрано эмпирически при тестах с малым количеством топлива
   private val angle_error = 0.1
 
   /**
@@ -98,6 +98,8 @@ class Ship4(index:Int,
     }*/
   }
 
+  private val default_percent_seq = ((99.0 to 1.0 by -1.0) ++ (0.9 to 0.1 by -0.1)).view
+
   /**
    * Рассчитывает значение тяги двигателя, которую можно развить, чтобы за минимально возможное количество тактов работы этого двигателя
    * достичь требуемой скорости
@@ -110,52 +112,87 @@ class Ship4(index:Int,
    * @param max_diff - максимальная допустимая разница между скоростью, которой достигнем, и желаемой скоростью
    * @return
    */
-  private def maxPossiblePowerForLinearMovement(max_power:Double, force_dir:Double, mass:Double, to:Double, from:Double, max_diff:Double):Double = {
-    val max_percent = { // сколько процентов тяги двигателя максимально можем использовать в соответствии с ограничением InterfaceHolder.gSwitcher
-      if(InterfaceHolder.gSwitcher.maxG == -1) 99
-      else {
-        math.min(mass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g / max_power * 99, 99).toInt
+  private def maxPossiblePowerForLinearMovement(max_power:Double,
+                                                force_dir:Double,
+                                                mass:Double,
+                                                to:Double,
+                                                from:Double,
+                                                max_diff:Double):(Int, Double) = {
+    val percent_seq = { // сколько процентов тяги двигателя максимально можем использовать в соответствии с ограничением InterfaceHolder.gSwitcher
+      if(!InterfaceHolder.gSwitcher.maxGSet) {
+        default_percent_seq
+      } else {
+        val max_percent = math.min(mass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g / max_power * 99, 99).toInt.toDouble
+        ((max_percent to 1.0 by -1.0) ++ (0.9 to 0.1 by -0.1)).view
       }
     }
 
-    (max_percent to 1 by -1).find {
+    percent_seq.map {
       case percent =>
         val power = max_power*0.01*percent
         val force = force_dir*power
         val acc = force / mass
-        val (_, result_to) = howManyTacts(to, from, acc, base_dt)
-        math.abs(to - result_to) < max_diff
-    }.map(percent => max_power*0.01*percent).getOrElse(max_power*0.01)
+        (howManyTacts(to, from, acc, base_dt), power, percent)
+    }.find {
+      case ((tacts, result_to), power, percent) =>
+        println(s"maxPossiblePowerForLinearMovement find: $power, $percent: ${math.abs(to - result_to)}")
+        val check = math.abs(to - result_to) < max_diff
+        if(check) {
+          println(s"maxPossiblePowerForLinearMovement = ($tacts, $power, $percent)")
+        }
+        check
+    }.map {
+      case ((tacts, result_to), power, percent) =>
+        (tacts, power)
+    }.getOrElse({
+      println("maxPossiblePowerForLinearMovement fallback")
+      (1000, max_power*0.01)
+    })
   }
 
-  private def maxPossiblePowerForRotation(max_power:Double, force_dir:DVec, position:DVec, I:Double, to:Double, from:Double, max_diff:Double):Double = {
-    (99 to 1 by -1).find {
+  private def maxPossiblePowerAndTactsForRotation(max_power:Double,
+                                                  force_dir:DVec,
+                                                  position:DVec,
+                                                  I:Double,
+                                                  to:Double,
+                                                  from:Double,
+                                                  max_diff:Double):(Int, Double) = {
+    default_percent_seq.map {
       case percent =>
         val power = max_power*0.01*percent
         val torque = (-force_dir*power)*/position
         val ang_acc = (torque / I).toDeg
-        val (_, result_to) = howManyTacts(to, from, ang_acc, base_dt)
-        math.abs(to - result_to) < max_diff
-    }.map(percent => max_power*0.01*percent).getOrElse(max_power*0.1)
+        (howManyTacts(to, from, ang_acc, base_dt), power, percent)
+    }.find {
+      case ((tacts, result_to), power, percent) =>
+        println(s"maxPossiblePowerAndTactsForRotation find: $power, $percent: ${math.abs(to - result_to)}")
+        val check = math.abs(to - result_to) < max_diff
+        if(check) {
+          println(s"maxPossiblePowerAndTactsForRotation = ($tacts, $power, $percent)")
+        }
+        check
+    }.map {
+      case ((tacts, result_to), power, percent) =>
+        (tacts, power)
+    }.getOrElse({
+      println("maxPossiblePowerForRotation fallback")
+      (1000, max_power*0.1)
+    })
   }
 
   override def preserveAngularVelocity(ang_vel_deg: Double) {
     val difference = angularVelocity - ang_vel_deg
     if(difference > angular_velocity_error) {
-      val power = maxPossiblePowerForRotation(seven.max_power, seven.force_dir, seven.position, currentState.I, ang_vel_deg, angularVelocity, angular_velocity_error)
+      val (tacts, power) = maxPossiblePowerAndTactsForRotation(seven.max_power, seven.force_dir, seven.position, currentState.I, ang_vel_deg, angularVelocity, angular_velocity_error)
       seven.power = power
       //six.power = power
-      val ang_acc = (seven.torque / currentState.I).toDeg
-      val (tacts, _) = howManyTacts(ang_vel_deg, angularVelocity, ang_acc, base_dt)
       activateOnlyTheseEngines(seven/*, six*/)
       seven.workTimeTacts = tacts
       //six.workTimeTacts = tacts
     } else if(difference < -angular_velocity_error) {
-      val power = maxPossiblePowerForRotation(nine.max_power, nine.force_dir, nine.position, currentState.I, ang_vel_deg, angularVelocity, angular_velocity_error)
+      val (tacts, power) = maxPossiblePowerAndTactsForRotation(nine.max_power, nine.force_dir, nine.position, currentState.I, ang_vel_deg, angularVelocity, angular_velocity_error)
       nine.power = power
       //four.power = power
-      val ang_acc = (nine.torque / currentState.I).toDeg
-      val (tacts, _) = howManyTacts(ang_vel_deg, angularVelocity, ang_acc, base_dt)
       activateOnlyTheseEngines(nine/*, four*/)
       nine.workTimeTacts = tacts
       //four.workTimeTacts = tacts
@@ -173,20 +210,15 @@ class Ship4(index:Int,
     val activate_engines = ArrayBuffer[Engine]()
 
     if(ship_velocity_n - ss_n > linear_velocity_error) {
-      val power = maxPossiblePowerForLinearMovement(eight.max_power, eight.force_dir.y, mass, ss_n, ship_velocity_n, linear_velocity_error)
-
+      val (tacts, power) = maxPossiblePowerForLinearMovement(eight.max_power, eight.force_dir.y, mass, ss_n, ship_velocity_n, linear_velocity_error)
       eight.power = power
-      val acc = (eight.force / mass).y
-      val (tacts, result_to) = howManyTacts(ss_n, ship_velocity_n, acc, base_dt)
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
       eight.workTimeTacts = tacts
       activate_engines += eight
     } else if(ship_velocity_n - ss_n < -linear_velocity_error) {
-      val power = maxPossiblePowerForLinearMovement(two.max_power, two.force_dir.y, mass, ss_n, ship_velocity_n, linear_velocity_error)
+      val (tacts, power) = maxPossiblePowerForLinearMovement(two.max_power, two.force_dir.y, mass, ss_n, ship_velocity_n, linear_velocity_error)
       two.power = power
-      val acc = (two.force / mass).y
-      val (tacts, result_to) = howManyTacts(ss_n, ship_velocity_n, acc, base_dt)
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
       two.workTimeTacts = tacts
@@ -197,19 +229,15 @@ class Ship4(index:Int,
     val ss_p = p*vel
 
     if(ship_velocity_p - ss_p > linear_velocity_error) {
-      val power = maxPossiblePowerForLinearMovement(six.max_power, six.force_dir.x, mass, ss_p, ship_velocity_p, linear_velocity_error)
+      val (tacts, power) = maxPossiblePowerForLinearMovement(six.max_power, six.force_dir.x, mass, ss_p, ship_velocity_p, linear_velocity_error)
       six.power = power
-      val acc = (six.force / mass).x
-      val (tacts, _) = howManyTacts(ss_p, ship_velocity_p, acc, base_dt)
       /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
       println("===========================")*/
       six.workTimeTacts = tacts
       activate_engines += six
     } else if(ship_velocity_p - ss_p < -linear_velocity_error) {
-      val power = maxPossiblePowerForLinearMovement(four.max_power, four.force_dir.x, mass, ss_p, ship_velocity_p, linear_velocity_error)
+      val (tacts, power) = maxPossiblePowerForLinearMovement(four.max_power, four.force_dir.x, mass, ss_p, ship_velocity_p, linear_velocity_error)
       four.power = power
-      val acc = (four.force / mass).x
-      val (tacts, _) = howManyTacts(ss_p, ship_velocity_p, acc, base_dt)
       /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
       println("===========================")*/
       four.workTimeTacts = tacts
@@ -245,28 +273,20 @@ class Ship4(index:Int,
 
   private def decideSpeedValue(dist:Double):Double = {
     val dist_abs = math.abs(dist)
-    // разные значения скоростей для разных ограничений перегрузок - потому что если ограничение на перегрузку, можем просто не успеть затормозить с высокой скорости и врезаться
-    val max_speed1 = InterfaceHolder.gSwitcher.maxG match {
-      case 1 => 25
-      case 4 => 50
-      case _ => 100
+    // разные значения скоростей для разных ограничений перегрузок - потому что если ограничение на перегрузку, можем просто не успеть
+    // затормозить с высокой скорости и врезаться
+    val speeds = InterfaceHolder.gSwitcher.maxG match {
+      case 1 => ( 25,  25, 15, 10, 10, 5, 2)
+      case 4 => ( 50,  50, 50, 25, 10, 5, 2)
+      case _ => (100, 100, 50, 25, 10, 5, 2)
     }
-    val max_speed2 = InterfaceHolder.gSwitcher.maxG match {
-      case 1 => 15
-      case _ => 50
-    }
-    val max_speed3 = InterfaceHolder.gSwitcher.maxG match {
-      case 1 => 10
-      case _ => 25
-    }
-    val ans = if(dist_abs > 500) max_speed1
-    else if(dist_abs > 250) max_speed1
-    else if(dist_abs > 125) max_speed2
-    else if(dist_abs > 50) max_speed3
-    else if(dist_abs > 25) 10
-    else if(dist_abs > 10) 5
-    /*else if(dist_abs > 5) 2*/
-    else 2
+    val ans = if(dist_abs      > 500) speeds._1
+              else if(dist_abs > 250) speeds._2
+              else if(dist_abs > 125) speeds._3
+              else if(dist_abs > 50)  speeds._4
+              else if(dist_abs > 25)  speeds._5
+              else if(dist_abs > 10)  speeds._6
+              else                    speeds._7
     if(dist >= 0) ans else -ans
   }
 
@@ -277,7 +297,7 @@ class Ship4(index:Int,
       flightMode match {
         case FreeFlightMode => // свободный режим
         case Killrot => // запрет вращения
-          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, 1000)) {
+          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, correction_check_period)) {
             if (math.abs(angularVelocity) < angular_velocity_error) {
               if(haveSavedFlightMode) restoreFlightModeAndEngineStates()
               else flightMode = FreeFlightMode
@@ -286,7 +306,7 @@ class Ship4(index:Int,
             }
           }
         case VelocityAligned => // ориентация по траектории
-          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, 1000)) {
+          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, correction_check_period)) {
             val angle = DVec(0, 1).deg360(relativeLinearVelocity)
             if (angleMinDiff(rotation, angle) < angle_error) {
               if (math.abs(angularVelocity) < angular_velocity_error) {
@@ -299,7 +319,7 @@ class Ship4(index:Int,
             else preserveAngle(angle)
           }
         case OppositeVelocityAligned => // ориентация против траектории
-          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, 1000)) {
+          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, correction_check_period)) {
             val angle = DVec(0, -1).deg360(relativeLinearVelocity)
             if (angleMinDiff(rotation, angle) < angle_error) {
               if (math.abs(angularVelocity) < angular_velocity_error) {
@@ -312,7 +332,7 @@ class Ship4(index:Int,
             else preserveAngle(angle)
           }
         case CirclularOrbit => // выход на орбиту
-          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, 1000)) {
+          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, correction_check_period)) {
             if (math.abs(angularVelocity) < angular_velocity_error) {
               insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
                 case Some((planet, planet_state)) =>
@@ -326,7 +346,7 @@ class Ship4(index:Int,
             } else preserveAngularVelocity(0)
           }
         case NearestShipVelocity => // уравнять скорость с ближайшим кораблем
-          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, 1000)) {
+          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, correction_check_period)) {
             if (math.abs(angularVelocity) < angular_velocity_error) {
               otherShipsNear.headOption match {
                 case Some(s) =>
@@ -344,7 +364,7 @@ class Ship4(index:Int,
             } else preserveAngularVelocity(0)
           }
         case NearestShipAligned => // ориентация на ближайший корабль
-          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, 1000)) {
+          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, correction_check_period)) {
             otherShipsNear.headOption match {
               case Some(os) =>
                 val angle = DVec(0, 1).deg360(os.coord - coord)
@@ -362,7 +382,7 @@ class Ship4(index:Int,
             }
           }
         case NearestShipAutoDocking =>
-          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, 1000)) {
+          if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, correction_check_period)) {
             // 0. если пристыкованы - ничего не делаем
             // 1. определяем ближайшую точку стыковки
             // 2. определяем ориентацию относительно стыковочного узла. Если не соориентированы, ориентируемся параллельно ей
@@ -419,7 +439,11 @@ class Ship4(index:Int,
                             preserveAngularVelocity(0)
                           }
                         } else {
-                          preserveAngle(angle)
+                          if(linearVelocity.dist(os.linearVelocity) > linear_velocity_error) {
+                            preserveVelocity(os.linearVelocity)
+                          } else {
+                            preserveAngle(angle)
+                          }
                         }
                       }
                     case None =>
