@@ -185,6 +185,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   )
 
   system_evolution.addCollisionExclusion(earth.index, moon.index)
+  val earth_sun_eq_gravity_radius = equalGravityRadius(earth.currentState, sun.currentState)
+  val moon_earth_eq_gravity_radius = equalGravityRadius(moon.currentState, earth.currentState)
 
   // стоим на поверхности Земли
   //val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
@@ -1263,11 +1265,22 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
             openglMove(earth.coord.toVec * scale)
             print(earth.name, Vec.zero, color = WHITE, size = (max_font_size / globalScale).toFloat)
           }
+          val v = (sun.coord - earth.coord).n*earth_sun_eq_gravity_radius
+          openglLocalTransform {
+            openglMove((earth.coord + v).toVec * scale)
+            drawFilledCircle(Vec.zero, earth.radius * scale / 2f / globalScale, DARK_GRAY)
+            print(" L1", Vec.zero, color = DARK_GRAY, size = (max_font_size / globalScale).toFloat)
+          }
+          openglLocalTransform {
+            openglMove((earth.coord - v).toVec * scale)
+            drawFilledCircle(Vec.zero, earth.radius * scale / 2f / globalScale, DARK_GRAY)
+            print(" L2", Vec.zero, color = DARK_GRAY, size = (max_font_size / globalScale).toFloat)
+          }
         }
         
-        drawCircle(earth.coord*scale, equalGravityRadius(earth.currentState, moon.currentState)*scale, color = DARK_GRAY)
-        drawCircle(earth.coord*scale, equalGravityRadius(earth.currentState, sun.currentState)*scale, color = DARK_GRAY)
-        //drawCircle(earth.coord*scale, earth.half_hill_radius*scale, color = DARK_GRAY)
+        //drawCircle(earth.coord*scale, equalGravityRadius(earth.currentState, moon.currentState)*scale, color = DARK_GRAY)
+        //drawCircle(earth.coord*scale, equalGravityRadius(earth.currentState, sun.currentState)*scale, color = DARK_GRAY)
+        drawCircle(earth.coord*scale, earth.half_hill_radius*scale, color = DARK_GRAY)
         drawLine(earth.coord*scale, earth.coord*scale + DVec(0, earth.radius*scale).rotateDeg(earth.currentState.ang), WHITE)
         drawSunTangents(earth.coord, earth.radius, sun.coord, sun.radius, 500000000)
         /*openglLocalTransform {
@@ -1295,9 +1308,20 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
             openglMove(moon.coord.toVec * scale)
             print(moon.name, Vec.zero, color = WHITE, size = (max_font_size / globalScale).toFloat)
           }
+          val v = (earth.coord - moon.coord).n*moon_earth_eq_gravity_radius
+          openglLocalTransform {
+            openglMove((moon.coord + v).toVec * scale)
+            drawFilledCircle(Vec.zero, earth.radius * scale / 2f / globalScale, DARK_GRAY)
+            print(" L1", Vec.zero, color = DARK_GRAY, size = (max_font_size / globalScale).toFloat)
+          }
+          openglLocalTransform {
+            openglMove((moon.coord - v).toVec * scale)
+            drawFilledCircle(Vec.zero, earth.radius * scale / 2f / globalScale, DARK_GRAY)
+            print(" L2", Vec.zero, color = DARK_GRAY, size = (max_font_size / globalScale).toFloat)
+          }
         }
-        drawCircle(moon.coord*scale, equalGravityRadius(moon.currentState, earth.currentState)*scale, color = DARK_GRAY)
-        //drawCircle(moon.coord*scale, moon.half_hill_radius*scale, color = DARK_GRAY)
+        //drawCircle(moon.coord*scale, equalGravityRadius(moon.currentState, earth.currentState)*scale, color = DARK_GRAY)
+        drawCircle(moon.coord*scale, moon.half_hill_radius*scale, color = DARK_GRAY)
         //drawCircle(moon.coord*scale, soi(moon.mass, earth.coord.dist(moon.coord), earth.mass)*scale, color = DARK_GRAY)
         drawLine(moon.coord*scale, moon.coord * scale + DVec(0, moon.radius * scale).rotateDeg(moon.currentState.ang), WHITE)
         drawSunTangents(moon.coord, moon.radius, sun.coord, sun.radius, 40000000)
