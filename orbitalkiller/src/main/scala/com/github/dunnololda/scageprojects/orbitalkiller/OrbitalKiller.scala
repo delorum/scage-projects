@@ -745,7 +745,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     if(ship.pilotIsAlive) {
       if (ship.flightMode != NearestPlanetVelocity) {
         ship.selected_engine.foreach(e => {
-          e.workTimeTacts += 1
+          e.workTimeTacts += InterfaceHolder.timeStepSwitcher.timeStep
           //updateFutureTrajectory()
         })
       } else {
@@ -760,7 +760,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       if (ship.flightMode != NearestPlanetVelocity) {
         ship.selected_engine.foreach(e => {
           /*if(e.worktimeTacts > 0) {*/
-          e.workTimeTacts -= 1
+          e.workTimeTacts -= InterfaceHolder.timeStepSwitcher.timeStep
           //updateFutureTrajectory()
           /*}*/
         })
