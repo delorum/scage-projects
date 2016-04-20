@@ -114,8 +114,8 @@ package object orbitalkiller {
   }
 
   case class PolygonShape(points:List[DVec], convex_parts:List[PolygonShape]) extends Shape {
+    private val r = math.sqrt(points.map(p => p.norma2).max)*2
     def aabb(center:DVec, rotation:Double): AABB = {
-      val r = math.sqrt(points.map(p => p.norma2).max)*2
       AABB(center, r, r)
     }
 
@@ -333,8 +333,11 @@ package object orbitalkiller {
         }
       }
     }
-    if(!body1.aabb.aabbCollision(body2.aabb)) Nil
-    else {
+    if(!body1.aabb.aabbCollision(body2.aabb)) {
+      //println(s"maybeCollisions aabb ${OrbitalKiller.nameByIndex(body1.index).getOrElse("N/A")} <-> ${OrbitalKiller.nameByIndex(body2.index).getOrElse("N/A")}")
+      Nil
+    } else {
+      //println(s"maybeCollisions ${OrbitalKiller.nameByIndex(body1.index).getOrElse("N/A")} <-> ${OrbitalKiller.nameByIndex(body2.index).getOrElse("N/A")}")
       body1.shape match {
         case c1: CircleShape =>
           body2.shape match {

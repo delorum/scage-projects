@@ -7,7 +7,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 class SixDimVector(val a1:Double, val a2:Double, val a3:Double, val a4:Double, val a5:Double, val a6:Double) {
-  val l = List(a1,a2,a3,a4,a5,a6)
+  private val l = List(a1,a2,a3,a4,a5,a6)
   def this(l:Seq[Double]) = this(l.head, l(1), l(2), l(3), l(4), l(5))
   def *(k:Double):SixDimVector = new SixDimVector(l.map(_ * k))
   def *(p:SixDimVector):Double = l.zip(p.l).map(kv => kv._1*kv._2).sum
@@ -94,6 +94,38 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
     joints -= j
   }
 
+  /**
+   *
+   */
+  private val collision_exclusions = mutable.HashMap[Int, mutable.HashSet[Int]]()
+  def addCollisionExclusion(index1:Int, index2:Int): Unit = {
+    if(index1 != index2) {
+      if(index1 < index2) {
+        collision_exclusions.getOrElseUpdate(index1, mutable.HashSet[Int]()) += index2
+      } else {
+        addCollisionExclusion(index2, index1)
+      }
+    }
+  }
+  def removeCollisionExclusion(index1:Int, index2:Int): Unit = {
+    if(index1 != index2) {
+      if(index1 < index2) {
+        collision_exclusions.get(index1).foreach(_ -= index2)
+      } else {
+        addCollisionExclusion(index2, index1)
+      }
+    }
+  }
+  def excludeCollisionCheck(index1:Int, index2:Int):Boolean = {
+    index1 != index2 && {
+      if(index1 < index2) {
+        collision_exclusions.get(index1).exists(_.contains(index2))
+      } else {
+        excludeCollisionCheck(index2, index1)
+      }
+    }
+  }
+
   def removeBodyByIndex(index:Int): Unit = {
     mutable_system.remove(index).foreach(part => all_bodies -= part.body)
   }
@@ -116,10 +148,12 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
         if space.bodies.length > 1
         (b1, idx) <- space.bodies.zipWithIndex.init
         b2 <- space.bodies.drop(idx+1)
+        if !excludeCollisionCheck(b1.index, b2.index)
         if !b1.is_static || !b2.is_static
         c <- maybeCollisions(b1, b2)
       } yield c
     }
+    //println("=================")
 
     // Integrate forces first part
     mutable_system.foreach {case (index, MutableSystemPart(mb, force, torque)) =>

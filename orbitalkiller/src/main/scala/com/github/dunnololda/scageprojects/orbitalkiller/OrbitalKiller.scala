@@ -184,17 +184,19 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   )
 
+  system_evolution.addCollisionExclusion(earth.index, moon.index)
+
   // стоим на поверхности Земли
-  val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
-  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  //val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
+  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   // суборбитальная траектория
   //val ship_start_position = earth.coord + DVec(500, earth.radius + 100000)
   //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
 
   // на круговой орбите в 200 км от поверхности Земли
-  //val ship_start_position = earth.coord + DVec(1000, earth.radius + 200000)
-  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
+  val ship_start_position = earth.coord + DVec(1000, earth.radius + 200000)
+  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
 
   // стоим на поверхности Луны
   //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
@@ -285,8 +287,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   )
 
   val ships = List(ship, station, sat1)
-  val ship_indexes = ships.map(_.index).toSet
-  def shipByIndex(index:Int):Option[PolygonShip] = ships.find(_.index == index)
+  val shipsMap = ships.map(s => (s.index, s)).toMap
+  val ship_indexes = shipsMap.keySet
+  def shipByIndex(index:Int):Option[PolygonShip] = shipsMap.get(index)
 
   val planets = immutable.Map(sun.index   -> sun,
                               earth.index -> earth,
@@ -301,6 +304,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   val currentPlanetStates:Seq[(CelestialBody, MutableBodyState)] = planetStates(system_evolution.bodyStates(planet_indexes))
   def planetByIndex(index:Int):Option[CelestialBody] = planets.get(index)
+
+  def nameByIndex(index:Int):Option[String] = {
+    planets.get(index) match {
+      case s@Some(x) => s.map(_.name)
+      case None => shipsMap.get(index).map(_.name)
+    }
+  }
 
   var _stop_after_number_of_tacts:Long = 0
   var _stop_in_orbit_true_anomaly:Double = 0

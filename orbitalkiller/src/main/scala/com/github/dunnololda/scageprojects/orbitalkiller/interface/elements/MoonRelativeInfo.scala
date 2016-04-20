@@ -16,7 +16,7 @@ class MoonRelativeInfo extends InterfaceElement {
       f"${(correctAngle(DVec(0, 1).deg360(ship.coord - moon.coord) - moon.currentState.ang)/360.0*moon.length)/1000}%.2f км"
     }
     if(ship.isLandedOnPlanet(moon)) {
-      strings(0) = s"Луна: dist=${mOrKmOrMKm(ship.coord.dist(moon.coord) - moon.radius)}, landed, pos=$ship_moon_position"
+      strings(0) = s"Луна: landed, pos=$ship_moon_position"
     } else {
       val ship_moon_vertical_speed_str = msecOrKmsec((ship.linearVelocity - moon.linearVelocity) * (ship.coord - moon.coord).n)
       val ship_moon_tangent_speed_str = msecOrKmsec(((ship.linearVelocity - moon.linearVelocity)*(ship.coord - moon.coord).p)/ship.coord.dist(moon.coord)*moon.radius - moon.groundSpeedMsec)
