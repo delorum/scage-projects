@@ -114,7 +114,7 @@ package object orbitalkiller {
   }
 
   case class PolygonShape(points:List[DVec], convex_parts:List[PolygonShape]) extends Shape {
-    private val r = math.sqrt(points.map(p => p.norma2).max)*2
+    val r = math.sqrt(points.map(p => p.norma2).max)*2
     def aabb(center:DVec, rotation:Double): AABB = {
       AABB(center, r, r)
     }
@@ -495,7 +495,8 @@ package object orbitalkiller {
                        collisions_dacc:DVec = DVec.zero,
                        collisions_dvel:DVec = DVec.zero,
                        collisions_d_ang_acc:Double = 0.0,
-                       collisions_d_ang_vel:Double = 0.0) {
+                       collisions_d_ang_vel:Double = 0.0,
+                       is_bullet:Boolean = false) {
     val aabb = shape.aabb(coord, ang)
     val I = mass*shape.wI
     val invMass = if(is_static || mass == 0) 0 else 1.0/mass
@@ -511,6 +512,7 @@ package object orbitalkiller {
     val staticFriction = body.staticFriction
     val dynamicFriction = body.dynamicFriction
     val is_static = body.is_static
+    val is_bullet = body.is_bullet
     val shape = body.shape
     val index = body.index
     val strIndex = index.toString

@@ -178,8 +178,32 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
     // Integrate velocities and forces last part
     mutable_system.foreach{ case (index, MutableSystemPart(mb, force, torque)) =>
       if(!mb.is_static) {
-        mb.coord += mb.vel*base_dt
-        mb.ang = correctAngle((mb.ang + mb.ang_vel*base_dt) % 360)
+        if(mb.is_bullet) {
+          val other_bodies = mutable_system.filterNot(_._1 == mb.index).values.toList
+          println("==================")
+          def _increaseCoord(cur_count:Int, num_counts:Int): Unit = {
+            if(cur_count > 0) {
+              println(mOrKmOrMKm(mb.vel.dist(OrbitalKiller.ship.linearVelocity) * base_dt / num_counts))
+              mb.coord += mb.vel * base_dt / num_counts
+              mb.ang = correctAngle((mb.ang + mb.ang_vel*base_dt/num_counts) % 360)
+              mb.aabb = mb.shape.aabb(mb.coord, mb.ang)
+              if (other_bodies.forall(ob => {
+                val res = maybeCollisions(mb, ob.body).isEmpty
+                if(!res) {
+                  println(s"${OrbitalKiller.nameByIndex(mb.index).getOrElse("N/A")} <-> ${OrbitalKiller.nameByIndex(ob.body.index).getOrElse("N/A")}")
+                }
+                res
+              })) {
+                _increaseCoord(cur_count - 1, num_counts)
+              }
+            }
+          }
+          _increaseCoord(20, 20)
+          println("==================")
+        } else {
+          mb.coord += mb.vel * base_dt
+          mb.ang = correctAngle((mb.ang + mb.ang_vel*base_dt) % 360)
+        }
         val next_force2 = force(tacts, mutable_system_helper)
         val next_acc2 = next_force2 * mb.invMass
         val next_torque2 = torque(tacts, mutable_system_helper)

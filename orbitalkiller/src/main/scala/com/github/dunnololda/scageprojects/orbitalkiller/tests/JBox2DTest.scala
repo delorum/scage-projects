@@ -2,11 +2,11 @@ package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.cli.AppProperties
 import com.github.dunnololda.scage.ScageLib.{drawCircle => scageDrawCircle, _}
-import org.jbox2d.dynamics._
-import org.jbox2d.common._
-import org.jbox2d.collision.shapes.{EdgeShape, CircleShape, PolygonShape}
-import joints._
 import org.jbox2d.callbacks.DebugDraw
+import org.jbox2d.collision.shapes.{CircleShape, PolygonShape}
+import org.jbox2d.common._
+import org.jbox2d.dynamics._
+import org.jbox2d.dynamics.joints._
 
 object JBox2DTest extends ScageScreenApp("JBox2D Test", 640, 480) {
   val testStr = AppProperties.property("test", "test1")

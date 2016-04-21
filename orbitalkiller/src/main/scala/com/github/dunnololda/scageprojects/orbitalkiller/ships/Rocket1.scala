@@ -157,6 +157,19 @@ class Rocket1(index:Int,
 
   override def afterStep(time_msec:Long): Unit = {
     super.afterStep(time_msec)
-    println(msecOrKmsec((linearVelocity - ship.linearVelocity).norma))
+    println(s"${mOrKmOrMKm(coord.dist(ship.coord))} : ${msecOrKmsec((linearVelocity - ship.linearVelocity).norma)}")
   }
+
+  override lazy val initState:BodyState = BodyState(
+    index,
+    mass,
+    acc = DVec.zero,
+    vel = init_velocity,
+    coord = init_coord,
+    ang_acc = 0,
+    ang_vel = 0,
+    ang = init_rotation,
+    shape = PolygonShape(points, convex_parts),
+    is_static = false,
+    is_bullet = true)
 }
