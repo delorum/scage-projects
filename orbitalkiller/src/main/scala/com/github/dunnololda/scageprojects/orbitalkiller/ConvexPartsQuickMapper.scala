@@ -2,7 +2,6 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.cli.AppProperties
 import com.github.dunnololda.scage.ScageLibD._
-
 import scala.collection.mutable.ArrayBuffer
 
 object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", property("screen.width", 640), property("screen.height", 480)) {
@@ -14,12 +13,14 @@ object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", 
     constructor.newInstance(args:_*).asInstanceOf[PolygonShip]
   }
 
-  val ship_points = ship.points.map(_ + windowCenter)
-  val ship_draw_points = ship.draw_points.map(_ + windowCenter)
+  private val k = ship.engine_size.toFloat*2
 
-  val whole_coords = ship_points.head.x % 1 == 0
+  val ship_points = ship.points.map(p => p/k + windowCenter)
+  val ship_draw_points = ship.draw_points.map(p => p/k + windowCenter)
 
-  private val cell_size:Int = property("cell_size", 1)
+  val whole_coords = (ship_points.head.x.toFloat/k) % 1 == 0
+
+  private val cell_size:Float = 1.0f
   private val cell_size2 = cell_size*cell_size
   private val cell_size_double = cell_size*2
   private val cell_size_half:Float = 0.5f*cell_size
@@ -48,7 +49,7 @@ object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", 
           (p2.x - p1.x) * (p2.y + p1.y)
       }.sum < 0
       if(ccw) {
-        println(s"PolygonShape(List(${ps.map(p => s"DVec(${p.x - windowWidth / 2}, ${p.y - windowHeight / 2})").mkString(", ")}), Nil),")
+        println(s"PolygonShape(List(${ps.map(p => s"DVec(${(p.x - windowWidth / 2).toFloat * k}, ${(p.y - windowHeight / 2).toFloat * k})").mkString(", ")}), Nil),")
         mapped += points.toList
       } else {
         println("// NOT COUNTER-CLOCKWISE!")
@@ -110,16 +111,16 @@ object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", 
 
   render {
     if(whole_coords) {
-      (0 to windowWidth by cell_size).foreach(x => drawLine(Vec(x, 0), Vec(x, windowHeight), DARK_GRAY))
-      (0 to windowHeight by cell_size).foreach(y => drawLine(Vec(0, y), Vec(windowWidth, y), DARK_GRAY))
+      (0f to windowWidth by cell_size).foreach(x => drawLine(Vec(x, 0), Vec(x, windowHeight), DARK_GRAY))
+      (0f to windowHeight by cell_size).foreach(y => drawLine(Vec(0, y), Vec(windowWidth, y), DARK_GRAY))
     } else {
-      (0.5 to windowWidth by cell_size).foreach(x => drawLine(Vec(x, 0.5), Vec(x, windowHeight), DARK_GRAY))
-      (0.5 to windowHeight by cell_size).foreach(y => drawLine(Vec(0.5, y), Vec(windowWidth, y), DARK_GRAY))
+      (0.5f to windowWidth by cell_size).foreach(x => drawLine(Vec(x, 0.5), Vec(x, windowHeight), DARK_GRAY))
+      (0.5f to windowHeight by cell_size).foreach(y => drawLine(Vec(0.5, y), Vec(windowWidth, y), DARK_GRAY))
     }
 
     ship_points.zipWithIndex.foreach {
       case (p, idx) =>
-        drawFilledCircle(p, 3/globalScale, GRAY)
+        drawFilledCircle(p/k, 3/globalScale, GRAY)
     }
     drawSlidingLines(ship_draw_points, GRAY)
 

@@ -245,7 +245,7 @@ abstract class PolygonShip(
   }
 
   def engineColor(e:Engine, in_shadow:Boolean):ScageColor = {
-    if(pilot_is_dead || e.active) RED else if(in_shadow) DARK_GRAY else WHITE
+    if(ship.pilot_is_dead || e.active) RED else if(in_shadow) DARK_GRAY else WHITE
   }
 
   def engineActiveSize(e:Engine, max_size:Double):Double = {
@@ -501,7 +501,7 @@ abstract class PolygonShip(
     case x => x.rusStr
   }
 
-  def otherShipsNear:List[PolygonShip] = OrbitalKiller.ships.filter(s => s.index != index && s.pilotIsAlive).sortBy(s => coord.dist(s.coord))
+  def otherShipsNear:Seq[PolygonShip] = ShipsHolder.ships.filter(s => s.index != index && s.pilotIsAlive).sortBy(s => coord.dist(s.coord))
   def canDockWithNearestShip:Boolean = {
     otherShipsNear.headOption.exists(os => {
       os.coord.dist(coord) < 1000 && docking_points.exists(dp => {
@@ -527,6 +527,7 @@ abstract class PolygonShip(
   private var pilot_average_g:Double = 0.0
   private val pilot_accs = ArrayBuffer[(DVec, Long)]()
 
+  def is_manned:Boolean
   private var pilot_is_dead = false
   private var pilot_death_reason = ""
   def pilotIsDead = pilot_is_dead
@@ -595,10 +596,19 @@ abstract class PolygonShip(
         val part_center = currentState.coord + x._1.points.sum / x._1.points.length
         val part_points = x._1.points.map(p => currentState.coord + p - part_center)
         val part_index = ScageId.nextId
+        val crashed_with = currentState.contacts.headOption.map(c => if(c.a.index != index) c.a else c.b)
+        val crashed_vel = crashed_with.map(x => {
+          planetByIndex(x.index) match {
+            case Some(planet) =>
+              x.vel + (coord - x.coord).p*planet.groundSpeedMsec
+            case None =>
+              x.vel
+          }
+        }).getOrElse(linearVelocity)
         val mbs = new MutableBodyState(BodyState(
           index = part_index,
           mass = mass / wreck_parts.length,
-          vel = linearVelocity + randomSpeed(linearVelocity),
+          vel = crashed_vel + randomSpeed(linearVelocity - crashed_vel),
           coord = part_center,
           ang = rotation,
           shape = PolygonShape(part_points, Nil),
@@ -629,120 +639,43 @@ abstract class PolygonShip(
     vel.n.rotateDeg(dir_deg)*50.0
   }
 
-  def updateShipState(time_msec:Long): Unit = {
-    val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(currentState, earth.currentState, 28, 0.5)
-    if(!ship_is_crashed) {
-      val dvel = currentState.dvel.norma
-      if (dvel > 10) {
-        // crash tolerance = 10 m/s
-        val crash_g = dvel / OrbitalKiller.base_dt / earth.g
-        kill(f"Корабль уничтожен в результате столкновения ($crash_g%.2fg)", crash = true)
-        return
-      } else {
-        // ниже мы рассчитаем отдельно вертикальную и горизонтальную перегрузки и потом сложим их. Так надо считать, потому что к вертикальной перегрузке прибавляется центробежная сила, а к горизонтальной нет.
-        val v_vert = pilot_position.rotateDeg(rotation).n  // единичный вектор спина-грудь пилота
-        val v_hor = -v_vert.perpendicular // единичный вектор левая рука - права рука пилота
-        val centrifugial_force = if (angularVelocity == 0) 0.0 else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.norma
-        // reactive_force берем с минусом, потому что пилота вжимает под действием этой силы в противоположную сторону
-        val pilot_acc_vert = -reactive_force / mass * v_vert + centrifugial_force / pilot_mass + currentState.dacc*v_vert
-        val pilot_acc_hor = -reactive_force / mass * v_hor + currentState.dacc*v_hor
-        val pilot_acc = pilot_acc_vert*DVec(0, 1) + pilot_acc_hor*DVec(1,0) // тут мы умножаем на единичные векторы в системе координат: начало в центре масс, вертикальный вектор - от центра масс к пилоту
-        pilot_accs += ((pilot_acc, time_msec))
-        if (time_msec - pilot_accs.head._2 >= 1000) {
-          pilot_average_g = (pilot_accs.map(_._1).sum / pilot_accs.length).norma / earth.g
-          pilot_accs.clear()
-          if (pilot_average_g > 100) {
-            kill(f"Корабль разрушился вследствие критической перегрузки ($pilot_average_g%.2fg)", crash = true)
-            return
+  def pilotStateStr:String = {
+    if(is_manned) {
+      if (!pilot_is_dead) {
+        if (pilot_average_g < 0.1) {
+          if (before_death_counter != 100) {
+            val rate = 100.0 / 60 * base_dt // восстановление после критической перегрузки за 60 секунд
+            val time_to_restore_msec = (((100 - before_death_counter) / rate) * base_dt * 1000).toLong
+            f"Пилот в состоянии невесомости. Восстанавливается после перегрузки (${timeStr(time_to_restore_msec)})"
+          } else {
+            "Пилот в состоянии невесомости"
           }
-        }
-      }
-      currentPlanetStates.find {
-        case (planet, planet_state) => planet.coord.dist(currentState.coord) < planet.radius
-      }.foreach {
-        case (planet, planet_state) =>
-          currentState.coord = currentState.coord + (currentState.coord - planet.coord).n * (planet.radius + radius - planet.coord.dist(currentState.coord))
-          currentState.vel = planet.linearVelocity
-          kill("Корабль врезался в планету", crash = true)
-          return
-      }
-      // если подлетаем к поверхности Солнца ближе, чем 30 миллионов километров, то бууум!)
-      if(coord.dist(sun.coord) - sun.radius < 30000000000l) {
-        kill("Корабль слишком приблизился к Солнцу и сгорел", crash = true)
-        return
-      }
-    }
-    if(!pilot_is_dead) {
-      if(pilot_average_g > 4) { // пилот может испытывать перегрузку больше 4g только ограниченный период времени, потом наступает смерть
-        val rate = deatchCounterDecreaseRate(pilot_average_g)
-        before_death_counter -= rate
-        if(before_death_counter <= 0) {
-          kill(f"Пилот умер от сильной перегрузки ($pilot_average_g%.2fg)", crash = false)
+        } else if (pilot_average_g <= 1.09) {
+          if (before_death_counter != 100) {
+            val rate = 100.0 / 60 * base_dt // восстановление после критической перегрузки за 60 секунд
+            val time_to_restore_msec = (((100 - before_death_counter) / rate) * base_dt * 1000).toLong
+            f"Пилот испытывает силу тяжести $pilot_average_g%.1fg. Восстанавливается после перегрузки (${timeStr(time_to_restore_msec)})"
+          } else {
+            f"Пилот испытывает силу тяжести $pilot_average_g%.1fg"
+          }
         } else {
-          val time_before_death_msec = ((before_death_counter/rate)*base_dt*1000).toLong
-          if(time_before_death_msec <= 1000) {      // 1 секунда до гибели от перегрузки
-            if(engines.exists(_.active)) {          // если работают какие-то двигатели
-              flightMode = FreeFlightMode           // отключаем двигатели
-              engines.foreach(_.active = false)
+          if (pilot_average_g > 4) {
+            val rate = deatchCounterDecreaseRate(pilot_average_g)
+            val time_before_death_msec = ((before_death_counter / rate) * base_dt * 1000).toLong
+            f"[rПилот испытывает критическую перегрузку $pilot_average_g%.1fg. Смерть через ${timeStr(time_before_death_msec)}]"
+          } else {
+            if (before_death_counter != 100) {
+              f"Пилот испытывает перегрузку $pilot_average_g%.1fg. [oТребуется отдых после критической перегрузки]"
+            } else {
+              f"Пилот испытывает перегрузку $pilot_average_g%.1fg"
             }
           }
         }
-      } else if(before_death_counter != 100) {
-        if(pilot_average_g <= 1.09) { // пилот может восстанавливаться после перегрузки, только если текущая ускорение не выше 1.09g
-          val rate = 100.0/60*base_dt // восстановление после критической перегрузки за 60 секунд
-          before_death_counter += rate
-          if(before_death_counter >= 100) {
-            before_death_counter = 100
-          }
-        }
-      }
-      if(InterfaceHolder.gSwitcher.maxGSet && pilot_average_g > InterfaceHolder.gSwitcher.maxG) {
-        val active_engines = engines.filter(e => e.active && 0 < e.stopMomentTacts)
-        val cur_force = reactive_force.norma
-        val allowed_force = mass*InterfaceHolder.gSwitcher.maxG*OrbitalKiller.earth.g
-        val force_diff = cur_force - allowed_force
-        val force_diff_for_engine = force_diff/active_engines.length
-        active_engines.foreach(e => if(force_diff_for_engine < e. power) {
-          e.power -= force_diff_for_engine
-        })
-
-      }
-    }
-  }
-
-  def pilotStateStr:String = {
-    if(!pilot_is_dead) {
-      if (pilot_average_g < 0.1) {
-        if(before_death_counter != 100) {
-          val rate = 100.0/60*base_dt // восстановление после критической перегрузки за 60 секунд
-          val time_to_restore_msec = (((100 - before_death_counter)/rate)*base_dt*1000).toLong
-          f"Пилот в состоянии невесомости. Восстанавливается после перегрузки (${timeStr(time_to_restore_msec)})"
-        } else {
-          "Пилот в состоянии невесомости"
-        }
-      } else if (pilot_average_g <= 1.09) {
-        if(before_death_counter != 100) {
-          val rate = 100.0/60*base_dt // восстановление после критической перегрузки за 60 секунд
-          val time_to_restore_msec = (((100 - before_death_counter)/rate)*base_dt*1000).toLong
-          f"Пилот испытывает силу тяжести $pilot_average_g%.1fg. Восстанавливается после перегрузки (${timeStr(time_to_restore_msec)})"
-        } else {
-          f"Пилот испытывает силу тяжести $pilot_average_g%.1fg"
-        }
       } else {
-        if(pilot_average_g > 4) {
-          val rate = deatchCounterDecreaseRate(pilot_average_g)
-          val time_before_death_msec = ((before_death_counter/rate)*base_dt*1000).toLong
-          f"[rПилот испытывает критическую перегрузку $pilot_average_g%.1fg. Смерть через ${timeStr(time_before_death_msec)}]"
-        } else {
-          if(before_death_counter != 100) {
-            f"Пилот испытывает перегрузку $pilot_average_g%.1fg. [oТребуется отдых после критической перегрузки]"
-          } else {
-            f"Пилот испытывает перегрузку $pilot_average_g%.1fg"
-          }
-        }
+        pilot_death_reason
       }
     } else {
-      pilot_death_reason
+      "N/A"
     }
   }
 
@@ -785,7 +718,7 @@ abstract class PolygonShip(
     points.map(_.norma).max
   }
 
-  def initState:BodyState = BodyState(
+  lazy val initState:BodyState = BodyState(
     index,
     mass,
     acc = DVec.zero,
@@ -799,5 +732,128 @@ abstract class PolygonShip(
 
   lazy val currentState:MutableBodyState = initState.toMutableBodyState
 
+  system_evolution.addBody(
+    currentState,
+    (tacts, helper) => {
+      helper.gravityForceFromTo(sun.index, index) +
+        helper.gravityForceFromTo(earth.index, index) +
+        helper.gravityForceFromTo(moon.index, index) +
+        helper.funcOrDVecZero(index, bs => currentReactiveForce(tacts, bs)) +
+        helper.funcOfArrayOrDVecZero(Array(index, earth.index), l => {
+          val bs = l(0)
+          val e = l(1)
+          earth.airResistance(bs, e, 28, 0.5)
+        })
+    },
+    (tacts, helper) => {
+      helper.funcOrDoubleZero(index, bs => currentTorque(tacts))
+    }
+  )
+  ShipsHolder.addShip(this)
+
   var orbitRender:Option[BodyOrbitRender] = None
+
+  def beforeStep(): Unit = {
+    engines.foreach(e => {
+      if(e.active) {
+        if(e.workTimeTacts <= 0 || ship.fuelMass <= 0) {
+          e.active = false
+        } else {
+          if(e.ship.fuelMass - e.fuelConsumptionPerTact <= 0) {
+            e.active = false
+          }
+        }
+      }
+    })
+    if(currentState.ang_vel != 0 && math.abs(currentState.ang_vel) < OrbitalKiller.ship.angular_velocity_error) {
+      currentState.ang_vel = 0
+    }
+    currentState.mass = mass/*currentMass(_tacts)*/
+  }
+
+  def afterStep(time_msec:Long): Unit = {
+    val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(currentState, earth.currentState, 28, 0.5)
+    if(!ship_is_crashed) {
+      val dvel = currentState.dvel.norma
+      if (dvel > 10) {
+        // crash tolerance = 10 m/s
+        val crash_g = dvel / OrbitalKiller.base_dt / earth.g
+        kill(f"Корабль уничтожен в результате столкновения ($crash_g%.2fg)", crash = true)
+        return
+      } else {
+        // ниже мы рассчитаем отдельно вертикальную и горизонтальную перегрузки и потом сложим их. Так надо считать, потому что к вертикальной перегрузке прибавляется центробежная сила, а к горизонтальной нет.
+        val v_vert = pilot_position.rotateDeg(rotation).n  // единичный вектор спина-грудь пилота
+        val v_hor = -v_vert.perpendicular // единичный вектор левая рука - права рука пилота
+        val centrifugial_force = if (angularVelocity == 0) 0.0 else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.norma
+        // reactive_force берем с минусом, потому что пилота вжимает под действием этой силы в противоположную сторону
+        val pilot_acc_vert = -reactive_force / mass * v_vert + centrifugial_force / pilot_mass + currentState.dacc*v_vert
+        val pilot_acc_hor = -reactive_force / mass * v_hor + currentState.dacc*v_hor
+        val pilot_acc = pilot_acc_vert*DVec(0, 1) + pilot_acc_hor*DVec(1,0) // тут мы умножаем на единичные векторы в системе координат: начало в центре масс, вертикальный вектор - от центра масс к пилоту
+        pilot_accs += ((pilot_acc, time_msec))
+        if (time_msec - pilot_accs.head._2 >= 1000) {
+          pilot_average_g = (pilot_accs.map(_._1).sum / pilot_accs.length).norma / earth.g
+          pilot_accs.clear()
+        }
+      }
+      currentPlanetStates.find {
+        case (planet, planet_state) => planet.coord.dist(currentState.coord) < planet.radius
+      }.foreach {
+        case (planet, planet_state) =>
+          currentState.coord = currentState.coord + (currentState.coord - planet.coord).n * (planet.radius + radius - planet.coord.dist(currentState.coord))
+          currentState.vel = planet.linearVelocity
+          kill("Корабль врезался в планету", crash = true)
+          return
+      }
+      // если подлетаем к поверхности Солнца ближе, чем 30 миллионов километров, то бууум!)
+      if(coord.dist(sun.coord) - sun.radius < 30000000000l) {
+        kill("Корабль слишком приблизился к Солнцу и сгорел", crash = true)
+        return
+      }
+    }
+    if(is_manned && !pilot_is_dead) {
+      if(pilot_average_g > 4) { // пилот может испытывать перегрузку больше 4g только ограниченный период времени, потом наступает смерть
+      val rate = deatchCounterDecreaseRate(pilot_average_g)
+        before_death_counter -= rate
+        if(before_death_counter <= 0) {
+          kill(f"Пилот умер от сильной перегрузки ($pilot_average_g%.2fg)", crash = false)
+        } else {
+          val time_before_death_msec = ((before_death_counter/rate)*base_dt*1000).toLong
+          if(time_before_death_msec <= 1000) {      // 1 секунда до гибели от перегрузки
+            if(engines.exists(_.active)) {          // если работают какие-то двигатели
+              flightMode = FreeFlightMode           // отключаем двигатели
+              engines.foreach(_.active = false)
+            }
+          }
+        }
+      } else if(before_death_counter != 100) {
+        if(pilot_average_g <= 1.09) { // пилот может восстанавливаться после перегрузки, только если текущая ускорение не выше 1.09g
+        val rate = 100.0/60*base_dt // восстановление после критической перегрузки за 60 секунд
+          before_death_counter += rate
+          if(before_death_counter >= 100) {
+            before_death_counter = 100
+          }
+        }
+      }
+      if(InterfaceHolder.gSwitcher.maxGSet && pilot_average_g > InterfaceHolder.gSwitcher.maxG) {
+        val active_engines = engines.filter(e => e.active && 0 < e.stopMomentTacts)
+        val cur_force = reactive_force.norma
+        val allowed_force = mass*InterfaceHolder.gSwitcher.maxG*OrbitalKiller.earth.g
+        val force_diff = cur_force - allowed_force
+        val force_diff_for_engine = force_diff/active_engines.length
+        active_engines.foreach(e => if(force_diff_for_engine < e. power) {
+          e.power -= force_diff_for_engine
+        })
+
+      }
+    }
+    engines.foreach(e => {
+      if(e.active) {
+        if(e.workTimeTacts > 0) {
+          e.workTimeTacts -= 1
+          //InterfaceHolder.enginesInfo.addWorkTime(base_dt*1000*e.power/e.max_power)
+          e.ship.fuelMass -= e.fuelConsumptionPerTact
+        } else e.active = false
+      }
+    })
+  }
 }

@@ -15,9 +15,11 @@ class Satellite1(index:Int,
   override def fuelMass: Double = _fuel_mass
   override def fuelMass_=(m: Double): Unit = {_fuel_mass = m}
 
+  val is_manned = false
+
   lazy val engine_size:Double = 2
 
-  val points:List[DVec] = List(
+  lazy val points:List[DVec] = List(
     DVec(-12.0, -8.0),
     DVec(-12.0, 0.0),
     DVec(-16.0, 0.0),
@@ -40,7 +42,7 @@ class Satellite1(index:Int,
     DVec(-4.0, -16.0)
   )
 
-  val convex_parts = List(
+  lazy val convex_parts = List(
     PolygonShape(List(DVec(-44.0, -4.0), DVec(-16.0, -4.0), DVec(-16.0, 8.0), DVec(-44.0, 8.0)), Nil),
     PolygonShape(List(DVec(-16.0, 0.0), DVec(16.0, 0.0), DVec(16.0, 4.0), DVec(-16.0, 4.0)), Nil),
     PolygonShape(List(DVec(16.0, 8.0), DVec(16.0, -4.0), DVec(44.0, -4.0), DVec(44.0, 8.0)), Nil),

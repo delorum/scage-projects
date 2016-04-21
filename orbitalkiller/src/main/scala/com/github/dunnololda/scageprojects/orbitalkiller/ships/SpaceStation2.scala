@@ -20,9 +20,11 @@ class SpaceStation2(
     _fuel_mass = m
   }
 
+  val is_manned = false
+
   lazy val engine_size:Double = 10
 
-  val points:List[DVec] = List(
+  lazy val points:List[DVec] = List(
     DVec(-90.0, -10.0),
     DVec(-130.0, -10.0),
     DVec(-130.0, 10.0),
@@ -37,7 +39,7 @@ class SpaceStation2(
     DVec(-50.0, -30.0)
   )
 
-  val convex_parts = List(
+  lazy val convex_parts = List(
     PolygonShape(List(DVec(-130.0, -10.0), DVec(-90.0, -10.0), DVec(-90.0, 10.0), DVec(-130.0, 10.0)), Nil),
     PolygonShape(List(DVec(-90.0, -10.0), DVec(-50.0, -30.0), DVec(-50.0, 30.0), DVec(-90.0, 10.0)), Nil),
     PolygonShape(List(DVec(-50.0, -30.0), DVec(50.0, -30.0), DVec(50.0, 30.0), DVec(-50.0, 30.0)), Nil),

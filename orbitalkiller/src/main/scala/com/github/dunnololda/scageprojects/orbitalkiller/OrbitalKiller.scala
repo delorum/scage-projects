@@ -62,7 +62,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   private var _time_multiplier = realtime
   def timeMultiplier = {
-    if(_time_multiplier != realtime && ships.flatMap(_.engines).exists(_.active)) {
+    if(_time_multiplier != realtime && ShipsHolder.ships.flatMap(_.engines).exists(_.active)) {
       timeMultiplier_=(realtime)
     }
     _time_multiplier
@@ -70,9 +70,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def timeMultiplier_=(new_time_multiplier:Int) {
     if(new_time_multiplier > 0) {
       // разрешаем переход на ускоренное/замедленное течение времени только если все двигатели выключены
-      if(new_time_multiplier == realtime || ships.flatMap(_.engines).forall(!_.active)) {
+      if(new_time_multiplier == realtime || ShipsHolder.ships.flatMap(_.engines).forall(!_.active)) {
         _time_multiplier = new_time_multiplier
-        ships.flatMap(_.engines).filter(_.active).foreach(e => {
+        ShipsHolder.ships.flatMap(_.engines).filter(_.active).foreach(e => {
           e.workTimeTacts = e.workTimeTacts
         })
 
@@ -216,48 +216,12 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     init_rotation = 0
   )
 
-  system_evolution.addBody(
-    ship.currentState,
-    (tacts, helper) => {
-      helper.gravityForceFromTo(sun.index, ship.index) +
-        helper.gravityForceFromTo(earth.index, ship.index) +
-        helper.gravityForceFromTo(moon.index, ship.index) +
-        helper.funcOrDVecZero(ship.index, bs => ship.currentReactiveForce(tacts, bs)) +
-        helper.funcOfArrayOrDVecZero(Array(ship.index, earth.index), l => {
-          val bs = l(0)
-          val e = l(1)
-          earth.airResistance(bs, e, 28, 0.5)
-        })
-    },
-    (tacts, helper) => {
-      helper.funcOrDoubleZero(ship.index, bs => ship.currentTorque(tacts))
-    }
-  )
-
   val station_start_position = earth.coord + DVec(0, earth.radius + 200000)
   val station_init_velocity = satelliteSpeed(station_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
   val station = new SpaceStation2(ScageId.nextId,
     init_coord = station_start_position,
     init_velocity = station_init_velocity,
     init_rotation = 45
-  )
-
-  system_evolution.addBody(
-    station.currentState,
-    (tacts, helper) => {
-      helper.gravityForceFromTo(sun.index, station.index) +
-      helper.gravityForceFromTo(earth.index, station.index) +
-      helper.gravityForceFromTo(moon.index, station.index) +
-      helper.funcOrDVecZero(station.index, bs => station.currentReactiveForce(tacts, bs)) +
-      helper.funcOfArrayOrDVecZero(Array(station.index, earth.index), l => {
-        val bs = l(0)
-        val e = l(1)
-        earth.airResistance(bs, e, 28, 0.5)
-      })
-    },
-    (tacts, helper) => {
-      helper.funcOrDoubleZero(station.index, bs => station.currentTorque(tacts))
-    }
   )
 
   // случайная орбита с перигеем от 200 до 1000 км, и апогеем от 0 до 3000 км выше перигея
@@ -269,29 +233,6 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     init_velocity = sat1_init_velocity,
     init_rotation = 45
   )
-
-  system_evolution.addBody(
-    sat1.currentState,
-    (tacts, helper) => {
-      helper.gravityForceFromTo(sun.index, sat1.index) +
-        helper.gravityForceFromTo(earth.index, sat1.index) +
-        helper.gravityForceFromTo(moon.index, sat1.index) +
-        helper.funcOrDVecZero(sat1.index, bs => sat1.currentReactiveForce(tacts, bs)) +
-        helper.funcOfArrayOrDVecZero(Array(sat1.index, earth.index), l => {
-          val bs = l(0)
-          val e = l(1)
-          earth.airResistance(bs, e, 28, 0.5)
-        })
-    },
-    (tacts, helper) => {
-      helper.funcOrDoubleZero(sat1.index, bs => sat1.currentTorque(tacts))
-    }
-  )
-
-  val ships = List(ship, station, sat1)
-  val shipsMap = ships.map(s => (s.index, s)).toMap
-  val ship_indexes = shipsMap.keySet
-  def shipByIndex(index:Int):Option[PolygonShip] = shipsMap.get(index)
 
   val planets = immutable.Map(sun.index   -> sun,
                               earth.index -> earth,
@@ -310,7 +251,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def nameByIndex(index:Int):Option[String] = {
     planets.get(index) match {
       case s@Some(x) => s.map(_.name)
-      case None => shipsMap.get(index).map(_.name)
+      case None => ShipsHolder.shipByIndex(index).map(_.name)
     }
   }
 
@@ -319,35 +260,12 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   private def nextStep() {
     (1 to timeMultiplier).foreach(step => {
-      ships.foreach(s => {
-        s.engines.foreach(e => {
-          if(e.active) {
-            if(e.workTimeTacts <= 0 || ship.fuelMass <= 0) {
-              e.active = false
-            } else {
-              if(e.ship.fuelMass - e.fuelConsumptionPerTact <= 0) {
-                e.active = false
-              }
-            }
-          }
-        })
-        if(s.currentState.ang_vel != 0 && math.abs(s.currentState.ang_vel) < OrbitalKiller.ship.angular_velocity_error) {
-          s.currentState.ang_vel = 0
-        }
-        s.currentState.mass = s.mass/*currentMass(_tacts)*/
+      ShipsHolder.ships.foreach(s => {
+        s.beforeStep()
       })
       system_evolution.step()
-      ships.foreach(s => {
-        s.updateShipState((tacts*base_dt*1000).toLong)
-        s.engines.foreach(e => {
-          if(e.active) {
-            if(e.workTimeTacts > 0) {
-              e.workTimeTacts -= 1
-              //InterfaceHolder.enginesInfo.addWorkTime(base_dt*1000*e.power/e.max_power)
-              e.ship.fuelMass -= e.fuelConsumptionPerTact
-            } else e.active = false
-          }
-        })
+      ShipsHolder.ships.foreach(s => {
+        s.afterStep((tacts*base_dt*1000).toLong)
       })
       if(_stop_after_number_of_tacts > 0) {
         _stop_after_number_of_tacts -= 1
@@ -675,6 +593,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   preinit {
     addGlyphs("\u21b6\u21b7")
   }
+
+  keyIgnorePause(KEY_RETURN, onKeyDown = {if(ship.pilotIsAlive) ship.launchRocket()})
 
   keyIgnorePause(KEY_NUMPAD1, onKeyDown = {if(ship.pilotIsAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD1)})
   keyIgnorePause(KEY_NUMPAD2, onKeyDown = {if(ship.pilotIsAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD2)})

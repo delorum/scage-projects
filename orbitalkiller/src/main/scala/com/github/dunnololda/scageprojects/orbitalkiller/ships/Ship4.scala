@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.ships
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scage.support.DVec
+import com.github.dunnololda.scage.support.{ScageId, DVec}
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 
@@ -17,9 +17,11 @@ class Ship4(index:Int,
   override def fuelMass: Double = _fuel_mass
   override def fuelMass_=(m: Double): Unit = {_fuel_mass = m}
 
+  val is_manned = true
+
   lazy val engine_size:Double = 1
 
-  val points:List[DVec] = List(
+  lazy val points:List[DVec] = List(
     DVec(3.5, 2.5),
     DVec(1.5, 6.5),
     DVec(1.5, 10.5),
@@ -30,7 +32,7 @@ class Ship4(index:Int,
     DVec(3.5, -3.5)
   )
 
-  val convex_parts = List(
+  lazy val convex_parts = List(
     PolygonShape(List(DVec(-3.5, -3.5), DVec(3.5, -3.5), DVec(3.5, 2.5), DVec(-3.5, 2.5)), Nil),
     PolygonShape(List(DVec(-3.5, 2.5), DVec(3.5, 2.5), DVec(1.5, 6.5), DVec(-1.5, 6.5)), Nil),
     PolygonShape(List(DVec(-1.5, 10.5), DVec(-1.5, 6.5), DVec(1.5, 6.5), DVec(1.5, 10.5)), Nil)
@@ -255,8 +257,8 @@ class Ship4(index:Int,
     if(x > 180) 360 - x else x
   }
 
-  override def updateShipState(time_msec:Long): Unit = {
-    super.updateShipState(time_msec)
+  override def afterStep(time_msec:Long): Unit = {
+    super.afterStep(time_msec)
     if(InterfaceHolder.dockingSwitcher.dockingEnabled) {
       if(canDockWithNearestShip && notDocked &&
         (InterfaceHolder.dockingSwitcher.dockingAuto || (InterfaceHolder.dockingSwitcher.dockingManual && InterfaceHolder.dockUndock.needDock))) {
@@ -496,6 +498,18 @@ class Ship4(index:Int,
         case _ =>
       }
     }
+  }
+
+  def launchRocket(): Unit = {
+    val rocket = new Rocket1(ScageId.nextId,
+      init_coord = coord + DVec(-3, 6.5).rotateDeg(rotation),
+      init_velocity = linearVelocity,
+      init_rotation = rotation
+    )
+
+    rocket.two.power = rocket.two.max_power
+    rocket.two.workTimeTacts = 63
+    rocket.two.active = true
   }
 
   override protected def drawShip(): Unit = {
