@@ -140,93 +140,66 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
   def bodyState(index:Int):Option[MutableBodyState] = mutable_system.get(index).map(_.body)
 
   def step(): Unit = {
-    mutable_system.foreach(_._2.body.init())
+    val bullets_exist = mutable_system.values.exists(_.body.is_bullet)
+    val substeps = if(bullets_exist) 60 else 1
+    val dt = if(bullets_exist) base_dt/60 else base_dt
+    (1 to substeps).foreach(_ => {
+      mutable_system.foreach(_._2.body.init())
 
-    val collisions = {
-      val x = splitSpace(new Space(all_bodies, system_center), 5, 2)
-      for {
-        space <- x
-        if space.bodies.length > 1
-        (b1, idx) <- space.bodies.zipWithIndex.init
-        b2 <- space.bodies.drop(idx+1)
-        if !excludeCollisionCheck(b1.index, b2.index)
-        if !b1.is_static || !b2.is_static
-        c <- maybeCollisions(b1, b2)
-      } yield c
-    }
-    //println("=================")
-
-    // Integrate forces first part
-    mutable_system.foreach {case (index, MutableSystemPart(mb, force, torque)) =>
-      if(!mb.is_static) {
-        val next_force = force(tacts, mutable_system_helper)
-        val next_acc = next_force * mb.invMass
-        val next_torque = torque(tacts, mutable_system_helper)
-        val next_ang_acc = (next_torque * mb.invI).toDeg // in degrees
-        mb.acc = next_acc
-        mb.vel += next_acc * base_dt * 0.5
-        mb.ang_acc = next_ang_acc
-        mb.ang_vel += next_ang_acc * base_dt * 0.5
+      val collisions = {
+        val x = splitSpace(new Space(all_bodies, system_center), 5, 2)
+        for {
+          space <- x
+          if space.bodies.length > 1
+          (b1, idx) <- space.bodies.zipWithIndex.init
+          b2 <- space.bodies.drop(idx+1)
+          if !excludeCollisionCheck(b1.index, b2.index)
+          if !b1.is_static || !b2.is_static
+          c <- maybeCollisions(b1, b2)
+        } yield c
       }
-    }
+      //println("=================")
 
-    // Solve collisions
-    if(collisions.nonEmpty) collisions.foreach(c => c.solveCollision(base_dt))
-
-    // Solve joints
-    joints.foreach(j => j.solveConstraint(base_dt))
-
-    // Integrate velocities and forces last part
-    mutable_system.toSeq.sortBy(x => if(x._2.body.is_bullet) 1 else 0).foreach{ case (_, MutableSystemPart(mb, force, torque)) =>
-      if(!mb.is_static) {
-        if(mb.is_bullet) {
-          val other_bodies = mutable_system.filterNot(_._1 == mb.index).values.toList.map(_.body)
-          println("==================")
-          def _increaseCoord(cur_count:Int, num_counts:Int): Unit = {
-            if(cur_count > 0) {
-              mb.coord += mb.vel * base_dt / num_counts
-              mb.ang = correctAngle((mb.ang + mb.ang_vel*base_dt/num_counts) % 360)
-              mb.aabb = mb.shape.aabb(mb.coord, mb.ang)
-              println(s"station ${mOrKmOrMKm(mb.coord.dist(OrbitalKiller.station.coord))} :  : ${msecOrKmsec((mb.vel - station.linearVelocity).norma)}")
-              if (other_bodies.forall(ob => {
-                if(mb.coord.dist(ob.coord) < 31 && ob.index != OrbitalKiller.ship.index) {
-                  println("gotcha!")
-                }
-                val res = maybeCollisions(mb, ob).isEmpty
-                if(!res) {
-                  println(s"${OrbitalKiller.nameByIndex(mb.index).getOrElse("N/A")} <-> ${OrbitalKiller.nameByIndex(ob.index).getOrElse("N/A")}")
-                  other_bodies.foreach {
-                    case x =>
-                      x.coord -= x.vel * base_dt
-                      x.coord += x.vel * base_dt / num_counts * (num_counts - cur_count + 1)
-                  }
-                }
-                res
-              })) {
-                _increaseCoord(cur_count - 1, num_counts)
-              }
-            }
-          }
-          _increaseCoord(60, 60)
-          println("==================")
-        } else {
-          mb.coord += mb.vel * base_dt
-          mb.ang = correctAngle((mb.ang + mb.ang_vel*base_dt) % 360)
-          mb.aabb = mb.shape.aabb(mb.coord, mb.ang)
+      // Integrate forces first part
+      mutable_system.foreach {case (index, MutableSystemPart(mb, force, torque)) =>
+        if(!mb.is_static) {
+          val next_force = force(tacts, mutable_system_helper)
+          val next_acc = next_force * mb.invMass
+          val next_torque = torque(tacts, mutable_system_helper)
+          val next_ang_acc = (next_torque * mb.invI).toDeg // in degrees
+          mb.acc = next_acc
+          mb.vel += next_acc * dt * 0.5
+          mb.ang_acc = next_ang_acc
+          mb.ang_vel += next_ang_acc * dt * 0.5
         }
-        val next_force2 = force(tacts, mutable_system_helper)
-        val next_acc2 = next_force2 * mb.invMass
-        val next_torque2 = torque(tacts, mutable_system_helper)
-        val next_ang_acc2 = (next_torque2 * mb.invI).toDeg // in degrees
-        mb.acc += next_acc2
-        mb.vel += next_acc2 * base_dt * 0.5
-        mb.ang_acc += next_ang_acc2
-        mb.ang_vel += next_ang_acc2 * base_dt * 0.5
       }
-    }
 
-    // Correct positions
-    if(collisions.nonEmpty) collisions.foreach(c => c.positionalCorrection())
+      // Solve collisions
+      if(collisions.nonEmpty) collisions.foreach(c => c.solveCollision(dt))
+
+      // Solve joints
+      joints.foreach(j => j.solveConstraint(dt))
+
+      // Integrate velocities and forces last part
+      mutable_system.toSeq.sortBy(x => if(x._2.body.is_bullet) 1 else 0).foreach{ case (_, MutableSystemPart(mb, force, torque)) =>
+        if(!mb.is_static) {
+          mb.coord += mb.vel * dt
+          mb.ang = correctAngle((mb.ang + mb.ang_vel*dt) % 360)
+          mb.aabb = mb.shape.aabb(mb.coord, mb.ang)
+          val next_force2 = force(tacts, mutable_system_helper)
+          val next_acc2 = next_force2 * mb.invMass
+          val next_torque2 = torque(tacts, mutable_system_helper)
+          val next_ang_acc2 = (next_torque2 * mb.invI).toDeg // in degrees
+          mb.acc += next_acc2
+          mb.vel += next_acc2 * dt * 0.5
+          mb.ang_acc += next_ang_acc2
+          mb.ang_vel += next_ang_acc2 * dt * 0.5
+        }
+      }
+
+      // Correct positions
+      if(collisions.nonEmpty) collisions.foreach(c => c.positionalCorrection())
+    })
 
     tacts += 1l
   }
