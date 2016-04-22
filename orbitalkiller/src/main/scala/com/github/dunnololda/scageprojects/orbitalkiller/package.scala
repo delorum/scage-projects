@@ -89,8 +89,9 @@ package object orbitalkiller {
   }
 
   case class BoxShape(width:Double, height:Double) extends Shape {
+    val radius = math.sqrt(width*width + height*height)
     def aabb(center:DVec, rotation:Double): AABB = {
-      val one = center + DVec(-width/2, height/2).rotateDeg(rotation)
+      /*val one = center + DVec(-width/2, height/2).rotateDeg(rotation)
       val two = center + DVec(width/2, height/2).rotateDeg(rotation)
       val three = center + DVec(width/2, -height/2).rotateDeg(rotation)
       val four = center + DVec(-width/2, -height/2).rotateDeg(rotation)
@@ -101,7 +102,8 @@ package object orbitalkiller {
       val max_x = xs.max
       val min_y = ys.min
       val max_y = ys.max
-      AABB(center, max_x - min_x, max_y - min_y)
+      AABB(center, max_x - min_x, max_y - min_y)*/
+      AABB(center, radius, radius)
     }
 
     def phys2dShape: Phys2dShape = new Box(width, height)
@@ -114,9 +116,11 @@ package object orbitalkiller {
   }
 
   case class PolygonShape(points:List[DVec], convex_parts:List[PolygonShape]) extends Shape {
-    val r = math.sqrt(points.map(p => p.norma2).max)*2
+    val radius = math.sqrt(points.map(p => p.norma2).max)*2
+    val points_center = points.sum/points.length
+    val points_radius = math.sqrt(points.map(p => (p - points_center).norma2).max)*2
     def aabb(center:DVec, rotation:Double): AABB = {
-      AABB(center, r, r)
+      AABB(center, radius, radius)
     }
 
     def phys2dShape: Phys2dShape = new Polygon(points.map(_.toPhys2dVecD).toArray)
@@ -314,7 +318,8 @@ package object orbitalkiller {
   private val line_line_collider = new LineLineCollider
 
   def maybeCollisions(body1:MutableBodyState, body2:MutableBodyState):List[MutableContact] = {
-    def collide(pb1:Phys2dBody, pb2:Phys2dBody, collider:Phys2dCollider):List[GeometricContactData] = {
+    def _collide(pb1:Phys2dBody, pb2:Phys2dBody, collider:Phys2dCollider):List[GeometricContactData] = {
+      //println(s"maybeCollisions ${OrbitalKiller.nameByIndex(body1.index).getOrElse("N/A")} <-> ${OrbitalKiller.nameByIndex(body2.index).getOrElse("N/A")}")
       val num_contacts = collider.collide(contacts, pb1, pb2)
       if(num_contacts == 0) Nil
       else {
@@ -333,50 +338,76 @@ package object orbitalkiller {
         }
       }
     }
+    def _circlesTouches(c1:DVec, r1:Double, c2:DVec, r2:Double):Boolean = {
+      val totalRad = r1 + r2
+      val dx = math.abs(c2.x - c1.x)
+      if (dx > totalRad) {
+        false
+      } else {
+        val dy = math.abs(c2.y - c1.y)
+        if (dy > totalRad) {
+          false
+        } else {
+          val totalRad2 = totalRad*totalRad
+          totalRad2 >= ((dx * dx) + (dy * dy))
+        }
+      }
+    }
     if(!body1.aabb.aabbCollision(body2.aabb)) {
       //println(s"maybeCollisions aabb ${OrbitalKiller.nameByIndex(body1.index).getOrElse("N/A")} <-> ${OrbitalKiller.nameByIndex(body2.index).getOrElse("N/A")}")
       Nil
     } else {
-      //println(s"maybeCollisions ${OrbitalKiller.nameByIndex(body1.index).getOrElse("N/A")} <-> ${OrbitalKiller.nameByIndex(body2.index).getOrElse("N/A")}")
       body1.shape match {
         case c1: CircleShape =>
           body2.shape match {
             case c2: CircleShape =>
-              collide(body1.phys2dBody, body2.phys2dBody, circle_circle_collider).map(gcd => {
+              _collide(body1.phys2dBody, body2.phys2dBody, circle_circle_collider).map(gcd => {
                 MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
               })
             case l2: LineShape =>
-              collide(body2.phys2dBody, body1.phys2dBody, line_circle_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation))
+              _collide(body2.phys2dBody, body1.phys2dBody, line_circle_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation))
             case b2: BoxShape =>
-              collide(body1.phys2dBody, body2.phys2dBody, circle_box_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
-            case p2: PolygonShape =>
-              if (p2.convex_parts.isEmpty) {
-                collide(body2.phys2dBody, body1.phys2dBody, polygon_circle_collider).map(gcd => {
-                  MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation)
-                })
+              if(_circlesTouches(body1.coord, c1.radius, body2.coord, b2.radius)) {
+                _collide(body1.phys2dBody, body2.phys2dBody, circle_box_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
               } else {
-                p2.convex_parts.flatMap(p => {
-                  collide(body2.phys2dBodyWithShape(p), body1.phys2dBody, polygon_circle_collider).map(gcd => {
+                Nil
+              }
+            case p2: PolygonShape =>
+              if(_circlesTouches(body1.coord, c1.radius, body2.coord, p2.radius)) {
+                if (p2.convex_parts.isEmpty) {
+                  _collide(body2.phys2dBody, body1.phys2dBody, polygon_circle_collider).map(gcd => {
                     MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation)
                   })
-                })
+                } else {
+                  p2.convex_parts.flatMap(p => {
+                    if(_circlesTouches(body1.coord, c1.radius, body2.coord + p.points_center, p.points_radius)) {
+                      _collide(body2.phys2dBodyWithShape(p), body1.phys2dBody, polygon_circle_collider).map(gcd => {
+                        MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation)
+                      })
+                    } else {
+                      Nil
+                    }
+                  })
+                }
+              } else {
+                Nil
               }
             case _ => Nil
           }
         case l1: LineShape =>
           body2.shape match {
             case c2: CircleShape =>
-              collide(body1.phys2dBody, body2.phys2dBody, line_circle_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
+              _collide(body1.phys2dBody, body2.phys2dBody, line_circle_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
             case l2: LineShape =>
-              collide(body1.phys2dBody, body2.phys2dBody, line_line_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
+              _collide(body1.phys2dBody, body2.phys2dBody, line_line_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
             case b2: BoxShape =>
-              collide(body1.phys2dBody, body2.phys2dBody, line_box_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
+              _collide(body1.phys2dBody, body2.phys2dBody, line_box_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
             case p2: PolygonShape =>
               if (p2.convex_parts.isEmpty) {
-                collide(body1.phys2dBody, body2.phys2dBody, line_polygon_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
+                _collide(body1.phys2dBody, body2.phys2dBody, line_polygon_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
               } else {
                 p2.convex_parts.flatMap(p => {
-                  collide(body1.phys2dBody, body2.phys2dBodyWithShape(p), line_polygon_collider).map(gcd => {
+                  _collide(body1.phys2dBody, body2.phys2dBodyWithShape(p), line_polygon_collider).map(gcd => {
                     MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
                   })
                 })
@@ -386,90 +417,138 @@ package object orbitalkiller {
         case b1: BoxShape =>
           body2.shape match {
             case c2: CircleShape =>
-              collide(body1.phys2dBody, body2.phys2dBody, box_circle_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
-            case l2: LineShape =>
-              collide(body2.phys2dBody, body1.phys2dBody, line_box_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation))
-            case b2: BoxShape =>
-              collide(body1.phys2dBody, body2.phys2dBody, box_box_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
-            case p2: PolygonShape =>
-              if (p2.convex_parts.isEmpty) {
-                collide(body2.phys2dBody, body1.phys2dBody, polygon_box_collider).map(gcd => {
-                  MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation)
-                })
+              if(_circlesTouches(body1.coord, b1.radius, body2.coord, c2.radius)) {
+                _collide(body1.phys2dBody, body2.phys2dBody, box_circle_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
               } else {
-                p2.convex_parts.flatMap(p => {
-                  collide(body2.phys2dBodyWithShape(p), body1.phys2dBody, polygon_box_collider).map(gcd => {
-                    MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation)
-                  })
-                })
+                Nil
+              }
+            case l2: LineShape =>
+              _collide(body2.phys2dBody, body1.phys2dBody, line_box_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation))
+            case b2: BoxShape =>
+              _collide(body1.phys2dBody, body2.phys2dBody, box_box_collider).map(gcd => MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation))
+            case p2: PolygonShape =>
+              if(_circlesTouches(body1.coord, b1.radius, body2.coord, p2.radius)) {
+                if (_circlesTouches(body1.coord, b1.radius, body2.coord, p2.radius)) {
+                  if (p2.convex_parts.isEmpty) {
+                    _collide(body2.phys2dBody, body1.phys2dBody, polygon_box_collider).map(gcd => {
+                      MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation)
+                    })
+                  } else {
+                    p2.convex_parts.flatMap(p => {
+                      if(_circlesTouches(body1.coord, b1.radius, body2.coord + p.points_center, p.points_radius)) {
+                        _collide(body2.phys2dBodyWithShape(p), body1.phys2dBody, polygon_box_collider).map(gcd => {
+                          MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation)
+                        })
+                      } else {
+                        Nil
+                      }
+                    })
+                  }
+                } else {
+                  Nil
+                }
+              } else {
+                Nil
               }
             case _ => Nil
           }
         case p1: PolygonShape =>
           body2.shape match {
             case c2: CircleShape =>
-              if (p1.convex_parts.isEmpty) {
-                collide(body1.phys2dBody, body2.phys2dBody, polygon_circle_collider).map(gcd => {
-                  MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
-                })
-              } else {
-                p1.convex_parts.flatMap(p => {
-                  collide(body1.phys2dBodyWithShape(p), body2.phys2dBody, polygon_circle_collider).map(gcd => {
+              if(_circlesTouches(body1.coord, p1.radius, body2.coord, c2.radius)) {
+                if (p1.convex_parts.isEmpty) {
+                  _collide(body1.phys2dBody, body2.phys2dBody, polygon_circle_collider).map(gcd => {
                     MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
                   })
-                })
+                } else {
+                  p1.convex_parts.flatMap(p => {
+                    if(_circlesTouches(body1.coord + p.points_center, p.points_radius, body2.coord, c2.radius)) {
+                      _collide(body1.phys2dBodyWithShape(p), body2.phys2dBody, polygon_circle_collider).map(gcd => {
+                        MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
+                      })
+                    } else {
+                      Nil
+                    }
+                  })
+                }
+              } else {
+                Nil
               }
             case l2: LineShape =>
               if (p1.convex_parts.isEmpty) {
-                collide(body2.phys2dBody, body1.phys2dBody, line_polygon_collider).map(gcd => {
+                _collide(body2.phys2dBody, body1.phys2dBody, line_polygon_collider).map(gcd => {
                   MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation)
                 })
               } else {
                 p1.convex_parts.flatMap(p => {
-                  collide(body2.phys2dBody, body1.phys2dBodyWithShape(p), line_polygon_collider).map(gcd => {
+                  _collide(body2.phys2dBody, body1.phys2dBodyWithShape(p), line_polygon_collider).map(gcd => {
                     MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation)
                   })
                 })
               }
             case b2: BoxShape =>
-              if (p1.convex_parts.isEmpty) {
-                collide(body1.phys2dBody, body2.phys2dBody, polygon_box_collider).map(gcd => {
-                  MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
-                })
-              } else {
-                p1.convex_parts.flatMap(p => {
-                  collide(body1.phys2dBodyWithShape(p), body2.phys2dBody, polygon_box_collider).map(gcd => {
-                    MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
-                  })
-                })
-              }
-            case p2: PolygonShape =>
-              if (p1.convex_parts.isEmpty) {
-                if (p2.convex_parts.isEmpty) {
-                  collide(body1.phys2dBody, body2.phys2dBody, polygon_polygon_collider).map(gcd => {
+              if(_circlesTouches(body1.coord, p1.radius, body2.coord, b2.radius)) {
+                if (p1.convex_parts.isEmpty) {
+                  _collide(body1.phys2dBody, body2.phys2dBody, polygon_box_collider).map(gcd => {
                     MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
                   })
                 } else {
-                  p2.convex_parts.flatMap(p_2 => {
-                    collide(body1.phys2dBody, body2.phys2dBodyWithShape(p_2), polygon_polygon_collider).map(gcd => {
-                      MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
-                    })
+                  p1.convex_parts.flatMap(p => {
+                    if(_circlesTouches(body1.coord + p.points_center, p.points_radius, body2.coord, b2.radius)) {
+                      _collide(body1.phys2dBodyWithShape(p), body2.phys2dBody, polygon_box_collider).map(gcd => {
+                        MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
+                      })
+                    } else {
+                      Nil
+                    }
                   })
                 }
               } else {
-                p1.convex_parts.flatMap(p_1 => {
-                  if (p2.convex_parts.isEmpty) {
-                    collide(body1.phys2dBodyWithShape(p_1), body2.phys2dBody, polygon_polygon_collider).map(gcd => {
+                Nil
+              }
+            case p2: PolygonShape =>
+              if(_circlesTouches(body1.coord, p1.radius, body2.coord, p2.radius)) {
+                if (p1.convex_parts.isEmpty) {  // у p1 нет convex_parts
+                  if (p2.convex_parts.isEmpty) {  // convex_parts ни у кого нет
+                    _collide(body1.phys2dBody, body2.phys2dBody, polygon_polygon_collider).map(gcd => {
                       MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
                     })
-                  } else {
+                  } else {  // convex_parts есть только у p2
                     p2.convex_parts.flatMap(p_2 => {
-                      collide(body1.phys2dBodyWithShape(p_1), body2.phys2dBodyWithShape(p_2), polygon_polygon_collider).map(gcd => {
-                        MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
-                      })
+                      if(_circlesTouches(body1.coord, p1.radius, body2.coord + p_2.points_center, p_2.points_radius)) {
+                        _collide(body1.phys2dBody, body2.phys2dBodyWithShape(p_2), polygon_polygon_collider).map(gcd => {
+                          MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
+                        })
+                      } else {
+                        Nil
+                      }
                     })
                   }
-                })
+                } else {  // у p1 есть convex_parts
+                  p1.convex_parts.flatMap(p_1 => {
+                    if (p2.convex_parts.isEmpty) {  // у p2 нет convex_parts
+                      if(_circlesTouches(body1.coord + p_1.points_center, p_1.points_radius, body2.coord, p2.radius)) {
+                        _collide(body1.phys2dBodyWithShape(p_1), body2.phys2dBody, polygon_polygon_collider).map(gcd => {
+                          MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
+                        })
+                      } else {
+                        Nil
+                      }
+                    } else {  // convex_parts есть у всех
+                      p2.convex_parts.flatMap(p_2 => {
+                        if(_circlesTouches(body1.coord + p_1.points_center, p_1.points_radius, body2.coord + p_2.points_center, p_2.points_radius)) {
+                          _collide(body1.phys2dBodyWithShape(p_1), body2.phys2dBodyWithShape(p_2), polygon_polygon_collider).map(gcd => {
+                            MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
+                          })
+                        } else {
+                          Nil
+                        }
+                      })
+                    }
+                  })
+                }
+              } else {
+                Nil
               }
             case _ => Nil
           }

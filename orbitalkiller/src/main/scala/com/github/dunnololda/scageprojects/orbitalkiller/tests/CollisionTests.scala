@@ -163,6 +163,10 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480){
         drawRectCentered(s.center.toVec, s.width.toFloat, s.height.toFloat, WHITE)
         print(s.bodies.length, s.center.toVec, max_font_size/globalScale, WHITE, align = "center")
     }
+    dynamic_bodies.foreach(b1 => {
+
+      drawRectCentered(b1.currentState.aabb.center.toVec, b1.currentState.aabb.width.toFloat, b1.currentState.aabb.height.toFloat, WHITE)
+    })
   }
 
   interface {

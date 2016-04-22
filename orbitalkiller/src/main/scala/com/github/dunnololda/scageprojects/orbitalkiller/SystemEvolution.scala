@@ -2,6 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
+import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -176,21 +177,29 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
     joints.foreach(j => j.solveConstraint(base_dt))
 
     // Integrate velocities and forces last part
-    mutable_system.foreach{ case (index, MutableSystemPart(mb, force, torque)) =>
+    mutable_system.toSeq.sortBy(x => if(x._2.body.is_bullet) 1 else 0).foreach{ case (_, MutableSystemPart(mb, force, torque)) =>
       if(!mb.is_static) {
         if(mb.is_bullet) {
-          val other_bodies = mutable_system.filterNot(_._1 == mb.index).values.toList
+          val other_bodies = mutable_system.filterNot(_._1 == mb.index).values.toList.map(_.body)
           println("==================")
           def _increaseCoord(cur_count:Int, num_counts:Int): Unit = {
             if(cur_count > 0) {
-              println(mOrKmOrMKm(mb.vel.dist(OrbitalKiller.ship.linearVelocity) * base_dt / num_counts))
               mb.coord += mb.vel * base_dt / num_counts
               mb.ang = correctAngle((mb.ang + mb.ang_vel*base_dt/num_counts) % 360)
               mb.aabb = mb.shape.aabb(mb.coord, mb.ang)
+              println(s"station ${mOrKmOrMKm(mb.coord.dist(OrbitalKiller.station.coord))} :  : ${msecOrKmsec((mb.vel - station.linearVelocity).norma)}")
               if (other_bodies.forall(ob => {
-                val res = maybeCollisions(mb, ob.body).isEmpty
+                if(mb.coord.dist(ob.coord) < 31 && ob.index != OrbitalKiller.ship.index) {
+                  println("gotcha!")
+                }
+                val res = maybeCollisions(mb, ob).isEmpty
                 if(!res) {
-                  println(s"${OrbitalKiller.nameByIndex(mb.index).getOrElse("N/A")} <-> ${OrbitalKiller.nameByIndex(ob.body.index).getOrElse("N/A")}")
+                  println(s"${OrbitalKiller.nameByIndex(mb.index).getOrElse("N/A")} <-> ${OrbitalKiller.nameByIndex(ob.index).getOrElse("N/A")}")
+                  other_bodies.foreach {
+                    case x =>
+                      x.coord -= x.vel * base_dt
+                      x.coord += x.vel * base_dt / num_counts * (num_counts - cur_count + 1)
+                  }
                 }
                 res
               })) {
@@ -198,11 +207,12 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
               }
             }
           }
-          _increaseCoord(20, 20)
+          _increaseCoord(60, 60)
           println("==================")
         } else {
           mb.coord += mb.vel * base_dt
           mb.ang = correctAngle((mb.ang + mb.ang_vel*base_dt) % 360)
+          mb.aabb = mb.shape.aabb(mb.coord, mb.ang)
         }
         val next_force2 = force(tacts, mutable_system_helper)
         val next_acc2 = next_force2 * mb.invMass

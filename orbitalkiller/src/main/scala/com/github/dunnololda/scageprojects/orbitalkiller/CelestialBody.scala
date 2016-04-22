@@ -16,6 +16,7 @@ trait CelestialBody {
   def half_hill_radius:Double
   def air_free_altitude:Double
 
+  println(s"$name -> $index")
   val currentState:MutableBodyState = initState.toMutableBodyState
   val ground_length_km = (2*math.Pi*radius/1000).toInt
   val groundSpeedMsec = currentState.ang_vel.toRad*radius

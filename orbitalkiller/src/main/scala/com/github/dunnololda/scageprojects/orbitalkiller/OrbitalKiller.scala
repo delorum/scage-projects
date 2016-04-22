@@ -197,7 +197,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
 
   // на круговой орбите в 200 км от поверхности Земли
-  val ship_start_position = earth.coord + DVec(1000, earth.radius + 200000)
+  val ship_start_position = earth.coord + DVec(0, earth.radius + 199000)
   val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
 
   // стоим на поверхности Луны
@@ -221,7 +221,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   val station = new SpaceStation2(ScageId.nextId,
     init_coord = station_start_position,
     init_velocity = station_init_velocity,
-    init_rotation = 45
+    init_rotation = 0
   )
 
   // случайная орбита с перигеем от 200 до 1000 км, и апогеем от 0 до 3000 км выше перигея

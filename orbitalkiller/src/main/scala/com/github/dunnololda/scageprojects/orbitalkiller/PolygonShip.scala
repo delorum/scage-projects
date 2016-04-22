@@ -62,7 +62,7 @@ abstract class PolygonShip(
   init_coord:DVec,
   init_velocity:DVec = DVec.dzero,
   init_rotation:Double = 0) {
-
+  println(s"$name -> $index")
   var selected_engine:Option[Engine] = None
   def isSelectedEngine(e:Engine):Boolean = {
     selected_engine.exists(x => x == e)
@@ -636,7 +636,7 @@ abstract class PolygonShip(
 
   private def randomSpeed(vel:DVec) = {
     val dir_deg = 140.0 + math.random*80.0
-    vel.n.rotateDeg(dir_deg)*50.0
+    vel.n.rotateDeg(dir_deg)*30.0
   }
 
   def pilotStateStr:String = {
@@ -775,7 +775,7 @@ abstract class PolygonShip(
     val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(currentState, earth.currentState, 28, 0.5)
     if(!ship_is_crashed) {
       val dvel = currentState.dvel.norma
-      if (dvel > 10) {
+      if (false /*dvel > 10*/) {
         // crash tolerance = 10 m/s
         val crash_g = dvel / OrbitalKiller.base_dt / earth.g
         kill(f"Корабль уничтожен в результате столкновения ($crash_g%.2fg)", crash = true)

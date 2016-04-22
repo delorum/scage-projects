@@ -75,7 +75,7 @@ class Rocket1(index:Int,
 
   val docking_points = Nil
 
-  val two = new Engine("2", position = DVec(0.0, -20.0)*0.1, force_dir = DVec(0.0, 1.0), max_power = 200000, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
+  val two = new Engine("2", position = DVec(0.0, -20.0)*0.1, force_dir = DVec(0.0, 1.0), max_power = 100000, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
 
   val engines = List(two)
 
@@ -157,7 +157,7 @@ class Rocket1(index:Int,
 
   override def afterStep(time_msec:Long): Unit = {
     super.afterStep(time_msec)
-    println(s"${mOrKmOrMKm(coord.dist(ship.coord))} : ${msecOrKmsec((linearVelocity - ship.linearVelocity).norma)}")
+    println(s"ship: ${mOrKmOrMKm(coord.dist(ship.coord))} : ${msecOrKmsec((linearVelocity - ship.linearVelocity).norma)}")
   }
 
   override lazy val initState:BodyState = BodyState(
