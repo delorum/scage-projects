@@ -2,22 +2,11 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import java.io.FileOutputStream
 
-import com.github.dunnololda.scage.ScageLibD.DVec
-import com.github.dunnololda.scage.ScageLibD.ScageColor
-import com.github.dunnololda.scage.ScageLibD.Vec
-import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scage.ScageLibD.addGlyphs
-import com.github.dunnololda.scage.ScageLibD.appVersion
-import com.github.dunnololda.scage.ScageLibD.max_font_size
-import com.github.dunnololda.scage.ScageLibD.messageBounds
-import com.github.dunnololda.scage.ScageLibD.print
-import com.github.dunnololda.scage.ScageLibD.property
-import com.github.dunnololda.scage.ScageLibD.stopApp
+import com.github.dunnololda.scage.ScageLibD.{DVec, ScageColor, Vec, addGlyphs, appVersion, max_font_size, messageBounds, print, property, stopApp, _}
 import com.github.dunnololda.scage.support.ScageId
-import com.github.dunnololda.scageprojects.orbitalkiller.ships.{Satellite1, SpaceStation2, Ship4}
+import com.github.dunnololda.scageprojects.orbitalkiller.ships.{Satellite1, Ship4, SpaceStation2}
 
 import scala.collection._
-import scala.collection.mutable.ArrayBuffer
 
 //import collection.mutable.ArrayBuffer
 

@@ -518,13 +518,17 @@ abstract class PolygonShip(
   private val pilot_accs = ArrayBuffer[(DVec, Long)]()
 
   def is_manned:Boolean
+
   private var pilot_is_dead = false
   private var pilot_death_reason = ""
+  def deathReason = pilot_death_reason
   def pilotIsDead = pilot_is_dead
   def pilotIsAlive = !pilot_is_dead
 
   private var ship_is_crashed = false
   def shipIsCrashed = ship_is_crashed
+
+  def shipIsKilled = pilot_is_dead || ship_is_crashed
 
   /**
    * Если на пилота действует перегрузка, уменьшается этот счетчик. Скорость его уменьшения зависит от величины перегрузки.
@@ -595,7 +599,12 @@ abstract class PolygonShip(
               obstacle.vel
           }
         })
-        new Wreck(mass / wreck_parts.length, part_center, randomSpeed(linearVelocity, maybe_obstacle_vel), rotation, part_points, idx == 0)
+        new Wreck(mass / wreck_parts.length,
+                  part_center,
+                  randomSpeed(linearVelocity, maybe_obstacle_vel),
+                  rotation,
+                  part_points,
+                  idx == 0 && index == ship.index)
       }
       main_ship_wreck = wrecks.find(_.is_player)
       ship_is_crashed = true
@@ -812,5 +821,16 @@ abstract class PolygonShip(
         } else e.active = false
       }
     })
+  }
+
+  def onCollision(dt:Double): Unit = {
+    if(!ship_is_crashed) {
+      val dvel = currentState.dvel.norma
+      if (dvel > 10) {
+        // crash tolerance = 10 m/s
+        val crash_g = dvel / dt / earth.g
+        kill(f"Корабль уничтожен в результате столкновения ($crash_g%.2fg)", crash = true)
+      }
+    }
   }
 }

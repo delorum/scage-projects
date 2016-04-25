@@ -62,12 +62,9 @@ class Wreck(mass:Double, init_coord:DVec, init_velocity:DVec, init_rotation:Doub
   if(!is_player) {
     actionStaticPeriod(1000) {
       if (system_evolution.tacts - start_tact > 4000) {
-        println(s"system_evolution.tacts - start_tact = ${system_evolution.tacts - start_tact}, deleting wreck")
         system_evolution.removeBodyByIndex(index)
         delOperation(render_id)
         deleteSelf()
-      } else {
-        println(s"system_evolution.tacts - start_tact = ${system_evolution.tacts - start_tact}")
       }
     }
   }

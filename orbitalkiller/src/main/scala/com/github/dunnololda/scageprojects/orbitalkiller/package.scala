@@ -712,6 +712,8 @@ package object orbitalkiller {
 
     override def toString = s"MutableBodyState($index)"
     def saveData:String = s"$index ${acc.x}:${acc.y} ${vel.x}:${vel.y} ${coord.x}:${coord.y} $ang_acc $ang_vel $ang"
+
+
   }
 
   implicit class Phys2dBody2BodyState(pb:Phys2dBody) {
