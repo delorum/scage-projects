@@ -2,7 +2,6 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
-import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -66,17 +65,22 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
   private val joints = ArrayBuffer[Joint]()
   var tacts = init_tacts
 
+  private var bullets_counter:Int = 0
+  def bulletsInSystem:Boolean = bullets_counter > 0
+
   def addBody(new_part:MutableSystemPart): Unit = {
     mutable_system += (new_part.body.index -> new_part)
     all_bodies += new_part.body
+    if(new_part.body.is_bullet) {
+      bullets_counter += 1
+    }
   }
 
   def addBody(b:MutableBodyState,
               force:(Long, EvolutionHelper) => DVec,
               torque:(Long, EvolutionHelper) => Double): Unit = {
     val new_part = MutableSystemPart(b, force, torque)
-    mutable_system += (b.index -> new_part)
-    all_bodies += b
+    addBody(new_part)
   }
 
   def addBody(b:MutableBodyState): Unit = {
@@ -128,7 +132,12 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
   }
 
   def removeBodyByIndex(index:Int): Unit = {
-    mutable_system.remove(index).foreach(part => all_bodies -= part.body)
+    mutable_system.remove(index).foreach(part => {
+      all_bodies -= part.body
+      if(part.body.is_bullet) {
+        bullets_counter -= 1
+      }
+    })
   }
 
   def allBodyStates:mutable.Map[Int, MutableBodyState] = {
@@ -140,9 +149,8 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
   def bodyState(index:Int):Option[MutableBodyState] = mutable_system.get(index).map(_.body)
 
   def step(): Unit = {
-    val bullets_exist = mutable_system.values.exists(_.body.is_bullet)
-    val substeps = if(bullets_exist) 60 else 1
-    val dt = if(bullets_exist) base_dt/60 else base_dt
+    val substeps = if(bulletsInSystem) 60 else 1
+    val dt = if(bulletsInSystem) base_dt/60 else base_dt
     (1 to substeps).foreach(_ => {
       mutable_system.foreach(_._2.body.init())
 
@@ -158,10 +166,9 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
           c <- maybeCollisions(b1, b2)
         } yield c
       }
-      //println("=================")
 
       // Integrate forces first part
-      mutable_system.foreach {case (index, MutableSystemPart(mb, force, torque)) =>
+      mutable_system.foreach {case (_, MutableSystemPart(mb, force, torque)) =>
         if(!mb.is_static) {
           val next_force = force(tacts, mutable_system_helper)
           val next_acc = next_force * mb.invMass
@@ -181,7 +188,7 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
       joints.foreach(j => j.solveConstraint(dt))
 
       // Integrate velocities and forces last part
-      mutable_system.toSeq.sortBy(x => if(x._2.body.is_bullet) 1 else 0).foreach{ case (_, MutableSystemPart(mb, force, torque)) =>
+      mutable_system.foreach{ case (_, MutableSystemPart(mb, force, torque)) =>
         if(!mb.is_static) {
           mb.coord += mb.vel * dt
           mb.ang = correctAngle((mb.ang + mb.ang_vel*dt) % 360)

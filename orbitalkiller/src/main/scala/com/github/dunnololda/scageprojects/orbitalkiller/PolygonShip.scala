@@ -24,6 +24,7 @@ case object NearestPlanetVelocity   extends FlightMode {override def rusStr: Str
 case object Maneuvering             extends FlightMode {override def rusStr: String = "маневрирование"}  // 0
 
 class DockingPoints(val p1:DVec, val p2:DVec, ship:PolygonShip) {
+  val joint_point = p1 + (p2-p1)*0.5
   val dock_dist = 0.5 // в метрах, при каком расстоянии между точками стыковки двух кораблей происходит захватю Для простоты это значение - одинаковая для всех константа. Вынесли сюда, чтобы было одно место, где поменять.
   def curP1 = ship.currentState.coord + p1.rotateDeg(ship.currentState.ang)
   def curP1vel = ship.currentState.vel + (ship.currentState.ang_vel*p1.rotateDeg(90))
@@ -54,7 +55,7 @@ class DockingPoints(val p1:DVec, val p2:DVec, ship:PolygonShip) {
     (p1_on_the_right_way, p2_on_the_right_way)
   }
 }
-case class DockData(dock_to_ship:PolygonShip, joints:List[Joint], our_dp:DockingPoints, other_ship_dp:DockingPoints)
+case class DockData(dock_to_ship:PolygonShip, joint:Joint, our_dp:DockingPoints, other_ship_dp:DockingPoints)
 
 abstract class PolygonShip(
   val index:Int,
@@ -109,16 +110,15 @@ abstract class PolygonShip(
   def dock(): Unit = {
     possibleDockPointsWithNearestShip.headOption.foreach {
       case (dp, os, osdp) =>
-        val j1 = system_evolution.addJoint(currentState, dp.p1, os.currentState, osdp.p1)
-        val j2 = system_evolution.addJoint(currentState, dp.p2, os.currentState, osdp.p2)
-        setDocked(Some(DockData(os, List(j1, j2), dp, osdp)))
-        os.setDocked(Some(DockData(this, List(j1, j2), osdp, dp)))
+        val joint = system_evolution.addJoint(currentState, dp.joint_point, os.currentState, osdp.joint_point)
+        setDocked(Some(DockData(os, joint, dp, osdp)))
+        os.setDocked(Some(DockData(this, joint, osdp, dp)))
     }
   }
   def undock(): Unit = {
     dock_data.foreach {
-      case DockData(os, joints, our_dp, other_ship_dp) =>
-        joints.foreach(j => system_evolution.removeJoint(j))
+      case DockData(os, joint, our_dp, other_ship_dp) =>
+        system_evolution.removeJoint(joint)
         os.setDocked(None)
     }
     dock_data = None
@@ -306,6 +306,15 @@ abstract class PolygonShip(
           if (OrbitalKiller.globalScale >= 0.8) {
             drawArrow(DVec.zero, relativeLinearVelocity.n * radius, CYAN) // current velocity
           }
+
+          // ниже рисуем aabb и кружочки вокруг формы корабля и отдельных частей формы
+          /*val x = currentState.shape.asInstanceOf[PolygonShape]
+          drawCircle(DVec.zero, x.radius, WHITE)
+          drawRectCentered(DVec.zero, x.radius*2, x.radius*2, WHITE)
+          x.convex_parts.foreach(y => {
+            drawCircle(y.points_center.rotateDeg(rotation), y.points_radius, WHITE)
+            drawRectCentered(y.points_center.rotateDeg(rotation), y.points_radius*2, y.points_radius*2, WHITE)
+          })*/
 
           openglRotateDeg(rotation)
           drawSlidingLines(draw_points, WHITE)

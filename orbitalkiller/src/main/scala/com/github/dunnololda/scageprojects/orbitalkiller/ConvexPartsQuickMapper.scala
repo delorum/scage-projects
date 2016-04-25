@@ -13,6 +13,24 @@ object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", 
     constructor.newInstance(args:_*).asInstanceOf[PolygonShip]
   }
 
+  /*if(ship.convex_parts.nonEmpty) {
+    ship.convex_parts.zipWithIndex.foreach {
+      case (convex_part, idx) =>
+        if(!isCCW(convex_part.points)) {
+          println(s"$idx convex part is not ccw!")
+        }
+    }
+  }
+
+  if(ship.wreck_parts.nonEmpty) {
+    ship.wreck_parts.zipWithIndex.foreach {
+      case (wreck_part, idx) =>
+        if(!isCCW(wreck_part.points)) {
+          println(s"$idx wreck part is not ccw!")
+        }
+    }
+  }*/
+
   private val k = ship.engine_size.toFloat*2
 
   val ship_points = ship.points.map(p => p/k + windowCenter)
@@ -29,7 +47,7 @@ object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", 
   private lazy val points = collection.mutable.ArrayBuffer[DVec]()
   private var selected_point = 0
 
-  private val mapped = ArrayBuffer[List[DVec]]()
+  private val mapped = ArrayBuffer[List[DVec]](/*ship.convex_parts.map(_.points.map(p => p / k + DVec(windowWidth / 2, windowHeight / 2))):_**/)
 
   // ВАЖНО: следует перечислять точки ПРОТИВ ЧАСОВОЙ СТРЕЛКИ! Если по часовой перечислять, collision detection будет плохо работать
 
@@ -39,16 +57,21 @@ object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", 
     if(x - x1 < x2 - x) x1 else x2
   }
 
-  key(KEY_SPACE, onKeyDown = {
-    if(points.length > 2) {
-      val ps = points.reverse
-      val c = ps.sum / ps.length
-      val ccw = (ps :+ ps.head).map(_ - c).sliding(2).map {
+  def isCCW(points:Seq[DVec]):Boolean = {
+    points.length > 2 && {
+      val c = points.sum / points.length
+      (points :+ points.head).map(_ - c).sliding(2).map {
         case Seq(p1, p2) =>
           // http://stackoverflow.com/questions/1165647/how-to-determine-if-a-list-of-polygon-points-are-in-clockwise-order
           (p2.x - p1.x) * (p2.y + p1.y)
       }.sum < 0
-      if(ccw) {
+    }
+  }
+
+  key(KEY_SPACE, onKeyDown = {
+    if(points.length > 2) {
+      val ps = points.reverse
+      if(isCCW(ps)) {
         println(s"PolygonShape(List(${ps.map(p => s"DVec(${(p.x - windowWidth / 2).toFloat * k}, ${(p.y - windowHeight / 2).toFloat * k})").mkString(", ")}), Nil),")
         mapped += points.toList
       } else {

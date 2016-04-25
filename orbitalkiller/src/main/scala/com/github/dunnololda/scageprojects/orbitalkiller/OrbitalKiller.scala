@@ -98,8 +98,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       system_cache.getOrElseUpdate(tacts, {
         println("adding to system_cache")
         val system_evolution_copy = system_evolution.copy
-        val steps = (tacts - system_evolution_copy.tacts).toInt
-        (1 to steps).foreach(x => {
+        val steps = tacts - system_evolution_copy.tacts
+        (1l to steps).foreach(x => {
           system_evolution_copy.bodyState(ship.index).foreach(bs => {
             bs.mass = ship.currentMass(system_evolution_copy.tacts)
           })
@@ -197,7 +197,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
 
   // на круговой орбите в 200 км от поверхности Земли
-  val ship_start_position = earth.coord + DVec(0, earth.radius + 199000)
+  val ship_start_position = earth.coord + DVec(-100, earth.radius + 199000)
   val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
 
   // стоим на поверхности Луны
@@ -221,7 +221,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   val station = new SpaceStation2(ScageId.nextId,
     init_coord = station_start_position,
     init_velocity = station_init_velocity,
-    init_rotation = 0
+    init_rotation = 180
   )
 
   // случайная орбита с перигеем от 200 до 1000 км, и апогеем от 0 до 3000 км выше перигея
@@ -457,26 +457,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def saveGame() {
     val fos = new FileOutputStream("save.orbitalkiller")
     fos.write(s"time $tacts\n".getBytes)
-    currentBodyState(ship.index).foreach {
-      case x =>
-        fos.write(s"${x.index} ${x.acc.x}:${x.acc.y} ${x.vel.x}:${x.vel.y} ${x.coord.x}:${x.coord.y} ${x.ang_acc} ${x.ang_vel} ${x.ang}\n".getBytes)
-    }
-    currentBodyState(station.index).foreach {
-      case x =>
-        fos.write(s"${x.index} ${x.acc.x}:${x.acc.y} ${x.vel.x}:${x.vel.y} ${x.coord.x}:${x.coord.y} ${x.ang_acc} ${x.ang_vel} ${x.ang}\n".getBytes)
-    }
-    currentBodyState(moon.index).foreach {
-      case x =>
-        fos.write(s"${x.index} ${x.acc.x}:${x.acc.y} ${x.vel.x}:${x.vel.y} ${x.coord.x}:${x.coord.y} ${x.ang_acc} ${x.ang_vel} ${x.ang}\n".getBytes)
-    }
-    currentBodyState(earth.index).foreach {
-      case x =>
-        fos.write(s"${x.index} ${x.acc.x}:${x.acc.y} ${x.vel.x}:${x.vel.y} ${x.coord.x}:${x.coord.y} ${x.ang_acc} ${x.ang_vel} ${x.ang}\n".getBytes)
-    }
-    currentBodyState(sun.index).foreach {
-      case x =>
-        fos.write(s"${x.index} ${x.acc.x}:${x.acc.y} ${x.vel.x}:${x.vel.y} ${x.coord.x}:${x.coord.y} ${x.ang_acc} ${x.ang_vel} ${x.ang}\n".getBytes)
-    }
+    currentBodyState(ship.index).foreach(x => fos.write(s"${x.saveData}\n".getBytes))
+    currentBodyState(station.index).foreach(x => fos.write(s"${x.saveData}\n".getBytes))
+    currentBodyState(moon.index).foreach(x => fos.write(s"${x.saveData}\n".getBytes))
+    currentBodyState(earth.index).foreach(x => fos.write(s"${x.saveData}\n".getBytes))
+    currentBodyState(sun.index).foreach(x => fos.write(s"${x.saveData}\n".getBytes))
     fos.close()
     _show_game_saved_message = true
     val start = System.currentTimeMillis()
@@ -537,8 +522,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       vel <- _parseDVec(s(2))
       coord <- _parseDVec(s(3))
       ang_acc <- _parseDouble(s(4))
-      ang_vel <- _parseDouble(s(4))
-      ang <- _parseDouble(s(4))
+      ang_vel <- _parseDouble(s(5))
+      ang <- _parseDouble(s(6))
     } yield {
         (index, (acc, vel, coord, ang_acc, ang_vel, ang))
       }).toMap
@@ -754,8 +739,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   keyIgnorePause(KEY_F3, onKeyDown = if(!drawMapMode) viewMode = FixedOnShipAbsolute else viewMode = FixedOnOrbit)     // фиксация на корабле, абсолютная ориентация, в режиме карты: фиксация на орбите
   keyIgnorePause(KEY_F4, onKeyDown = if(!drawMapMode) viewMode = Landing)                       // посадка на планету, если не в режиме карты
 
-  keyIgnorePause(KEY_F5, onKeyDown = saveGame())                          // сохранить текущее состояние системы
-  keyIgnorePause(KEY_F6, onKeyDown = loadGame())                          // загрузить из файла состояние системы
+  // функционал толком не работает
+  //keyIgnorePause(KEY_F5, onKeyDown = saveGame())                          // сохранить текущее состояние системы
+  //keyIgnorePause(KEY_F6, onKeyDown = loadGame())                          // загрузить из файла состояние системы
 
   keyIgnorePause(KEY_I, onKeyDown = {
     disable_interface_drawing = !disable_interface_drawing

@@ -7,6 +7,28 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
  *
  */
 public class PolygonPolygonCollider implements Collider {
+    public Boolean isCCW(Vector2f[] vertices) {
+        Vector2f c = new Vector2f();
+        for(Vector2f v: vertices) {
+            c.add(v);
+        }
+        c.scale(1.0 / vertices.length);
+        Double sum = 0.0;
+        for(int i = 0; i < vertices.length; i++) {
+            Vector2f x = new Vector2f(vertices[i].getX(), vertices[i].getY());
+            x.add(c.negate());
+            if(i == 0) {
+                Vector2f p1 = vertices[vertices.length-1];
+                Vector2f p2 = vertices[i];
+                sum += (p2.getX() - p1.getX())*(p2.getY() + p1.getY());
+            } else {
+                Vector2f p1 = vertices[i-1];
+                Vector2f p2 = vertices[i];
+                sum += (p2.getX() - p1.getX())*(p2.getY() + p1.getY());
+            }
+        }
+        return vertices.length > 2 && sum < 0;
+    }
     /**
      * @see Collider#collide(Contact[], Body, Body)
      */
@@ -15,7 +37,13 @@ public class PolygonPolygonCollider implements Collider {
         Polygon polyB = (Polygon) bodyB.getShape();
 
         Vector2f[] vertsA = polyA.getVertices(bodyA.getPosition(), bodyA.getRotation());
+        /*if(!isCCW(vertsA)) {
+            System.out.println("vertsA");
+        }*/
         Vector2f[] vertsB = polyB.getVertices(bodyB.getPosition(), bodyB.getRotation());
+        /*if(!isCCW(vertsB)) {
+            System.out.println("vertsB");
+        }*/
 
         Vector2f centroidA = new Vector2f(polyA.getCentroid());
         centroidA.add(bodyA.getPosition());

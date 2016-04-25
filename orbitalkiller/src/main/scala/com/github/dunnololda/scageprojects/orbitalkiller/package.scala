@@ -319,7 +319,6 @@ package object orbitalkiller {
 
   def maybeCollisions(body1:MutableBodyState, body2:MutableBodyState):List[MutableContact] = {
     def _collide(pb1:Phys2dBody, pb2:Phys2dBody, collider:Phys2dCollider):List[GeometricContactData] = {
-      //println(s"maybeCollisions ${OrbitalKiller.nameByIndex(body1.index).getOrElse("N/A")} <-> ${OrbitalKiller.nameByIndex(body2.index).getOrElse("N/A")}")
       val num_contacts = collider.collide(contacts, pb1, pb2)
       if(num_contacts == 0) Nil
       else {
@@ -354,7 +353,6 @@ package object orbitalkiller {
       }
     }
     if(!body1.aabb.aabbCollision(body2.aabb)) {
-      //println(s"maybeCollisions aabb ${OrbitalKiller.nameByIndex(body1.index).getOrElse("N/A")} <-> ${OrbitalKiller.nameByIndex(body2.index).getOrElse("N/A")}")
       Nil
     } else {
       body1.shape match {
@@ -380,7 +378,7 @@ package object orbitalkiller {
                   })
                 } else {
                   p2.convex_parts.flatMap(p => {
-                    if(_circlesTouches(body1.coord, c1.radius, body2.coord + p.points_center, p.points_radius)) {
+                    if(_circlesTouches(body1.coord, c1.radius, body2.coord + p.points_center.rotateDeg(body2.ang), p.points_radius)) {
                       _collide(body2.phys2dBodyWithShape(p), body1.phys2dBody, polygon_circle_collider).map(gcd => {
                         MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation)
                       })
@@ -435,7 +433,7 @@ package object orbitalkiller {
                     })
                   } else {
                     p2.convex_parts.flatMap(p => {
-                      if(_circlesTouches(body1.coord, b1.radius, body2.coord + p.points_center, p.points_radius)) {
+                      if(_circlesTouches(body1.coord, b1.radius, body2.coord + p.points_center.rotateDeg(body2.ang), p.points_radius)) {
                         _collide(body2.phys2dBodyWithShape(p), body1.phys2dBody, polygon_box_collider).map(gcd => {
                           MutableContact(body1, body2, gcd.contact_point, -gcd.normal, gcd.separation)
                         })
@@ -462,7 +460,7 @@ package object orbitalkiller {
                   })
                 } else {
                   p1.convex_parts.flatMap(p => {
-                    if(_circlesTouches(body1.coord + p.points_center, p.points_radius, body2.coord, c2.radius)) {
+                    if(_circlesTouches(body1.coord + p.points_center.rotateDeg(body1.ang), p.points_radius, body2.coord, c2.radius)) {
                       _collide(body1.phys2dBodyWithShape(p), body2.phys2dBody, polygon_circle_collider).map(gcd => {
                         MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
                       })
@@ -494,7 +492,7 @@ package object orbitalkiller {
                   })
                 } else {
                   p1.convex_parts.flatMap(p => {
-                    if(_circlesTouches(body1.coord + p.points_center, p.points_radius, body2.coord, b2.radius)) {
+                    if(_circlesTouches(body1.coord + p.points_center.rotateDeg(body1.ang), p.points_radius, body2.coord, b2.radius)) {
                       _collide(body1.phys2dBodyWithShape(p), body2.phys2dBody, polygon_box_collider).map(gcd => {
                         MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
                       })
@@ -515,7 +513,7 @@ package object orbitalkiller {
                     })
                   } else {  // convex_parts есть только у p2
                     p2.convex_parts.flatMap(p_2 => {
-                      if(_circlesTouches(body1.coord, p1.radius, body2.coord + p_2.points_center, p_2.points_radius)) {
+                      if(_circlesTouches(body1.coord, p1.radius, body2.coord + p_2.points_center.rotateDeg(body2.ang), p_2.points_radius)) {
                         _collide(body1.phys2dBody, body2.phys2dBodyWithShape(p_2), polygon_polygon_collider).map(gcd => {
                           MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
                         })
@@ -527,7 +525,7 @@ package object orbitalkiller {
                 } else {  // у p1 есть convex_parts
                   p1.convex_parts.flatMap(p_1 => {
                     if (p2.convex_parts.isEmpty) {  // у p2 нет convex_parts
-                      if(_circlesTouches(body1.coord + p_1.points_center, p_1.points_radius, body2.coord, p2.radius)) {
+                      if(_circlesTouches(body1.coord + p_1.points_center.rotateDeg(body1.ang), p_1.points_radius, body2.coord, p2.radius)) {
                         _collide(body1.phys2dBodyWithShape(p_1), body2.phys2dBody, polygon_polygon_collider).map(gcd => {
                           MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
                         })
@@ -536,7 +534,7 @@ package object orbitalkiller {
                       }
                     } else {  // convex_parts есть у всех
                       p2.convex_parts.flatMap(p_2 => {
-                        if(_circlesTouches(body1.coord + p_1.points_center, p_1.points_radius, body2.coord + p_2.points_center, p_2.points_radius)) {
+                        if(_circlesTouches(body1.coord + p_1.points_center.rotateDeg(body1.ang), p_1.points_radius, body2.coord + p_2.points_center.rotateDeg(body2.ang), p_2.points_radius)) {
                           _collide(body1.phys2dBodyWithShape(p_1), body2.phys2dBodyWithShape(p_2), polygon_polygon_collider).map(gcd => {
                             MutableContact(body1, body2, gcd.contact_point, gcd.normal, gcd.separation)
                           })
@@ -635,8 +633,8 @@ package object orbitalkiller {
       dvel = DVec.zero
       d_ang_acc = 0.0
       d_ang_vel = 0.0
-      aabb = shape.aabb(coord, ang)
       contacts.clear()
+      aabb = shape.aabb(coord, ang)
     }
 
     var aabb = shape.aabb(coord, ang)
@@ -713,6 +711,7 @@ package object orbitalkiller {
     }
 
     override def toString = s"MutableBodyState($index)"
+    def saveData:String = s"$index ${acc.x}:${acc.y} ${vel.x}:${vel.y} ${coord.x}:${coord.y} $ang_acc $ang_vel $ang"
   }
 
   implicit class Phys2dBody2BodyState(pb:Phys2dBody) {

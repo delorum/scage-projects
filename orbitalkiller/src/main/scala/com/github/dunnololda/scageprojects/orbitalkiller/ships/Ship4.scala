@@ -550,6 +550,15 @@ class Ship4(index:Int,
           val pb = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*(-70000)
           drawLine(pa, pb, WHITE)*/
 
+          // ниже рисуем aabb и кружочки вокруг формы корабля и отдельных частей формы
+          /*val x = currentState.shape.asInstanceOf[PolygonShape]
+          drawCircle(DVec.zero, x.radius, WHITE)
+          drawRectCentered(DVec.zero, x.radius*2, x.radius*2, WHITE)
+          x.convex_parts.foreach(y => {
+            drawCircle(y.points_center.rotateDeg(rotation), y.points_radius, WHITE)
+            drawRectCentered(y.points_center.rotateDeg(rotation), y.points_radius*2, y.points_radius*2, WHITE)
+          })*/
+
           openglRotateDeg(rotation)
 
           // ниже алгоритм рисует линии корпуса корабля темносерым или белым в зависимости, в тени эта линия или нет
