@@ -147,9 +147,9 @@ abstract class PolygonShip(
     )
   }
 
-  def coord = if(pilotIsAlive) currentState.coord else ship_parts.headOption.map(_.coord).getOrElse(currentState.coord)
+  def coord = if(pilotIsAlive) currentState.coord else main_ship_wreck.headOption.map(_.coord).getOrElse(currentState.coord)
 
-  def linearVelocity = if(pilotIsAlive) currentState.vel else ship_parts.headOption.map(_.vel).getOrElse(currentState.vel)
+  def linearVelocity = if(pilotIsAlive) currentState.vel else main_ship_wreck.headOption.map(_.linearVelocity).getOrElse(currentState.vel)
 
   def relativeLinearVelocity = {
     linearVelocity - insideSphereOfInfluenceOfCelestialBody(coord, mass, OrbitalKiller.currentPlanetStates).map(_._2.vel).getOrElse(DVec.zero)
@@ -164,9 +164,9 @@ abstract class PolygonShip(
     }
   }
 
-  def angularVelocity = if(pilotIsAlive) currentState.ang_vel else ship_parts.headOption.map(_.ang_vel).getOrElse(currentState.ang_vel)
+  def angularVelocity = if(pilotIsAlive) currentState.ang_vel else main_ship_wreck.headOption.map(_.angularVelocity).getOrElse(currentState.ang_vel)
 
-  def rotation = if(pilotIsAlive) currentState.ang else  ship_parts.headOption.map(_.ang).getOrElse(currentState.ang)
+  def rotation = if(pilotIsAlive) currentState.ang else  main_ship_wreck.headOption.map(_.rotation).getOrElse(currentState.ang)
 
   def currentReactiveForce(time:Long, bs:BodyState):DVec = {
     engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(DVec.dzero) {
@@ -245,7 +245,7 @@ abstract class PolygonShip(
   }
 
   def engineColor(e:Engine, in_shadow:Boolean):ScageColor = {
-    if(ship.pilot_is_dead || e.active) RED else if(in_shadow) DARK_GRAY else WHITE
+    if(pilot_is_dead || e.active) RED else if(in_shadow) DARK_GRAY else WHITE
   }
 
   def engineActiveSize(e:Engine, max_size:Double):Double = {
@@ -351,35 +351,16 @@ abstract class PolygonShip(
           }
         }
       } else {
-        if(shipIsCrashed) {
-          ship_parts.foreach(mbs => {
-            val mbs_points = mbs.shape.asInstanceOf[PolygonShape].points
-            openglLocalTransform {
-              openglMove(mbs.coord - base)
-              drawFilledCircle(DVec.zero, 0.3, GREEN)
-              /*mbs.contacts.foreach(x => {
-              if(x.a.index.contains("part") && x.b.index.contains("part")) {
-                drawFilledCircle(x.contact_point - mbs.coord, 0.3, YELLOW)
-                drawLine(x.contact_point - mbs.coord, x.contact_point - mbs.coord + x.normal.n, YELLOW)
-                drawCircle(x.contact_point - mbs.coord, x.separation, YELLOW)
-              }
-            })*/
-              openglRotateDeg(mbs.ang)
-              drawSlidingLines(mbs_points :+ mbs_points.head, colorIfPlayerAliveOrRed(WHITE))
-            }
-          })
-        } else {
-          openglLocalTransform {
-            openglMove(coord - base)
-            openglRotateDeg(rotation)
-            drawSlidingLines(draw_points, colorIfPlayerAliveOrRed(WHITE))
-          }
+        openglLocalTransform {
+          openglMove(coord - base)
+          openglRotateDeg(rotation)
+          drawSlidingLines(draw_points, colorIfPlayerAliveOrRed(WHITE))
         }
       }
     }
   }
 
-  render {
+  private val render_id = render {
     drawShip()
   }
 
@@ -586,8 +567,8 @@ abstract class PolygonShip(
 
   def colorIfPlayerAliveOrRed(color: => ScageColor) = if(OrbitalKiller.ship.pilotIsDead) RED else color
 
-  protected var ship_parts:List[MutableBodyState] = Nil
-
+  protected var main_ship_wreck:Option[Wreck] = None
+  
   private def kill(reason:String, crash:Boolean): Unit = {
     pilot_is_dead = true
     pilot_death_reason = reason
@@ -600,52 +581,36 @@ abstract class PolygonShip(
       undock()
     }
     if(crash) {
-      OrbitalKiller.system_evolution.removeBodyByIndex(index)
-      ship_parts = wreck_parts.zipWithIndex.map(x => {
-        val part_center = currentState.coord + x._1.points.sum / x._1.points.length
-        val part_points = x._1.points.map(p => currentState.coord + p - part_center)
-        val part_index = ScageId.nextId
-        val crashed_with = currentState.contacts.headOption.map(c => if(c.a.index != index) c.a else c.b)
-        val crashed_vel = crashed_with.map(x => {
-          planetByIndex(x.index) match {
+      ShipsHolder.removeShip(this)
+      delOperation(render_id)
+      val wrecks = wreck_parts.zipWithIndex.map {case (wreck_part, idx) =>
+        val part_center = currentState.coord + wreck_part.points.sum / wreck_part.points.length
+        val part_points = wreck_part.points.map(p => currentState.coord + p - part_center)
+        val maybe_obstacle = currentState.contacts.headOption.map(c => if(c.a.index != index) c.a else c.b)
+        val maybe_obstacle_vel = maybe_obstacle.map(obstacle => {
+          planetByIndex(obstacle.index) match {
             case Some(planet) =>
-              x.vel + (coord - x.coord).p*planet.groundSpeedMsec
+              obstacle.vel + (coord - obstacle.coord).p*planet.groundSpeedMsec
             case None =>
-              x.vel
+              obstacle.vel
           }
-        }).getOrElse(linearVelocity)
-        val mbs = new MutableBodyState(BodyState(
-          index = part_index,
-          mass = mass / wreck_parts.length,
-          vel = crashed_vel + randomSpeed(linearVelocity - crashed_vel),
-          coord = part_center,
-          ang = rotation,
-          shape = PolygonShape(part_points, Nil),
-          is_static = false,
-          restitution = 0.8
-        ))
-        OrbitalKiller.system_evolution.addBody(mbs,
-          (tacts, helper) => {
-            helper.gravityForceFromTo(sun.index, part_index) +
-              helper.gravityForceFromTo(earth.index, part_index) +
-              helper.gravityForceFromTo(moon.index, part_index) +
-              helper.funcOfArrayOrDVecZero(Array(part_index, earth.index), l => {
-                val bs = l(0)
-                val e = l(1)
-                earth.airResistance(bs, e, 28, 0.5)
-              })
-          },
-          (tacts, helper) => 0.0
-        )
-        mbs
-      })
+        })
+        new Wreck(mass / wreck_parts.length, part_center, randomSpeed(linearVelocity, maybe_obstacle_vel), rotation, part_points, idx == 0)
+      }
+      main_ship_wreck = wrecks.find(_.is_player)
       ship_is_crashed = true
     }
   }
 
-  private def randomSpeed(vel:DVec) = {
-    val dir_deg = 140.0 + math.random*80.0
-    vel.n.rotateDeg(dir_deg)*30.0
+  private def randomSpeed(our_vel:DVec, maybe_obstacle_vel:Option[DVec]) = {
+    maybe_obstacle_vel match {
+      case Some(obstacle_vel) =>
+        val dir_deg = 140.0 + math.random*80.0
+        obstacle_vel + (our_vel - obstacle_vel).n.rotateDeg(dir_deg)*30.0
+      case None =>
+        val dir_deg = math.random*360
+        our_vel + DVec(0, 1).rotateDeg(dir_deg)*30.0
+    }
   }
 
   def pilotStateStr:String = {
@@ -741,23 +706,6 @@ abstract class PolygonShip(
 
   lazy val currentState:MutableBodyState = initState.toMutableBodyState
 
-  system_evolution.addBody(
-    currentState,
-    (tacts, helper) => {
-      helper.gravityForceFromTo(sun.index, index) +
-        helper.gravityForceFromTo(earth.index, index) +
-        helper.gravityForceFromTo(moon.index, index) +
-        helper.funcOrDVecZero(index, bs => currentReactiveForce(tacts, bs)) +
-        helper.funcOfArrayOrDVecZero(Array(index, earth.index), l => {
-          val bs = l(0)
-          val e = l(1)
-          earth.airResistance(bs, e, 28, 0.5)
-        })
-    },
-    (tacts, helper) => {
-      helper.funcOrDoubleZero(index, bs => currentTorque(tacts))
-    }
-  )
   ShipsHolder.addShip(this)
 
   var orbitRender:Option[BodyOrbitRender] = None
@@ -784,7 +732,7 @@ abstract class PolygonShip(
     val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(currentState, earth.currentState, 28, 0.5)
     if(!ship_is_crashed) {
       val dvel = currentState.dvel.norma
-      if (false /*dvel > 10*/) {
+      if (dvel > 10) {
         // crash tolerance = 10 m/s
         val crash_g = dvel / OrbitalKiller.base_dt / earth.g
         kill(f"Корабль уничтожен в результате столкновения ($crash_g%.2fg)", crash = true)

@@ -17,6 +17,7 @@ import com.github.dunnololda.scage.support.ScageId
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.{Satellite1, SpaceStation2, Ship4}
 
 import scala.collection._
+import scala.collection.mutable.ArrayBuffer
 
 //import collection.mutable.ArrayBuffer
 

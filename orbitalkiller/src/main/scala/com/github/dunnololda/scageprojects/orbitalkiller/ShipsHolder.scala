@@ -1,5 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
+import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -7,16 +9,42 @@ object ShipsHolder {
   def addShip(ship:PolygonShip): Unit = {
     _ships += ship
     _shipsMap += (ship.index -> ship)
+    system_evolution.addBody(
+      ship.currentState,
+      (tacts, helper) => {
+        helper.gravityForceFromTo(sun.index, ship.index) +
+          helper.gravityForceFromTo(earth.index, ship.index) +
+          helper.gravityForceFromTo(moon.index, ship.index) +
+          helper.funcOrDVecZero(ship.index, bs => ship.currentReactiveForce(tacts, bs)) +
+          helper.funcOfArrayOrDVecZero(Array(ship.index, earth.index), l => {
+            val bs = l(0)
+            val e = l(1)
+            earth.airResistance(bs, e, 28, 0.5)
+          })
+      },
+      (tacts, helper) => {
+        helper.funcOrDoubleZero(ship.index, bs => ship.currentTorque(tacts))
+      }
+    )
   }
   def removeShip(ship:PolygonShip): Unit = {
-    _ships -= ship
-    _shipsMap -= ship.index
+    removeShipByIndex(ship.index)
   }
   def removeShipByIndex(ship_index:Int): Unit = {
-    _shipsMap.remove(ship_index).foreach(ship => _ships -= ship)
+    _shipsMap.remove(ship_index).foreach(ship => {
+      update_list = true
+      system_evolution.removeBodyByIndex(ship_index)
+    })
   }
 
-  def ships:Seq[PolygonShip] = _ships
+  private var update_list:Boolean = false
+  def ships:Seq[PolygonShip] = {
+    if(update_list) {
+      _ships --= _ships.filter(s => !_shipsMap.contains(s.index))
+      update_list = false
+    }
+    _ships
+  }
 
   private val _ships = ArrayBuffer[PolygonShip]()
   private val _shipsMap = mutable.HashMap[Int, PolygonShip]()//ships.map(s => (s.index, s)).toMap

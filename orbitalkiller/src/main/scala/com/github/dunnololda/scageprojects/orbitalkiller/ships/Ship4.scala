@@ -605,29 +605,10 @@ class Ship4(index:Int,
           }
         }
       } else {
-        if(shipIsCrashed) {
-          ship_parts.foreach(mbs => {
-            val mbs_points = mbs.shape.asInstanceOf[PolygonShape].points
-            openglLocalTransform {
-              openglMove(mbs.coord - base)
-              drawFilledCircle(DVec.zero, 0.3, GREEN)
-              /*mbs.contacts.foreach(x => {
-              if(x.a.index.contains("part") && x.b.index.contains("part")) {
-                drawFilledCircle(x.contact_point - mbs.coord, 0.3, YELLOW)
-                drawLine(x.contact_point - mbs.coord, x.contact_point - mbs.coord + x.normal.n, YELLOW)
-                drawCircle(x.contact_point - mbs.coord, x.separation, YELLOW)
-              }
-            })*/
-              openglRotateDeg(mbs.ang)
-              drawSlidingLines(mbs_points :+ mbs_points.head, colorIfPlayerAliveOrRed(RED))
-            }
-          })
-        } else {
-          openglLocalTransform {
-            openglMove(coord - base)
-            openglRotateDeg(rotation)
-            drawSlidingLines(draw_points, colorIfPlayerAliveOrRed(WHITE))
-          }
+        openglLocalTransform {
+          openglMove(coord - base)
+          openglRotateDeg(rotation)
+          drawSlidingLines(draw_points, colorIfPlayerAliveOrRed(WHITE))
         }
       }
     }
