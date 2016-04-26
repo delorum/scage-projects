@@ -1247,15 +1247,25 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         ship.orbitRender.foreach(_.render())
 
         InterfaceHolder.ship_interfaces.foreach(si => {
-          if(!si.isMinimized && !si.monitoring_ship.isCrashed) {
-            drawFilledCircle(si.monitoring_ship.coord*scale, earth.radius * scale / 2f / globalScale, MAGENTA)
-            if(InterfaceHolder.namesSwitcher.showNames) {
-              openglLocalTransform {
-                openglMove(si.monitoring_ship.coord.toVec * scale)
-                print(si.monitoring_ship.name, Vec.zero, color = MAGENTA, size = (max_font_size / globalScale).toFloat)
+          if(!si.isMinimized) {
+            if(!si.monitoring_ship.isCrashed) {
+              drawFilledCircle(si.monitoring_ship.coord * scale, earth.radius * scale / 2f / globalScale, ship.colorIfPlayerAliveOrRed(MAGENTA))
+              if (InterfaceHolder.namesSwitcher.showNames) {
+                openglLocalTransform {
+                  openglMove(si.monitoring_ship.coord.toVec * scale)
+                  print(si.monitoring_ship.name, Vec.zero, color = ship.colorIfPlayerAliveOrRed(MAGENTA), size = (max_font_size / globalScale).toFloat)
+                }
+              }
+              si.monitoring_ship.orbitRender.foreach(x => x.render())
+            } else {
+              drawFilledCircle(si.monitoring_ship.coord * scale, earth.radius * scale / 2f / globalScale, RED)
+              if (InterfaceHolder.namesSwitcher.showNames) {
+                openglLocalTransform {
+                  openglMove(si.monitoring_ship.coord.toVec * scale)
+                  print(si.monitoring_ship.name, Vec.zero, color = RED, size = (max_font_size / globalScale).toFloat)
+                }
               }
             }
-            si.monitoring_ship.orbitRender.foreach(x => x.render())
           }
         })
 

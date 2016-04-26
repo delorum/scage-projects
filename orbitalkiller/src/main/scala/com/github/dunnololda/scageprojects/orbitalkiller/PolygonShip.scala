@@ -594,9 +594,10 @@ abstract class PolygonShip(
         val part_center = currentState.coord + wreck_part.points.sum / wreck_part.points.length
         val part_points = wreck_part.points.map(p => currentState.coord + p - part_center)
         val maybe_obstacle = currentState.contacts.headOption.map(c => if(c.a.index != index) c.a else c.b)
+        val random_wreck_vel_func = randomWreckVelocity(maybe_obstacle)
         new Wreck(mass / wreck_parts.length,
                   part_center,
-                  randomSpeed(maybe_obstacle),
+                  random_wreck_vel_func(),
                   rotation,
                   part_points,
                   idx == 0 && index == ship.index)
@@ -606,7 +607,7 @@ abstract class PolygonShip(
     }
   }
 
-  private def randomSpeed(maybe_obstacle:Option[MutableBodyState]):DVec = {
+  private def randomWreckVelocity(maybe_obstacle:Option[MutableBodyState]):() => DVec = {
     maybe_obstacle match {
       case Some(obstacle) =>
         ShipsHolder.shipByIndex(obstacle.index) match {
@@ -614,21 +615,21 @@ abstract class PolygonShip(
             val dir_deg = 140.0 + math.random*80.0
             //val new_vel = ((mass - ship_obstacle.mass)*linearVelocity + 2*ship_obstacle.mass*ship_obstacle.linearVelocity)/(mass + ship_obstacle.mass)
             val new_vel = linearVelocity*mass/(mass + obstacle.mass) + obstacle.vel*obstacle.mass/(mass + obstacle.mass)
-            new_vel + (linearVelocity - ship_obstacle.linearVelocity).n.rotateDeg(dir_deg)*30.0
+            () => new_vel + (linearVelocity - ship_obstacle.linearVelocity).n.rotateDeg(dir_deg)*30.0
           case None =>
             planetByIndex(obstacle.index) match {
               case Some(planet_obstacle) =>
                 val dir_deg = 140.0 + math.random*80.0
                 val obstacle_vel = obstacle.vel + (coord - obstacle.coord).p*planet_obstacle.groundSpeedMsec
-                obstacle_vel + (linearVelocity - obstacle_vel).n.rotateDeg(dir_deg)*30.0
+                () => obstacle_vel + (linearVelocity - obstacle_vel).n.rotateDeg(dir_deg)*30.0
               case None =>
                 val dir_deg = math.random*360
-                linearVelocity + DVec(0, 1).rotateDeg(dir_deg)*30.0
+                () => linearVelocity + DVec(0, 1).rotateDeg(dir_deg)*30.0
             }
         }
       case None =>
         val dir_deg = math.random*360
-        linearVelocity + DVec(0, 1).rotateDeg(dir_deg)*30.0
+        () => linearVelocity + DVec(0, 1).rotateDeg(dir_deg)*30.0
     }
   }
 
