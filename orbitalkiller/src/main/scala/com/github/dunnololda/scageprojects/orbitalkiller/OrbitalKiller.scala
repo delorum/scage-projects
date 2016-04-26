@@ -799,7 +799,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           }
         }
       } else {
-        if(!InterfaceHolder.clickInterfaceElem(m)) {
+        if(!InterfaceHolder.clickInterfaceElem(m) && ship.isAlive) {
           set_stop_moment = true
         }
       }
@@ -861,10 +861,14 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                   val r = h.a*(h.e*h.e-1)/(1 + h.e*math.cos(true_anomaly))
                   (h.f + (h.f_minus_center_n*r).rotateRad(true_anomaly))*scale
                 }).toList
-                Some(BodyOrbitRender(bs_coord, bs_vel, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, h, () => {
-                  drawSlidingLines(yy, hyperbola_color)
+                if(ship_index != ship.index) {
+                  Some(BodyOrbitRender(bs_coord, bs_vel, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, h, () => {
+                    drawSlidingLines(yy, hyperbola_color)
+                  }))
+                } else {
+                  Some(BodyOrbitRender(bs_coord, bs_vel, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, h, () => {
+                    drawSlidingLines(yy, hyperbola_color)
 
-                  if(ship_index == ship.index) {
                     val mouse_point = absCoord(mouseCoord) / scale
                     drawLine(h.f * scale, mouse_point * scale, DARK_GRAY)
 
@@ -883,10 +887,10 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                       val mouse_point_further_on_the_way = {
                         if(ccw) {
                           (away_from_rp  && ship_teta_rad2Pi <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= h.teta_rad_min) ||
-                          (!away_from_rp && ((ship_teta_rad2Pi <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= 360) || (0 <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= h.teta_rad_min)))
+                            (!away_from_rp && ((ship_teta_rad2Pi <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= 360) || (0 <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= h.teta_rad_min)))
                         } else {
                           (away_from_rp && ship_teta_rad2Pi >= mouse_teta_rad2Pi && mouse_teta_rad2Pi >= h.teta_rad_max) ||
-                          (!away_from_rp && ((ship_teta_rad2Pi >= mouse_teta_rad2Pi && mouse_teta_rad2Pi >= 0) || (360 >= mouse_teta_rad2Pi && mouse_teta_rad2Pi >= h.teta_rad_max)))
+                            (!away_from_rp && ((ship_teta_rad2Pi >= mouse_teta_rad2Pi && mouse_teta_rad2Pi >= 0) || (360 >= mouse_teta_rad2Pi && mouse_teta_rad2Pi >= h.teta_rad_max)))
                         }
                       }
 
@@ -951,16 +955,24 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                         })
                       }
                     }
-                  }
-                }))
+                  }))
+                }
               case e:EllipseOrbit =>
-                Some(BodyOrbitRender(bs_coord, bs_vel, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, e, () => {
-                  openglLocalTransform {
-                    openglMove(e.center * scale)
-                    openglRotateDeg(Vec(-1, 0).signedDeg(e.f2 - e.f))
-                    drawEllipse(DVec.zero, e.a * scale, e.b * scale, ellipse_color)
-                  }
-                  if(ship_index == ship.index) {
+                if(ship_index != ship.index) {
+                  Some(BodyOrbitRender(bs_coord, bs_vel, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, e, () => {
+                    openglLocalTransform {
+                      openglMove(e.center * scale)
+                      openglRotateDeg(Vec(-1, 0).signedDeg(e.f2 - e.f))
+                      drawEllipse(DVec.zero, e.a * scale, e.b * scale, ellipse_color)
+                    }
+                  }))
+                } else {
+                  Some(BodyOrbitRender(bs_coord, bs_vel, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, e, () => {
+                    openglLocalTransform {
+                      openglMove(e.center * scale)
+                      openglRotateDeg(Vec(-1, 0).signedDeg(e.f2 - e.f))
+                      drawEllipse(DVec.zero, e.a * scale, e.b * scale, ellipse_color)
+                    }
                     val mouse_point = absCoord(mouseCoord) / scale
                     drawLine(e.f*scale, mouse_point*scale, DARK_GRAY)
 
@@ -1021,8 +1033,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                         })
                       })
                     }
-                  }
-                }))
+                  }))
+                }
             }
           case None => None
         }
@@ -1058,7 +1070,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       }
     }
     InterfaceHolder.ship_interfaces.foreach(si => {
-      if(!si.isMinimized) {
+      if(!si.isMinimized && !si.monitoring_ship.isCrashed) {
         si.monitoring_ship.orbitRender = {
           shipOrbitRender(si.monitoring_ship.index, ship.colorIfPlayerAliveOrRed(MAGENTA), ship.colorIfPlayerAliveOrRed(MAGENTA), system_evolution.allBodyStates)
         }
@@ -1235,7 +1247,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         ship.orbitRender.foreach(_.render())
 
         InterfaceHolder.ship_interfaces.foreach(si => {
-          if(!si.isMinimized) {
+          if(!si.isMinimized && !si.monitoring_ship.isCrashed) {
             drawFilledCircle(si.monitoring_ship.coord*scale, earth.radius * scale / 2f / globalScale, MAGENTA)
             if(InterfaceHolder.namesSwitcher.showNames) {
               openglLocalTransform {

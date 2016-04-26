@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.ships
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scage.support.{ScageId, DVec}
+import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 
@@ -10,7 +10,7 @@ class Rocket1(index:Int,
               init_velocity:DVec = DVec.dzero,
               init_rotation:Double = 0.0) extends PolygonShip(index, "Доброта", init_coord, init_velocity, init_rotation) {
   private val _payload:Double = 196
-  private var _fuel_mass:Double = 4
+  private var _fuel_mass:Double = 4 // количество топлива для 1 секунды работы двигателя (расход топлива 4 кг/сек)
   def mass:Double = _payload + _fuel_mass
   override def fuelMass: Double = _fuel_mass
   override def fuelMass_=(m: Double): Unit = {_fuel_mass = m}
@@ -18,6 +18,9 @@ class Rocket1(index:Int,
   val is_manned = false
 
   lazy val engine_size:Double = 0.5*0.1
+
+  val start_tact = system_evolution.tacts
+  val work_tacts = 1200 // количество тактов, за которое ракета пролетит 10 км
 
   lazy val points:List[DVec] = List(
     DVec(1.0, -20.0),
@@ -75,7 +78,14 @@ class Rocket1(index:Int,
 
   val docking_points = Nil
 
-  val two = new Engine("2", position = DVec(0.0, -20.0)*0.1, force_dir = DVec(0.0, 1.0), max_power = 100000, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
+  val two = new Engine(
+    "2",
+    position = DVec(0.0, -20.0)*0.1,
+    force_dir = DVec(0.0, 1.0),
+    max_power = 100000, // такая сила разгонит 200-килограммовую ракету до 500 м/сек за 1 секунду
+    default_power_percent = 1,
+    fuel_consumption_per_sec_at_full_power = 4,
+    this)
 
   val engines = List(two)
 
@@ -139,6 +149,9 @@ class Rocket1(index:Int,
 
   override def afterStep(time_msec:Long): Unit = {
     super.afterStep(time_msec)
+    if(system_evolution.tacts - start_tact > work_tacts) {
+      kill("Ракета самоуничтожилась", crash = true)
+    }
     println(s"ship: ${mOrKmOrMKm(coord.dist(ship.coord))} : ${msecOrKmsec((linearVelocity - ship.linearVelocity).norma)}")
   }
 
@@ -160,7 +173,7 @@ class Rocket1(index:Int,
     currentState.contacts.foreach(c => {
       val obstacle = if(c.a.index != index) c.a else c.b
       ShipsHolder.shipByIndex(obstacle.index).foreach(s => {
-        if(!s.shipIsCrashed) {
+        if(!s.isCrashed) {
           s.kill("Корабль уничтожен ракетным ударом", crash = true)
         }
       })

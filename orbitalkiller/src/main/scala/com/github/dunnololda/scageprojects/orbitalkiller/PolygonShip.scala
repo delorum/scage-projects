@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scage.support.{ScageId, DVec}
+import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
 import scala.collection.mutable.ArrayBuffer
@@ -158,7 +158,11 @@ abstract class PolygonShip(
   def velocityStr:String = {
     insideSphereOfInfluenceOfCelestialBody(coord, mass, OrbitalKiller.currentPlanetStates) match {
       case Some((planet, planet_state)) =>
-        s"${msecOrKmsec((linearVelocity - planet_state.vel).norma)} (${planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
+        if(ship.isAlive) {
+          s"${msecOrKmsec((linearVelocity - planet_state.vel).norma)} (${planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
+        } else {
+          s"${msecOrKmsec((linearVelocity - planet_state.vel).norma)} (${planet.name}), ${msecOrKmsec(linearVelocity.norma)} (абсолютная)"
+        }
       case None =>
         s"${msecOrKmsec(linearVelocity.norma)} (абсолютная)"
     }
@@ -526,7 +530,7 @@ abstract class PolygonShip(
   def isAlive = !is_dead
 
   private var ship_is_crashed = false
-  def shipIsCrashed = ship_is_crashed
+  def isCrashed = ship_is_crashed
 
   /**
    * Если на пилота действует перегрузка, уменьшается этот счетчик. Скорость его уменьшения зависит от величины перегрузки.
@@ -585,21 +589,14 @@ abstract class PolygonShip(
     if(crash) {
       ShipsHolder.removeShip(this)
       delOperation(render_id)
+      orbitRender = None
       val wrecks = wreck_parts.zipWithIndex.map {case (wreck_part, idx) =>
         val part_center = currentState.coord + wreck_part.points.sum / wreck_part.points.length
         val part_points = wreck_part.points.map(p => currentState.coord + p - part_center)
         val maybe_obstacle = currentState.contacts.headOption.map(c => if(c.a.index != index) c.a else c.b)
-        val maybe_obstacle_vel = maybe_obstacle.map(obstacle => {
-          planetByIndex(obstacle.index) match {
-            case Some(planet) =>
-              obstacle.vel + (coord - obstacle.coord).p*planet.groundSpeedMsec
-            case None =>
-              obstacle.vel
-          }
-        })
         new Wreck(mass / wreck_parts.length,
                   part_center,
-                  randomSpeed(maybe_obstacle_vel),
+                  randomSpeed(maybe_obstacle),
                   rotation,
                   part_points,
                   idx == 0 && index == ship.index)
@@ -609,11 +606,26 @@ abstract class PolygonShip(
     }
   }
 
-  private def randomSpeed(maybe_obstacle_vel:Option[DVec]):DVec = {
-    maybe_obstacle_vel match {
-      case Some(obstacle_vel) =>
-        val dir_deg = 140.0 + math.random*80.0
-        obstacle_vel + (linearVelocity - obstacle_vel).n.rotateDeg(dir_deg)*30.0
+  private def randomSpeed(maybe_obstacle:Option[MutableBodyState]):DVec = {
+    maybe_obstacle match {
+      case Some(obstacle) =>
+        ShipsHolder.shipByIndex(obstacle.index) match {
+          case Some(ship_obstacle) =>
+            val dir_deg = 140.0 + math.random*80.0
+            //val new_vel = ((mass - ship_obstacle.mass)*linearVelocity + 2*ship_obstacle.mass*ship_obstacle.linearVelocity)/(mass + ship_obstacle.mass)
+            val new_vel = linearVelocity*mass/(mass + obstacle.mass) + obstacle.vel*obstacle.mass/(mass + obstacle.mass)
+            new_vel + (linearVelocity - ship_obstacle.linearVelocity).n.rotateDeg(dir_deg)*30.0
+          case None =>
+            planetByIndex(obstacle.index) match {
+              case Some(planet_obstacle) =>
+                val dir_deg = 140.0 + math.random*80.0
+                val obstacle_vel = obstacle.vel + (coord - obstacle.coord).p*planet_obstacle.groundSpeedMsec
+                obstacle_vel + (linearVelocity - obstacle_vel).n.rotateDeg(dir_deg)*30.0
+              case None =>
+                val dir_deg = math.random*360
+                linearVelocity + DVec(0, 1).rotateDeg(dir_deg)*30.0
+            }
+        }
       case None =>
         val dir_deg = math.random*360
         linearVelocity + DVec(0, 1).rotateDeg(dir_deg)*30.0

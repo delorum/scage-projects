@@ -188,7 +188,7 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
       if(collisions.nonEmpty) collisions.foreach(c => c.solveCollision(dt))
 
       // Solve joints
-      joints.foreach(j => j.solveConstraint(dt))
+      if(joints.nonEmpty) joints.foreach(j => j.solveConstraint(dt))
 
       // Integrate velocities and forces last part
       mutable_system.foreach{ case (_, MutableSystemPart(mb, force, torque)) =>
