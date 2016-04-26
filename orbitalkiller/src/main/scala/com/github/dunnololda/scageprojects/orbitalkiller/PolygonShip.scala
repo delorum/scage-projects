@@ -580,9 +580,9 @@ abstract class PolygonShip(
     death_reason = reason
     flightMode = FreeFlightMode
     engines.foreach(_.active = false)
-    if(this.index == OrbitalKiller.ship.index) {
+    /*if(this.index == OrbitalKiller.ship.index) {
       viewMode = FixedOnShipAbsolute
-    }
+    }*/
     if(isDocked) {
       undock()
     }

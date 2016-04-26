@@ -7,6 +7,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.InterfaceSwitcher
  */
 class GSwitcher extends InterfaceSwitcher {
   override def strVariants: Array[String] = Array("Goff", "1g", "4g", "8g", "10g")
+  selected_variant = 2
 
   def maxGSet:Boolean = selected_variant != 0
 
