@@ -569,19 +569,19 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     addGlyphs("\u21b6\u21b7")
   }
 
-  keyIgnorePause(KEY_RETURN, onKeyDown = {if(ship.pilotIsAlive) ship.launchRocket()})
+  keyIgnorePause(KEY_RETURN, onKeyDown = {if(ship.isAlive) ship.launchRocket()})
 
-  keyIgnorePause(KEY_NUMPAD1, onKeyDown = {if(ship.pilotIsAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD1)})
-  keyIgnorePause(KEY_NUMPAD2, onKeyDown = {if(ship.pilotIsAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD2)})
-  keyIgnorePause(KEY_NUMPAD3, onKeyDown = {if(ship.pilotIsAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD3)})
-  keyIgnorePause(KEY_NUMPAD4, onKeyDown = {if(ship.pilotIsAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD4)})
-  keyIgnorePause(KEY_NUMPAD6, onKeyDown = {if(ship.pilotIsAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD6)})
-  keyIgnorePause(KEY_NUMPAD7, onKeyDown = {if(ship.pilotIsAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD7)})
-  keyIgnorePause(KEY_NUMPAD8, onKeyDown = {if(ship.pilotIsAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD8)})
-  keyIgnorePause(KEY_NUMPAD9, onKeyDown = {if(ship.pilotIsAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD9)})
+  keyIgnorePause(KEY_NUMPAD1, onKeyDown = {if(ship.isAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD1)})
+  keyIgnorePause(KEY_NUMPAD2, onKeyDown = {if(ship.isAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD2)})
+  keyIgnorePause(KEY_NUMPAD3, onKeyDown = {if(ship.isAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD3)})
+  keyIgnorePause(KEY_NUMPAD4, onKeyDown = {if(ship.isAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD4)})
+  keyIgnorePause(KEY_NUMPAD6, onKeyDown = {if(ship.isAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD6)})
+  keyIgnorePause(KEY_NUMPAD7, onKeyDown = {if(ship.isAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD7)})
+  keyIgnorePause(KEY_NUMPAD8, onKeyDown = {if(ship.isAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD8)})
+  keyIgnorePause(KEY_NUMPAD9, onKeyDown = {if(ship.isAlive) ship.selectOrSwitchEngineActive(KEY_NUMPAD9)})
 
   keyIgnorePause(KEY_NUMPAD5, onKeyDown = {
-    if(ship.pilotIsAlive) {
+    if(ship.isAlive) {
       ship.engines.foreach(e => {
         if (e.active || e.power > 0) {
           e.active = false
@@ -615,29 +615,29 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   }
 
   keyIgnorePause(KEY_UP,      repeatTime(KEY_UP),    onKeyDown = {
-    if(ship.pilotIsAlive) {
+    if(ship.isAlive) {
       if (ship.flightMode != NearestPlanetVelocity) {
         ship.selected_engine.foreach(e => e.powerPercent += 1)
       } else {
         ship.vertical_speed_msec += 1
       }
     }
-  }, onKeyUp = if(ship.pilotIsAlive && ship.flightMode != NearestPlanetVelocity && ship.selected_engine.exists(_.active)) {
+  }, onKeyUp = if(ship.isAlive && ship.flightMode != NearestPlanetVelocity && ship.selected_engine.exists(_.active)) {
     updateFutureTrajectory("KEY_UP")
   })
   keyIgnorePause(KEY_DOWN,    repeatTime(KEY_DOWN),  onKeyDown = {
-    if(ship.pilotIsAlive) {
+    if(ship.isAlive) {
       if (ship.flightMode != NearestPlanetVelocity) {
         ship.selected_engine.foreach(e => e.powerPercent -= 1)
       } else {
         ship.vertical_speed_msec -= 1
       }
     }
-  }, onKeyUp = if(ship.pilotIsAlive && ship.flightMode != NearestPlanetVelocity && ship.selected_engine.exists(_.active)) {
+  }, onKeyUp = if(ship.isAlive && ship.flightMode != NearestPlanetVelocity && ship.selected_engine.exists(_.active)) {
     updateFutureTrajectory("KEY_DOWN")
   })
   keyIgnorePause(KEY_RIGHT,   repeatTime(KEY_RIGHT), onKeyDown = {
-    if(ship.pilotIsAlive) {
+    if(ship.isAlive) {
       if (ship.flightMode != NearestPlanetVelocity) {
         ship.selected_engine.foreach(e => {
           e.workTimeTacts += InterfaceHolder.timeStepSwitcher.timeStep
@@ -647,11 +647,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         ship.horizontal_speed_msec -= 1
       }
     }
-  }, onKeyUp = if(ship.pilotIsAlive && ship.flightMode != NearestPlanetVelocity && ship.selected_engine.exists(_.active)) {
+  }, onKeyUp = if(ship.isAlive && ship.flightMode != NearestPlanetVelocity && ship.selected_engine.exists(_.active)) {
     updateFutureTrajectory("KEY_RIGHT")
   })
   keyIgnorePause(KEY_LEFT,    repeatTime(KEY_LEFT),  onKeyDown = {
-    if(ship.pilotIsAlive) {
+    if(ship.isAlive) {
       if (ship.flightMode != NearestPlanetVelocity) {
         ship.selected_engine.foreach(e => {
           /*if(e.worktimeTacts > 0) {*/
@@ -664,7 +664,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       }
     }
   }, onKeyUp = {
-    if(ship.pilotIsAlive && ship.flightMode != NearestPlanetVelocity && ship.selected_engine.exists(_.active)) {
+    if(ship.isAlive && ship.flightMode != NearestPlanetVelocity && ship.selected_engine.exists(_.active)) {
       updateFutureTrajectory("KEY_LEFT")
     }
   })
@@ -709,18 +709,18 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   })
 
-  keyIgnorePause(KEY_1, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = FreeFlightMode)
-  keyIgnorePause(KEY_2, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = Killrot)
-  keyIgnorePause(KEY_3, onKeyDown = if(ship.pilotIsAlive) {
+  keyIgnorePause(KEY_1, onKeyDown = if(ship.isAlive) ship.flightMode = FreeFlightMode)
+  keyIgnorePause(KEY_2, onKeyDown = if(ship.isAlive) ship.flightMode = Killrot)
+  keyIgnorePause(KEY_3, onKeyDown = if(ship.isAlive) {
     if(keyPressed(KEY_LSHIFT) || keyPressed(KEY_RSHIFT)) ship.flightMode = OppositeVelocityAligned else ship.flightMode = VelocityAligned
   })
-  keyIgnorePause(KEY_4, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = CirclularOrbit)
-  keyIgnorePause(KEY_5, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = NearestShipVelocity)
-  keyIgnorePause(KEY_6, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = NearestShipAligned)
-  keyIgnorePause(KEY_7, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = NearestShipAutoDocking)
-  keyIgnorePause(KEY_8, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = NearestPlanetVelocity)
+  keyIgnorePause(KEY_4, onKeyDown = if(ship.isAlive) ship.flightMode = CirclularOrbit)
+  keyIgnorePause(KEY_5, onKeyDown = if(ship.isAlive) ship.flightMode = NearestShipVelocity)
+  keyIgnorePause(KEY_6, onKeyDown = if(ship.isAlive) ship.flightMode = NearestShipAligned)
+  keyIgnorePause(KEY_7, onKeyDown = if(ship.isAlive) ship.flightMode = NearestShipAutoDocking)
+  keyIgnorePause(KEY_8, onKeyDown = if(ship.isAlive) ship.flightMode = NearestPlanetVelocity)
   //keyIgnorePause(KEY_9, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = AbsoluteStop)
-  keyIgnorePause(KEY_0, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = Maneuvering)
+  keyIgnorePause(KEY_0, onKeyDown = if(ship.isAlive) ship.flightMode = Maneuvering)
 
   keyIgnorePause(KEY_P, onKeyDown = switchPause())
 

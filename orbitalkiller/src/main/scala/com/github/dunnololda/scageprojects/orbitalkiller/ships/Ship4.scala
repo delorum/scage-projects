@@ -514,7 +514,7 @@ class Ship4(index:Int,
 
   override protected def drawShip(): Unit = {
     if(!drawMapMode) {
-      if(pilotIsAlive) {
+      if(isAlive) {
         openglLocalTransform {
           openglMove(coord - base)
           drawFilledCircle(DVec.zero, 0.3, colorIfPlayerAliveOrRed(GREEN)) // mass center

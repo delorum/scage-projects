@@ -17,7 +17,7 @@ class EnginesInfo extends InterfaceElement {
   override protected def _update(): Unit = {
     var engines_active = false
     val engines_str = s"${
-      if(ship.pilotIsAlive) {
+      if(ship.isAlive) {
         ship.engines.filter(e => e.active || ship.isSelectedEngine(e)).map(e => {
           if (ship.isSelectedEngine(e)) {
             if (e.active) {

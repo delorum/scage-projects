@@ -88,7 +88,7 @@ class Rocket1(index:Int,
 
   override protected def drawShip(): Unit = {
     if(!drawMapMode) {
-      if(pilotIsAlive) {
+      if(isAlive) {
         openglLocalTransform {
           openglMove(coord - base)
 
@@ -154,4 +154,16 @@ class Rocket1(index:Int,
     shape = PolygonShape(points, convex_parts),
     is_static = false,
     is_bullet = true)
+
+  override def onCollision(): Unit = {
+    super.onCollision()
+    currentState.contacts.foreach(c => {
+      val obstacle = if(c.a.index != index) c.a else c.b
+      ShipsHolder.shipByIndex(obstacle.index).foreach(s => {
+        if(!s.shipIsCrashed) {
+          s.kill("Корабль уничтожен ракетным ударом", crash = true)
+        }
+      })
+    })
+  }
 }

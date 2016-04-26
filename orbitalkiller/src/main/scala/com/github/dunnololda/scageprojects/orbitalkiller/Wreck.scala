@@ -7,7 +7,7 @@ import com.github.dunnololda.scage.support.{DVec, ScageId}
 class Wreck(mass:Double, init_coord:DVec, init_velocity:DVec, init_rotation:Double, points:List[DVec], val is_player:Boolean) {
   val index = ScageId.nextId
   private val draw_points = points :+ points.head
-  def colorIfPlayerAliveOrRed(color: => ScageColor) = if(OrbitalKiller.ship.pilotIsDead) RED else color
+  def colorIfPlayerAliveOrRed(color: => ScageColor) = if(OrbitalKiller.ship.isDead) RED else color
 
   val currentState = new MutableBodyState(BodyState(
     index = index,
@@ -45,7 +45,6 @@ class Wreck(mass:Double, init_coord:DVec, init_velocity:DVec, init_rotation:Doub
     if(!drawMapMode && coord.dist2(ship.coord) < 100000*100000) {
       openglLocalTransform {
         openglMove(currentState.coord - base)
-        drawFilledCircle(DVec.zero, 0.3, GREEN)
         /*mbs.contacts.foreach(x => {
         if(x.a.index.contains("part") && x.b.index.contains("part")) {
           drawFilledCircle(x.contact_point - mbs.coord, 0.3, YELLOW)

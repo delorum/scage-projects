@@ -147,9 +147,9 @@ abstract class PolygonShip(
     )
   }
 
-  def coord = if(pilotIsAlive) currentState.coord else main_ship_wreck.headOption.map(_.coord).getOrElse(currentState.coord)
+  def coord = if(isAlive) currentState.coord else main_ship_wreck.headOption.map(_.coord).getOrElse(currentState.coord)
 
-  def linearVelocity = if(pilotIsAlive) currentState.vel else main_ship_wreck.headOption.map(_.linearVelocity).getOrElse(currentState.vel)
+  def linearVelocity = if(isAlive) currentState.vel else main_ship_wreck.headOption.map(_.linearVelocity).getOrElse(currentState.vel)
 
   def relativeLinearVelocity = {
     linearVelocity - insideSphereOfInfluenceOfCelestialBody(coord, mass, OrbitalKiller.currentPlanetStates).map(_._2.vel).getOrElse(DVec.zero)
@@ -164,9 +164,9 @@ abstract class PolygonShip(
     }
   }
 
-  def angularVelocity = if(pilotIsAlive) currentState.ang_vel else main_ship_wreck.headOption.map(_.angularVelocity).getOrElse(currentState.ang_vel)
+  def angularVelocity = if(isAlive) currentState.ang_vel else main_ship_wreck.headOption.map(_.angularVelocity).getOrElse(currentState.ang_vel)
 
-  def rotation = if(pilotIsAlive) currentState.ang else  main_ship_wreck.headOption.map(_.rotation).getOrElse(currentState.ang)
+  def rotation = if(isAlive) currentState.ang else  main_ship_wreck.headOption.map(_.rotation).getOrElse(currentState.ang)
 
   def currentReactiveForce(time:Long, bs:BodyState):DVec = {
     engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(DVec.dzero) {
@@ -245,7 +245,7 @@ abstract class PolygonShip(
   }
 
   def engineColor(e:Engine, in_shadow:Boolean):ScageColor = {
-    if(pilot_is_dead || e.active) RED else if(in_shadow) DARK_GRAY else WHITE
+    if(is_dead || e.active) RED else if(in_shadow) DARK_GRAY else WHITE
   }
 
   def engineActiveSize(e:Engine, max_size:Double):Double = {
@@ -299,7 +299,7 @@ abstract class PolygonShip(
 
   protected def drawShip(): Unit = {
     if(!drawMapMode && coord.dist2(ship.coord) < 100000*100000) {
-      if(pilotIsAlive) {
+      if(isAlive) {
         openglLocalTransform {
           openglMove(coord - base)
           drawFilledCircle(DVec.zero, 2, GREEN) // mass center
@@ -491,7 +491,7 @@ abstract class PolygonShip(
     case x => x.rusStr
   }
 
-  def otherShipsNear:Seq[PolygonShip] = ShipsHolder.ships.filter(s => s.index != index && s.pilotIsAlive).sortBy(s => coord.dist(s.coord))
+  def otherShipsNear:Seq[PolygonShip] = ShipsHolder.ships.filter(s => s.index != index && s.isAlive).sortBy(s => coord.dist(s.coord))
   def canDockWithNearestShip:Boolean = {
     otherShipsNear.headOption.exists(os => {
       os.coord.dist(coord) < 1000 && docking_points.exists(dp => {
@@ -519,16 +519,14 @@ abstract class PolygonShip(
 
   def is_manned:Boolean
 
-  private var pilot_is_dead = false
-  private var pilot_death_reason = ""
-  def deathReason = pilot_death_reason
-  def pilotIsDead = pilot_is_dead
-  def pilotIsAlive = !pilot_is_dead
+  private var is_dead = false
+  private var death_reason = ""
+  def deathReason = death_reason
+  def isDead = is_dead
+  def isAlive = !is_dead
 
   private var ship_is_crashed = false
   def shipIsCrashed = ship_is_crashed
-
-  def shipIsKilled = pilot_is_dead || ship_is_crashed
 
   /**
    * Если на пилота действует перегрузка, уменьшается этот счетчик. Скорость его уменьшения зависит от величины перегрузки.
@@ -569,13 +567,13 @@ abstract class PolygonShip(
     ans*base_dt
   }
 
-  def colorIfPlayerAliveOrRed(color: => ScageColor) = if(OrbitalKiller.ship.pilotIsDead) RED else color
+  def colorIfPlayerAliveOrRed(color: => ScageColor) = if(OrbitalKiller.ship.isDead) RED else color
 
   protected var main_ship_wreck:Option[Wreck] = None
   
-  private def kill(reason:String, crash:Boolean): Unit = {
-    pilot_is_dead = true
-    pilot_death_reason = reason
+  def kill(reason:String, crash:Boolean): Unit = {
+    is_dead = true
+    death_reason = reason
     flightMode = FreeFlightMode
     engines.foreach(_.active = false)
     if(this.index == OrbitalKiller.ship.index) {
@@ -601,7 +599,7 @@ abstract class PolygonShip(
         })
         new Wreck(mass / wreck_parts.length,
                   part_center,
-                  randomSpeed(linearVelocity, maybe_obstacle_vel),
+                  randomSpeed(maybe_obstacle_vel),
                   rotation,
                   part_points,
                   idx == 0 && index == ship.index)
@@ -611,20 +609,20 @@ abstract class PolygonShip(
     }
   }
 
-  private def randomSpeed(our_vel:DVec, maybe_obstacle_vel:Option[DVec]) = {
+  private def randomSpeed(maybe_obstacle_vel:Option[DVec]):DVec = {
     maybe_obstacle_vel match {
       case Some(obstacle_vel) =>
         val dir_deg = 140.0 + math.random*80.0
-        obstacle_vel + (our_vel - obstacle_vel).n.rotateDeg(dir_deg)*30.0
+        obstacle_vel + (linearVelocity - obstacle_vel).n.rotateDeg(dir_deg)*30.0
       case None =>
         val dir_deg = math.random*360
-        our_vel + DVec(0, 1).rotateDeg(dir_deg)*30.0
+        linearVelocity + DVec(0, 1).rotateDeg(dir_deg)*30.0
     }
   }
 
   def pilotStateStr:String = {
     if(is_manned) {
-      if (!pilot_is_dead) {
+      if (!is_dead) {
         if (pilot_average_g < 0.1) {
           if (before_death_counter != 100) {
             val rate = 100.0 / 60 * base_dt // восстановление после критической перегрузки за 60 секунд
@@ -655,7 +653,7 @@ abstract class PolygonShip(
           }
         }
       } else {
-        pilot_death_reason
+        death_reason
       }
     } else {
       "N/A"
@@ -776,7 +774,7 @@ abstract class PolygonShip(
         return
       }
     }
-    if(is_manned && !pilot_is_dead) {
+    if(is_manned && !is_dead) {
       if(pilot_average_g > 4) { // пилот может испытывать перегрузку больше 4g только ограниченный период времени, потом наступает смерть
       val rate = deatchCounterDecreaseRate(pilot_average_g)
         before_death_counter -= rate
@@ -823,12 +821,12 @@ abstract class PolygonShip(
     })
   }
 
-  def onCollision(dt:Double): Unit = {
+  def onCollision(): Unit = {
     if(!ship_is_crashed) {
       val dvel = currentState.dvel.norma
       if (dvel > 10) {
         // crash tolerance = 10 m/s
-        val crash_g = dvel / dt / earth.g
+        val crash_g = dvel / base_dt / earth.g
         kill(f"Корабль уничтожен в результате столкновения ($crash_g%.2fg)", crash = true)
       }
     }

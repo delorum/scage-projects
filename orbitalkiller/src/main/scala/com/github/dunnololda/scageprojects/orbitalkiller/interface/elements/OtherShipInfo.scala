@@ -9,7 +9,7 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
   private val strings = Array("")
 
   override protected def _update(): Unit = {
-    if(monitoring_ship.shipIsKilled) {
+    if(monitoring_ship.isDead) {
       strings(0) = s"${monitoring_ship.name}: ${monitoring_ship.deathReason}"
     } else {
       if (ship.isDockedToShip(monitoring_ship)) {
