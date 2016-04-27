@@ -248,6 +248,7 @@ class EvolutionHelper(mutable_system:mutable.HashMap[Int, MutableSystemPart]) {
     mutable_system.get(body_index).map(bs => func(bs.body)).getOrElse(0.0)
   }
 
-  def bodyStates(indicies:Set[Int]) = mutable_system.filter(kv => indicies.contains(kv._1)).map(kv => (kv._1, kv._2.body))
+  def bodyStates(indicies:collection.Set[Int]) = mutable_system.filter(kv => indicies.contains(kv._1)).map(kv => kv._2.body).toSeq
+  def bodyStatesMap(indicies:Set[Int]) = mutable_system.filter(kv => indicies.contains(kv._1)).map(kv => (kv._1, kv._2.body))
   def bodyState(index:Int) = mutable_system.get(index).map(_.body)
 }

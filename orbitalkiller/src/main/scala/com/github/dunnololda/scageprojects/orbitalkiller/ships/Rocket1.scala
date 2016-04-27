@@ -79,7 +79,7 @@ class Rocket1(index:Int,
   val docking_points = Nil
 
   val two = new Engine(
-    "2",
+    2,
     position = DVec(0.0, -20.0)*0.1,
     force_dir = DVec(0.0, 1.0),
     max_power = 100000, // такая сила разгонит 200-килограммовую ракету до 500 м/сек за 1 секунду
@@ -152,7 +152,7 @@ class Rocket1(index:Int,
     if(system_evolution.tacts - start_tact > work_tacts) {
       kill("Ракета самоуничтожилась", crash = true)
     }
-    println(s"ship: ${mOrKmOrMKm(coord.dist(ship.coord))} : ${msecOrKmsec((linearVelocity - ship.linearVelocity).norma)}")
+    println(s"ship: ${mOrKmOrMKm(coord.dist(player_ship.coord))} : ${msecOrKmsec((linearVelocity - player_ship.linearVelocity).norma)}")
   }
 
   override lazy val initState:BodyState = BodyState(

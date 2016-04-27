@@ -49,16 +49,16 @@ class Ship4(index:Int,
     PolygonShape(List(DVec(-1.5, 8.5), DVec(1.5, 8.5), DVec(1.5, 10.5), DVec(-1.5, 10.5)), Nil)
   )
 
-  val docking_points = List(new DockingPoints(DVec(-1.5, 10.5), DVec(1.5, 10.5), this))
+  val docking_points = List(new DockingPoints(DVec(-1.5, 10.5), DVec(1.5, 10.5), this, Some(8)))
 
   // миллион ньютонов тяги при расходе 4 килограмма в секунду - это соответствует скорости истечения газов 250 км/сек
   // что в 50 раз выше наивысшего полученного на практике значения для химического топлива: литий/водород/фтор - 5000 м/сек
-  val four  = new Engine("4",  Vec(-3.5, 0.0), Vec(1.0, 0.0),  1000000, 1,   4,    this)
-  val six   = new Engine("6",  Vec(3.5, 0.0),  Vec(-1.0, 0.0), 1000000, 1,   4,    this)
-  val seven = new Engine("7",  Vec(-1.5, 9.0), Vec(1.0, 0.0),  10000,   100, 0.04, this)
-  val nine  = new Engine("9",  Vec(1.5, 9.0),  Vec(-1.0, 0.0), 10000,   100, 0.04, this)
-  val eight = new Engine("8",  Vec(0.0, 10.5), Vec(0.0, -1.0), 1000000, 1,   4,    this)
-  val two   = new Engine("2",  Vec(0.0, -3.5), Vec(0.0, 1.0),  1000000, 1,   4,    this)
+  val four  = new Engine(4,  Vec(-3.5, 0.0), Vec(1.0, 0.0),  1000000, 1,   4,    this)
+  val six   = new Engine(6,  Vec(3.5, 0.0),  Vec(-1.0, 0.0), 1000000, 1,   4,    this)
+  val seven = new Engine(7,  Vec(-1.5, 9.0), Vec(1.0, 0.0),  10000,   100, 0.04, this)
+  val nine  = new Engine(9,  Vec(1.5, 9.0),  Vec(-1.0, 0.0), 10000,   100, 0.04, this)
+  val eight = new Engine(8,  Vec(0.0, 10.5), Vec(0.0, -1.0), 1000000, 1,   4,    this)
+  val two   = new Engine(2,  Vec(0.0, -3.5), Vec(0.0, 1.0),  1000000, 1,   4,    this)
 
   val engines = List(four, six, seven, nine, eight, two)
 
@@ -137,17 +137,17 @@ class Ship4(index:Int,
         (howManyTacts(to, from, acc, base_dt), power, percent)
     }.find {
       case ((tacts, result_to), power, percent) =>
-        println(s"maxPossiblePowerForLinearMovement find: $power, $percent: ${math.abs(to - result_to)}")
+        //println(s"maxPossiblePowerForLinearMovement find: $power, $percent: ${math.abs(to - result_to)}")
         val check = math.abs(to - result_to) < max_diff
-        if(check) {
+        /*if(check) {
           println(s"maxPossiblePowerForLinearMovement = ($tacts, $power, $percent)")
-        }
+        }*/
         check
     }.map {
       case ((tacts, result_to), power, percent) =>
         (tacts, power)
     }.getOrElse({
-      println("maxPossiblePowerForLinearMovement fallback")
+      //println("maxPossiblePowerForLinearMovement fallback")
       (1000, max_power*0.01)
     })
   }
@@ -167,17 +167,17 @@ class Ship4(index:Int,
         (howManyTacts(to, from, ang_acc, base_dt), power, percent)
     }.find {
       case ((tacts, result_to), power, percent) =>
-        println(s"maxPossiblePowerAndTactsForRotation find: $power, $percent: ${math.abs(to - result_to)}")
+        //println(s"maxPossiblePowerAndTactsForRotation find: $power, $percent: ${math.abs(to - result_to)}")
         val check = math.abs(to - result_to) < max_diff
-        if(check) {
+        /*if(check) {
           println(s"maxPossiblePowerAndTactsForRotation = ($tacts, $power, $percent)")
-        }
+        }*/
         check
     }.map {
       case ((tacts, result_to), power, percent) =>
         (tacts, power)
     }.getOrElse({
-      println("maxPossiblePowerForRotation fallback")
+      //println("maxPossiblePowerForRotation fallback")
       (1000, max_power*0.1)
     })
   }
@@ -501,15 +501,17 @@ class Ship4(index:Int,
   }
 
   def launchRocket(): Unit = {
-    val rocket = new Rocket1(ScageId.nextId,
-      init_coord = coord + DVec(-3, 6.5).rotateDeg(rotation),
-      init_velocity = linearVelocity,
-      init_rotation = rotation
-    )
+    if(!isDocked) {
+      val rocket = new Rocket1(ScageId.nextId,
+        init_coord = coord + DVec(-3, 6.5).rotateDeg(rotation),
+        init_velocity = linearVelocity,
+        init_rotation = rotation
+      )
 
-    rocket.two.power = rocket.two.max_power
-    rocket.two.workTimeTacts = 63
-    rocket.two.active = true
+      rocket.two.power = rocket.two.max_power
+      rocket.two.workTimeTacts = 63
+      rocket.two.active = true
+    }
   }
 
   override protected def drawShip(): Unit = {

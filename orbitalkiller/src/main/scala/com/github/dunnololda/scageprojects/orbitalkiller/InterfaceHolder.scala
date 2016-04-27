@@ -118,17 +118,17 @@ object InterfaceHolder {
     /*if(ship.otherShipsNear.isEmpty) {
       nearestShipInfo.hideByConstraint()
     } else nearestShipInfo.showByConstraint()*/
-    if(ship.flightMode != FreeFlightMode || !ship.engines.exists(_.active)) {
+    if(player_ship.flightMode != FreeFlightMode || !player_ship.engines.exists(_.active)) {
       shipParamsWhenEginesOff.hideByConstraint()
     } else {
       shipParamsWhenEginesOff.showByConstraint()
     }
-    if(ship.flightMode == NearestPlanetVelocity || ship.flightMode == NearestShipAutoDocking) {
+    if(player_ship.flightMode == NearestPlanetVelocity || player_ship.flightMode == NearestShipAutoDocking) {
       enginesInfo.hideByConstraint()
     } else {
       enginesInfo.showByConstraint()
     }
-    if(ship.isLanded) {
+    if(player_ship.isLanded) {
       angularVelocityInfo.hideByConstraint()
     } else {
       angularVelocityInfo.showByConstraint()
@@ -194,16 +194,16 @@ object InterfaceHolder {
 
   def draw(): Unit = {
     _strings.zipWithIndex.foreach {
-      case ((str, color), idx) => print(str, 20, (_strings.length+2 - idx)*20, ship.colorIfPlayerAliveOrRed(color))
+      case ((str, color), idx) => print(str, 20, (_strings.length+2 - idx)*20, player_ship.colorIfPlayerAliveOrRed(color))
     }
     activeSwitchers.zipWithIndex.foreach {
       case (switcher, idx) =>
-        print(switcher.selectedStrVariant, 30+idx*between_switchers, 40, ship.colorIfPlayerAliveOrRed(YELLOW), align = "center")
+        print(switcher.selectedStrVariant, 30+idx*between_switchers, 40, player_ship.colorIfPlayerAliveOrRed(YELLOW), align = "center")
     }
     //print(minimizedStrings.map(_._1).mkString(" "), 20, 20, DARK_GRAY)
     _minimized_strings.foreach {
       case (i, color, x) =>
-        print(i.shortDescr, x, 20, ship.colorIfPlayerAliveOrRed(color), align = "center")
+        print(i.shortDescr, x, 20, player_ship.colorIfPlayerAliveOrRed(color), align = "center")
     }
   }
 }

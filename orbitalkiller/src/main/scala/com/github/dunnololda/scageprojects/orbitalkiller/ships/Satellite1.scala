@@ -87,12 +87,12 @@ class Satellite1(index:Int,
 
   val docking_points:List[DockingPoints] = Nil
 
-  val two = new Engine("2", position = DVec(0.0, -16.0), force_dir = DVec(0.0, 1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
-  val eight = new Engine("8", position = DVec(0.0, 4.0), force_dir = DVec(0.0, -1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
-  val one = new Engine("1", position = DVec(-38.0, -4.0), force_dir = DVec(0.0, 1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
-  val three = new Engine("3", position = DVec(38.0, -4.0), force_dir = DVec(0.0, 1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
-  val four = new Engine("4", position = DVec(-44.0, 0.0), force_dir = DVec(1.0, 0.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
-  val six = new Engine("6", position = DVec(44.0, 0.0), force_dir = DVec(-1.0, 0.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
+  val two   = new Engine(2, position = DVec(0.0, -16.0), force_dir = DVec(0.0, 1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
+  val eight = new Engine(8, position = DVec(0.0, 4.0), force_dir = DVec(0.0, -1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
+  val one   = new Engine(1, position = DVec(-38.0, -4.0), force_dir = DVec(0.0, 1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
+  val three = new Engine(3, position = DVec(38.0, -4.0), force_dir = DVec(0.0, 1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
+  val four  = new Engine(4, position = DVec(-44.0, 0.0), force_dir = DVec(1.0, 0.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
+  val six   = new Engine(6, position = DVec(44.0, 0.0), force_dir = DVec(-1.0, 0.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
 
   val engines = List(two, eight, one, three, four, six)
 

@@ -7,7 +7,7 @@ import com.github.dunnololda.scage.ScageLibD._
 class OrbitInfo extends InterfaceElement {
   private val strings = Array("")
   override protected def _update(): Unit = {
-    strings(0) = s"Орбита: ${orbitStrInPointWithVelocity(ship.coord, ship.linearVelocity, ship.radius, ship.mass, currentPlanetStates)}"
+    strings(0) = s"Орбита: ${orbitStrInPointWithVelocity(player_ship.coord, player_ship.linearVelocity, player_ship.radius, player_ship.mass, currentPlanetStates)}"
 
     /*val equation = insideSphereOfInfluenceOfCelestialBody(ship.coord, ship.mass, currentPlanetStates) match {
       case Some((planet, planet_state)) =>

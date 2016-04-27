@@ -7,7 +7,7 @@ import com.github.dunnololda.scage.support.{DVec, ScageId}
 class Wreck(mass:Double, init_coord:DVec, init_velocity:DVec, init_rotation:Double, points:List[DVec], val is_player:Boolean) {
   val index = ScageId.nextId
   private val draw_points = points :+ points.head
-  def colorIfPlayerAliveOrRed(color: => ScageColor) = if(OrbitalKiller.ship.isDead) RED else color
+  def colorIfPlayerAliveOrRed(color: => ScageColor) = if(OrbitalKiller.player_ship.isDead) RED else color
 
   val currentState = new MutableBodyState(BodyState(
     index = index,
@@ -28,7 +28,8 @@ class Wreck(mass:Double, init_coord:DVec, init_velocity:DVec, init_rotation:Doub
         helper.funcOfArrayOrDVecZero(Array(index, earth.index), l => {
           val bs = l(0)
           val e = l(1)
-          earth.airResistance(bs, e, 28, 0.5)
+          val other_ship_states = helper.bodyStates(ShipsHolder.shipIndicies.filterNot(_ == player_ship.index))
+          earth.airResistance(bs, e, other_ship_states, 28, 0.5)
         })
     },
     (tacts, helper) => 0.0
@@ -42,7 +43,7 @@ class Wreck(mass:Double, init_coord:DVec, init_velocity:DVec, init_rotation:Doub
   def rotation = currentState.ang
 
   val render_id = render {
-    if(!drawMapMode && coord.dist2(ship.coord) < 100000*100000) {
+    if(!drawMapMode && coord.dist2(player_ship.coord) < 100000*100000) {
       openglLocalTransform {
         openglMove(currentState.coord - base)
         /*mbs.contacts.foreach(x => {
@@ -58,9 +59,12 @@ class Wreck(mass:Double, init_coord:DVec, init_velocity:DVec, init_rotation:Doub
     }
   }
 
+  //val burn_dist = 30000.0 + math.random*10000 + earth.radius
+
   if(!is_player) {
     actionStaticPeriod(1000) {
-      if (system_evolution.tacts - start_tact > 4000) {
+      if (system_evolution.tacts - start_tact > 4000 &&
+        coord.dist2(player_ship.coord) > 1000000l * 1000000) {
         system_evolution.removeBodyByIndex(index)
         delOperation(render_id)
         deleteSelf()

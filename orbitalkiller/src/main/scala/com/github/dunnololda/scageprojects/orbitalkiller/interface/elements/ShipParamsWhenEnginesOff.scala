@@ -6,12 +6,12 @@ import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
 class ShipParamsWhenEnginesOff extends InterfaceElement {
   def linearSpeedStrWhenEnginesOff:String = {
-    if(ship.flightMode != FreeFlightMode || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
+    if(player_ship.flightMode != FreeFlightMode || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
-      if(ship.engines.exists(_.active)) {
-        val future_state = getFutureState(ship.engines.map(_.stopMomentTacts).max)
+      if(player_ship.engines.exists(_.active)) {
+        val future_state = getFutureState(player_ship.engines.map(_.stopMomentTacts).max)
         val future_planet_states = planetStates(future_state)
-        future_state.get(ship.index) match {
+        future_state.get(player_ship.index) match {
           case Some(bs) =>
             insideSphereOfInfluenceOfCelestialBody(bs.coord, bs.mass, future_planet_states) match {
               case Some((planet, planet_state)) =>
@@ -23,61 +23,61 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
         }
       } else {
         //f"${msecOrKmsec(ship.linearVelocity.norma)} (velx = ${msecOrKmsec(ship.linearVelocity.x)}, vely = ${msecOrKmsec(ship.linearVelocity.y)})"
-        msecOrKmsec(ship.linearVelocity.norma)
+        msecOrKmsec(player_ship.linearVelocity.norma)
       }
     }
   }
 
   def angularSpeedStrWhenEnginesOff:String = {
-    if(ship.flightMode != FreeFlightMode || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
+    if(player_ship.flightMode != FreeFlightMode || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
-      if(ship.engines.exists(_.active)) {
-        getFutureState(ship.engines.map(_.stopMomentTacts).max).get(ship.index) match {
+      if(player_ship.engines.exists(_.active)) {
+        getFutureState(player_ship.engines.map(_.stopMomentTacts).max).get(player_ship.index) match {
             case Some(bs) =>
               val s = bs.ang_vel
               f" $s%.2f град/сек"
             case None => "N/A"
           }
         } else {
-        f" ${ship.angularVelocity}%.2f град/сек"
+        f" ${player_ship.angularVelocity}%.2f град/сек"
       }
     }
   }
 
   def orbitParametersStrWhenEnginesOff:String = {
-    if(ship.flightMode != FreeFlightMode || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
+    if(player_ship.flightMode != FreeFlightMode || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
-      if(ship.engines.exists(_.active)) {
-        val lbs = getFutureState(ship.engines.map(_.stopMomentTacts).max)
-        lbs.get(ship.index) match {
+      if(player_ship.engines.exists(_.active)) {
+        val lbs = getFutureState(player_ship.engines.map(_.stopMomentTacts).max)
+        lbs.get(player_ship.index) match {
             case Some(bs) =>
-              val celestials = lbs.filter(kv => planet_indexes.contains(kv._1)).flatMap(kv => {
+              val celestials = lbs.filter(kv => planet_indices.contains(kv._1)).flatMap(kv => {
                 planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
               }).values.toSeq.sortBy(_._2.mass)
-              orbitStrInPointWithVelocity(bs.coord, bs.vel, ship.radius, bs.mass, celestials)
+              orbitStrInPointWithVelocity(bs.coord, bs.vel, player_ship.radius, bs.mass, celestials)
             case None => "N/A"
           }
         } else {
-        orbitStrInPointWithVelocity(ship.coord, ship.linearVelocity, ship.radius, ship.mass, currentPlanetStates)
+        orbitStrInPointWithVelocity(player_ship.coord, player_ship.linearVelocity, player_ship.radius, player_ship.mass, currentPlanetStates)
       }
     }
   }
 
   def fuelMassWhenEnginesOff:String = {
-    if(ship.flightMode != FreeFlightMode || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
+    if(player_ship.flightMode != FreeFlightMode || anyEngineKeyPressed) "N/A"  // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
-      if(ship.engines.exists(_.active)) {
-        f"${ship.fuelMass - ship.engines.filter(e => e.active).map(e => e.workTimeTacts*e.fuelConsumptionPerTact).sum}%.1f кг"
+      if(player_ship.engines.exists(_.active)) {
+        f"${player_ship.fuelMass - player_ship.engines.filter(e => e.active).map(e => e.workTimeTacts*e.fuelConsumptionPerTact).sum}%.1f кг"
       } else {
-        f"${ship.fuelMass}%.1f кг"
+        f"${player_ship.fuelMass}%.1f кг"
       }
     }
   }
 
   private val strings = Array("", "", "", "", "")
   override protected def _update(): Unit = {
-    if (ship.flightMode != Maneuvering) {
-      val engines_active = ship.engines.exists(_.active)
+    if (player_ship.flightMode != Maneuvering) {
+      val engines_active = player_ship.engines.exists(_.active)
       if(engines_active) {
         strings(0) = f"Линейная скорость в момент отключения двигателей: $linearSpeedStrWhenEnginesOff"
         strings(1) = f"Угловая скорость в момент отключения двигателей: $angularSpeedStrWhenEnginesOff"

@@ -23,7 +23,7 @@ case object NearestPlanetVelocity   extends FlightMode {override def rusStr: Str
 //case object AbsoluteStop            extends FlightMode
 case object Maneuvering             extends FlightMode {override def rusStr: String = "маневрирование"}  // 0
 
-class DockingPoints(val p1:DVec, val p2:DVec, ship:PolygonShip) {
+class DockingPoints(val p1:DVec, val p2:DVec, ship:PolygonShip, val disabled_engine:Option[Int]) {
   val joint_point = p1 + (p2-p1)*0.5
   val dock_dist = 0.5 // в метрах, при каком расстоянии между точками стыковки двух кораблей происходит захватю Для простоты это значение - одинаковая для всех константа. Вынесли сюда, чтобы было одно место, где поменять.
   def curP1 = ship.currentState.coord + p1.rotateDeg(ship.currentState.ang)
@@ -75,20 +75,22 @@ abstract class PolygonShip(
 
   def engines:List[Engine]
   def engines_mapping:Map[Int, Engine]
-  def switchEngineActive(engine_code:Int) {
+  /*def switchEngineActive(engine_code:Int) {
     //timeMultiplier = realtime
     engines_mapping.get(engine_code).foreach(e => e.switchActive())
-  }
+  }*/
 
   def selectOrSwitchEngineActive(engine_code:Int) {
     //timeMultiplier = realtime
-    engines_mapping.get(engine_code).foreach(e => {
-      if(selected_engine.exists(_ == e)) {
-        e.switchActive()
-      } else {
-        selected_engine = Some(e)
-      }
-    })
+    if(!dockData.exists(d => d.our_dp.disabled_engine.exists(_ == index))) {
+      engines_mapping.get(engine_code).foreach(e => {
+        if (selected_engine.exists(_ == e)) {
+          e.switchActive()
+        } else {
+          selected_engine = Some(e)
+        }
+      })
+    }
   }
 
   def mass:Double
@@ -158,7 +160,7 @@ abstract class PolygonShip(
   def velocityStr:String = {
     insideSphereOfInfluenceOfCelestialBody(coord, mass, OrbitalKiller.currentPlanetStates) match {
       case Some((planet, planet_state)) =>
-        if(ship.isAlive) {
+        if(player_ship.isAlive) {
           s"${msecOrKmsec((linearVelocity - planet_state.vel).norma)} (${planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
         } else {
           s"${msecOrKmsec((linearVelocity - planet_state.vel).norma)} (${planet.name}), ${msecOrKmsec(linearVelocity.norma)} (абсолютная)"
@@ -302,7 +304,7 @@ abstract class PolygonShip(
   }
 
   protected def drawShip(): Unit = {
-    if(!drawMapMode && coord.dist2(ship.coord) < 100000*100000) {
+    if(!drawMapMode && coord.dist2(player_ship.coord) < 100000*100000) {
       if(isAlive) {
         openglLocalTransform {
           openglMove(coord - base)
@@ -331,7 +333,7 @@ abstract class PolygonShip(
               })
             } else if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
               docking_points.foreach(dp => {
-                val (p1_on_the_right_way, p2_on_the_right_way) = OrbitalKiller.ship.docking_points.headOption.map(_.pointsOnTheRightWay(dp)).getOrElse((false, false))
+                val (p1_on_the_right_way, p2_on_the_right_way) = OrbitalKiller.player_ship.docking_points.headOption.map(_.pointsOnTheRightWay(dp)).getOrElse((false, false))
 
                 val c1 = if (p1_on_the_right_way) GREEN else RED
                 val c2 = if (p2_on_the_right_way) GREEN else RED
@@ -450,7 +452,9 @@ abstract class PolygonShip(
         engines.foreach(e => e.power = {
           if(InterfaceHolder.gSwitcher.maxGSet) {
             math.min(
-              mass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + earth.airResistance(currentState, earth.currentState, 28, 0.5).norma,
+              (mass + dockData.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
+                earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5).norma
+              },
               e.max_power * 0.5)
           } else {
             e.max_power * 0.5
@@ -571,7 +575,7 @@ abstract class PolygonShip(
     ans*base_dt
   }
 
-  def colorIfPlayerAliveOrRed(color: => ScageColor) = if(OrbitalKiller.ship.isDead) RED else color
+  def colorIfPlayerAliveOrRed(color: => ScageColor) = if(OrbitalKiller.player_ship.isDead) RED else color
 
   protected var main_ship_wreck:Option[Wreck] = None
   
@@ -600,7 +604,7 @@ abstract class PolygonShip(
                   random_wreck_vel_func(),
                   rotation,
                   part_points,
-                  idx == 0 && index == ship.index)
+                  idx == 0 && index == player_ship.index)
       }
       main_ship_wreck = wrecks.find(_.is_player)
       ship_is_crashed = true
@@ -733,7 +737,7 @@ abstract class PolygonShip(
   def beforeStep(): Unit = {
     engines.foreach(e => {
       if(e.active) {
-        if(e.workTimeTacts <= 0 || ship.fuelMass <= 0) {
+        if(e.workTimeTacts <= 0 || player_ship.fuelMass <= 0) {
           e.active = false
         } else {
           if(e.ship.fuelMass - e.fuelConsumptionPerTact <= 0) {
@@ -742,7 +746,7 @@ abstract class PolygonShip(
         }
       }
     })
-    if(currentState.ang_vel != 0 && math.abs(currentState.ang_vel) < OrbitalKiller.ship.angular_velocity_error) {
+    if(currentState.ang_vel != 0 && math.abs(currentState.ang_vel) < OrbitalKiller.player_ship.angular_velocity_error) {
       currentState.ang_vel = 0
     }
     currentState.mass = mass/*currentMass(_tacts)*/
@@ -750,7 +754,9 @@ abstract class PolygonShip(
 
   def afterStep(time_msec:Long): Unit = {
     // сила от реактивных двигателей и сила сопротивления воздуха
-    val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(currentState, earth.currentState, 28, 0.5)
+    val reactive_force = currentReactiveForce(0, currentState) + {
+      earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5)
+    }
     if(!ship_is_crashed) {
       val dvel = currentState.dvel.norma
       if (dvel > 10) {

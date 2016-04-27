@@ -12,14 +12,14 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
     if(monitoring_ship.isDead) {
       strings(0) = s"${monitoring_ship.name}: ${monitoring_ship.deathReason}"
     } else {
-      if (ship.isDockedToShip(monitoring_ship)) {
+      if (player_ship.isDockedToShip(monitoring_ship)) {
         strings(0) = s"${monitoring_ship.name}: docked"
       } else {
         val (_, need_orbit_period_str) = (for {
-          (our_orbit_planet, our_orbit_planet_state) <- insideSphereOfInfluenceOfCelestialBody(ship.coord, ship.mass, currentPlanetStates)
+          (our_orbit_planet, our_orbit_planet_state) <- insideSphereOfInfluenceOfCelestialBody(player_ship.coord, player_ship.mass, currentPlanetStates)
           (os_orbit_planet, os_orbit_planet_state) <- insideSphereOfInfluenceOfCelestialBody(monitoring_ship.coord, monitoring_ship.mass, currentPlanetStates)
           if our_orbit_planet.index == os_orbit_planet.index
-          our_orbit_kepler = calculateOrbit(our_orbit_planet_state.mass, our_orbit_planet_state.coord, ship.mass, ship.coord - our_orbit_planet_state.coord, ship.linearVelocity - our_orbit_planet_state.vel, G)
+          our_orbit_kepler = calculateOrbit(our_orbit_planet_state.mass, our_orbit_planet_state.coord, player_ship.mass, player_ship.coord - our_orbit_planet_state.coord, player_ship.linearVelocity - our_orbit_planet_state.vel, G)
           os_orbit_kepler = calculateOrbit(os_orbit_planet_state.mass, os_orbit_planet_state.coord, monitoring_ship.mass, monitoring_ship.coord - os_orbit_planet_state.coord, monitoring_ship.linearVelocity - os_orbit_planet_state.vel, G)
           if our_orbit_kepler.isInstanceOf[EllipseOrbit] && os_orbit_kepler.isInstanceOf[EllipseOrbit]
           our_orbit_ellipse = our_orbit_kepler.asInstanceOf[EllipseOrbit]
@@ -27,8 +27,8 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
           //our_orbit_period = our_orbit_ellipse.t
           os_orbit_period = os_orbit_ellipse.t
         } yield {
-            if (InterfaceHolder.dockingSwitcher.dockingEnabled && ship.coord.dist(monitoring_ship.coord) <= 2000) {
-              val ship_docking_point = ship.docking_points.head.curP1 + 0.5 * (ship.docking_points.head.curP2 - ship.docking_points.head.curP1)
+            if (InterfaceHolder.dockingSwitcher.dockingEnabled && player_ship.coord.dist(monitoring_ship.coord) <= 2000) {
+              val ship_docking_point = player_ship.docking_points.head.curP1 + 0.5 * (player_ship.docking_points.head.curP2 - player_ship.docking_points.head.curP1)
               monitoring_ship.docking_points.sortBy(osdp => osdp.curP1.dist(ship_docking_point)).headOption match {
                 case Some(osdp) =>
                   val vv1 = (osdp.curP1 - osdp.curP2).n
@@ -43,7 +43,7 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
                   val b1 = docking_dir.x
                   val b2 = docking_dir.y
                   // координаты точки стыковки корабля в системе координат с началом в docking_point и базисными векторами (vv1, docking_dir)
-                  val angle = DVec(0, 1).deg360(docking_dir) - ship.rotation
+                  val angle = DVec(0, 1).deg360(docking_dir) - player_ship.rotation
                   val x = -(b2 * (A - C) - b1 * (B - D)) / (a1 * b2 - a2 * b1)
                   val y = (a2 * (A - C) - a1 * (B - D)) / (a2 * b1 - a1 * b2)
                   ("N/A", f"docking data: a=$angle%.2f x=$x%.2f y=$y%.2f")
@@ -51,7 +51,7 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
                   ("N/A", "N/A")
               }
             } else {
-              val deg_diff = (monitoring_ship.coord - our_orbit_planet_state.coord).deg360(ship.coord - our_orbit_planet_state.coord)
+              val deg_diff = (monitoring_ship.coord - our_orbit_planet_state.coord).deg360(player_ship.coord - our_orbit_planet_state.coord)
               val our_r_p = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(0)
               val our_r_a = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(180)
               val t1_sec = deg_diff / 360.0 * os_orbit_period
@@ -61,7 +61,7 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
               val mu = G * our_orbit_planet_state.mass
               def _calculateRp(t_sec: Double): Double = {
                 val a = math.pow(math.pow(t_sec / (2 * math.Pi), 2) * mu, 1.0 / 3) // большая полуось для данного периода
-                val x = ship.coord.dist(our_orbit_planet_state.coord)
+                val x = player_ship.coord.dist(our_orbit_planet_state.coord)
                 math.min(2 * a - x, x)
               }
               val r_p1 = _calculateRp(t1_sec) - our_orbit_planet.radius
@@ -73,7 +73,7 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
               } else {
                 s"min sep = in r_a, ${mOrKmOrMKm(sep_in_r_a)}"
               }
-              val cur_sep = os_orbit_ellipse.orbitalPointInPoint(ship.coord).dist(ship.coord)
+              val cur_sep = os_orbit_ellipse.orbitalPointInPoint(player_ship.coord).dist(player_ship.coord)
               val need_orbit_period_str = {
                 if (r_p1 >= our_orbit_planet.air_free_altitude) {
                   if (r_p2 >= our_orbit_planet.air_free_altitude) {
@@ -96,8 +96,8 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
               (f"$deg_diff%.2f град.", s"rendezvous data: $need_orbit_period_str")
             }
           }).getOrElse("N/A", "N/A")
-        val dist = mOrKmOrMKm(ship.coord.dist(monitoring_ship.coord))
-        val vel = msecOrKmsec((ship.linearVelocity - monitoring_ship.linearVelocity) * (ship.coord - monitoring_ship.coord).n)
+        val dist = mOrKmOrMKm(player_ship.coord.dist(monitoring_ship.coord))
+        val vel = msecOrKmsec((player_ship.linearVelocity - monitoring_ship.linearVelocity) * (player_ship.coord - monitoring_ship.coord).n)
         strings(0) = s"${monitoring_ship.name}: dist=$dist, vel=$vel, $need_orbit_period_str"
       }
     }

@@ -73,10 +73,10 @@ class Planet(val index:Int,
   private var ground_features_near:Seq[(DVec, Int, Int)] = _
 
   private def updateRenderData() {
-    viewpoint_dist = math.abs((ship.coord + shipOffset).dist(coord) - radius)
+    viewpoint_dist = math.abs((player_ship.coord + shipOffset).dist(coord) - radius)
     if(viewpoint_dist < 50000) {
       //val before_to_viewpoint = (ship.coord + shipOffset - coord).n*(radius - 1000)
-      to_viewpoint = (ship.coord + shipOffset - coord).n * radius
+      to_viewpoint = (player_ship.coord + shipOffset - coord).n * radius
       points = for {
         ang <- -alpha to alpha by 0.01
         point = to_viewpoint.rotateDeg(ang)
@@ -118,9 +118,9 @@ class Planet(val index:Int,
           }
         }
         openglLocalTransform {
-          openglMove(ship.coord - base)
-          val pa = (coord - ship.coord).n*(ship.coord.dist(coord) - radius) + (coord - ship.coord).p*70000
-          val pb = (coord - ship.coord).n*(ship.coord.dist(coord) - radius) + (coord - ship.coord).p*(-70000)
+          openglMove(player_ship.coord - base)
+          val pa = (coord - player_ship.coord).n*(player_ship.coord.dist(coord) - radius) + (coord - player_ship.coord).p*70000
+          val pb = (coord - player_ship.coord).n*(player_ship.coord.dist(coord) - radius) + (coord - player_ship.coord).p*(-70000)
           drawLine(pa, pb, WHITE)
         }
       } else if(viewpoint_dist < 50000) {
@@ -177,23 +177,68 @@ class PlanetWithAir(index:Int,
 
   // A - Reference area (of the front of the ship)
   // C - Drag coefficient
-  def airResistance(v:DVec, h:Double, A:Double, C:Double):DVec = {
+  private def airResistance(v:DVec, h:Double, A:Double, C:Double, check_obscure_func:DVec => Boolean):DVec = {
     val T = temperature(h)
     if(T <= 0) DVec.zero
     else {
-      val P = airPressurePascale(h)
-      val ro = P*M/(R*T)                       // density of air
-      val F = 0.5*ro*A*C*v.norma2
-      -v.n*F
+      if(check_obscure_func(v.n)) DVec.zero else {
+        val P = airPressurePascale(h)
+        val ro = P * M / (R * T) // density of air
+        val F = 0.5 * ro * A * C * v.norma2
+        -v.n * F
+      }
     }
   }
 
-  def airResistance(ship_coord:DVec, ship_velocity:DVec, planet_coord:DVec, planet_velocity:DVec, planet_ang_vel:Double, A:Double, C:Double):DVec = {
-    airResistance(velocityRelativeToAir(ship_coord, ship_velocity, planet_coord, planet_velocity, planet_ang_vel), altitude(ship_coord, planet_coord), A, C)
+  private def airResistance(ship_coord:DVec,
+                            ship_velocity:DVec,
+                            planet_coord:DVec,
+                            planet_velocity:DVec,
+                            planet_ang_vel:Double,
+                            A:Double,
+                            C:Double,
+                            check_obscure_func:DVec => Boolean):DVec = {
+    airResistance(velocityRelativeToAir(ship_coord, ship_velocity, planet_coord, planet_velocity, planet_ang_vel),
+                  altitude(ship_coord, planet_coord),
+                  A,
+                  C,
+                  check_obscure_func)
   }
 
-  def airResistance(ship_mutable_state:MutableBodyState, planet_mutable_state:MutableBodyState, A:Double, C:Double):DVec = {
-    airResistance(ship_mutable_state.coord, ship_mutable_state.vel, planet_mutable_state.coord, planet_mutable_state.vel, planet_mutable_state.ang_vel, A, C)
+  def airResistance(ship_state:MutableBodyState,
+                    planet_state:MutableBodyState,
+                    other_ship_states:Seq[MutableBodyState],
+                    A:Double,
+                    C:Double):DVec = {
+    def _checkIfObscuredByAnotherShip(ship_dir_relative_to_air:DVec, other_ship_states_left:Seq[MutableBodyState] = other_ship_states):Boolean = {
+      if(other_ship_states_left.isEmpty) false
+      else {
+        val other_ship_state = other_ship_states_left.head
+        (ship_state.polygonShape, other_ship_state.polygonShape) match {
+          case (Some(our_shape), Some(other_shape)) =>
+            val d2 = (our_shape.radius + other_shape.radius)*(our_shape.radius + other_shape.radius)
+            (ship_state.coord.dist2(other_ship_state.coord) <= d2) && {
+              val res = (other_shape.points ::: List(other_shape.points.head)).sliding(2).exists {
+                case List(p1, p2) => areLinesIntersect(
+                  ship_state.coord,
+                  ship_state.coord + ship_dir_relative_to_air*(our_shape.radius + other_shape.radius),
+                  other_ship_state.coord + p1.rotateDeg(other_ship_state.ang), other_ship_state.coord + p2.rotateDeg(other_ship_state.ang))
+              }
+              /*if(ship_state.index == player_ship.index) {
+                if (res) {
+                  println(s"${nameByIndex(other_ship_state.index).get} obscuring our ship ${nameByIndex(ship_state.index).get}")
+                } else {
+                  println(s"${nameByIndex(other_ship_state.index).get} is not obscuring our ship ${nameByIndex(ship_state.index).get} but close to us")
+                }
+              }*/
+              res
+            } || _checkIfObscuredByAnotherShip(ship_dir_relative_to_air, other_ship_states_left.tail)
+          case _ =>  _checkIfObscuredByAnotherShip(ship_dir_relative_to_air, other_ship_states_left.tail)
+        }
+      }
+    }
+    val f = (ship_dir_relative_to_air:DVec) => _checkIfObscuredByAnotherShip(ship_dir_relative_to_air)
+    airResistance(ship_state.coord, ship_state.vel, planet_state.coord, planet_state.vel, planet_state.ang_vel, A, C, f)
   }
 
   def airPressureMmHg(ship_coord:DVec, planet_coord:DVec):Double = {

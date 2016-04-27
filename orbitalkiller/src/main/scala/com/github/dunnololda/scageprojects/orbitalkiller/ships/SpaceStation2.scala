@@ -2,7 +2,6 @@ package com.github.dunnololda.scageprojects.orbitalkiller.ships
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
-import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 
 class SpaceStation2(
@@ -66,15 +65,15 @@ class SpaceStation2(
     PolygonShape(List(DVec(100.0, -10.0), DVec(130.0, -10.0), DVec(130.0, 10.0), DVec(120.0, 10.0)), Nil)
   )
 
-  val docking_points = List(new DockingPoints(DVec(-130.0, 1.5), DVec(-130.0, -1.5), this),
-                            new DockingPoints(DVec(130.0, -1.5), DVec(130.0, 1.5), this))
+  val docking_points = List(new DockingPoints(DVec(-130.0, 1.5), DVec(-130.0, -1.5), this, Some(4)),
+                            new DockingPoints(DVec(130.0, -1.5), DVec(130.0, 1.5), this, Some(6)))
 
-  val four  = new Engine("4", Vec(-130.0, 0.0),   Vec(1.0, 0.0),  10, 1, 4, this)
-  val six   = new Engine("6", Vec(130.0, 0.0),    Vec(-1.0, 0.0), 10, 1, 4, this)
-  val eight = new Engine("8", Vec(0.0, 30.0),     Vec(0.0, -1.0), 10, 1, 4, this)
-  val two   = new Engine("2", Vec(0.0, -30.0),    Vec(0.0, 1.0),  10, 1, 4, this)
-  val one   = new Engine("1", Vec(-120.0, -10.0), Vec(0.0, 1.0),  10, 1, 4, this)
-  val three = new Engine("3", Vec(120.0, -10.0),  Vec(0.0, 1.0),  10, 1, 4, this)
+  val four  = new Engine(4, Vec(-130.0, 0.0),   Vec(1.0, 0.0),  10, 1, 4, this)
+  val six   = new Engine(6, Vec(130.0, 0.0),    Vec(-1.0, 0.0), 10, 1, 4, this)
+  val eight = new Engine(8, Vec(0.0, 30.0),     Vec(0.0, -1.0), 10, 1, 4, this)
+  val two   = new Engine(2, Vec(0.0, -30.0),    Vec(0.0, 1.0),  10, 1, 4, this)
+  val one   = new Engine(1, Vec(-120.0, -10.0), Vec(0.0, 1.0),  10, 1, 4, this)
+  val three = new Engine(3, Vec(120.0, -10.0),  Vec(0.0, 1.0),  10, 1, 4, this)
 
   val engines = List(four, six, eight, two, one, three)
 

@@ -2,13 +2,14 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
-import scala.collection.mutable
+import scala.collection.{mutable, Set}
 import scala.collection.mutable.ArrayBuffer
 
 object ShipsHolder {
   def addShip(ship:PolygonShip): Unit = {
     _ships += ship
     _shipsMap += (ship.index -> ship)
+    _shipIndicies += ship.index
     system_evolution.addBody(
       ship.currentState,
       (tacts, helper) => {
@@ -19,7 +20,8 @@ object ShipsHolder {
           helper.funcOfArrayOrDVecZero(Array(ship.index, earth.index), l => {
             val bs = l(0)
             val e = l(1)
-            earth.airResistance(bs, e, 28, 0.5)
+            val other_ship_states = helper.bodyStates(ShipsHolder.shipIndicies.filterNot(_ == ship.index))
+            earth.airResistance(bs, e, other_ship_states, 28.0, 0.5)
           })
       },
       (tacts, helper) => {
@@ -35,6 +37,7 @@ object ShipsHolder {
       update_list = true
       system_evolution.removeBodyByIndex(ship_index)
     })
+    _shipIndicies -= ship_index
   }
 
   private var update_list:Boolean = false
@@ -49,4 +52,9 @@ object ShipsHolder {
   private val _ships = ArrayBuffer[PolygonShip]()
   private val _shipsMap = mutable.HashMap[Int, PolygonShip]()//ships.map(s => (s.index, s)).toMap
   def shipByIndex(index:Int):Option[PolygonShip] = _shipsMap.get(index)
+
+  private var _shipIndicies:mutable.HashSet[Int] = mutable.HashSet[Int]()
+  def shipIndicies:Set[Int] = _shipIndicies
+
+  def currentShipStatesExceptShip(ship_index:Int):Seq[MutableBodyState] = _ships.withFilter(_.index != ship_index).map(_.currentState)
 }

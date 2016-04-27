@@ -284,9 +284,9 @@ package object orbitalkiller {
     def positionalCorrection() {
       if(separation > 0.005) {
         val correction = separation/(a.invMass + b.invMass)
-        if(correction != 0) {
+        /*if(correction != 0) {
           println(s"correction: separation=$separation correction_${a.index}=${-a.invMass*correction} correction_${b.index}=${b.invMass*correction}")
-        }
+        }*/
         if(!a.is_static) a.coord += normal*(-a.invMass*correction)
         if(!b.is_static) b.coord += normal*b.invMass*correction
       }
@@ -713,7 +713,10 @@ package object orbitalkiller {
     override def toString = s"MutableBodyState($index)"
     def saveData:String = s"$index ${acc.x}:${acc.y} ${vel.x}:${vel.y} ${coord.x}:${coord.y} $ang_acc $ang_vel $ang"
 
-
+    lazy val polygonShape = shape match {
+      case p:PolygonShape => Some(p)
+      case _ => None
+    }
   }
 
   implicit class Phys2dBody2BodyState(pb:Phys2dBody) {
@@ -1216,7 +1219,7 @@ package object orbitalkiller {
           travelTimeOnOrbitMsecCW(ship_coord, orbitalPointByTrueAnomalyRad(fall_teta_rad))
         }
 
-        val time_to_stop_at_full_power = math.abs(v0y/(1000000/OrbitalKiller.ship.mass - planet_g))
+        val time_to_stop_at_full_power = math.abs(v0y/(1000000/OrbitalKiller.player_ship.mass - planet_g))
         val fall_time_str = if(fall_time_msec < 500) "" else if(fall_time_msec < 30000) s"[r Поверхность через ${timeStr(fall_time_msec)} (${timeStr((time_to_stop_at_full_power*1000l).toLong)})]" else s"Поверхность через ${timeStr(fall_time_msec)}"
 
         f"$prefix, суборбитальная, $dir, e = $e%.2f, r_p = ${mOrKmOrMKm(r_p - planet_radius)}, r_a = ${mOrKmOrMKm(r_a - planet_radius)}. $fall_time_str"
@@ -1493,7 +1496,7 @@ package object orbitalkiller {
           travelTimeOnOrbitMsecCW(ship_coord, orbitalPointByTrueAnomalyRad(fall_teta_rad))
         }
 
-        val time_to_stop_at_full_power = math.abs(v0y / (1000000 / OrbitalKiller.ship.mass - planet_g))
+        val time_to_stop_at_full_power = math.abs(v0y / (1000000 / OrbitalKiller.player_ship.mass - planet_g))
         val fall_time_str = if(fall_time_msec < 500) "" else if(fall_time_msec < 30000) s"[r Поверхность через ${timeStr(fall_time_msec)} (${timeStr((time_to_stop_at_full_power * 1000l).toLong)})]" else s"Поверхность через ${timeStr(fall_time_msec)}"
         f"$prefix, незамкнутая, суборбитальная $dir, $r_p_approach_str, e = $e%.2f, r_p = ${mOrKmOrMKm(r_p - planet_radius)}, $fall_time_str"
       } else {

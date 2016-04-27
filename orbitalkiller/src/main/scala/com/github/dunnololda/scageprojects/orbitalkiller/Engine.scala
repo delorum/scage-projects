@@ -3,7 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import OrbitalKiller._
 import com.github.dunnololda.scage.ScageLibD._
 
-class Engine(val index:String,
+class Engine(val index:Int,
              val position:DVec,                                  // позиция относительно центра массы корабля (ц.м. в точке (0,0))
              val force_dir:DVec,                                 // вектор направления приложения силы
              val max_power:Double,                               // в ньютонах
@@ -63,7 +63,9 @@ class Engine(val index:String,
         if(InterfaceHolder.gSwitcher.maxGSet) {
           math.min(
             max_power * new_power_percent / 100.0,
-            ship.mass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + earth.airResistance(ship.currentState, earth.currentState, 28, 0.5).norma
+            (ship.mass + ship.dockData.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
+              earth.airResistance(ship.currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(ship.index), 28, 0.5).norma
+            }
           )
         } else {
           max_power * new_power_percent / 100.0
@@ -85,7 +87,7 @@ class Engine(val index:String,
   def active_=(bool:Boolean) {
     if(is_active != bool) {
       if(bool) {
-        if(ship.fuelMass > fuelConsumptionPerTact) {
+        if(!ship.dockData.exists(d => d.our_dp.disabled_engine.exists(_ == index)) && ship.fuelMass > fuelConsumptionPerTact) {
           is_active = true
           if(power == 0) {
             powerPercent = default_power_percent
