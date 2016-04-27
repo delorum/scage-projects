@@ -19,7 +19,8 @@ class SpaceStation2(
     _fuel_mass = m
   }
 
-  val is_manned = false
+  val is_manned = true
+  override val pilot_position = DVec(-120, 0)
 
   lazy val engine_size:Double = 10
 

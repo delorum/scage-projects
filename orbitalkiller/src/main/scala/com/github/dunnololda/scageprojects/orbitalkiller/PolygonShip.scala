@@ -746,7 +746,7 @@ abstract class PolygonShip(
         }
       }
     })
-    if(currentState.ang_vel != 0 && math.abs(currentState.ang_vel) < OrbitalKiller.player_ship.angular_velocity_error) {
+    if(currentState.ang_vel != 0 && math.abs(currentState.ang_vel) < OrbitalKiller.angular_velocity_error) {
       currentState.ang_vel = 0
     }
     currentState.mass = mass/*currentMass(_tacts)*/

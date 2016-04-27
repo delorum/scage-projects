@@ -71,10 +71,6 @@ class Ship4(index:Int,
     KEY_NUMPAD2 -> two
   )
 
-  private val linear_velocity_error = 0.1
-  val angular_velocity_error = 0.0102 // значение подобрано эмпирически при тестах с малым количеством топлива
-  private val angle_error = 0.1
-
   /**
    * Сколько тактов работы двигателя потребуется, чтобы достичь скорости to, при условии, что текущая скорость равна from,
    * ускорение равно a, один такт равен dt секунд

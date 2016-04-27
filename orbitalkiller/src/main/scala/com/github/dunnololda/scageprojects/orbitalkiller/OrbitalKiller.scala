@@ -40,6 +40,10 @@ case object FixedOnOrbit extends ViewMode        {override def rusStr: String = 
 object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("screen.width", 1280), property("screen.height", 768)) {
   val k:Double = 1 // доля секунды симуляции, которая обрабатывается за одну реальную секунду, если не применяется ускорение
 
+  val linear_velocity_error = 0.1
+  val angular_velocity_error = 0.0102 // значение подобрано эмпирически при тестах с малым количеством топлива
+  val angle_error = 0.1
+
   // движок делает вызов обработчика примерно 63 раза в секунду, за каждый вызов будет обрабатывать вот такую порцию симуляции
   // то есть, мы хотим, чтобы за одну реальную секунду обрабатывалось k секунд симуляции, поэтому за один такт движка (которых 60 в секунду)
   // будем обрабатывать k/60
@@ -569,7 +573,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     addGlyphs("\u21b6\u21b7")
   }
 
-  keyIgnorePause(KEY_RETURN, onKeyDown = {if(player_ship.isAlive) player_ship.launchRocket()})
+  //keyIgnorePause(KEY_RETURN, onKeyDown = {if(player_ship.isAlive) player_ship.launchRocket()})
 
   keyIgnorePause(KEY_NUMPAD1, onKeyDown = {if(player_ship.isAlive) player_ship.selectOrSwitchEngineActive(KEY_NUMPAD1)})
   keyIgnorePause(KEY_NUMPAD2, onKeyDown = {if(player_ship.isAlive) player_ship.selectOrSwitchEngineActive(KEY_NUMPAD2)})
