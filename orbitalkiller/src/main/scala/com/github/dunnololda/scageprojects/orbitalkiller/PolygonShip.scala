@@ -749,6 +749,7 @@ abstract class PolygonShip(
   }
 
   def afterStep(time_msec:Long): Unit = {
+    // сила от реактивных двигателей и сила сопротивления воздуха
     val reactive_force = currentReactiveForce(0, currentState) + earth.airResistance(currentState, earth.currentState, 28, 0.5)
     if(!ship_is_crashed) {
       val dvel = currentState.dvel.norma
@@ -761,10 +762,11 @@ abstract class PolygonShip(
         // ниже мы рассчитаем отдельно вертикальную и горизонтальную перегрузки и потом сложим их. Так надо считать, потому что к вертикальной перегрузке прибавляется центробежная сила, а к горизонтальной нет.
         val v_vert = pilot_position.rotateDeg(rotation).n  // единичный вектор спина-грудь пилота
         val v_hor = -v_vert.perpendicular // единичный вектор левая рука - права рука пилота
+        // центробежная сила от вращения корабля
         val centrifugial_force = if (angularVelocity == 0) 0.0 else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.norma
-        // reactive_force берем с минусом, потому что пилота вжимает под действием этой силы в противоположную сторону
-        val pilot_acc_vert = -reactive_force / mass * v_vert + centrifugial_force / pilot_mass + currentState.dacc*v_vert
-        val pilot_acc_hor = -reactive_force / mass * v_hor + currentState.dacc*v_hor
+        // reactive_force берем с минусом, потому что пилота вжимает под действием этой силы в противоположную сторону. Аналогично ускорение от коллизий
+        val pilot_acc_vert = -reactive_force / mass * v_vert + centrifugial_force / pilot_mass - currentState.dacc*v_vert
+        val pilot_acc_hor = -reactive_force / mass * v_hor - currentState.dacc*v_hor
         val pilot_acc = pilot_acc_vert*DVec(0, 1) + pilot_acc_hor*DVec(1,0) // тут мы умножаем на единичные векторы в системе координат: начало в центре масс, вертикальный вектор - от центра масс к пилоту
         pilot_accs += ((pilot_acc, time_msec))
         if (time_msec - pilot_accs.head._2 >= 1000) {
