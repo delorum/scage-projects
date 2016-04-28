@@ -5,7 +5,7 @@
    href="$outputFile">
  <information>
    <title>$project.Name</title>
-   <vendor>$project.Name<vendor/>
+   <vendor>$project.Name</vendor>
    <description kind="one-line">$project.Description</description>
  </information>
 
