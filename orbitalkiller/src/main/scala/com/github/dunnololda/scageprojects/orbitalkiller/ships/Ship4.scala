@@ -198,24 +198,31 @@ class Ship4(index:Int,
     last_correction_or_check_moment = OrbitalKiller.tacts
   }
 
-  override def preserveVelocity(vel: DVec) {
+  override def preserveVelocity(need_vel: DVec) {
     val n = DVec(0, 1).rotateDeg(rotation).n
     val p = n.p*(-1)
 
     val ship_velocity_n = linearVelocity*n  // from
-    val ss_n = vel*n                         // to
+    val need_vel_n = need_vel*n                         // to
 
+    val p_diff = math.sqrt(linear_velocity_error*linear_velocity_error - (ship_velocity_n - need_vel_n)*(ship_velocity_n - need_vel_n))
+
+    val ship_velocity_p = p*linearVelocity
+    val need_vel_p = p*need_vel
+
+    val n_diff = math.sqrt(linear_velocity_error*linear_velocity_error - (ship_velocity_p - need_vel_p)*(ship_velocity_p - need_vel_p))
+    
     val activate_engines = ArrayBuffer[Engine]()
 
-    if(ship_velocity_n - ss_n > linear_velocity_error) {
-      val (tacts, power) = maxPossiblePowerForLinearMovement(eight.max_power, eight.force_dir.y, mass, ss_n, ship_velocity_n, linear_velocity_error)
+    if(ship_velocity_n - need_vel_n > n_diff) {
+      val (tacts, power) = maxPossiblePowerForLinearMovement(eight.max_power, eight.force_dir.y, mass, need_vel_n, ship_velocity_n, n_diff)
       eight.power = power
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
       eight.workTimeTacts = tacts
       activate_engines += eight
-    } else if(ship_velocity_n - ss_n < -linear_velocity_error) {
-      val (tacts, power) = maxPossiblePowerForLinearMovement(two.max_power, two.force_dir.y, mass, ss_n, ship_velocity_n, linear_velocity_error)
+    } else if(ship_velocity_n - need_vel_n < -n_diff) {
+      val (tacts, power) = maxPossiblePowerForLinearMovement(two.max_power, two.force_dir.y, mass, need_vel_n, ship_velocity_n, n_diff)
       two.power = power
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
@@ -223,18 +230,15 @@ class Ship4(index:Int,
       activate_engines += two
     }
 
-    val ship_velocity_p = p*linearVelocity
-    val ss_p = p*vel
-
-    if(ship_velocity_p - ss_p > linear_velocity_error) {
-      val (tacts, power) = maxPossiblePowerForLinearMovement(six.max_power, six.force_dir.x, mass, ss_p, ship_velocity_p, linear_velocity_error)
+    if(ship_velocity_p - need_vel_p > p_diff) {
+      val (tacts, power) = maxPossiblePowerForLinearMovement(six.max_power, six.force_dir.x, mass, need_vel_p, ship_velocity_p, p_diff)
       six.power = power
       /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
       println("===========================")*/
       six.workTimeTacts = tacts
       activate_engines += six
-    } else if(ship_velocity_p - ss_p < -linear_velocity_error) {
-      val (tacts, power) = maxPossiblePowerForLinearMovement(four.max_power, four.force_dir.x, mass, ss_p, ship_velocity_p, linear_velocity_error)
+    } else if(ship_velocity_p - need_vel_p < -p_diff) {
+      val (tacts, power) = maxPossiblePowerForLinearMovement(four.max_power, four.force_dir.x, mass, need_vel_p, ship_velocity_p, p_diff)
       four.power = power
       /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
       println("===========================")*/

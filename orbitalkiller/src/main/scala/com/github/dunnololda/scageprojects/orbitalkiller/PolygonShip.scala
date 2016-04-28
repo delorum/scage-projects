@@ -39,23 +39,23 @@ class DockingPoints(val p1:DVec, val p2:DVec, ship:PolygonShip, val disabled_eng
     val vv2 = vv1.perpendicular
 
     val p1_on_the_right_way = checkAllConditions(
-      () => (curP1 - (dp.curP1 + vv1)).perpendicular*vv2 < 0 && (curP1 - (dp.curP1 - vv1)).perpendicular*vv2 > 0,     // p1_inside_line
+      () => (curP1 - (dp.curP1 + vv1)).perpendicular*vv2 < 0 && (curP1 - (dp.curP1 - vv1)).perpendicular*vv2 > 0/*,     // p1_inside_line
       () => {                                                                                                         // p1_norm_speed
         val x = dp.curP1vel - curP1vel
         x * (curP1 - dp.curP1) > 0 && x.norma < 10
-      }
+      }*/
     )
     val p2_on_the_right_way = checkAllConditions(
-      () => (curP2 - (dp.curP2 + vv1)).perpendicular * vv2 < 0 && (curP2 - (dp.curP2 - vv1)).perpendicular * vv2 > 0, // p2_inside_line
+      () => (curP2 - (dp.curP2 + vv1)).perpendicular * vv2 < 0 && (curP2 - (dp.curP2 - vv1)).perpendicular * vv2 > 0/*, // p2_inside_line
       () => {                                                                                                         // p2_norm_speed
         val x = dp.curP2vel - curP2vel
         x * (curP2 - dp.curP2) > 0 && x.norma < 10
-      }
+      }*/
     )
     (p1_on_the_right_way, p2_on_the_right_way)
   }
 }
-case class DockData(dock_to_ship:PolygonShip, joint:Joint, our_dp:DockingPoints, other_ship_dp:DockingPoints)
+case class DockData(dock_to_ship:PolygonShip, joints:List[Joint], our_dp:DockingPoints, other_ship_dp:DockingPoints)
 
 abstract class PolygonShip(
   val index:Int,
@@ -112,15 +112,19 @@ abstract class PolygonShip(
   def dock(): Unit = {
     possibleDockPointsWithNearestShip.headOption.foreach {
       case (dp, os, osdp) =>
+        /*val joint1 = system_evolution.addJoint(currentState, dp.p1, os.currentState, osdp.p1)
+        val joint2 = system_evolution.addJoint(currentState, dp.p2, os.currentState, osdp.p2)
+        val joints = List(joint1, joint2)*/
         val joint = system_evolution.addJoint(currentState, dp.joint_point, os.currentState, osdp.joint_point)
-        setDocked(Some(DockData(os, joint, dp, osdp)))
-        os.setDocked(Some(DockData(this, joint, osdp, dp)))
+        val joints = List(joint)
+        setDocked(Some(DockData(os, joints, dp, osdp)))
+        os.setDocked(Some(DockData(this, joints, osdp, dp)))
     }
   }
   def undock(): Unit = {
     dock_data.foreach {
-      case DockData(os, joint, our_dp, other_ship_dp) =>
-        system_evolution.removeJoint(joint)
+      case DockData(os, joints, our_dp, other_ship_dp) =>
+        joints.foreach(system_evolution.removeJoint)
         os.setDocked(None)
     }
     dock_data = None
@@ -259,18 +263,19 @@ abstract class PolygonShip(
   }
 
   protected def drawEngine(e:Engine) {
-    val is_vertical = e.force_dir.x == 0
-    val (center, width, height) = e.force_dir match {
-      case DVec(0, -1) => (e.position + DVec(0, 0.25)*engine_size, 1*engine_size, 0.5*engine_size)
-      case DVec(0, 1)  => (e.position + DVec(0, -0.25)*engine_size, 1*engine_size, 0.5*engine_size)
-      case DVec(-1, 0) => (e.position + DVec(0.25, 0)*engine_size,  0.5*engine_size,  1*engine_size)
-      case DVec(1, 0)  => (e.position + DVec(-0.25, 0)*engine_size,  0.5*engine_size,  1*engine_size)
-      case _ => throw new Exception("engine force dir other than vertical or horizontal is not supported")
-    }
+    if(!dock_data.exists(_.our_dp.disabled_engine.exists(_ == e.index))) {
+      val is_vertical = e.force_dir.x == 0
+      val (center, width, height) = e.force_dir match {
+        case DVec(0, -1) => (e.position + DVec(0, 0.25) * engine_size, 1 * engine_size, 0.5 * engine_size)
+        case DVec(0, 1) => (e.position + DVec(0, -0.25) * engine_size, 1 * engine_size, 0.5 * engine_size)
+        case DVec(-1, 0) => (e.position + DVec(0.25, 0) * engine_size, 0.5 * engine_size, 1 * engine_size)
+        case DVec(1, 0) => (e.position + DVec(-0.25, 0) * engine_size, 0.5 * engine_size, 1 * engine_size)
+        case _ => throw new Exception("engine force dir other than vertical or horizontal is not supported")
+      }
 
-    val in_shadow = {
-      // ниже код вычисляет, в тени находится двигатель или нет
-      /*val curP = coord + e.position.rotateDeg(rotation)
+      val in_shadow = {
+        // ниже код вычисляет, в тени находится двигатель или нет
+        /*val curP = coord + e.position.rotateDeg(rotation)
       inShadowOfPlanet(curP).nonEmpty || curDrawLines.filterNot(x => math.abs((x(1)._1 - x(0)._1).perpendicular*(curP - x(0)._1)) < 0.1).exists(x => {
         val res = areLinesIntersect(curP, sun.coord, x(0)._1, x(1)._1)
         /*if(res) {
@@ -280,19 +285,20 @@ abstract class PolygonShip(
         //println(s"areLinesIntersect($curP1, $cur_sun_coord, ${x(0)}, ${x(1)}) = $res")
         res
       })*/
-      false
-    }
-
-    drawRectCentered(center, width, height, color = engineColor(e, in_shadow))
-    if(isSelectedEngine(e)) drawRectCentered(center, width*1.5, height*1.5, color = engineColor(e, in_shadow))
-    if(e.active && e.power > 0) {
-      if(is_vertical) {
-        drawFilledRectCentered(center, engineActiveSize(e, width), height, color = engineColor(e, in_shadow))
-      } else {
-        drawFilledRectCentered(center, width, engineActiveSize(e, height), color = engineColor(e, in_shadow))
+        false
       }
+
+      drawRectCentered(center, width, height, color = engineColor(e, in_shadow))
+      if (isSelectedEngine(e)) drawRectCentered(center, width * 1.5, height * 1.5, color = engineColor(e, in_shadow))
+      if (e.active && e.power > 0) {
+        if (is_vertical) {
+          drawFilledRectCentered(center, engineActiveSize(e, width), height, color = engineColor(e, in_shadow))
+        } else {
+          drawFilledRectCentered(center, width, engineActiveSize(e, height), color = engineColor(e, in_shadow))
+        }
+      }
+      //print(s"${e.index}", e.position.toVec, color = WHITE, size = (max_font_size / globalScale).toFloat)
     }
-    //print(s"${e.index}", e.position.toVec, color = WHITE, size = (max_font_size / globalScale).toFloat)
   }
 
   protected def drawDashedLine(from:DVec, to:DVec, dash_len:Double, color:ScageColor): Unit = {
