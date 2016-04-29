@@ -21,6 +21,8 @@ class SixDimVector(val a1:Double, val a2:Double, val a3:Double, val a4:Double, v
 }
 
 // http://myselph.de/gamePhysics/equalityConstraints.html
+// http://gamedevelopment.tutsplus.com/tutorials/modelling-and-solving-physical-constraints--gamedev-12578
+// http://www.bulletphysics.com/ftp/pub/test/physics/papers/IterativeDynamics.pdf
 class Joint (val a:MutableBodyState, val vertexA:DVec, val b:MutableBodyState, val vertexB:DVec) {
   def solveConstraint(_dt:Double) {
     val MInv = new SixDimVector(b.invMass, b.invMass, b.invI, a.invMass, a.invMass, a.invI)
@@ -37,11 +39,15 @@ class Joint (val a:MutableBodyState, val vertexA:DVec, val b:MutableBodyState, v
     }
     val C = (pA - pB)*(pA - pB)
     val bias = 0.2 / _dt * C
+    val prev_a_vel = a.vel
+    val prev_a_ang_vel = a.ang_vel
+    val prev_b_vel = b.vel
+    val prev_b_ang_vel = b.ang_vel
     (1 to 4).foreach(iteration => {
-      val v = new SixDimVector(b.vel.x, b.vel.y, b.ang_vel.toRad, a.vel.x, a.vel.y, a.ang_vel.toRad)
+      val v = new SixDimVector(b.vel.x, b.vel.y, b.ang_vel.toRad, a.vel.x, a.vel.y, a.ang_vel.toRad)  // previous state
       val lambdaDenominator = J*(MInv**J)
       if(math.abs(lambdaDenominator) > 1E-15) {
-        val lambda = -(J*v + bias) / lambdaDenominator
+        val lambda = -(J*v + bias) / lambdaDenominator // the magnitude of the constraint impulse
         val new_v = v + (MInv**(J*lambda))
         a.vel = DVec(new_v.a4, new_v.a5)
         a.ang_vel = new_v.a6.toDeg
@@ -49,6 +55,9 @@ class Joint (val a:MutableBodyState, val vertexA:DVec, val b:MutableBodyState, v
         b.ang_vel = new_v.a3.toDeg
       }
     })
+    println(f"${(a.vel - prev_a_vel)*(b.coord - a.coord).n}%.5f : ${(b.vel - prev_b_vel)*(b.coord - a.coord).n}%.5f")
+    println(f"${(a.vel - prev_a_vel)*(b.coord - a.coord).p}%.5f : ${(b.vel - prev_b_vel)*(b.coord - a.coord).p}%.5f")
+    println(f"${a.ang_vel - prev_a_ang_vel}%.5f : ${b.ang_vel - prev_b_ang_vel}%.5f")
   }
 }
 
@@ -158,7 +167,7 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
       mutable_system.foreach(_._2.body.init())
 
       val collisions = {
-        val x = splitSpace(new Space(all_bodies, system_center), 5, 2)
+        /*val x = splitSpace(new Space(all_bodies, system_center), 5, 2)
         for {
           space <- x
           if space.bodies.length > 1
@@ -167,8 +176,16 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
           if !excludeCollisionCheck(b1.index, b2.index)
           if !b1.is_static || !b2.is_static
           c <- maybeCollisions(b1, b2)
+        } yield c*/
+        for {
+          (b1, idx) <- all_bodies.zipWithIndex.init
+          b2 <- all_bodies.drop(idx+1)
+          if !excludeCollisionCheck(b1.index, b2.index)
+          if !b1.is_static || !b2.is_static
+          c <- maybeCollisions(b1, b2)
         } yield c
       }
+      println("===============")
 
       // Integrate forces first part
       mutable_system.foreach {case (_, MutableSystemPart(mb, force, torque)) =>
@@ -185,7 +202,9 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
       }
 
       // Solve collisions
-      if(collisions.nonEmpty) collisions.foreach(c => c.solveCollision(dt))
+      if(collisions.nonEmpty) {
+        collisions.foreach(c => c.solveCollision(dt))
+      }
 
       // Solve joints
       if(joints.nonEmpty) joints.foreach(j => j.solveConstraint(dt))
@@ -210,7 +229,7 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
       // Correct positions
       if(collisions.nonEmpty) {
         collisions.foreach(c => {
-          c.positionalCorrection()
+          c.positionalCorrection(tacts)
           ShipsHolder.shipByIndex(c.a.index).foreach(s => s.onCollision())
           ShipsHolder.shipByIndex(c.b.index).foreach(s => s.onCollision())
         })

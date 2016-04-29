@@ -281,11 +281,11 @@ package object orbitalkiller {
       }*/
     }
     
-    def positionalCorrection() {
+    def positionalCorrection(tacts:Long = 0) {
       if(separation > 0.005) {
         val correction = separation/(a.invMass + b.invMass)
         if(correction != 0) {
-          println(s"correction: separation=$separation correction_${a.index}=${-a.invMass*correction} correction_${b.index}=${b.invMass*correction}")
+          println(s"$tacts correction: separation=$separation correction_${a.index}=${-a.invMass*correction} correction_${b.index}=${b.invMass*correction}")
         }
         if(!a.is_static) a.coord += normal*(-a.invMass*correction)
         if(!b.is_static) b.coord += normal*b.invMass*correction
@@ -319,6 +319,7 @@ package object orbitalkiller {
 
   def maybeCollisions(body1:MutableBodyState, body2:MutableBodyState):List[MutableContact] = {
     def _collide(pb1:Phys2dBody, pb2:Phys2dBody, collider:Phys2dCollider):List[GeometricContactData] = {
+      //println(s"${body1.index} <-> ${body2.index}")
       val num_contacts = collider.collide(contacts, pb1, pb2)
       if(num_contacts == 0) Nil
       else {

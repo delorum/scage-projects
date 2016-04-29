@@ -20,7 +20,7 @@ object ConstraintsTest extends ScageScreenAppD("Constraints Test", 640, 480) {
   def energy(bodies:Seq[MutableBodyState]) =
     bodies.map(b1 => {
       b1.mass*b1.vel.norma2/2f +
-        b1.I*b1.ang_vel.toRad*b1.ang_vel.toRad/2f/* +
+      b1.I*b1.ang_vel.toRad*b1.ang_vel.toRad/2f/* +
       b1.currentState.mass*9.81*b1.currentState.coord.y*/
     }).sum
 
@@ -42,7 +42,12 @@ object ConstraintsTest extends ScageScreenAppD("Constraints Test", 640, 480) {
     val c2mbs = c2.currentState.toMutableBodyState
     system_evolution.addBody(c2mbs)
     system_evolution.addJoint(c1mbs, DVec(25, 0), c2mbs, DVec(-25, 0))
+    val bodies = List(c1mbs, c2mbs)
     //List(c1mbs, c2mbs)
+    interface {
+      print(f"energy = ${energy(bodies)}; d_c1c2 = ${c1.coord.dist(c2.coord)}%.2f", 20, 20, WHITE)
+      //print(f"energy = $energy", 20, 20, WHITE)
+    }
   }
 
   def test2() {
@@ -65,7 +70,7 @@ object ConstraintsTest extends ScageScreenAppD("Constraints Test", 640, 480) {
     }
   }
 
-  test2()
+  test1()
 
   private def nextStep() {
     (1 to dt).foreach(x => system_evolution.step())
