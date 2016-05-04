@@ -4,10 +4,6 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.tests.BodyStatesHolder._
 
-import scala.collection.mutable.ArrayBuffer
-
-import com.github.dunnololda.scageprojects.orbitalkiller.tests.BodyStatesHolder._
-
 object ConstraintsTest extends ScageScreenAppD("Constraints Test", 640, 480) {
   val base_dt = 1.0/63.0
   var dt:Int = 1
@@ -86,7 +82,7 @@ object ConstraintsTest extends ScageScreenAppD("Constraints Test", 640, 480) {
     }
   }
 
-  test1()
+  test3()
 
   private def nextStep() {
     (1 to dt).foreach(x => system_evolution.step())

@@ -112,11 +112,11 @@ abstract class PolygonShip(
   def dock(): Unit = {
     possibleDockPointsWithNearestShip.headOption.foreach {
       case (dp, os, osdp) =>
-        /*val joint1 = system_evolution.addJoint(currentState, dp.p1, os.currentState, osdp.p1)
+        val joint1 = system_evolution.addJoint(currentState, dp.p1, os.currentState, osdp.p1)
         val joint2 = system_evolution.addJoint(currentState, dp.p2, os.currentState, osdp.p2)
-        val joints = List(joint1, joint2)*/
-        val joint = system_evolution.addJoint(currentState, dp.joint_point, os.currentState, osdp.joint_point)
-        val joints = List(joint)
+        val joints = List(joint1, joint2)
+        /*val joint = system_evolution.addJoint(currentState, dp.joint_point, os.currentState, osdp.joint_point)
+        val joints = List(joint)*/
         setDocked(Some(DockData(os, joints, dp, osdp)))
         os.setDocked(Some(DockData(this, joints, osdp, dp)))
     }

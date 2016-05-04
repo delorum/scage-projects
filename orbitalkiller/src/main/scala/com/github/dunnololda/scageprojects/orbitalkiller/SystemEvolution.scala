@@ -39,10 +39,10 @@ class Joint (val a:MutableBodyState, val vertexA:DVec, val b:MutableBodyState, v
     }
     val C = (pA - pB)*(pA - pB)
     val bias = 0.2 / _dt * C
-    val prev_a_vel = a.vel
+    /*val prev_a_vel = a.vel
     val prev_a_ang_vel = a.ang_vel
     val prev_b_vel = b.vel
-    val prev_b_ang_vel = b.ang_vel
+    val prev_b_ang_vel = b.ang_vel*/
     (1 to 4).foreach(iteration => {
       val v = new SixDimVector(b.vel.x, b.vel.y, b.ang_vel.toRad, a.vel.x, a.vel.y, a.ang_vel.toRad)  // previous state
       val lambdaDenominator = J*(MInv**J)
@@ -55,9 +55,9 @@ class Joint (val a:MutableBodyState, val vertexA:DVec, val b:MutableBodyState, v
         b.ang_vel = new_v.a3.toDeg
       }
     })
-    println(f"${(a.vel - prev_a_vel)*(b.coord - a.coord).n}%.5f : ${(b.vel - prev_b_vel)*(b.coord - a.coord).n}%.5f")
+    /*println(f"${(a.vel - prev_a_vel)*(b.coord - a.coord).n}%.5f : ${(b.vel - prev_b_vel)*(b.coord - a.coord).n}%.5f")
     println(f"${(a.vel - prev_a_vel)*(b.coord - a.coord).p}%.5f : ${(b.vel - prev_b_vel)*(b.coord - a.coord).p}%.5f")
-    println(f"${a.ang_vel - prev_a_ang_vel}%.5f : ${b.ang_vel - prev_b_ang_vel}%.5f")
+    println(f"${a.ang_vel - prev_a_ang_vel}%.5f : ${b.ang_vel - prev_b_ang_vel}%.5f")*/
   }
 }
 
@@ -160,6 +160,26 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
   }
   def bodyState(index:Int):Option[MutableBodyState] = mutable_system.get(index).map(_.body)
 
+  private val already_checked = mutable.HashMap[Int, mutable.HashSet[Int]]()
+  private def alreadyChecked(index1:Int, index2:Int):Boolean = {
+    index1 != index2 && {
+      if(index1 < index2) {
+        already_checked.get(index1).exists(_.contains(index2))
+      } else {
+        alreadyChecked(index2, index1)
+      }
+    }
+  }
+  def setAlreadyChecked(index1:Int, index2:Int): Unit = {
+    if(index1 != index2) {
+      if(index1 < index2) {
+        already_checked.getOrElseUpdate(index1, mutable.HashSet[Int]()) += index2
+      } else {
+        setAlreadyChecked(index2, index1)
+      }
+    }
+  }
+
   def step(): Unit = {
     val substeps = if(bulletsInSystem) 60 else 1
     val dt = if(bulletsInSystem) base_dt/60 else base_dt
@@ -167,25 +187,26 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
       mutable_system.foreach(_._2.body.init())
 
       val collisions = {
-        /*val x = splitSpace(new Space(all_bodies, system_center), 5, 2)
+        /*already_checked.clear()
+        val x = splitSpace(new Space(all_bodies, system_center), 5, 2)
         for {
           space <- x
           if space.bodies.length > 1
           (b1, idx) <- space.bodies.zipWithIndex.init
           b2 <- space.bodies.drop(idx+1)
-          if !excludeCollisionCheck(b1.index, b2.index)
           if !b1.is_static || !b2.is_static
-          c <- maybeCollisions(b1, b2)
+          if !excludeCollisionCheck(b1.index, b2.index) && !alreadyChecked(b1.index, b2.index)
+          c <- {setAlreadyChecked(b1.index, b2.index); maybeCollisions(b1, b2)}
         } yield c*/
         for {
           (b1, idx) <- all_bodies.zipWithIndex.init
           b2 <- all_bodies.drop(idx+1)
-          if !excludeCollisionCheck(b1.index, b2.index)
           if !b1.is_static || !b2.is_static
+          if !excludeCollisionCheck(b1.index, b2.index)
           c <- maybeCollisions(b1, b2)
         } yield c
       }
-      println("===============")
+      //println("===============")
 
       // Integrate forces first part
       mutable_system.foreach {case (_, MutableSystemPart(mb, force, torque)) =>

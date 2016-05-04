@@ -179,6 +179,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   )
 
   system_evolution.addCollisionExclusion(earth.index, moon.index)
+  system_evolution.addCollisionExclusion(earth.index, sun.index)
+  system_evolution.addCollisionExclusion(moon.index, sun.index)
   val earth_sun_eq_gravity_radius = equalGravityRadius(earth.currentState, sun.currentState)
   val moon_earth_eq_gravity_radius = equalGravityRadius(moon.currentState, earth.currentState)
 
@@ -579,7 +581,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     addGlyphs("\u21b6\u21b7")
   }
 
-  //keyIgnorePause(KEY_RETURN, onKeyDown = {if(player_ship.isAlive) player_ship.launchRocket()})
+  keyIgnorePause(KEY_RETURN, onKeyDown = {if(player_ship.isAlive) player_ship.launchRocket()})
 
   keyIgnorePause(KEY_NUMPAD1, onKeyDown = {if(player_ship.isAlive) player_ship.selectOrSwitchEngineActive(KEY_NUMPAD1)})
   keyIgnorePause(KEY_NUMPAD2, onKeyDown = {if(player_ship.isAlive) player_ship.selectOrSwitchEngineActive(KEY_NUMPAD2)})

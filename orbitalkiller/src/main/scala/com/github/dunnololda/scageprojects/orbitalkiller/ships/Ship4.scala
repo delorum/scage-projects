@@ -205,12 +205,12 @@ class Ship4(index:Int,
     val ship_velocity_n = linearVelocity*n  // from
     val need_vel_n = need_vel*n                         // to
 
-    val p_diff = math.sqrt(linear_velocity_error*linear_velocity_error - (ship_velocity_n - need_vel_n)*(ship_velocity_n - need_vel_n))
+    val p_diff = math.sqrt((linear_velocity_error*linear_velocity_error - (ship_velocity_n - need_vel_n)*(ship_velocity_n - need_vel_n)).abs)
 
     val ship_velocity_p = p*linearVelocity
     val need_vel_p = p*need_vel
 
-    val n_diff = math.sqrt(linear_velocity_error*linear_velocity_error - (ship_velocity_p - need_vel_p)*(ship_velocity_p - need_vel_p))
+    val n_diff = math.sqrt((linear_velocity_error*linear_velocity_error - (ship_velocity_p - need_vel_p)*(ship_velocity_p - need_vel_p)).abs)
     
     val activate_engines = ArrayBuffer[Engine]()
 
