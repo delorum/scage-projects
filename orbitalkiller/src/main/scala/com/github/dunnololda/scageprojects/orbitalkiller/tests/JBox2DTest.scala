@@ -195,6 +195,19 @@ object JBox2DTest extends ScageScreenApp("JBox2D Test", 640, 480) {
     List(c1,c2)
   }
 
+  def test8() = {
+    val c1 = createCircle(Vec(w,h), Vec(0, -30), 10)
+    val c2 = createCircle(Vec(w,h-70), Vec(0, -30), 10)
+    val jd = new DistanceJointDef
+    jd.bodyA = c1
+    jd.localAnchorA.set(new Vec2(0,-10))
+    jd.bodyB = c2
+    jd.localAnchorB.set(new Vec2(0,10))
+    jd.length = 50
+    world.createJoint(jd)
+    List(c1,c2)
+  }
+
   val bodies = testStr match {
     case "test1" => test1()
     case "test2" => test2()
@@ -203,6 +216,7 @@ object JBox2DTest extends ScageScreenApp("JBox2D Test", 640, 480) {
     case "test5" => test5()
     case "test6" => test6()
     case "test7" => test7()
+    case "test8" => test8()
     case _ => test1()
   }
 
