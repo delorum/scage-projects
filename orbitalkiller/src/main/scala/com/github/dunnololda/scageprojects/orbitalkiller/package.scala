@@ -237,8 +237,8 @@ package object orbitalkiller {
     def solveCollision(_dt:Double) {
       a.contacts += this
       b.contacts += this
-      /*val a_prev_vel = a.vel
-      val b_prev_vel = b.vel*/
+      val a_prev_vel = a.vel
+      val b_prev_vel = b.vel
 
       val e = /*1*//*0.9*/math.min(a.restitution, b.restitution)
 
@@ -279,6 +279,8 @@ package object orbitalkiller {
       if(!b.body.is_static) {
         println(s"скорость ${b.body.index} до столкновения: ${b_prev_vel.norma}, скорость после столкновения: ${b.vel.norma}")
       }*/
+      println(f"collision a before: ${a_prev_vel.x}%.5f:${a_prev_vel.y}%.5f after: ${a.vel.x}%.5f:${a.vel.y}%.5f")
+      println(f"collision b before: ${b_prev_vel.x}%.5f:${b_prev_vel.y}%.5f after: ${b.vel.x}%.5f:${b.vel.y}%.5f")
     }
     
     def positionalCorrection(tacts:Long = 0) {
@@ -595,7 +597,7 @@ package object orbitalkiller {
     val index = body.index
     val strIndex = index.toString
 
-    private var _mass = body.mass
+    protected var _mass = body.mass
     def mass = _mass
     def mass_=(m:Double): Unit = {
       _mass = m
@@ -603,11 +605,11 @@ package object orbitalkiller {
       _I = _mass*shape.wI
       _invI = if(is_static || _I == 0) 0.0 else 1.0/_I
     }
-    private var _invMass = if(is_static || _mass == 0) 0.0 else 1.0/_mass
+    protected var _invMass = if(is_static || _mass == 0) 0.0 else 1.0/_mass
     def invMass = _invMass
-    private var _I = _mass*shape.wI
+    protected var _I = _mass*shape.wI
     def I = _I
-    private var _invI = if(is_static || _I == 0) 0.0 else 1.0/_I
+    protected var _invI = if(is_static || _I == 0) 0.0 else 1.0/_I
     def invI = _invI
 
     // ===========================================

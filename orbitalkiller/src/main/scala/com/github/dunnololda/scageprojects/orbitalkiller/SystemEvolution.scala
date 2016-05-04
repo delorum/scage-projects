@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scage.support.DVec
+import com.github.dunnololda.scage.support.{ScageId, DVec}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -55,9 +55,15 @@ class Joint (val a:MutableBodyState, val vertexA:DVec, val b:MutableBodyState, v
         b.ang_vel = new_v.a3.toDeg
       }
     })
-    println(f"${(a.vel - prev_a_vel)*(b.coord - a.coord).n}%.5f : ${(b.vel - prev_b_vel)*(b.coord - a.coord).n}%.5f")
-    println(f"${(a.vel - prev_a_vel)*(b.coord - a.coord).p}%.5f : ${(b.vel - prev_b_vel)*(b.coord - a.coord).p}%.5f")
-    println(f"${a.ang_vel - prev_a_ang_vel}%.5f : ${b.ang_vel - prev_b_ang_vel}%.5f")
+
+    println(f"a before: ${prev_a_vel.x}%.5f:${prev_a_vel.y}%.5f after: ${a.vel.x}%.5f:${a.vel.y}%.5f")
+    println(f"b before: ${prev_b_vel.x}%.5f:${prev_b_vel.y}%.5f after: ${b.vel.x}%.5f:${b.vel.y}%.5f")
+    /*println(f"${(a.vel - prev_a_vel)*(b.coord - a.coord).n}%.10f : ${(b.vel - prev_b_vel)*(b.coord - a.coord).n}%.10f")
+    println(f"${(a.vel - prev_a_vel)*(b.coord - a.coord).p}%.10f : ${(b.vel - prev_b_vel)*(b.coord - a.coord).p}%.10f")*/
+    println(f"${(a.vel - prev_a_vel).x}%.10f : ${(b.vel - prev_b_vel).x}%.10f")
+    println(f"${(a.vel - prev_a_vel).y}%.10f : ${(b.vel - prev_b_vel).y}%.10f")
+    println(f"${((a.vel - prev_a_vel) + (b.vel - prev_b_vel)).norma}%.10f")
+    println(f"${a.ang_vel - prev_a_ang_vel}%.10f : ${b.ang_vel - prev_b_ang_vel}%.10f")
   }
 }
 
@@ -203,7 +209,64 @@ class SystemEvolution(val base_dt:Double = 1.0/63,
 
       // Solve collisions
       if(collisions.nonEmpty) {
-        collisions.foreach(c => c.solveCollision(dt))
+        collisions.foreach(c => {
+          // если одно или оба тела, вошедшие в соприкосновение, являются частью систем с ограничением на расстояние (входят в joint'ы),
+          // то надо считать коллизию виртуального тела, составляющего совокупность всей системы
+          def _modBody(x:MutableBodyState):Option[(MutableBodyState, Joint)] = {
+            joints.find(j => j.a.index == x.index || j.b.index == x.index) match {
+              case Some(j) =>
+                val mc_coord = (j.a.mass*j.a.coord + j.b.mass*j.b.coord)/(j.a.mass + j.b.mass)
+                val mc_vel = (j.a.mass*j.a.vel + j.b.mass*j.b.vel)/(j.a.mass + j.b.mass)
+                val mc_I = j.a.I + j.a.mass*mc_coord.dist2(j.a.coord) + j.b.I + j.b.mass*mc_coord.dist2(j.b.coord)
+                val ang_vel1 = ((j.a.vel*(j.a.coord - mc_coord).p)/j.a.coord.dist(mc_coord)).toDeg
+                val ang_vel2 = ((j.b.vel*(j.b.coord - mc_coord).p)/j.b.coord.dist(mc_coord)).toDeg
+                val ang_vel3 = (((j.a.I + j.a.mass*mc_coord.dist2(j.a.coord))*j.a.ang_vel.toRad + (j.b.I + j.b.mass*mc_coord.dist2(j.b.coord))*j.b.ang_vel.toRad)/mc_I).toDeg
+                println(f"angles: $ang_vel1%.5f : $ang_vel2%.5f : $ang_vel3%.5f")
+                Some((new MutableBodyState(BodyState(
+                  index = ScageId.nextId,
+                  mass = j.a.mass + j.b.mass,
+                  coord = mc_coord,
+                  vel = mc_vel,
+                  ang_vel = ang_vel3,
+                  shape = j.a.shape,
+                  restitution = math.min(j.a.restitution, j.b.restitution),
+                  staticFriction = 0,
+                  dynamicFriction = 0
+                )) {
+                  _I = mc_I
+                  _invI = 1.0/_I
+                }, j))
+              case None => None
+            }
+          }
+          def _updateBodies(j:Joint, mc:MutableBodyState): Unit = {
+            j.a.vel = mc.vel + mc.ang_vel.toRad*j.a.coord.dist(mc.coord)*(j.a.coord - mc.coord).p
+            j.b.vel = mc.vel + mc.ang_vel.toRad*j.b.coord.dist(mc.coord)*(j.b.coord - mc.coord).p
+          }
+          _modBody(c.a) match {
+            case Some((mod_a, j_a)) =>
+              _modBody(c.b) match {
+                case Some((mod_b, j_b)) =>
+                  val mod_c = new MutableContact(mod_a, mod_b, c.contact_point, c.normal, c.separation)
+                  mod_c.solveCollision(dt)
+                  _updateBodies(j_a, mod_a)
+                  _updateBodies(j_b, mod_b)
+                case None =>
+                  val mod_c = new MutableContact(mod_a, c.b, c.contact_point, c.normal, c.separation)
+                  mod_c.solveCollision(dt)
+                  _updateBodies(j_a, mod_a)
+              }
+            case None =>
+              _modBody(c.b) match {
+                case Some((mod_b, j_b)) =>
+                  val mod_c = new MutableContact(c.a, mod_b, c.contact_point, c.normal, c.separation)
+                  mod_c.solveCollision(dt)
+                  _updateBodies(j_b, mod_b)
+                case None =>
+                  c.solveCollision(dt)
+              }
+          }
+        })
       }
 
       // Solve joints
