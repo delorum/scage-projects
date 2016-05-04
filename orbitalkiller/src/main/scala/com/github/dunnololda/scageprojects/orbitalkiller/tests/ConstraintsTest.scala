@@ -70,6 +70,22 @@ object ConstraintsTest extends ScageScreenAppD("Constraints Test", 640, 480) {
     }
   }
 
+  def test3() {
+    val c1 = new MyCircle2(nextId, DVec(w,h), DVec(0, -30), 5, 1f, this)
+    val c1mbs = c1.currentState.toMutableBodyState
+    system_evolution.addBody(c1mbs)
+    val c2 = new MyCircle2(nextId, DVec(w,h-50), DVec(0, -30), 5, 1f, this)
+    val c2mbs = c2.currentState.toMutableBodyState
+    system_evolution.addBody(c2mbs)
+    system_evolution.addJoint(c1mbs, DVec(0, -25), c2mbs, DVec(0, 25))
+    val bodies = List(c1mbs, c2mbs)
+    //List(c1mbs, c2mbs)
+    interface {
+      print(f"energy = ${energy(bodies)}; d_c1c2 = ${c1.coord.dist(c2.coord)}%.2f", 20, 20, WHITE)
+      //print(f"energy = $energy", 20, 20, WHITE)
+    }
+  }
+
   test1()
 
   private def nextStep() {
