@@ -791,7 +791,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     if(drawMapMode) {
       left_up_corner = Some(absCoord(m))
     } else {
-      InterfaceHolder.clickInterfaceElem(m)
+      InterfaceHolder.clickInterfaceElem(m, 0)
     }
   }, onBtnUp = m => {
     if(drawMapMode) {
@@ -811,7 +811,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           }
         }
       } else {
-        if(!InterfaceHolder.clickInterfaceElem(m) && player_ship.isAlive) {
+        if(!InterfaceHolder.clickInterfaceElem(m, 0) && player_ship.isAlive) {
           set_stop_moment = true
         }
       }
@@ -823,7 +823,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   })
 
   rightMouseIgnorePause(onBtnDown = m => {
-    _stop_after_number_of_tacts = 0
+    if(!InterfaceHolder.clickInterfaceElem(m, 1)) {
+      _stop_after_number_of_tacts = 0
+    }
   })
 
   action {
