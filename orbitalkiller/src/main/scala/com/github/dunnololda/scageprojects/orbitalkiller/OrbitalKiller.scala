@@ -189,16 +189,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   // суборбитальная траектория
-  val ship_start_position = earth.coord + DVec(500, earth.radius + 100000)
-  val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
+  //val ship_start_position = earth.coord + DVec(500, earth.radius + 100000)
+  //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
 
   // на круговой орбите в 200 км от поверхности Земли
   //val ship_start_position = earth.coord + DVec(-100, earth.radius + 199000)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
 
   // стоим на поверхности Луны
-  //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
-  //val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
+  val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
 
   // на орбите в 1000 км от поверхности Луны
@@ -213,12 +213,12 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   )
 
   // на круговой орбите в 200 км от поверхности Земли
-  //val station_start_position = earth.coord + DVec(0, earth.radius + 200000)
-  //val station_init_velocity = satelliteSpeed(station_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
+  val station_start_position = earth.coord + DVec(0, earth.radius + 200000)
+  val station_init_velocity = satelliteSpeed(station_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
 
   // суборбитальная траектория
-  val station_start_position = earth.coord + DVec(0, earth.radius + 100000)
-  val station_init_velocity = speedToHaveOrbitWithParams(station_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
+  //val station_start_position = earth.coord + DVec(0, earth.radius + 100000)
+  //val station_init_velocity = speedToHaveOrbitWithParams(station_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
 
   val station = new SpaceStation2(ScageId.nextId,
     init_coord = station_start_position,
@@ -578,7 +578,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   }
 
   preinit {
-    addGlyphs("\u21b6\u21b7")
+    addGlyphs("\u21b6\u21b7\u21e7")
   }
 
   keyIgnorePause(KEY_RETURN, onKeyDown = {if(player_ship.isAlive) player_ship.launchRocket()})

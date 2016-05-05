@@ -150,6 +150,7 @@ class Rocket1(index:Int,
   override def afterStep(time_msec:Long): Unit = {
     super.afterStep(time_msec)
     if(system_evolution.tacts - start_tact > work_tacts) {
+      currentState.vel = init_velocity
       kill("Ракета самоуничтожилась", crash = true)
     }
     println(s"ship: ${mOrKmOrMKm(coord.dist(player_ship.coord))} : ${msecOrKmsec((linearVelocity - player_ship.linearVelocity).norma)}")

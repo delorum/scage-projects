@@ -40,6 +40,8 @@ object InterfaceHolder {
   val ship_interfaces = List(stationInfo, sat1Info)
   def shipsMinimized = ship_interfaces.filter(_.isMinimized)
 
+  val rocketsInfo = new RocketsInfo
+
   val linearVelocityInfo = new LinearVelocityInfo
   val angularVelocityInfo = new AngularVelocityInfo
   val pilotStateInfo = new ShipAndCrewStateInfo
@@ -57,6 +59,7 @@ object InterfaceHolder {
     List(viewModeInfo, flightModeInfo),
     List(sunRelativeInfo, earthRelativeInfo, moonRelativeInfo),
     ship_interfaces,
+    List(rocketsInfo),
     List(linearVelocityInfo, angularVelocityInfo, pilotStateInfo),
     List(planetsInfluenceInfo, /*satelliteEscapeVelocityInfo, */orbitInfo),
     List(enginesInfo),
