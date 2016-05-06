@@ -4,7 +4,7 @@ import OrbitalKiller._
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.{DVec, ScageId}
 
-class Wreck(mass:Double, init_coord:DVec, init_velocity:DVec, init_rotation:Double, points:List[DVec], val is_player:Boolean) {
+class Wreck(mass:Double, init_coord:DVec, init_velocity:DVec, init_rotation:Double, points:List[DVec], val is_main:Boolean) {
   val index = ScageId.nextId
   private val draw_points = points :+ points.head
   def colorIfPlayerAliveOrRed(color: => ScageColor) = if(OrbitalKiller.player_ship.isDead) RED else color
@@ -61,7 +61,7 @@ class Wreck(mass:Double, init_coord:DVec, init_velocity:DVec, init_rotation:Doub
 
   //val burn_dist = 30000.0 + math.random*10000 + earth.radius
 
-  if(!is_player) {
+  if(!is_main) {
     actionStaticPeriod(1000) {
       if (system_evolution.tacts - start_tact > 4000 &&
         coord.dist2(player_ship.coord) > 1000000l * 1000000) {

@@ -86,7 +86,9 @@ object InterfaceHolder {
   }
 
   /**
-   * метод обрабатывает клики мыши на элементах интерфейса
+   * метод обрабатывает клики мыши на элементах интерфейса. Правая или левая кнопки - имеет смысл только для переключателей, у которых
+   * опций выбора больше двух. Для них левая кнопка перелючает вперед, правая - назад (чтобы можно было не проматывать долго вперед).
+   * Во всех остальных случаях кликать надо левой кнопкой.
    * @param mouse_coord - координата клика мыши
    * @param mouse_btn - 0 - левая кнопка, 1 - правая кнопка мыши
    * @return - true/false. true - попали в какой-то элемент интерфейса, и событие было обработано.
@@ -115,9 +117,9 @@ object InterfaceHolder {
           switchers_x_offset += sw.selectedStrVariantLen + between_switchers
           switcher_center_x - sw.selectedStrVariantLen/2 < mouse_coord.x && mouse_coord.x < switcher_center_x + sw.selectedStrVariantLen/2
       }.exists(x => {
-        if(mouse_btn == 0) {
+        if(mouse_btn == 1) {
           x._1.switchBack()
-        } else if(mouse_btn == 1) {
+        } else if(mouse_btn == 0) {
           x._1.switchForward()
         }
         true

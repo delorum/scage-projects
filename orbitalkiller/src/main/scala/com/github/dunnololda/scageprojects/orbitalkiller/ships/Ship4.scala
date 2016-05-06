@@ -11,7 +11,7 @@ class Ship4(index:Int,
             init_coord:DVec,
             init_velocity:DVec = DVec.dzero,
             init_rotation:Double = 0.0) extends PolygonShip(index, "Снежинка", init_coord, init_velocity, init_rotation) {
-  private val _payload:Double = 5*1000
+  private var _payload:Double = 5*1000
   private var _fuel_mass:Double = 1000
   def mass:Double = _payload + _fuel_mass
   override def fuelMass: Double = _fuel_mass
@@ -500,10 +500,48 @@ class Ship4(index:Int,
     }
   }
 
+  var rockets_enabled = false
+  private var left_rocket:Option[Rocket1] = None
+  private var right_rocket:Option[Rocket1] = None
+  def rocketsStateStr:String = {
+    val left_rocket_status = left_rocket match {
+      case Some(r) =>
+        val vel = msecOrKmsec((linearVelocity - r.linearVelocity) * (coord - r.coord).n)
+        val dist = mOrKmOrMKm(coord.dist(r.coord))
+        if(r.isAlive) {
+          s"[{RED}\u21e7 dist=$dist, vel=$vel]"
+        } else {
+          s"[{DARK_GRAY}\u21e7 dist=$dist, vel=$vel]"
+        }
+      case None =>
+        s"[{RED}\u21e7]"
+    }
+    val right_rocket_status = right_rocket match {
+      case Some(r) =>
+        val vel = msecOrKmsec((linearVelocity - r.linearVelocity) * (coord - r.coord).n)
+        val dist = mOrKmOrMKm(coord.dist(r.coord))
+        if(r.isAlive) {
+          s"[{RED}\u21e7 dist=$dist, vel=$vel]"
+        } else {
+          s"[{DARK_GRAY}\u21e7 dist=$dist, vel=$vel]"
+        }
+      case None =>
+        if(left_rocket.isEmpty) {
+          s"[{YELLOW}\u21e7]"
+        } else if(left_rocket.exists(_.isAlive)) {
+          s"[{YELLOW}\u21e7]"
+        } else {
+          s"[{RED}\u21e7]"
+        }
+    }
+    s"$left_rocket_status $right_rocket_status"
+  }
+
   def launchRocket(): Unit = {
-    if(!isDocked) {
+    if(!isDocked && rockets_enabled && (left_rocket.isEmpty || (left_rocket.exists(_.isDead) && right_rocket.isEmpty))) {
+      val left_position = left_rocket.isEmpty
       val rocket = new Rocket1(ScageId.nextId,
-        init_coord = coord + DVec(-3, 6.5).rotateDeg(rotation),
+        init_coord = coord + (if(left_position) DVec(-3, 6.5) else DVec(3, 6.5)).rotateDeg(rotation),
         init_velocity = linearVelocity,
         init_rotation = rotation
       )
@@ -511,8 +549,27 @@ class Ship4(index:Int,
       rocket.two.power = rocket.two.max_power
       rocket.two.workTimeTacts = 63
       rocket.two.active = true
+
+      _payload -= rocket.mass
+      if(left_rocket.isEmpty) left_rocket = Some(rocket)
+      else if(right_rocket.isEmpty) right_rocket = Some(rocket)
     }
   }
+
+  private val rocket_draw_points = List(
+    DVec(1.0, -20.0),
+    DVec(2.0, -21.0),
+    DVec(2.0, -18.0),
+    DVec(1.0, -17.0),
+    DVec(1.0, 18.0),
+    DVec(0.0, 21.0),
+    DVec(-1.0, 18.0),
+    DVec(-1.0, -17.0),
+    DVec(-2.0, -18.0),
+    DVec(-2.0, -21.0),
+    DVec(-1.0, -20.0),
+    DVec(1.0, -20.0)
+  ).map(_*0.1)
 
   override protected def drawShip(): Unit = {
     if(!drawMapMode) {
@@ -522,8 +579,16 @@ class Ship4(index:Int,
           drawFilledCircle(DVec.zero, 0.3, colorIfPlayerAliveOrRed(GREEN)) // mass center
 
           if (OrbitalKiller.globalScale >= 0.8) {
-            if (!InterfaceHolder.linearVelocityInfo.isMinimized) {
+            if (!InterfaceHolder.rocketsInfo.isMinimized) {
+              left_rocket.foreach(r => {
+                drawArrow(DVec.zero, (r.coord - coord).n*radius, if(r.isAlive) RED else DARK_GRAY)
+              })
+              right_rocket.foreach(r => {
+                drawArrow(DVec.zero, (r.coord - coord).n*radius, if(r.isAlive) RED else DARK_GRAY)
+              })
+            }
 
+            if (!InterfaceHolder.linearVelocityInfo.isMinimized) {
               // current velocity
               drawArrow(DVec.zero, linearVelocity.n * radius, colorIfPlayerAliveOrRed(BLUE))
               drawArrow(DVec.zero, relativeLinearVelocity.n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
@@ -562,6 +627,23 @@ class Ship4(index:Int,
           })*/
 
           openglRotateDeg(rotation)
+
+          if (OrbitalKiller.globalScale >= 0.8) {
+            if (rockets_enabled) {
+              if (left_rocket.isEmpty) {
+                openglLocalTransform {
+                  openglMove(DVec(-3, 3.5))
+                  drawSlidingLines(rocket_draw_points, WHITE)
+                }
+              }
+              if (right_rocket.isEmpty) {
+                openglLocalTransform {
+                  openglMove(DVec(3, 3.5))
+                  drawSlidingLines(rocket_draw_points, WHITE)
+                }
+              }
+            }
+          }
 
           // ниже алгоритм рисует линии корпуса корабля темносерым или белым в зависимости, в тени эта линия или нет
           /*val cur_draw_lines =  curDrawLines
