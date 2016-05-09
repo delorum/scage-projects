@@ -518,12 +518,12 @@ class Ship4(index:Int,
     }
     val left_rocket_status = left_rocket match {
       case Some(r) =>
-        val vel = msecOrKmsec((linearVelocity - r.linearVelocity) * (coord - r.coord).n)
-        val dist = mOrKmOrMKm(coord.dist(r.coord))
         if(r.isAlive) {
+          val vel = msecOrKmsec((linearVelocity - r.linearVelocity) * (coord - r.coord).n)
+          val dist = mOrKmOrMKm(coord.dist(r.coord))
           s"[{RED}$rocket_symbol dist=$dist, vel=$vel]"
         } else {
-          s"[{DARK_GRAY}$rocket_symbol dist=$dist, vel=$vel]"
+          s"[{DARK_GRAY}$rocket_symbol]"
         }
       case None =>
         if(!_lockOn(DVec(-3, 6.5))) {
@@ -534,12 +534,12 @@ class Ship4(index:Int,
     }
     val right_rocket_status = right_rocket match {
       case Some(r) =>
-        val vel = msecOrKmsec((linearVelocity - r.linearVelocity) * (coord - r.coord).n)
-        val dist = mOrKmOrMKm(coord.dist(r.coord))
         if(r.isAlive) {
+          val vel = msecOrKmsec((linearVelocity - r.linearVelocity) * (coord - r.coord).n)
+          val dist = mOrKmOrMKm(coord.dist(r.coord))
           s"[{RED}$rocket_symbol dist=$dist, vel=$vel]"
         } else {
-          s"[{DARK_GRAY}$rocket_symbol dist=$dist, vel=$vel]"
+          s"[{DARK_GRAY}$rocket_symbol]"
         }
       case None =>
         if(left_rocket.isEmpty) {
@@ -609,10 +609,14 @@ class Ship4(index:Int,
           if (OrbitalKiller.globalScale >= 0.8) {
             if (!InterfaceHolder.rocketsInfo.isMinimized) {
               left_rocket.foreach(r => {
-                drawArrow(DVec.zero, (r.coord - coord).n*radius, if(r.isAlive) RED else DARK_GRAY)
+                if(r.isAlive) {
+                  drawArrow(DVec.zero, (r.coord - coord).n*radius, RED)
+                }
               })
               right_rocket.foreach(r => {
-                drawArrow(DVec.zero, (r.coord - coord).n*radius, if(r.isAlive) RED else DARK_GRAY)
+                if(r.isAlive) {
+                  drawArrow(DVec.zero, (r.coord - coord).n * radius, RED)
+                }
               })
             }
 
@@ -635,7 +639,7 @@ class Ship4(index:Int,
               drawArrow(Vec.zero, (moon.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.moonRelativeInfo.color))
             }
             InterfaceHolder.ship_interfaces.foreach(si => {
-              if(!si.isMinimized) {
+              if(!si.isMinimized && si.monitoring_ship.isAlive) {
                 drawArrow(Vec.zero, (si.monitoring_ship.coord - coord).n * radius, colorIfPlayerAliveOrRed(si.color))
               }
             })
