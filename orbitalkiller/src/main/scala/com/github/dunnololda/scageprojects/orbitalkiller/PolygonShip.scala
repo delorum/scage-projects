@@ -314,10 +314,10 @@ abstract class PolygonShip(
       if(isAlive) {
         openglLocalTransform {
           openglMove(coord - base)
-          drawFilledCircle(DVec.zero, 2, GREEN) // mass center
+          /*drawFilledCircle(DVec.zero, 2, GREEN) // mass center
           if (OrbitalKiller.globalScale >= 0.8) {
             drawArrow(DVec.zero, relativeLinearVelocity.n * radius, CYAN) // current velocity
-          }
+          }*/
 
           // ниже рисуем aabb и кружочки вокруг формы корабля и отдельных частей формы
           /*val x = currentState.shape.asInstanceOf[PolygonShape]

@@ -503,35 +503,36 @@ class Ship4(index:Int,
   var rockets_enabled = false
   private var left_rocket:Option[Rocket1] = None
   private var right_rocket:Option[Rocket1] = None
+  private val rocket_symbol = '\u2191'
   def rocketsStateStr:String = {
     val left_rocket_status = left_rocket match {
       case Some(r) =>
         val vel = msecOrKmsec((linearVelocity - r.linearVelocity) * (coord - r.coord).n)
         val dist = mOrKmOrMKm(coord.dist(r.coord))
         if(r.isAlive) {
-          s"[{RED}\u21e7 dist=$dist, vel=$vel]"
+          s"[{RED}$rocket_symbol dist=$dist, vel=$vel]"
         } else {
-          s"[{DARK_GRAY}\u21e7 dist=$dist, vel=$vel]"
+          s"[{DARK_GRAY}$rocket_symbol dist=$dist, vel=$vel]"
         }
       case None =>
-        s"[{RED}\u21e7]"
+        s"[{RED}$rocket_symbol]"
     }
     val right_rocket_status = right_rocket match {
       case Some(r) =>
         val vel = msecOrKmsec((linearVelocity - r.linearVelocity) * (coord - r.coord).n)
         val dist = mOrKmOrMKm(coord.dist(r.coord))
         if(r.isAlive) {
-          s"[{RED}\u21e7 dist=$dist, vel=$vel]"
+          s"[{RED}$rocket_symbol dist=$dist, vel=$vel]"
         } else {
-          s"[{DARK_GRAY}\u21e7 dist=$dist, vel=$vel]"
-        }
+          s"[{DARK_GRAY}$rocket_symbol dist=$dist, vel=$vel]"
+        }r
       case None =>
         if(left_rocket.isEmpty) {
-          s"[{YELLOW}\u21e7]"
+          s"[{YELLOW}$rocket_symbol]"
         } else if(left_rocket.exists(_.isAlive)) {
-          s"[{YELLOW}\u21e7]"
+          s"[{YELLOW}$rocket_symbol]"
         } else {
-          s"[{RED}\u21e7]"
+          s"[{RED}$rocket_symbol]"
         }
     }
     s"$left_rocket_status $right_rocket_status"

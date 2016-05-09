@@ -578,7 +578,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   }
 
   preinit {
-    addGlyphs("\u21b6\u21b7\u21e7")
+    addGlyphs("\u21b6\u21b7\u2191")
   }
 
   keyIgnorePause(KEY_RETURN, onKeyDown = {if(player_ship.isAlive) player_ship.launchRocket()})
