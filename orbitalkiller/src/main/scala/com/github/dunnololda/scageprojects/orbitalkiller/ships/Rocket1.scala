@@ -153,7 +153,6 @@ class Rocket1(index:Int,
       currentState.vel = init_velocity
       kill("Ракета самоуничтожилась", crash = true)
     }
-    println(s"ship: ${mOrKmOrMKm(coord.dist(player_ship.coord))} : ${msecOrKmsec((linearVelocity - player_ship.linearVelocity).norma)}")
   }
 
   override lazy val initState:BodyState = BodyState(

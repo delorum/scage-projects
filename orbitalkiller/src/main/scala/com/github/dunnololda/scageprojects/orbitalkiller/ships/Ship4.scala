@@ -503,35 +503,63 @@ class Ship4(index:Int,
   var rockets_enabled = false
   private var left_rocket:Option[Rocket1] = None
   private var right_rocket:Option[Rocket1] = None
+  private val rocket_symbol = '\u2191'
   def rocketsStateStr:String = {
+    def _lockOn(rocket_pos:DVec):Boolean = {
+      otherShipsNear.headOption.filter(_.coord.dist(coord) < 11000) match {
+        case Some(os) =>
+          println(s"${os.name}")
+          val our_line = (coord + rocket_pos.rotateDeg(rotation), coord + (rocket_pos + DVec(0, 10000)).rotateDeg(rotation))
+          os.draw_points.sliding(2).exists {
+            case List(p1, p2) => areLinesIntersect(os.coord + p1.rotateDeg(os.rotation), os.coord + p2.rotateDeg(os.rotation), our_line._1, our_line._2)
+          }
+        case None => false
+      }
+    }
     val left_rocket_status = left_rocket match {
       case Some(r) =>
-        val vel = msecOrKmsec((linearVelocity - r.linearVelocity) * (coord - r.coord).n)
-        val dist = mOrKmOrMKm(coord.dist(r.coord))
         if(r.isAlive) {
-          s"[{RED}\u21e7 dist=$dist, vel=$vel]"
+          val vel = msecOrKmsec((linearVelocity - r.linearVelocity) * (coord - r.coord).n)
+          val dist = mOrKmOrMKm(coord.dist(r.coord))
+          s"[{RED}$rocket_symbol dist=$dist, vel=$vel]"
         } else {
-          s"[{DARK_GRAY}\u21e7 dist=$dist, vel=$vel]"
+          s"[{DARK_GRAY}$rocket_symbol]"
         }
       case None =>
-        s"[{RED}\u21e7]"
+        if(!_lockOn(DVec(-3, 6.5))) {
+          s"[{RED}$rocket_symbol]"
+        } else {
+          s"[{RED}$rocket_symbol LOCK ON]"
+        }
     }
     val right_rocket_status = right_rocket match {
       case Some(r) =>
-        val vel = msecOrKmsec((linearVelocity - r.linearVelocity) * (coord - r.coord).n)
-        val dist = mOrKmOrMKm(coord.dist(r.coord))
         if(r.isAlive) {
-          s"[{RED}\u21e7 dist=$dist, vel=$vel]"
+          val vel = msecOrKmsec((linearVelocity - r.linearVelocity) * (coord - r.coord).n)
+          val dist = mOrKmOrMKm(coord.dist(r.coord))
+          s"[{RED}$rocket_symbol dist=$dist, vel=$vel]"
         } else {
-          s"[{DARK_GRAY}\u21e7 dist=$dist, vel=$vel]"
+          s"[{DARK_GRAY}$rocket_symbol]"
         }
       case None =>
         if(left_rocket.isEmpty) {
-          s"[{YELLOW}\u21e7]"
+          if(!_lockOn(DVec(3, 6.5))) {
+            s"[{YELLOW}$rocket_symbol]"
+          } else {
+            s"[{YELLOW}$rocket_symbol LOCK ON]"
+          }
         } else if(left_rocket.exists(_.isAlive)) {
-          s"[{YELLOW}\u21e7]"
+          if(!_lockOn(DVec(3, 6.5))) {
+            s"[{YELLOW}$rocket_symbol]"
+          } else {
+            s"[{YELLOW}$rocket_symbol LOCK ON]"
+          }
         } else {
-          s"[{RED}\u21e7]"
+          if(!_lockOn(DVec(3, 6.5))) {
+            s"[{RED}$rocket_symbol]"
+          } else {
+            s"[{RED}$rocket_symbol LOCK ON]"
+          }
         }
     }
     s"$left_rocket_status $right_rocket_status"
@@ -581,10 +609,14 @@ class Ship4(index:Int,
           if (OrbitalKiller.globalScale >= 0.8) {
             if (!InterfaceHolder.rocketsInfo.isMinimized) {
               left_rocket.foreach(r => {
-                drawArrow(DVec.zero, (r.coord - coord).n*radius, if(r.isAlive) RED else DARK_GRAY)
+                if(r.isAlive) {
+                  drawArrow(DVec.zero, (r.coord - coord).n*radius, RED)
+                }
               })
               right_rocket.foreach(r => {
-                drawArrow(DVec.zero, (r.coord - coord).n*radius, if(r.isAlive) RED else DARK_GRAY)
+                if(r.isAlive) {
+                  drawArrow(DVec.zero, (r.coord - coord).n * radius, RED)
+                }
               })
             }
 
@@ -607,7 +639,7 @@ class Ship4(index:Int,
               drawArrow(Vec.zero, (moon.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.moonRelativeInfo.color))
             }
             InterfaceHolder.ship_interfaces.foreach(si => {
-              if(!si.isMinimized) {
+              if(!si.isMinimized && si.monitoring_ship.isAlive) {
                 drawArrow(Vec.zero, (si.monitoring_ship.coord - coord).n * radius, colorIfPlayerAliveOrRed(si.color))
               }
             })
