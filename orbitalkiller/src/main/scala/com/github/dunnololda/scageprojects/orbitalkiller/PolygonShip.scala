@@ -803,7 +803,7 @@ abstract class PolygonShip(
     }
     if(is_manned && !is_dead) {
       if(pilot_average_g > 4) { // пилот может испытывать перегрузку больше 4g только ограниченный период времени, потом наступает смерть
-      val rate = deatchCounterDecreaseRate(pilot_average_g)
+        val rate = deatchCounterDecreaseRate(pilot_average_g)
         before_death_counter -= rate
         if(before_death_counter <= 0) {
           kill(f"Пилот умер от сильной перегрузки ($pilot_average_g%.2fg)", crash = false)
@@ -834,7 +834,6 @@ abstract class PolygonShip(
         active_engines.foreach(e => if(force_diff_for_engine < e. power) {
           e.power -= force_diff_for_engine
         })
-
       }
     }
     engines.foreach(e => {
