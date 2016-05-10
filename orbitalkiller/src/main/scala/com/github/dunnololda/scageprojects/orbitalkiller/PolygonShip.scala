@@ -505,10 +505,38 @@ abstract class PolygonShip(
     case x => x.rusStr
   }
 
-  def otherShipsNear:Seq[PolygonShip] = ShipsHolder.ships.filter(s => s.index != index && s.isAlive).sortBy(s => coord.dist(s.coord))
+  /**
+   * Все другие корабли, отсортированные по расстоянию по убыванию (первый - ближайший)
+   * @return
+   */
+  def otherShipsNear:Seq[PolygonShip] = ShipsHolder.ships.filter(s => s.index != index && s.isAlive).sortBy(s => coord.dist2(s.coord))
+
+  /**
+   * Корабль ближе x км от нас. Если таких несколько, то ближайший.
+   * @param x - дистанция в километрах
+   * @return
+   */
+  def shipCloserXKm(x:Long):Option[PolygonShip] = ShipsHolder.ships.filter(_.coord.dist2(coord) < x*1000l*x*1000l).sortBy(s => coord.dist2(s.coord)).headOption
+
+  /**
+   * Корабль ближе 1 км от нас. Если таких несколько, то ближайший.
+   * @return
+   */
+  def shipCloser1Km:Option[PolygonShip] = shipCloserXKm(1)
+
+  /**
+   * Корабль ближе 500 км от нас. Если таких несколько, то ближайший.
+    * @return
+   */
+  def shipCloser500Km:Option[PolygonShip] = shipCloserXKm(500)
+
+  /**
+   * Находимся ли на стыковочной прямой с ближайшим кораблем
+   * @return
+   */
   def canDockWithNearestShip:Boolean = {
-    otherShipsNear.headOption.exists(os => {
-      os.coord.dist(coord) < 1000 && docking_points.exists(dp => {
+    shipCloser1Km.exists(os => {
+      docking_points.exists(dp => {
         os.docking_points.exists(osdp => dp.pointsMatch(osdp))
       })
     })
@@ -516,14 +544,17 @@ abstract class PolygonShip(
   def possibleDockPointsWithNearestShip:List[(DockingPoints, PolygonShip, DockingPoints)] = {
     for {
       dp <- docking_points
-      os <- otherShipsNear.headOption.toList
+      os <- shipCloser1Km.toList
       osdp <- os.docking_points
       if dp.pointsMatch(osdp)
     } yield (dp, os, osdp)
   }
 
   def canDockWithNearestShipUsingDockPoints(dp:DockingPoints):Boolean = {
-    otherShipsNear.headOption.toList.flatMap(_.docking_points).exists(osdp => dp.pointsMatch(osdp))
+    shipCloser1Km match {
+      case Some(os) => os.docking_points.exists(osdp => dp.pointsMatch(osdp))
+      case None => false
+    }
   }
 
   val pilot_mass = 75
@@ -550,11 +581,15 @@ abstract class PolygonShip(
   private var before_death_counter:Double = 100
 
   /**
-   *
+   * С какой скоростью уменьшается счетчик before_death_counter в зависимости от ускорения, которое испытывает пилот.
+   * Размерность: ед/такт (один такт - 1/63 секунды).
+   * Если перегрузка меньше либо равна 1.09g - пилот восстанавливается после перегрузки (rate отрицательный) с 0 за примерно 60 секунд.
+   * Если перегрузка больше 1.09, но меньше либо равна 4g - rate нулевой (не восстанавливаемся, но и не приближаемся к смерти).
+   * Если перегрузка больше 4g - rate положительный (может дойти до нуля).
    * @param gs - перегрузка в единицах g
    * @return
    */
-  private def deatchCounterDecreaseRate(gs:Double):Double = {
+  private def deatchCounterChangeRate(gs:Double):Double = {
     def _linearFunc(p1:(Double, Double), p2:(Double, Double)):Double = {
       val a = (p1._2 - p2._2)/(p1._1 - p2._1)
       val b = p1._2 - a*p1._1
@@ -564,8 +599,11 @@ abstract class PolygonShip(
 
     // https://en.wikipedia.org/wiki/G-force#Human_tolerance_of_g-force
     // http://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19980223621.pdf (p. 30, fig. 8)
-    val ans = if(gs <= 4) 0
-    else if(gs <= 6) {
+    val ans = if(gs <= 1.09) {
+      -100.0/60
+    } else if(gs <= 4) {
+      0
+    } else if(gs <= 6) {
       _linearFunc((4, 660), (6, 240))
     } else if(gs <= 8) {
       _linearFunc((6, 240), (8, 60))
@@ -604,7 +642,7 @@ abstract class PolygonShip(
         val part_center = currentState.coord + wreck_part.points.sum / wreck_part.points.length
         val part_points = wreck_part.points.map(p => currentState.coord + p - part_center)
         val maybe_obstacle = currentState.contacts.headOption.map(c => if(c.a.index != index) c.a else c.b)
-        val random_wreck_vel_func = randomWreckVelocity(maybe_obstacle)
+        val random_wreck_vel_func = wreckRandomVelocity(maybe_obstacle)
         new Wreck(mass / wreck_parts.length,
                   part_center,
                   random_wreck_vel_func(),
@@ -617,7 +655,7 @@ abstract class PolygonShip(
     }
   }
 
-  private def randomWreckVelocity(maybe_obstacle:Option[MutableBodyState]):() => DVec = {
+  private def wreckRandomVelocity(maybe_obstacle:Option[MutableBodyState]):() => DVec = {
     maybe_obstacle match {
       case Some(obstacle) =>
         ShipsHolder.shipByIndex(obstacle.index) match {
@@ -664,7 +702,7 @@ abstract class PolygonShip(
           }
         } else {
           if (pilot_average_g > 4) {
-            val rate = deatchCounterDecreaseRate(pilot_average_g)
+            val rate = deatchCounterChangeRate(pilot_average_g)
             val time_before_death_msec = ((before_death_counter / rate) * base_dt * 1000).toLong
             f"[rПилот испытывает критическую перегрузку $pilot_average_g%.1fg. Смерть через ${timeStr(time_before_death_msec)}]"
           } else {
@@ -801,13 +839,21 @@ abstract class PolygonShip(
         return
       }
     }
-    if(is_manned && !is_dead) {
-      if(pilot_average_g > 4) { // пилот может испытывать перегрузку больше 4g только ограниченный период времени, потом наступает смерть
-        val rate = deatchCounterDecreaseRate(pilot_average_g)
+    if(!is_dead) {
+      // пилот может испытывать перегрузку больше 4g только ограниченный период времени, потом наступает смерть
+      // для беспилотной системы это значение примем 40g (условный показатель)
+      if(pilot_average_g > {if(is_manned) 4 else 40}) {
+        // беспилотный корабль может выдерживать 10-кратно большие перегрузки по сравнению с пилотируемым
+        val rate = deatchCounterChangeRate({if(is_manned) pilot_average_g else pilot_average_g/10})
         before_death_counter -= rate
         if(before_death_counter <= 0) {
-          kill(f"Пилот умер от сильной перегрузки ($pilot_average_g%.2fg)", crash = false)
+          if(is_manned) {
+            kill(f"Пилот умер от сильной перегрузки ($pilot_average_g%.2fg)", crash = false)
+          } else {
+            kill(f"Корабль разрушился от сильной перегрузки ($pilot_average_g%.2fg)", crash = true)
+          }
         } else {
+          // автоматическое отключение двигателей, если до смерти от перегрузки осталась одна секунда
           val time_before_death_msec = ((before_death_counter/rate)*base_dt*1000).toLong
           if(time_before_death_msec <= 1000) {      // 1 секунда до гибели от перегрузки
             if(engines.exists(_.active)) {          // если работают какие-то двигатели
@@ -825,15 +871,18 @@ abstract class PolygonShip(
           }
         }
       }
+      // автоматическая регулировка мощности двигателей в соответствие с настройкой gSwitcher
       if(InterfaceHolder.gSwitcher.maxGSet && pilot_average_g > InterfaceHolder.gSwitcher.maxG) {
         val active_engines = engines.filter(e => e.active && 0 < e.stopMomentTacts)
-        val cur_force = reactive_force.norma
-        val allowed_force = mass*InterfaceHolder.gSwitcher.maxG*OrbitalKiller.earth.g
-        val force_diff = cur_force - allowed_force
-        val force_diff_for_engine = force_diff/active_engines.length
-        active_engines.foreach(e => if(force_diff_for_engine < e. power) {
-          e.power -= force_diff_for_engine
-        })
+        if(active_engines.nonEmpty) {
+          val cur_force = reactive_force.norma
+          val allowed_force = mass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g
+          val force_diff = cur_force - allowed_force
+          val force_diff_for_engine = force_diff / active_engines.length
+          active_engines.foreach(e => if (force_diff_for_engine < e.power) {
+            e.power -= force_diff_for_engine
+          })
+        }
       }
     }
     engines.foreach(e => {

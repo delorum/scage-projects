@@ -24,7 +24,7 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
           if our_orbit_kepler.isInstanceOf[EllipseOrbit] && os_orbit_kepler.isInstanceOf[EllipseOrbit]
           our_orbit_ellipse = our_orbit_kepler.asInstanceOf[EllipseOrbit]
           os_orbit_ellipse = os_orbit_kepler.asInstanceOf[EllipseOrbit]
-          //our_orbit_period = our_orbit_ellipse.t
+          our_orbit_period = our_orbit_ellipse.t
           os_orbit_period = os_orbit_ellipse.t
         } yield {
             if (InterfaceHolder.dockingSwitcher.dockingEnabled && player_ship.coord.dist(monitoring_ship.coord) <= 2000) {
@@ -55,7 +55,7 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
               val our_r_p = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(0)
               val our_r_a = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(180)
               val t1_sec = deg_diff / 360.0 * os_orbit_period
-              val t2_sec = (deg_diff + 360) / 360.0 * os_orbit_period
+              val t2_sec = t1_sec + os_orbit_period
               // здесь два варианта орбитальных периодов, один больше другой меньше. Оба могут соответствовать орбитам с нормальной высотой,
               // но также может быть, что меньший период t1 соответствует суборбитальной траектории. Это надо все просчитать.
               val mu = G * our_orbit_planet_state.mass
@@ -77,7 +77,7 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
               val need_orbit_period_str = {
                 if (r_p1 >= our_orbit_planet.air_free_altitude) {
                   if (r_p2 >= our_orbit_planet.air_free_altitude) {
-                    if (math.abs(our_orbit_ellipse.t - t1_sec) <= math.abs(our_orbit_ellipse.t - t2_sec)) {
+                    if (math.abs(our_orbit_period - t1_sec) <= math.abs(our_orbit_period - t2_sec)) {
                       s"${timeStr(t1_sec.toLong * 1000)} ($sep_str, cur sep = ${mOrKmOrMKm(cur_sep)})"
                     } else {
                       s"${timeStr(t2_sec.toLong * 1000)} ($sep_str, cur sep = ${mOrKmOrMKm(cur_sep)})"

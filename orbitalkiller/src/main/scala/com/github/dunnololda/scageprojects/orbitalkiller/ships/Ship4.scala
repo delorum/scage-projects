@@ -347,27 +347,27 @@ class Ship4(index:Int,
               }
             } else preserveAngularVelocity(0)
           }
-        case NearestShipVelocity => // уравнять скорость с ближайшим кораблем
+        case NearestShipVelocity => // уравнять скорость с ближайшим кораблем, который находится на расстоянии не далее 500 км
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, correction_check_period)) {
-            if (math.abs(angularVelocity) < angular_velocity_error) {
-              otherShipsNear.headOption match {
-                case Some(s) =>
+            shipCloser500Km match {
+              case Some(s) =>
+                if (math.abs(angularVelocity) < angular_velocity_error) {
                   val ss = s.linearVelocity
                   if (linearVelocity.dist(ss) > linear_velocity_error) {
                     preserveVelocity(ss)
                   } else {
-                    if(haveSavedFlightMode) restoreFlightModeAndEngineStates()
+                    if (haveSavedFlightMode) restoreFlightModeAndEngineStates()
                     else flightMode = FreeFlightMode
                   }
-                case None =>
-                  if(haveSavedFlightMode) restoreFlightModeAndEngineStates()
-                  else flightMode = FreeFlightMode
-              }
-            } else preserveAngularVelocity(0)
+                } else preserveAngularVelocity(0)
+              case None =>
+                if(haveSavedFlightMode) restoreFlightModeAndEngineStates()
+                else flightMode = FreeFlightMode
+            }
           }
         case NearestShipAligned => // ориентация на ближайший корабль
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, correction_check_period)) {
-            otherShipsNear.headOption match {
+            shipCloser500Km match {
               case Some(os) =>
                 val angle = DVec(0, 1).deg360(os.coord - coord)
                 if (angleMinDiff(rotation, angle) < angle_error) {
@@ -396,9 +396,9 @@ class Ship4(index:Int,
             if(isDocked) {
               flightMode = FreeFlightMode
             } else {
-              InterfaceHolder.dockingSwitcher.setDockingAuto()
-              otherShipsNear.headOption match {
+              shipCloser500Km match {
                 case Some(os) =>
+                  InterfaceHolder.dockingSwitcher.setDockingAuto()
                   val ship_docking_point = docking_points.head.curP1 + 0.5*(docking_points.head.curP2 - docking_points.head.curP1)
                   os.docking_points.sortBy(osdp => osdp.curP1.dist(ship_docking_point)).headOption match {
                     case Some(osdp) =>
