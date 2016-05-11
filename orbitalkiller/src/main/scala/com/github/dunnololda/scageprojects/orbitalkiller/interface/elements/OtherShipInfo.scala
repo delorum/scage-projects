@@ -24,8 +24,8 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
           if our_orbit_kepler.isInstanceOf[EllipseOrbit] && os_orbit_kepler.isInstanceOf[EllipseOrbit]
           our_orbit_ellipse = our_orbit_kepler.asInstanceOf[EllipseOrbit]
           os_orbit_ellipse = os_orbit_kepler.asInstanceOf[EllipseOrbit]
-          our_orbit_period = our_orbit_ellipse.t
-          os_orbit_period = os_orbit_ellipse.t
+          our_orbit_period_sec = our_orbit_ellipse.t
+          os_orbit_period_sec = os_orbit_ellipse.t
         } yield {
             if (InterfaceHolder.dockingSwitcher.dockingEnabled && player_ship.coord.dist(monitoring_ship.coord) <= 2000) {
               val ship_docking_point = player_ship.docking_points.head.curP1 + 0.5 * (player_ship.docking_points.head.curP2 - player_ship.docking_points.head.curP1)
@@ -51,37 +51,46 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
                   /*("N/A", */"N/A"/*)*/
               }
             } else {
-              val os_travel_time_to_our_point1 = os_orbit_ellipse.travelTimeOnOrbitMsec(monitoring_ship.coord, os_orbit_ellipse.orbitalPointInPoint(player_ship.coord), ccw = true)
-              val os_travel_time_to_our_point2 = (os_orbit_period*1000 - os_travel_time_to_our_point1).toLong
-              val need_orbit_period = {
-                if(os_travel_time_to_our_point1 > os_travel_time_to_our_point2) os_travel_time_to_our_point1
-                else os_travel_time_to_our_point1*2 + os_travel_time_to_our_point2
+              val os_travel_time_to_our_point1_msec = os_orbit_ellipse.travelTimeOnOrbitMsec(monitoring_ship.coord, os_orbit_ellipse.orbitalPointInPoint(player_ship.coord), ccw = true)
+              val os_travel_time_to_our_point2_msec = (os_orbit_period_sec*1000 - os_travel_time_to_our_point1_msec).toLong
+              val need_orbit_period_msec = {
+                if(os_travel_time_to_our_point1_msec > os_travel_time_to_our_point2_msec) {
+                  val mu = G * our_orbit_planet_state.mass
+                  def _calculateRp(t_sec: Double): Double = {
+                    val a = math.pow(math.pow(t_sec / (2 * math.Pi), 2) * mu, 1.0 / 3) // большая полуось для данного периода
+                    val x = player_ship.coord.dist(our_orbit_planet_state.coord)
+                    math.min(2 * a - x, x)
+                  }
+                  val r_p1 = _calculateRp(os_travel_time_to_our_point1_msec/1000) - our_orbit_planet.radius
+                  if(r_p1 > our_orbit_planet.air_free_altitude) os_travel_time_to_our_point1_msec
+                  else os_travel_time_to_our_point1_msec*2 + os_travel_time_to_our_point2_msec
+                } else os_travel_time_to_our_point1_msec*2 + os_travel_time_to_our_point2_msec
               }
-              val deg_diff = (monitoring_ship.coord - our_orbit_planet_state.coord).deg360(player_ship.coord - our_orbit_planet_state.coord)
+              /*val deg_diff = (monitoring_ship.coord - our_orbit_planet_state.coord).deg360(player_ship.coord - our_orbit_planet_state.coord)
               val t1_sec = deg_diff / 360.0 * os_orbit_period
-              val t2_sec = t1_sec + os_orbit_period
+              val t2_sec = t1_sec + os_orbit_period*/
               // здесь два варианта орбитальных периодов, один больше другой меньше. Оба могут соответствовать орбитам с нормальной высотой,
               // но также может быть, что меньший период t1 соответствует суборбитальной траектории. Это надо все просчитать.
-              val mu = G * our_orbit_planet_state.mass
+              /*val mu = G * our_orbit_planet_state.mass
               def _calculateRp(t_sec: Double): Double = {
                 val a = math.pow(math.pow(t_sec / (2 * math.Pi), 2) * mu, 1.0 / 3) // большая полуось для данного периода
                 val x = player_ship.coord.dist(our_orbit_planet_state.coord)
                 math.min(2 * a - x, x)
               }
               val r_p1 = _calculateRp(t1_sec) - our_orbit_planet.radius
-              val r_p2 = _calculateRp(t2_sec) - our_orbit_planet.radius
+              val r_p2 = _calculateRp(t2_sec) - our_orbit_planet.radius*/
               val our_r_p = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(0)     // координаты апогея нашей орбиты
               val our_r_a = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(180)   // координаты перигея нашей орбиты
               val sep_in_r_p = os_orbit_ellipse.orbitalPointInPoint(our_r_p).dist(our_r_p)
               val sep_in_r_a = os_orbit_ellipse.orbitalPointInPoint(our_r_a).dist(our_r_a)
-              val sep_str = if (sep_in_r_p <= sep_in_r_a) {
-                s"${timeStr(need_orbit_period)}; min sep = in r_p, ${mOrKmOrMKm(sep_in_r_p)}"
-              } else {
-                s"${timeStr(need_orbit_period)}; min sep = in r_a, ${mOrKmOrMKm(sep_in_r_a)}"
-              }
               val cur_sep = os_orbit_ellipse.orbitalPointInPoint(player_ship.coord).dist(player_ship.coord)
+              val sep_str = if (sep_in_r_p <= sep_in_r_a) {
+                s"min sep = in r_p, ${mOrKmOrMKm(sep_in_r_p)}, cur sep = ${mOrKmOrMKm(cur_sep)}"
+              } else {
+                s"min sep = in r_a, ${mOrKmOrMKm(sep_in_r_a)}, cur sep = ${mOrKmOrMKm(cur_sep)}"
+              }
               val need_orbit_period_str = {
-                if (r_p1 >= our_orbit_planet.air_free_altitude) {
+                /*if (r_p1 >= our_orbit_planet.air_free_altitude) {
                   if (r_p2 >= our_orbit_planet.air_free_altitude) {
                     if (math.abs(our_orbit_period - t1_sec) <= math.abs(our_orbit_period - t2_sec)) {
                       s"${timeStr(t1_sec.toLong * 1000)} ($sep_str, cur sep = ${mOrKmOrMKm(cur_sep)})"
@@ -97,7 +106,8 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
                   } else {
                     s"N/A ($sep_str, cur sep = ${mOrKmOrMKm(cur_sep)})"
                   }
-                }
+                }*/
+                s"${timeStr(need_orbit_period_msec)} ($sep_str)"
               }
               /*(f"$deg_diff%.2f град.", */s"rendezvous data: $need_orbit_period_str"/*)*/
             }

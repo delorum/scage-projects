@@ -837,6 +837,7 @@ abstract class PolygonShip(
           pilot_accs.clear()
         }
       }
+      // если провалились сквозь землю
       currentPlanetStates.find {
         case (planet, planet_state) => planet.coord.dist(currentState.coord) < planet.radius
       }.foreach {

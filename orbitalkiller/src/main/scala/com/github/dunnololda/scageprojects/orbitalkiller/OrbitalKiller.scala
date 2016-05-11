@@ -186,16 +186,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   val moon_earth_eq_gravity_radius = equalGravityRadius(moon.currentState, earth.currentState)
 
   // стоим на поверхности Земли
-  //val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
-  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
+  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   // суборбитальная траектория
   //val ship_start_position = earth.coord + DVec(500, earth.radius + 100000)
   //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
 
   // на круговой орбите в 200 км от поверхности Земли
-  val ship_start_position = earth.coord + DVec(-100, earth.radius + 199000)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
+  //val ship_start_position = earth.coord + DVec(-100, earth.radius + 199000)
+  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/**1.15*/
 
   // стоим на поверхности Луны
   //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
@@ -944,7 +944,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                             openglMove(orbital_point * scale)
                             print(s"  $flight_time : ${mOrKmOrMKm(h.distanceByTrueAnomalyRad(mouse_teta_rad2Pi) - planet.radius)} : ${msecOrKmsec(vnorm)}", Vec.zero, size = (max_font_size / globalScale).toFloat, ellipse_color)
                           }
-                          InterfaceHolder.ship_interfaces.filter(!_.isMinimized).flatMap(_.monitoring_ship.orbitRender).foreach(x => {
+                          InterfaceHolder.ship_interfaces.filter(si => !si.isMinimized && !si.monitoring_ship.isCrashed).flatMap(_.monitoring_ship.orbitRender).foreach(x => {
                             x.ellipseOrbit.foreach(e => {
                               val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
                               drawCircle(position_after_time * scale, earth.radius * scale / 2f / globalScale, YELLOW)
@@ -960,7 +960,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                         }
                       }
                       if(InterfaceHolder.orbParams.calculationOn) {
-                        InterfaceHolder.ship_interfaces.filter(!_.isMinimized).flatMap(_.monitoring_ship.orbitRender).foreach(x => {
+                        InterfaceHolder.ship_interfaces.filter(si => !si.isMinimized && !si.monitoring_ship.isCrashed).flatMap(_.monitoring_ship.orbitRender).foreach(x => {
                           x.ellipseOrbit.foreach(e => {
                             if (_stop_after_number_of_tacts > 0) {
                               val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
@@ -1034,7 +1034,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                         openglMove(orbital_point * scale)
                         print(s"  $flight_time_str : ${mOrKmOrMKm(e.distanceByTrueAnomalyRad(true_anomaly_rad) - planet.radius)} : ${msecOrKmsec(vnorm)}", Vec.zero, size = (max_font_size / globalScale).toFloat, ellipse_color)
                       }
-                      InterfaceHolder.ship_interfaces.filter(!_.isMinimized).flatMap(_.monitoring_ship.orbitRender).foreach(x => {
+                      InterfaceHolder.ship_interfaces.filter(si => !si.isMinimized && !si.monitoring_ship.isCrashed).flatMap(_.monitoring_ship.orbitRender).foreach(x => {
                         x.ellipseOrbit.foreach(e => {
                           val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
                           drawCircle(position_after_time * scale, earth.radius * scale / 2f / globalScale, YELLOW)
