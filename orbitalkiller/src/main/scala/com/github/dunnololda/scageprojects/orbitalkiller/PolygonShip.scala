@@ -632,6 +632,7 @@ abstract class PolygonShip(
     ans*base_dt
   }
 
+  def colorIfAliveOrRed(color: => ScageColor) = if(isDead) RED else color
   def colorIfPlayerAliveOrRed(color: => ScageColor) = if(OrbitalKiller.player_ship.isDead) RED else color
 
   protected var main_ship_wreck:Option[Wreck] = None
@@ -650,7 +651,6 @@ abstract class PolygonShip(
     if(crash) {
       ShipsHolder.removeShip(this)
       delOperation(render_id)
-      orbitRender = None
       val wrecks = wreck_parts.zipWithIndex.map {case (wreck_part, idx) =>
         val part_center = currentState.coord + wreck_part.points.sum / wreck_part.points.length
         val part_points = wreck_part.points.map(p => currentState.coord + p - part_center)

@@ -23,6 +23,8 @@ trait CelestialBody {
   val length = 2*math.Pi*radius
 
   val g = G*mass/(radius*radius)  // ускорение свободного падения, м/с^2
+
+  var orbitRender:Option[BodyOrbitRender] = None
 }
 
 class Planet(val index:Int,

@@ -12,6 +12,7 @@ import scala.collection._
 
 case class BodyOrbitRender(bs_coord:DVec,
                            bs_vel:DVec,
+                           bs_ang:Double,
                            bs_mass:Double,
                            planet_coord:DVec,
                            planet_vel:DVec,
@@ -853,16 +854,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   val scale = 1e-6
 
-  private def shipOrbitRender(ship_index:Int,
-                              hyperbola_color:ScageColor,
-                              ellipse_color:ScageColor,
-                              some_system_state:mutable.Map[Int, MutableBodyState],
-                              need_planets:Set[Int] = planet_indices):Option[BodyOrbitRender] = {
+  private def orbitRender(body_index:Int,
+                          hyperbola_color:ScageColor,
+                          ellipse_color:ScageColor,
+                          some_system_state:mutable.Map[Int, MutableBodyState],
+                          need_planets:Set[Int] = planet_indices):Option[BodyOrbitRender] = {
     val celestials = some_system_state.filter(kv => need_planets.contains(kv._1)).flatMap(kv => {
       planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
     }).values.toSeq.sortBy(_._2.mass)
     // находим наш корабль
-    some_system_state.get(ship_index) match {
+    some_system_state.get(body_index) match {
       case Some(bs) =>
         // смотрим, где он находится
         val bs_coord = bs.coord
@@ -886,12 +887,12 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                   val r = h.a*(h.e*h.e-1)/(1 + h.e*math.cos(true_anomaly))
                   (h.f + (h.f_minus_center_n*r).rotateRad(true_anomaly))*scale
                 }).toList
-                if(ship_index != player_ship.index) {
-                  Some(BodyOrbitRender(bs_coord, bs_vel, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, h, () => {
+                if(body_index != player_ship.index) {
+                  Some(BodyOrbitRender(bs_coord, bs_vel, bs.ang, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, h, () => {
                     drawSlidingLines(yy, hyperbola_color)
                   }))
                 } else {
-                  Some(BodyOrbitRender(bs_coord, bs_vel, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, h, () => {
+                  Some(BodyOrbitRender(bs_coord, bs_vel, bs.ang, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, h, () => {
                     drawSlidingLines(yy, hyperbola_color)
 
                     val mouse_point = absCoord(mouseCoord) / scale
@@ -949,7 +950,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                               drawCircle(position_after_time * scale, earth.radius * scale / 2f / globalScale, YELLOW)
                             })
                           })
-                          moon_orbit_render.foreach(x => {
+                          moon.orbitRender.foreach(x => {
                             x.ellipseOrbit.foreach(e => {
                               val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
                               drawCircle(position_after_time * scale, moon.radius * scale, YELLOW)
@@ -968,7 +969,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                             }
                           })
                         })
-                        moon_orbit_render.foreach(x => {
+                        moon.orbitRender.foreach(x => {
                           x.ellipseOrbit.foreach(e => {
                             if (_stop_after_number_of_tacts > 0) {
                               val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
@@ -983,8 +984,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                   }))
                 }
               case e:EllipseOrbit =>
-                if(ship_index != player_ship.index) {
-                  Some(BodyOrbitRender(bs_coord, bs_vel, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, e, () => {
+                if(body_index != player_ship.index) {
+                  Some(BodyOrbitRender(bs_coord, bs_vel, bs.ang, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, e, () => {
                     openglLocalTransform {
                       openglMove(e.center * scale)
                       openglRotateDeg(Vec(-1, 0).signedDeg(e.f2 - e.f))
@@ -992,7 +993,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                     }
                   }))
                 } else {
-                  Some(BodyOrbitRender(bs_coord, bs_vel, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, e, () => {
+                  Some(BodyOrbitRender(bs_coord, bs_vel, bs.ang, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, e, () => {
                     openglLocalTransform {
                       openglMove(e.center * scale)
                       openglRotateDeg(Vec(-1, 0).signedDeg(e.f2 - e.f))
@@ -1044,7 +1045,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                           }
                         })
                       })
-                      moon_orbit_render.foreach(x => {
+                      moon.orbitRender.foreach(x => {
                         x.ellipseOrbit.foreach(e => {
                           val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
                           drawCircle(position_after_time * scale, moon.radius * scale, YELLOW)
@@ -1067,38 +1068,35 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }
 
-  private var moon_orbit_render:Option[BodyOrbitRender] = None
-  private var earth_orbit_render:Option[BodyOrbitRender] = None
-
   private var _calculate_orbits = false
 
   private def updateOrbits() {
     //println("updateOrbits")
     if(player_ship.flightMode == Maneuvering || !onPause || !player_ship.engines.exists(_.active)) {
       // если в режиме маневрирования, или не в режиме маневрирования, но не на паузе, или на паузе, но двигатели не работают - рисуем текущее состояние
-      player_ship.orbitRender = shipOrbitRender(player_ship.index, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_evolution.allBodyStates)
+      player_ship.orbitRender = orbitRender(player_ship.index, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_evolution.allBodyStates)
       InterfaceHolder.ship_interfaces.foreach(si => {
         if(!si.isMinimized && !si.monitoring_ship.isCrashed) {
           si.monitoring_ship.orbitRender = {
-            shipOrbitRender(si.monitoring_ship.index, player_ship.colorIfPlayerAliveOrRed(MAGENTA), player_ship.colorIfPlayerAliveOrRed(MAGENTA), system_evolution.allBodyStates)
+            orbitRender(si.monitoring_ship.index, player_ship.colorIfPlayerAliveOrRed(MAGENTA), player_ship.colorIfPlayerAliveOrRed(MAGENTA), system_evolution.allBodyStates)
           }
         }
       })
-      moon_orbit_render =  shipOrbitRender(moon.index, player_ship.colorIfPlayerAliveOrRed(GREEN), player_ship.colorIfPlayerAliveOrRed(GREEN), system_evolution.allBodyStates, Set(earth.index, sun.index))
-      earth_orbit_render =  shipOrbitRender(earth.index, player_ship.colorIfPlayerAliveOrRed(ORANGE), player_ship.colorIfPlayerAliveOrRed(ORANGE), system_evolution.allBodyStates, Set(sun.index))
+      moon.orbitRender =  orbitRender(moon.index, player_ship.colorIfPlayerAliveOrRed(GREEN), player_ship.colorIfPlayerAliveOrRed(GREEN), system_evolution.allBodyStates, Set(earth.index, sun.index))
+      earth.orbitRender =  orbitRender(earth.index, player_ship.colorIfPlayerAliveOrRed(ORANGE), player_ship.colorIfPlayerAliveOrRed(ORANGE), system_evolution.allBodyStates, Set(sun.index))
     } else {
       // в эту секцию мы попадаем, если мы не в режиме маневрирования, не на паузе, и двигатели работают
       val system_state_when_engines_off = getFutureState(player_ship.engines.map(_.stopMomentTacts).max)
-      player_ship.orbitRender = shipOrbitRender(player_ship.index, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_state_when_engines_off)
+      player_ship.orbitRender = orbitRender(player_ship.index, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_state_when_engines_off)
       InterfaceHolder.ship_interfaces.foreach(si => {
         if(!si.isMinimized && !si.monitoring_ship.isCrashed) {
           si.monitoring_ship.orbitRender = {
-            shipOrbitRender(si.monitoring_ship.index, player_ship.colorIfPlayerAliveOrRed(MAGENTA), player_ship.colorIfPlayerAliveOrRed(MAGENTA), system_state_when_engines_off)
+            orbitRender(si.monitoring_ship.index, player_ship.colorIfPlayerAliveOrRed(MAGENTA), player_ship.colorIfPlayerAliveOrRed(MAGENTA), system_state_when_engines_off)
           }
         }
       })
-      moon_orbit_render =  shipOrbitRender(moon.index, player_ship.colorIfPlayerAliveOrRed(GREEN), player_ship.colorIfPlayerAliveOrRed(GREEN), system_state_when_engines_off, Set(earth.index, sun.index))
-      earth_orbit_render =  shipOrbitRender(earth.index, player_ship.colorIfPlayerAliveOrRed(ORANGE), player_ship.colorIfPlayerAliveOrRed(ORANGE), system_state_when_engines_off, Set(sun.index))
+      moon.orbitRender =  orbitRender(moon.index, player_ship.colorIfPlayerAliveOrRed(GREEN), player_ship.colorIfPlayerAliveOrRed(GREEN), system_state_when_engines_off, Set(earth.index, sun.index))
+      earth.orbitRender =  orbitRender(earth.index, player_ship.colorIfPlayerAliveOrRed(ORANGE), player_ship.colorIfPlayerAliveOrRed(ORANGE), system_state_when_engines_off, Set(sun.index))
     }
     _calculate_orbits = false
   }
@@ -1188,105 +1186,87 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         println(spaces.filter(_.bodies.length > 1).map(x => s"${x.bodies.length}").mkString(" : "))*/
 
         drawCircle(sun.coord*scale, sun.radius * scale, WHITE)
-        
-        drawCircle(earth.coord*scale, earth.radius * scale, WHITE)
-        if(InterfaceHolder.namesSwitcher.showNames) {
-          openglLocalTransform {
-            openglMove(earth.coord.toVec * scale)
-            print(earth.name, Vec.zero, color = WHITE, size = (max_font_size / globalScale).toFloat)
-          }
-          val v = (sun.coord - earth.coord).n*earth_sun_eq_gravity_radius
-          openglLocalTransform {
-            openglMove((earth.coord + v).toVec * scale)
-            drawFilledCircle(Vec.zero, earth.radius * scale / 2f / globalScale, DARK_GRAY)
-            print(" L1", Vec.zero, color = DARK_GRAY, size = (max_font_size / globalScale).toFloat)
-          }
-          openglLocalTransform {
-            openglMove((earth.coord - v).toVec * scale)
-            drawFilledCircle(Vec.zero, earth.radius * scale / 2f / globalScale, DARK_GRAY)
-            print(" L2", Vec.zero, color = DARK_GRAY, size = (max_font_size / globalScale).toFloat)
-          }
-        }
-        
-        //drawCircle(earth.coord*scale, equalGravityRadius(earth.currentState, moon.currentState)*scale, color = DARK_GRAY)
-        //drawCircle(earth.coord*scale, equalGravityRadius(earth.currentState, sun.currentState)*scale, color = DARK_GRAY)
-        drawCircle(earth.coord*scale, earth.half_hill_radius*scale, color = DARK_GRAY)
-        drawLine(earth.coord*scale, earth.coord*scale + DVec(0, earth.radius*scale).rotateDeg(earth.currentState.ang), WHITE)
-        drawSunTangents(earth.coord, earth.radius, sun.coord, sun.radius, 500000000)
-        /*openglLocalTransform {
-          openglMove(earth.coord*scale)
-          val current_ang = earth.currentState.ang
-          (0.0 to 359.0 by 600.0/globalScale).init.map(_.toInt).distinct.foreach {
-            case ang =>
+
+        earth.orbitRender.foreach {
+          case BodyOrbitRender(bs_coord, _, bs_ang, _, planet_coord, _, _, _, render) =>
+            drawCircle(bs_coord*scale, earth.radius * scale, WHITE)
+            if(InterfaceHolder.namesSwitcher.showNames) {
               openglLocalTransform {
-                openglRotateDeg(current_ang + ang.toDouble)
-                openglMove(DVec(0, 1) * (earth.radius - 20000000 / globalScale) * scale)
-                print(
-                  s"$ang",
-                  Vec.zero,
-                  color = WHITE,
-                  size = (max_font_size / globalScale).toFloat,
-                  align = "bottom-center"
-                )
+                openglMove(bs_coord.toVec * scale)
+                print(earth.name, Vec.zero, color = WHITE, size = (max_font_size / globalScale).toFloat)
               }
-          }
-        }*/
+              val v = (planet_coord - bs_coord).n*earth_sun_eq_gravity_radius
+              openglLocalTransform {
+                openglMove((bs_coord + v).toVec * scale)
+                drawFilledCircle(Vec.zero, earth.radius * scale / 2f / globalScale, DARK_GRAY)
+                print(" L1", Vec.zero, color = DARK_GRAY, size = (max_font_size / globalScale).toFloat)
+              }
+              openglLocalTransform {
+                openglMove((bs_coord - v).toVec * scale)
+                drawFilledCircle(Vec.zero, earth.radius * scale / 2f / globalScale, DARK_GRAY)
+                print(" L2", Vec.zero, color = DARK_GRAY, size = (max_font_size / globalScale).toFloat)
+              }
+            }
 
-        drawCircle(moon.coord*scale, moon.radius * scale, WHITE)
-        if(InterfaceHolder.namesSwitcher.showNames) {
-          openglLocalTransform {
-            openglMove(moon.coord.toVec * scale)
-            print(moon.name, Vec.zero, color = WHITE, size = (max_font_size / globalScale).toFloat)
-          }
-          val v = (earth.coord - moon.coord).n*moon_earth_eq_gravity_radius
-          openglLocalTransform {
-            openglMove((moon.coord + v).toVec * scale)
-            drawFilledCircle(Vec.zero, earth.radius * scale / 2f / globalScale, DARK_GRAY)
-            print(" L1", Vec.zero, color = DARK_GRAY, size = (max_font_size / globalScale).toFloat)
-          }
-          openglLocalTransform {
-            openglMove((moon.coord - v).toVec * scale)
-            drawFilledCircle(Vec.zero, earth.radius * scale / 2f / globalScale, DARK_GRAY)
-            print(" L2", Vec.zero, color = DARK_GRAY, size = (max_font_size / globalScale).toFloat)
-          }
+            drawCircle(bs_coord*scale, earth.half_hill_radius*scale, color = DARK_GRAY)
+            drawLine(bs_coord*scale, bs_coord*scale + DVec(0, earth.radius*scale).rotateDeg(bs_ang), WHITE)
+            drawSunTangents(bs_coord, earth.radius, planet_coord, sun.radius, 500000000)
+            render()
         }
-        //drawCircle(moon.coord*scale, equalGravityRadius(moon.currentState, earth.currentState)*scale, color = DARK_GRAY)
-        drawCircle(moon.coord*scale, moon.half_hill_radius*scale, color = DARK_GRAY)
-        //drawCircle(moon.coord*scale, soi(moon.mass, earth.coord.dist(moon.coord), earth.mass)*scale, color = DARK_GRAY)
-        drawLine(moon.coord*scale, moon.coord * scale + DVec(0, moon.radius * scale).rotateDeg(moon.currentState.ang), WHITE)
-        drawSunTangents(moon.coord, moon.radius, sun.coord, sun.radius, 40000000)
-        moon_orbit_render.foreach(_.render())
 
-        earth_orbit_render.foreach(_.render())
-
-        drawFilledCircle(player_ship.coord * scale, earth.radius * scale / 2f / globalScale, WHITE)
-        if(InterfaceHolder.namesSwitcher.showNames) {
-          openglLocalTransform {
-            openglMove(player_ship.coord.toVec * scale)
-            print(player_ship.name, Vec.zero, color = WHITE, size = (max_font_size / globalScale).toFloat)
-          }
+        moon.orbitRender.foreach {
+          case BodyOrbitRender(bs_coord, _, bs_ang, _, planet_coord, _, _, _, render) =>
+            drawCircle(bs_coord*scale, moon.radius * scale, WHITE)
+            if(InterfaceHolder.namesSwitcher.showNames) {
+              openglLocalTransform {
+                openglMove(bs_coord.toVec * scale)
+                print(moon.name, Vec.zero, color = WHITE, size = (max_font_size / globalScale).toFloat)
+              }
+              val v = (planet_coord - bs_coord).n*moon_earth_eq_gravity_radius
+              openglLocalTransform {
+                openglMove((bs_coord + v).toVec * scale)
+                drawFilledCircle(Vec.zero, earth.radius * scale / 2f / globalScale, DARK_GRAY)
+                print(" L1", Vec.zero, color = DARK_GRAY, size = (max_font_size / globalScale).toFloat)
+              }
+              openglLocalTransform {
+                openglMove((bs_coord - v).toVec * scale)
+                drawFilledCircle(Vec.zero, earth.radius * scale / 2f / globalScale, DARK_GRAY)
+                print(" L2", Vec.zero, color = DARK_GRAY, size = (max_font_size / globalScale).toFloat)
+              }
+            }
+            //drawCircle(moon.coord*scale, equalGravityRadius(moon.currentState, earth.currentState)*scale, color = DARK_GRAY)
+            drawCircle(bs_coord*scale, moon.half_hill_radius*scale, color = DARK_GRAY)
+            //drawCircle(moon.coord*scale, soi(moon.mass, earth.coord.dist(moon.coord), earth.mass)*scale, color = DARK_GRAY)
+            drawLine(bs_coord*scale, bs_coord * scale + DVec(0, moon.radius * scale).rotateDeg(bs_ang), WHITE)
+            drawSunTangents(bs_coord, moon.radius, sun.coord, sun.radius, 40000000)
+            render()
         }
-        player_ship.orbitRender.foreach(_.render())
+
+        player_ship.orbitRender.foreach {
+          case BodyOrbitRender(bs_coord, _, bs_ang, _, planet_coord, _, _, _, render) =>
+            drawFilledCircle(bs_coord * scale, earth.radius * scale / 2f / globalScale, WHITE)
+            if (InterfaceHolder.namesSwitcher.showNames) {
+              openglLocalTransform {
+                openglMove(bs_coord.toVec * scale)
+                print(player_ship.name, Vec.zero, color = WHITE, size = (max_font_size / globalScale).toFloat)
+              }
+            }
+            render()
+        }
 
         InterfaceHolder.ship_interfaces.foreach(si => {
           if(!si.isMinimized) {
-            if(!si.monitoring_ship.isCrashed) {
-              drawFilledCircle(si.monitoring_ship.coord * scale, earth.radius * scale / 2f / globalScale, player_ship.colorIfPlayerAliveOrRed(MAGENTA))
-              if (InterfaceHolder.namesSwitcher.showNames) {
-                openglLocalTransform {
-                  openglMove(si.monitoring_ship.coord.toVec * scale)
-                  print(si.monitoring_ship.name, Vec.zero, color = player_ship.colorIfPlayerAliveOrRed(MAGENTA), size = (max_font_size / globalScale).toFloat)
+            si.monitoring_ship.orbitRender.foreach {
+              case BodyOrbitRender(bs_coord, _, bs_ang, _, planet_coord, _, _, _, render) =>
+                val color = if(player_ship.isDead || si.monitoring_ship.isDead) RED else MAGENTA
+                drawFilledCircle(bs_coord * scale, earth.radius * scale / 2f / globalScale, color)
+                if (InterfaceHolder.namesSwitcher.showNames) {
+                  openglLocalTransform {
+                    openglMove(bs_coord.toVec * scale)
+                    print(si.monitoring_ship.name, Vec.zero, color = color, size = (max_font_size / globalScale).toFloat)
+                  }
                 }
-              }
-              si.monitoring_ship.orbitRender.foreach(x => x.render())
-            } else {
-              drawFilledCircle(si.monitoring_ship.coord * scale, earth.radius * scale / 2f / globalScale, RED)
-              if (InterfaceHolder.namesSwitcher.showNames) {
-                openglLocalTransform {
-                  openglMove(si.monitoring_ship.coord.toVec * scale)
-                  print(si.monitoring_ship.name, Vec.zero, color = RED, size = (max_font_size / globalScale).toFloat)
-                }
-              }
+                if(!si.monitoring_ship.isCrashed) render()
             }
           }
         })
