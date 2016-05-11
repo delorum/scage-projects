@@ -1182,9 +1182,9 @@ package object orbitalkiller {
                       ship_radius:Double):String = {
       val ccw = (ship_coord - f).perpendicular*(ship_velocity - planet_velocity) >= 0   // летим против часовой?
       val dir = if(ccw) {
-        "\u21b6"  // против часовой стрелки
+        OrbitalKiller.ccw_symbol  // против часовой стрелки
       } else {
-        "\u21b7"  // по часовой стрелке
+        OrbitalKiller.cw_symbol  // по часовой стрелке
       }
       if(r_p - planet_radius < 0) {
         val y_axis = (ship_coord - f).n
@@ -1476,7 +1476,7 @@ package object orbitalkiller {
                       ship_velocity:DVec,
                       ship_radius:Double):String = {
       val ccw = (ship_coord - f).perpendicular*(ship_velocity - planet_velocity) >= 0   // летим против часовой?
-      val dir = if(ccw) "\u21b6" else "\u21b7"
+      val dir = if(ccw) OrbitalKiller.ccw_symbol else OrbitalKiller.cw_symbol
       val r_p_approach = (ship_coord - f)*(ship_velocity - planet_velocity) >= 0
       val r_p_approach_str = if(r_p_approach) "удаляемся" else "приближаемся"
       if(r_p - planet_radius < 0 && !r_p_approach) {

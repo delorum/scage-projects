@@ -349,7 +349,7 @@ class Ship4(index:Int,
           }
         case NearestShipVelocity => // уравнять скорость с ближайшим кораблем, который находится на расстоянии не далее 500 км
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, correction_check_period)) {
-            shipCloser500Km match {
+            shipCloser500KmNonMinimized match {
               case Some(s) =>
                 if (math.abs(angularVelocity) < angular_velocity_error) {
                   val ss = s.linearVelocity
@@ -367,7 +367,7 @@ class Ship4(index:Int,
           }
         case NearestShipAligned => // ориентация на ближайший корабль
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, correction_check_period)) {
-            shipCloser500Km match {
+            shipCloser500KmNonMinimized match {
               case Some(os) =>
                 val angle = DVec(0, 1).deg360(os.coord - coord)
                 if (angleMinDiff(rotation, angle) < angle_error) {
@@ -396,7 +396,7 @@ class Ship4(index:Int,
             if(isDocked) {
               flightMode = FreeFlightMode
             } else {
-              shipCloser500Km match {
+              shipCloser500KmNonMinimized match {
                 case Some(os) =>
                   InterfaceHolder.dockingSwitcher.setDockingAuto()
                   val ship_docking_point = docking_points.head.curP1 + 0.5*(docking_points.head.curP2 - docking_points.head.curP1)
@@ -503,18 +503,15 @@ class Ship4(index:Int,
   var rockets_enabled = false
   private var left_rocket:Option[Rocket1] = None
   private var right_rocket:Option[Rocket1] = None
-  private val rocket_symbol = '\u2191'
+
   def rocketsStateStr:String = {
     def _lockOn(rocket_pos:DVec):Boolean = {
-      otherShipsNear.headOption.filter(_.coord.dist(coord) < 11000) match {
-        case Some(os) =>
-          println(s"${os.name}")
-          val our_line = (coord + rocket_pos.rotateDeg(rotation), coord + (rocket_pos + DVec(0, 10000)).rotateDeg(rotation))
-          os.draw_points.sliding(2).exists {
-            case List(p1, p2) => areLinesIntersect(os.coord + p1.rotateDeg(os.rotation), os.coord + p2.rotateDeg(os.rotation), our_line._1, our_line._2)
-          }
-        case None => false
-      }
+      shipsCloserXKm(11).exists(os => {
+        val our_line = (coord + rocket_pos.rotateDeg(rotation), coord + (rocket_pos + DVec(0, 10000)).rotateDeg(rotation))
+        os.draw_points.sliding(2).exists {
+          case List(p1, p2) => areLinesIntersect(os.coord + p1.rotateDeg(os.rotation), os.coord + p2.rotateDeg(os.rotation), our_line._1, our_line._2)
+        }
+      })
     }
     val left_rocket_status = left_rocket match {
       case Some(r) =>

@@ -506,29 +506,42 @@ abstract class PolygonShip(
   }
 
   /**
-   * Все другие корабли, отсортированные по расстоянию по убыванию (первый - ближайший)
+   * Все другие корабли, отсортированные по расстоянию по убыванию (первый - ближайший).
    * @return
    */
   def otherShipsNear:Seq[PolygonShip] = ShipsHolder.ships.filter(s => s.index != index && s.isAlive).sortBy(s => coord.dist2(s.coord))
 
   /**
-   * Корабль ближе x км от нас. Если таких несколько, то ближайший.
+   * Корабли ближе x км от нас. Метод используется для вычисления автоматического наведения ракет.
+   * @param x
+   * @return
+   */
+  def shipsCloserXKm(x:Long):Seq[PolygonShip] = ShipsHolder.ships.filter(_.coord.dist2(coord) < x*1000l*x*1000l).sortBy(s => coord.dist2(s.coord))
+
+  /**
+   * Корабль ближе x км от нас. Если таких несколько, то ближайший
    * @param x - дистанция в километрах
    * @return
    */
-  def shipCloserXKm(x:Long):Option[PolygonShip] = ShipsHolder.ships.filter(_.coord.dist2(coord) < x*1000l*x*1000l).sortBy(s => coord.dist2(s.coord)).headOption
+  def shipCloserXKm(x:Long):Option[PolygonShip] = shipsCloserXKm(11).headOption
 
   /**
    * Корабль ближе 1 км от нас. Если таких несколько, то ближайший.
+   * Метод используется для отображения элементов стыковки.
    * @return
    */
   def shipCloser1Km:Option[PolygonShip] = shipCloserXKm(1)
 
   /**
-   * Корабль ближе 500 км от нас. Если таких несколько, то ближайший.
-    * @return
+   * Корабль ближе 500 км от нас, интерфейс которого не свернут. Если таких несколько, то ближайший.
+   * Метод используется в алогритмах автоматического уравнивания скорости, поддержания направления, стыковки
+   * @return
    */
-  def shipCloser500Km:Option[PolygonShip] = shipCloserXKm(500)
+  def shipCloser500KmNonMinimized:Option[PolygonShip] = {
+    ShipsHolder.ships.filter(s => s.coord.dist2(coord) < 500*1000l*500*1000l && InterfaceHolder.ship_interfaces.exists(i => {
+      i.monitoring_ship.index == s.index && !i.isMinimized
+    })).sortBy(s => coord.dist2(s.coord)).headOption
+  }
 
   /**
    * Находимся ли на стыковочной прямой с ближайшим кораблем

@@ -577,8 +577,12 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }
 
+  val ccw_symbol    = '\u21b6'
+  val cw_symbol     = '\u21b7'
+  val rocket_symbol = '\u2191'
+
   preinit {
-    addGlyphs("\u21b6\u21b7\u2191")
+    addGlyphs(s"$ccw_symbol$cw_symbol$rocket_symbol")
   }
 
   keyIgnorePause(KEY_RETURN, onKeyDown = {if(player_ship.isAlive) player_ship.launchRocket()})
@@ -1070,35 +1074,32 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   private def updateOrbits() {
     //println("updateOrbits")
-    if(player_ship.flightMode != Maneuvering) {
-      player_ship.orbitRender = if(player_ship.engines.exists(_.active)) {
-        if(!onPause) {
-          shipOrbitRender(player_ship.index, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_evolution.allBodyStates)
-        } else {
-          // получаем состояние системы, когда двигатели отработали
-          val system_state_when_engines_off = getFutureState(player_ship.engines.map(_.stopMomentTacts).max)
-          shipOrbitRender(player_ship.index, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_state_when_engines_off)
+    if(player_ship.flightMode == Maneuvering || !onPause || !player_ship.engines.exists(_.active)) {
+      // если в режиме маневрирования, или не в режиме маневрирования, но не на паузе, или на паузе, но двигатели не работают - рисуем текущее состояние
+      player_ship.orbitRender = shipOrbitRender(player_ship.index, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_evolution.allBodyStates)
+      InterfaceHolder.ship_interfaces.foreach(si => {
+        if(!si.isMinimized && !si.monitoring_ship.isCrashed) {
+          si.monitoring_ship.orbitRender = {
+            shipOrbitRender(si.monitoring_ship.index, player_ship.colorIfPlayerAliveOrRed(MAGENTA), player_ship.colorIfPlayerAliveOrRed(MAGENTA), system_evolution.allBodyStates)
+          }
         }
-      } else {
-        // двигатели корабля не работают - можем работать с текущим состоянием
-        shipOrbitRender(player_ship.index, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_evolution.allBodyStates)
-      }
+      })
+      moon_orbit_render =  shipOrbitRender(moon.index, player_ship.colorIfPlayerAliveOrRed(GREEN), player_ship.colorIfPlayerAliveOrRed(GREEN), system_evolution.allBodyStates, Set(earth.index, sun.index))
+      earth_orbit_render =  shipOrbitRender(earth.index, player_ship.colorIfPlayerAliveOrRed(ORANGE), player_ship.colorIfPlayerAliveOrRed(ORANGE), system_evolution.allBodyStates, Set(sun.index))
     } else {
-      player_ship.orbitRender = if(player_ship.engines.exists(_.active)) {
-        shipOrbitRender(player_ship.index, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_evolution.allBodyStates)
-      } else {
-        shipOrbitRender(player_ship.index, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_evolution.allBodyStates)
-      }
-    }
-    InterfaceHolder.ship_interfaces.foreach(si => {
-      if(!si.isMinimized && !si.monitoring_ship.isCrashed) {
-        si.monitoring_ship.orbitRender = {
-          shipOrbitRender(si.monitoring_ship.index, player_ship.colorIfPlayerAliveOrRed(MAGENTA), player_ship.colorIfPlayerAliveOrRed(MAGENTA), system_evolution.allBodyStates)
+      // в эту секцию мы попадаем, если мы не в режиме маневрирования, не на паузе, и двигатели работают
+      val system_state_when_engines_off = getFutureState(player_ship.engines.map(_.stopMomentTacts).max)
+      player_ship.orbitRender = shipOrbitRender(player_ship.index, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_state_when_engines_off)
+      InterfaceHolder.ship_interfaces.foreach(si => {
+        if(!si.isMinimized && !si.monitoring_ship.isCrashed) {
+          si.monitoring_ship.orbitRender = {
+            shipOrbitRender(si.monitoring_ship.index, player_ship.colorIfPlayerAliveOrRed(MAGENTA), player_ship.colorIfPlayerAliveOrRed(MAGENTA), system_state_when_engines_off)
+          }
         }
-      }
-    })
-    moon_orbit_render =  shipOrbitRender(moon.index, player_ship.colorIfPlayerAliveOrRed(GREEN), player_ship.colorIfPlayerAliveOrRed(GREEN), system_evolution.allBodyStates, Set(earth.index, sun.index))
-    earth_orbit_render =  shipOrbitRender(earth.index, player_ship.colorIfPlayerAliveOrRed(ORANGE), player_ship.colorIfPlayerAliveOrRed(ORANGE), system_evolution.allBodyStates, Set(sun.index))
+      })
+      moon_orbit_render =  shipOrbitRender(moon.index, player_ship.colorIfPlayerAliveOrRed(GREEN), player_ship.colorIfPlayerAliveOrRed(GREEN), system_state_when_engines_off, Set(earth.index, sun.index))
+      earth_orbit_render =  shipOrbitRender(earth.index, player_ship.colorIfPlayerAliveOrRed(ORANGE), player_ship.colorIfPlayerAliveOrRed(ORANGE), system_state_when_engines_off, Set(sun.index))
+    }
     _calculate_orbits = false
   }
   updateOrbits()

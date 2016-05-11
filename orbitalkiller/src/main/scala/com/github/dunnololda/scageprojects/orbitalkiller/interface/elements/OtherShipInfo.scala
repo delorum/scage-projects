@@ -15,7 +15,7 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
       if (player_ship.isDockedToShip(monitoring_ship)) {
         strings(0) = s"${monitoring_ship.name}: docked"
       } else {
-        val (_, need_orbit_period_str) = (for {
+        val /*(_, */need_orbit_period_str/*)*/ = (for {
           (our_orbit_planet, our_orbit_planet_state) <- insideSphereOfInfluenceOfCelestialBody(player_ship.coord, player_ship.mass, currentPlanetStates)
           (os_orbit_planet, os_orbit_planet_state) <- insideSphereOfInfluenceOfCelestialBody(monitoring_ship.coord, monitoring_ship.mass, currentPlanetStates)
           if our_orbit_planet.index == os_orbit_planet.index
@@ -46,14 +46,18 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
                   val angle = DVec(0, 1).deg360(docking_dir) - player_ship.rotation
                   val x = -(b2 * (A - C) - b1 * (B - D)) / (a1 * b2 - a2 * b1)
                   val y = (a2 * (A - C) - a1 * (B - D)) / (a2 * b1 - a1 * b2)
-                  ("N/A", f"docking data: a=$angle%.2f x=$x%.2f y=$y%.2f")
+                  /*("N/A", */f"docking data: a=$angle%.2f x=$x%.2f y=$y%.2f"/*)*/
                 case None =>
-                  ("N/A", "N/A")
+                  /*("N/A", */"N/A"/*)*/
               }
             } else {
+              val os_travel_time_to_our_point1 = os_orbit_ellipse.travelTimeOnOrbitMsec(monitoring_ship.coord, os_orbit_ellipse.orbitalPointInPoint(player_ship.coord), ccw = true)
+              val os_travel_time_to_our_point2 = (os_orbit_period*1000 - os_travel_time_to_our_point1).toLong
+              val need_orbit_period = {
+                if(os_travel_time_to_our_point1 > os_travel_time_to_our_point2) os_travel_time_to_our_point1
+                else os_travel_time_to_our_point1*2 + os_travel_time_to_our_point2
+              }
               val deg_diff = (monitoring_ship.coord - our_orbit_planet_state.coord).deg360(player_ship.coord - our_orbit_planet_state.coord)
-              val our_r_p = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(0)
-              val our_r_a = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(180)
               val t1_sec = deg_diff / 360.0 * os_orbit_period
               val t2_sec = t1_sec + os_orbit_period
               // здесь два варианта орбитальных периодов, один больше другой меньше. Оба могут соответствовать орбитам с нормальной высотой,
@@ -66,12 +70,14 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
               }
               val r_p1 = _calculateRp(t1_sec) - our_orbit_planet.radius
               val r_p2 = _calculateRp(t2_sec) - our_orbit_planet.radius
+              val our_r_p = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(0)     // координаты апогея нашей орбиты
+              val our_r_a = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(180)   // координаты перигея нашей орбиты
               val sep_in_r_p = os_orbit_ellipse.orbitalPointInPoint(our_r_p).dist(our_r_p)
               val sep_in_r_a = os_orbit_ellipse.orbitalPointInPoint(our_r_a).dist(our_r_a)
               val sep_str = if (sep_in_r_p <= sep_in_r_a) {
-                s"min sep = in r_p, ${mOrKmOrMKm(sep_in_r_p)}"
+                s"${timeStr(need_orbit_period)}; min sep = in r_p, ${mOrKmOrMKm(sep_in_r_p)}"
               } else {
-                s"min sep = in r_a, ${mOrKmOrMKm(sep_in_r_a)}"
+                s"${timeStr(need_orbit_period)}; min sep = in r_a, ${mOrKmOrMKm(sep_in_r_a)}"
               }
               val cur_sep = os_orbit_ellipse.orbitalPointInPoint(player_ship.coord).dist(player_ship.coord)
               val need_orbit_period_str = {
@@ -93,9 +99,9 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
                   }
                 }
               }
-              (f"$deg_diff%.2f град.", s"rendezvous data: $need_orbit_period_str")
+              /*(f"$deg_diff%.2f град.", */s"rendezvous data: $need_orbit_period_str"/*)*/
             }
-          }).getOrElse("N/A", "N/A")
+          }).getOrElse(/*"N/A", */"N/A")
         val dist = mOrKmOrMKm(player_ship.coord.dist(monitoring_ship.coord))
         val vel = msecOrKmsec((player_ship.linearVelocity - monitoring_ship.linearVelocity) * (player_ship.coord - monitoring_ship.coord).n)
         strings(0) = s"${monitoring_ship.name}: dist=$dist, vel=$vel, $need_orbit_period_str"
