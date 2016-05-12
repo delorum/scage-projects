@@ -433,8 +433,13 @@ class Ship4(index:Int,
                                 // движемся в сторону линии стыковки и в сторону точки стыковки (продолжаем стыковаться)
                                 preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y) - vv1 * decideSpeedValue(x))
                               } else { // если мы ниже точки стыковки и далеко от линии стыковки
-                                // летим пока не окажемся на 20 метров ниже линии стыковки и одновременно движемся в сторону линии стыковки
-                                preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y - (-20)) - vv1 * decideSpeedValue(x))
+                                if(y < -20) { // если мы больше, чем на 20 метров ниже точки стыковки
+                                  // летим пока не окажемся на 20 метров ниже линии стыковки и одновременно движемся в сторону линии стыковки
+                                  preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y - (-20)) - vv1 * decideSpeedValue(x))
+                                } else { // если мы ниже линии стыковки, но ближе 20 метров
+                                  // движемся в сторону линии стыковки, по вертикали свою позицию не меняем
+                                  preserveVelocity(os.linearVelocity - vv1 * decideSpeedValue(x))
+                                }
                               }
                             }
                           } else {

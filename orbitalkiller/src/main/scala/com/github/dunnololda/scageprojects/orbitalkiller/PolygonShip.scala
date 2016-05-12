@@ -30,10 +30,21 @@ class DockingPoints(val p1:DVec, val p2:DVec, ship:PolygonShip, val disabled_eng
   def curP1vel = ship.currentState.vel + (ship.currentState.ang_vel*p1.rotateDeg(90))
   def curP2 = ship.currentState.coord + p2.rotateDeg(ship.currentState.ang)
   def curP2vel = ship.currentState.vel + (ship.currentState.ang_vel*p2.rotateDeg(90))
+
+  /**
+   * Стыковочные точки находятся на достаточном расстоянии друг от друга, чтобы состыковаться
+   * @param other_ship_docking_points - стыковочные точки другого корабля
+   * @return
+   */
   def pointsMatch(other_ship_docking_points:DockingPoints):Boolean = {
     curP1.dist(other_ship_docking_points.curP1) < dock_dist && curP2.dist(other_ship_docking_points.curP2) < dock_dist
   }
-  
+
+  /**
+   * Наши стыковочные точки лежат на линиях стыковки. Если дальше двигаться в сторону точек стыковки другого корабля, то состыкуемся
+   * @param dp - стыковочные точки другого корабля
+   * @return
+   */
   def pointsOnTheRightWay(dp:DockingPoints):(Boolean, Boolean) = {
     val vv1 = (dp.curP1-dp.curP2).n*dock_dist
     val vv2 = vv1.perpendicular
@@ -509,14 +520,14 @@ abstract class PolygonShip(
    * Все другие корабли, отсортированные по расстоянию по убыванию (первый - ближайший).
    * @return
    */
-  def otherShipsNear:Seq[PolygonShip] = ShipsHolder.ships.filter(s => s.index != index && s.isAlive).sortBy(s => coord.dist2(s.coord))
+  def shipsNear:Seq[PolygonShip] = ShipsHolder.ships.filter(s => s.index != index && s.isAlive).sortBy(s => coord.dist2(s.coord))
 
   /**
    * Корабли ближе x км от нас. Метод используется для вычисления автоматического наведения ракет.
-   * @param x
+   * @param x - расстояние в километрах
    * @return
    */
-  def shipsCloserXKm(x:Long):Seq[PolygonShip] = ShipsHolder.ships.filter(_.coord.dist2(coord) < x*1000l*x*1000l).sortBy(s => coord.dist2(s.coord))
+  def shipsCloserXKm(x:Long):Seq[PolygonShip] = ShipsHolder.ships.filter(s => s.index != index && s.isAlive && s.coord.dist2(coord) < x*1000l*x*1000l).sortBy(s => coord.dist2(s.coord))
 
   /**
    * Корабль ближе x км от нас. Если таких несколько, то ближайший
@@ -527,7 +538,7 @@ abstract class PolygonShip(
 
   /**
    * Корабль ближе 1 км от нас. Если таких несколько, то ближайший.
-   * Метод используется для отображения элементов стыковки.
+   * Метод используется для реализации автоматической стыковки.
    * @return
    */
   def shipCloser1Km:Option[PolygonShip] = shipCloserXKm(1)
@@ -538,13 +549,13 @@ abstract class PolygonShip(
    * @return
    */
   def shipCloser500KmNonMinimized:Option[PolygonShip] = {
-    ShipsHolder.ships.filter(s => s.coord.dist2(coord) < 500*1000l*500*1000l && InterfaceHolder.ship_interfaces.exists(i => {
+    ShipsHolder.ships.filter(s => s.index != index && s.isAlive && s.coord.dist2(coord) < 500*1000l*500*1000l && InterfaceHolder.ship_interfaces.exists(i => {
       i.monitoring_ship.index == s.index && !i.isMinimized
     })).sortBy(s => coord.dist2(s.coord)).headOption
   }
 
   /**
-   * Находимся ли на стыковочной прямой с ближайшим кораблем
+   * Можем ли состыковаться с ближайшим кораблем
    * @return
    */
   def canDockWithNearestShip:Boolean = {
