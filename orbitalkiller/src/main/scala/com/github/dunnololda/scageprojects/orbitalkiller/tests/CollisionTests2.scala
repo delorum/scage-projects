@@ -15,7 +15,10 @@ object BodyStatesHolder {
   def currentBodyStates = current_body_states.values.toList*/
   def currentBodyState(index: Int): Option[BodyState] = system_evolution.bodyState(index).map(_.toImmutableBodyState)
 
-  def currentBodyStates = system_evolution.allBodyStatesimport com.github.dunnololda.scageprojects.orbitalkiller.tests.BodyStatesHolder._er._
+  def currentBodyStates = system_evolution.allBodyStates
+}
+
+import com.github.dunnololda.scageprojects.orbitalkiller.tests.BodyStatesHolder._
 
 object CollisionTests2 extends ScageScreenAppD("Collision Tests 2", 640, 480) {
   def futureSystemEvolutionFrom(time: Long, body_states: List[BodyState]) = systemEvolutionFrom(

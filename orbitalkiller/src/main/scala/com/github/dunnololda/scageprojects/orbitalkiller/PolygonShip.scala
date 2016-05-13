@@ -767,7 +767,7 @@ abstract class PolygonShip(
               case Some(planet_obstacle) =>
                 val dir_deg = 140.0 + math.random * 80.0
                 val obstacle_vel = obstacle.vel + (coord - obstacle.coord).p * planet_obstacle.groundSpeedMsec
-                () => obstacle_vel + (linearVelocity - obstacle_vel).n.rotateDeg(dir_deg) * 30.0
+                () => obstacle_vel + (planet_obstacle.coord - coord).n.rotateDeg(dir_deg) * 50.0
               case None =>
                 val dir_deg = math.random * 360
                 () => linearVelocity + DVec(0, 1).rotateDeg(dir_deg) * 30.0

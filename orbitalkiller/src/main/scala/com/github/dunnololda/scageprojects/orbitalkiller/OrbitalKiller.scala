@@ -205,17 +205,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   val moon_earth_eq_gravity_radius = equalGravityRadius(moon.currentState, earth.currentState)
 
   // стоим на поверхности Земли
-  //val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
-  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
+  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   // суборбитальная траектория
   //val ship_start_position = earth.coord + DVec(500, earth.radius + 100000)
   //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
 
   // на круговой орбите в 200 км от поверхности Земли
-  val ship_start_position = earth.coord + DVec(-100, earth.radius + 199000)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
-  /** 1.15 */
+  //val ship_start_position = earth.coord + DVec(-100, earth.radius + 199000)
+  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
 
   // стоим на поверхности Луны
   //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
@@ -799,7 +798,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   keyIgnorePause(KEY_P, onKeyDown = switchPause())
 
   keyIgnorePause(KEY_F1, onKeyDown = {
-    pause();
+    pause()
     holdCounters {
       HelpScreen.run()
     }
@@ -948,6 +947,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
               bs_mass,
               bs_coord - planet_state_coord,
               bs_vel - planet_state_vel, G)
+            val w = earth.radius * scale / 2f / globalScale
             orbit match {
               case h: HyperbolaOrbit =>
                 val yy = (-math.acos(-1.0 / h.e) + 0.1 to math.acos(-1.0 / h.e) - 0.1 by 0.1).map(true_anomaly => {
@@ -957,11 +957,24 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                 if (body_index != player_ship.index) {
                   Some(BodyOrbitRender(bs_coord, bs_vel, bs.ang, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, h, () => {
                     drawSlidingLines(yy, hyperbola_color)
+                    if(InterfaceHolder.namesSwitcher.showNames) {
+                      openglLocalTransform {
+                        openglMove(h.orbitalPointByTrueAnomalyDeg(0) * scale)
+                        drawFilledRectCentered(DVec.zero, w, w, ellipse_color)
+                        print("P", Vec.zero, color = ellipse_color, size = (max_font_size / globalScale).toFloat)
+                      }
+                    }
                   }))
                 } else {
                   Some(BodyOrbitRender(bs_coord, bs_vel, bs.ang, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, h, () => {
                     drawSlidingLines(yy, hyperbola_color)
-
+                    if(InterfaceHolder.namesSwitcher.showNames) {
+                      openglLocalTransform {
+                        openglMove(h.orbitalPointByTrueAnomalyDeg(0) * scale)
+                        drawFilledRectCentered(DVec.zero, w, w, ellipse_color)
+                        print("P", Vec.zero, color = ellipse_color, size = (max_font_size / globalScale).toFloat)
+                      }
+                    }
                     val mouse_point = absCoord(mouseCoord) / scale
                     drawLine(h.f * scale, mouse_point * scale, DARK_GRAY)
 
@@ -1014,7 +1027,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                           InterfaceHolder.ship_interfaces.filter(si => !si.isMinimized && !si.monitoring_ship.isCrashed).flatMap(_.monitoring_ship.orbitRender).foreach(x => {
                             x.ellipseOrbit.foreach(e => {
                               val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
-                              drawCircle(position_after_time * scale, earth.radius * scale / 2f / globalScale, YELLOW)
+                              drawCircle(position_after_time * scale, w, YELLOW)
                             })
                           })
                           moon.orbitRender.foreach(x => {
@@ -1032,7 +1045,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                             if (_stop_after_number_of_tacts > 0) {
                               val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
                               val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
-                              drawCircle(position_when_stop_moment * scale, earth.radius * scale / 2f / globalScale, GREEN)
+                              drawCircle(position_when_stop_moment * scale, w, GREEN)
                             }
                           })
                         })
@@ -1058,6 +1071,18 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                       openglRotateDeg(Vec(-1, 0).signedDeg(e.f2 - e.f))
                       drawEllipse(DVec.zero, e.a * scale, e.b * scale, ellipse_color)
                     }
+                    if(InterfaceHolder.namesSwitcher.showNames) {
+                      openglLocalTransform {
+                        openglMove(e.orbitalPointByTrueAnomalyDeg(0) * scale)
+                        drawFilledRectCentered(DVec.zero, w, w, ellipse_color)
+                        print("P", Vec.zero, color = ellipse_color, size = (max_font_size / globalScale).toFloat)
+                      }
+                      openglLocalTransform {
+                        openglMove(e.orbitalPointByTrueAnomalyDeg(180) * scale)
+                        drawFilledRectCentered(DVec.zero, w, w, ellipse_color)
+                        print("A", Vec.zero, color = ellipse_color, size = (max_font_size / globalScale).toFloat)
+                      }
+                    }
                   }))
                 } else {
                   Some(BodyOrbitRender(bs_coord, bs_vel, bs.ang, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, e, () => {
@@ -1065,6 +1090,18 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                       openglMove(e.center * scale)
                       openglRotateDeg(Vec(-1, 0).signedDeg(e.f2 - e.f))
                       drawEllipse(DVec.zero, e.a * scale, e.b * scale, ellipse_color)
+                    }
+                    if(InterfaceHolder.namesSwitcher.showNames) {
+                      openglLocalTransform {
+                        openglMove(e.orbitalPointByTrueAnomalyDeg(0) * scale)
+                        drawFilledRectCentered(DVec.zero, w, w, ellipse_color)
+                        print("P", Vec.zero, color = ellipse_color, size = (max_font_size / globalScale).toFloat)
+                      }
+                      openglLocalTransform {
+                        openglMove(e.orbitalPointByTrueAnomalyDeg(180) * scale)
+                        drawFilledRectCentered(DVec.zero, w, w, ellipse_color)
+                        print("A", Vec.zero, color = ellipse_color, size = (max_font_size / globalScale).toFloat)
+                      }
                     }
                     val mouse_point = absCoord(mouseCoord) / scale
                     drawLine(e.f * scale, mouse_point * scale, DARK_GRAY)
@@ -1104,11 +1141,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                       InterfaceHolder.ship_interfaces.filter(si => !si.isMinimized && !si.monitoring_ship.isCrashed).flatMap(_.monitoring_ship.orbitRender).foreach(x => {
                         x.ellipseOrbit.foreach(e => {
                           val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
-                          drawCircle(position_after_time * scale, earth.radius * scale / 2f / globalScale, YELLOW)
+                          drawCircle(position_after_time * scale, w, YELLOW)
                           if (_stop_after_number_of_tacts > 0) {
                             val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
                             val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
-                            drawCircle(position_when_stop_moment * scale, earth.radius * scale / 2f / globalScale, GREEN)
+                            drawCircle(position_when_stop_moment * scale, w, GREEN)
                           }
                         })
                       })

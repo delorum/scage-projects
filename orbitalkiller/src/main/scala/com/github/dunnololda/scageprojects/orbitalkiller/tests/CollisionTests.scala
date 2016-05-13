@@ -179,7 +179,11 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480) {
     }
     dynamic_bodies.foreach(b1 => {
 
-      drawRectCentered(b1.currentState.aabb.center.toVec, b1.currentState.aabb.widthimport com.github.dunnololda.scageprojects.orbitalkiller.tests.CollisionTests._
+      drawRectCentered(b1.currentState.aabb.center.toVec, b1.currentState.aabb.width.toFloat, b1.currentState.aabb.height.toFloat, WHITE)
+    })
+  }
+
+  interface {
     print(s"energy = $energy", 20, 20, WHITE)
   }
 }
