@@ -7,7 +7,8 @@ import com.github.dunnololda.scageprojects.orbitalkiller._
 class Satellite1(index: Int,
                  init_coord: DVec,
                  init_velocity: DVec = DVec.dzero,
-                 init_rotation: Double = 0.0) extends PolygonShip(index, "Светлячок", init_coord, init_velocity, init_rotation) {
+                 init_rotation: Double = 0.0,
+                 ship_designer:Boolean = false) extends PolygonShip(index, "Светлячок", init_coord, init_velocity, init_rotation, ship_designer, true) {
   private val _payload: Double = 5 * 1000
   private var _fuel_mass: Double = 5 * 1000
 

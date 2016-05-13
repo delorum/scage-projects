@@ -10,7 +10,7 @@ object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", 
 
   val ship = {
     val constructor = Class.forName(s"com.github.dunnololda.scageprojects.orbitalkiller.ships.$ship_class_name").getConstructors()(0)
-    val args = Array(new java.lang.Integer(1), DVec.zero, DVec.zero, new java.lang.Double(0))
+    val args = Array(new java.lang.Integer(1), DVec.zero, DVec.zero, new java.lang.Double(0), new java.lang.Boolean(true))
     constructor.newInstance(args: _*).asInstanceOf[PolygonShip]
   }
 

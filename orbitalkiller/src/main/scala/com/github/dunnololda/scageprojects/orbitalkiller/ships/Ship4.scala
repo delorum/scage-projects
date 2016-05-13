@@ -10,7 +10,8 @@ import scala.collection.mutable.ArrayBuffer
 class Ship4(index: Int,
             init_coord: DVec,
             init_velocity: DVec = DVec.dzero,
-            init_rotation: Double = 0.0) extends PolygonShip(index, "Снежинка", init_coord, init_velocity, init_rotation) {
+            init_rotation: Double = 0.0,
+            ship_designer:Boolean = false) extends PolygonShip(index, "Снежинка", init_coord, init_velocity, init_rotation, ship_designer, false) {
   private var _payload: Double = 5 * 1000
   private var _fuel_mass: Double = 1000
 
@@ -586,7 +587,8 @@ class Ship4(index: Int,
       val rocket = new Rocket1(ScageId.nextId,
         init_coord = coord + (if (left_position) DVec(-3, 6.5) else DVec(3, 6.5)).rotateDeg(rotation),
         init_velocity = linearVelocity,
-        init_rotation = rotation
+        init_rotation = rotation,
+        ship_designer = false
       )
 
       rocket.two.power = rocket.two.max_power
@@ -653,7 +655,7 @@ class Ship4(index: Int,
               // direction to moon
               drawArrow(Vec.zero, (moon.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.moonRelativeInfo.color))
             }
-            InterfaceHolder.ship_interfaces.foreach(si => {
+            InterfaceHolder.shipInterfaces.foreach(si => {
               if (!si.isMinimized && si.monitoring_ship.isAlive) {
                 drawArrow(Vec.zero, (si.monitoring_ship.coord - coord).n * radius, colorIfPlayerAliveOrRed(si.color))
               }

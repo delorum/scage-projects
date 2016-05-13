@@ -8,7 +8,8 @@ import com.github.dunnololda.scageprojects.orbitalkiller._
 class Rocket1(index: Int,
               init_coord: DVec,
               init_velocity: DVec = DVec.dzero,
-              init_rotation: Double = 0.0) extends PolygonShip(index, "Доброта", init_coord, init_velocity, init_rotation) {
+              init_rotation: Double = 0.0,
+              ship_designer:Boolean) extends PolygonShip(index, "Доброта", init_coord, init_velocity, init_rotation, ship_designer, false) {
   private val _payload: Double = 196
   private var _fuel_mass: Double = 4
 

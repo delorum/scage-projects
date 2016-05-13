@@ -119,7 +119,9 @@ abstract class PolygonShip(
                             val name: String,
                             init_coord: DVec,
                             init_velocity: DVec = DVec.dzero,
-                            init_rotation: Double = 0) {
+                            init_rotation: Double = 0,
+                            ship_designer:Boolean,
+                            create_interface:Boolean) {
   println(s"$name -> $index")
   var selected_engine: Option[Engine] = None
 
@@ -180,11 +182,11 @@ abstract class PolygonShip(
   def dock(): Unit = {
     possibleDockPointsWithNearestShip.headOption.foreach {
       case (dp, os, osdp) =>
-        val joint1 = system_evolution.addJoint(currentState, dp.p1, os.currentState, osdp.p1)
+        /*val joint1 = system_evolution.addJoint(currentState, dp.p1, os.currentState, osdp.p1)
         val joint2 = system_evolution.addJoint(currentState, dp.p2, os.currentState, osdp.p2)
-        val joints = List(joint1, joint2)
-        /*val joint = system_evolution.addJoint(currentState, dp.joint_point, os.currentState, osdp.joint_point)
-        val joints = List(joint)*/
+        val joints = List(joint1, joint2)*/
+        val joint = system_evolution.addJoint(currentState, dp.joint_point, os.currentState, osdp.joint_point)
+        val joints = List(joint)
         setDocked(Some(DockData(os, joints, dp, osdp)))
         os.setDocked(Some(DockData(this, joints, osdp, dp)))
     }
@@ -617,7 +619,7 @@ abstract class PolygonShip(
    * @return
    */
   def shipCloser500KmNonMinimized: Option[PolygonShip] = {
-    ShipsHolder.ships.filter(s => s.index != index && s.isAlive && s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l && InterfaceHolder.ship_interfaces.exists(i => {
+    ShipsHolder.ships.filter(s => s.index != index && s.isAlive && s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l && InterfaceHolder.shipInterfaces.exists(i => {
       i.monitoring_ship.index == s.index && !i.isMinimized
     })).sortBy(s => coord.dist2(s.coord)).headOption
   }
@@ -873,7 +875,12 @@ abstract class PolygonShip(
 
   lazy val currentState: MutableBodyState = initState.toMutableBodyState
 
-  ShipsHolder.addShip(this)
+  if(!ship_designer) {
+    ShipsHolder.addShip(this)
+    if(create_interface) {
+      InterfaceHolder.addShipInterface(this)
+    }
+  }
 
   var orbitRender: Option[BodyOrbitRender] = None
 

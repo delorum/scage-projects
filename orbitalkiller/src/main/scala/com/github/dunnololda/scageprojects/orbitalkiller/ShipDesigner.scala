@@ -1,5 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
+import java.lang
+
 import com.github.dunnololda.cli.AppProperties
 import com.github.dunnololda.scage.ScageLib._
 
@@ -13,7 +15,7 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
   val ship: Option[PolygonShip] = {
     ship_class_name.map(n => {
       val constructor = Class.forName(s"com.github.dunnololda.scageprojects.orbitalkiller.ships.$n").getConstructors()(0)
-      val args = Array(new java.lang.Integer(1), DVec.zero, DVec.zero, new java.lang.Double(0))
+      val args = Array(new java.lang.Integer(1), DVec.zero, DVec.zero, new java.lang.Double(0), new lang.Boolean(true))
       constructor.newInstance(args: _*).asInstanceOf[PolygonShip]
     })
   }
@@ -159,7 +161,7 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
         val mapping = engines_mapping.getOrElse(idx, 0)
         val (index, val_name, _) = engineMappingStr(mapping)
         val position = e.coord - mass_center
-        println( s"""val $val_name = new Engine("$index", position = DVec(${position.x * k}, ${position.y * k}), force_dir = DVec(${e.force_dir.x}, ${e.force_dir.y}), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)""")
+        println( s"""val $val_name = new Engine($index, position = DVec(${position.x * k}, ${position.y * k}), force_dir = DVec(${e.force_dir.x}, ${e.force_dir.y}), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)""")
       }
       println()
       println(engines.zipWithIndex.map { case (e, idx) =>
@@ -177,6 +179,8 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
       println()
       println("def preserveVelocity(vel:DVec) {}")
       println("def preserveAngularVelocity(ang_vel_deg: Double) {}")
+      println()
+      println("override val is_manned: Boolean = false")
       println("====================================")
     }
   })

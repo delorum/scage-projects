@@ -37,9 +37,11 @@ object InterfaceHolder {
   val earthRelativeInfo = new EarthRelativeInfo
   val moonRelativeInfo = new MoonRelativeInfo
 
-  val stationInfo = new OtherShipInfo(OrbitalKiller.station)
-  val sat1Info = new OtherShipInfo(OrbitalKiller.sat1)
-  val ship_interfaces = List(stationInfo, sat1Info)
+  private val ship_interfaces = ArrayBuffer[OtherShipInfo]()
+  def shipInterfaces:Seq[OtherShipInfo] = ship_interfaces
+  def addShipInterface(ship:PolygonShip): Unit = {
+    ship_interfaces += new OtherShipInfo(ship)
+  }
 
   def shipsMinimized = ship_interfaces.filter(_.isMinimized)
 
@@ -138,7 +140,7 @@ object InterfaceHolder {
           case (i, pos) =>
             pos - 20 < x && x < pos + 20 * (i.data.length - 1)
         }.exists(x => {
-          x._1.hideByUser();
+          x._1.hideByUser()
           true
         })
       }
