@@ -8,7 +8,9 @@ import java.util.ArrayList;
  * @author Kevin Glass
  */
 public class BodyList {
-    /** The elements in the list */
+    /**
+     * The elements in the list
+     */
     private ArrayList elements = new ArrayList();
 
     /**
@@ -48,7 +50,7 @@ public class BodyList {
     /**
      * Remove a body from the list
      *
-     * @param body The body to remove from the list 
+     * @param body The body to remove from the list
      */
     public void remove(Body body) {
         elements.remove(body);
@@ -100,8 +102,8 @@ public class BodyList {
      */
     public String toString() {
         String str = "[BodyList ";
-        for (int i=0;i<elements.size();i++) {
-            str += get(i)+",";
+        for (int i = 0; i < elements.size(); i++) {
+            str += get(i) + ",";
         }
         str += "]";
 

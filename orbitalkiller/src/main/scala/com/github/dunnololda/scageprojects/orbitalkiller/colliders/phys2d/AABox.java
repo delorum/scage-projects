@@ -6,19 +6,27 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
  * @author Kevin Glass
  */
 public strictfp class AABox {
-    /** The width of the box */
+    /**
+     * The width of the box
+     */
     private double width;
-    /** The height of the box */
+    /**
+     * The height of the box
+     */
     private double height;
-    /** The x offset to the body's position of the bounds */
+    /**
+     * The x offset to the body's position of the bounds
+     */
     private double offsetx;
-    /** The y offset to the body's position of the bounds */
+    /**
+     * The y offset to the body's position of the bounds
+     */
     private double offsety;
 
     /**
      * Create a new bounding box
      *
-     * @param width The width of the box
+     * @param width  The width of the box
      * @param height The hieght of the box
      */
     public AABox(double width, double height) {
@@ -31,8 +39,8 @@ public strictfp class AABox {
      *
      * @param offsetx The x offset to the body's position
      * @param offsety The y offset to the body's position
-     * @param width The width of the box
-     * @param height The hieght of the box
+     * @param width   The width of the box
+     * @param height  The hieght of the box
      */
     public AABox(double offsetx, double offsety, double width, double height) {
         this.width = width;
@@ -80,9 +88,9 @@ public strictfp class AABox {
     /**
      * Check if this box touches another
      *
-     * @param x The x position of this box
-     * @param y The y position of this box
-     * @param other The other box to check against  
+     * @param x      The x position of this box
+     * @param y      The y position of this box
+     * @param other  The other box to check against
      * @param otherx The other box's x position
      * @param othery The other box's y position
      * @return True if the boxes touches
@@ -101,6 +109,6 @@ public strictfp class AABox {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return "[AABox "+width+"x"+height+"]";
+        return "[AABox " + width + "x" + height + "]";
     }
 }

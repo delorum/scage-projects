@@ -1,8 +1,5 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interaface.elements
 
-import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
-import com.github.dunnololda.scageprojects.orbitalkiller._
-
 /*class SatelliteEscapeVelocityInfo extends InterfaceElement {
   private val strings = Array("")
   override protected def _update(): Unit = {

@@ -4,7 +4,6 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
  * Collide a Convex Polygon with a Box.
  *
  * @author Gideon Smeding
- *
  */
 public class PolygonBoxCollider extends PolygonPolygonCollider {
 

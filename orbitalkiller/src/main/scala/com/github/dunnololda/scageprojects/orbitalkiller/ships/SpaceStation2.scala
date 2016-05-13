@@ -5,14 +5,16 @@ import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller._
 
 class SpaceStation2(
-             index:Int,
-             init_coord:DVec,
-             init_velocity:DVec = DVec.dzero,
-             init_rotation:Double = 0.0
-             ) extends PolygonShip(index, "Станция Огонек", init_coord, init_velocity, init_rotation) {
-  private val _payload:Double = 50*1000
-  private var _fuel_mass:Double = 50*1000
-  def mass:Double = _payload + _fuel_mass
+                     index: Int,
+                     init_coord: DVec,
+                     init_velocity: DVec = DVec.dzero,
+                     init_rotation: Double = 0.0
+                     ) extends PolygonShip(index, "Станция Огонек", init_coord, init_velocity, init_rotation) {
+  private val _payload: Double = 50 * 1000
+  private var _fuel_mass: Double = 50 * 1000
+
+  def mass: Double = _payload + _fuel_mass
+
   override def fuelMass: Double = _fuel_mass
 
   override def fuelMass_=(m: Double): Unit = {
@@ -22,9 +24,9 @@ class SpaceStation2(
   val is_manned = true
   override val pilot_position = DVec(-120, 0)
 
-  lazy val engine_size:Double = 10
+  lazy val engine_size: Double = 10
 
-  lazy val points:List[DVec] = List(
+  lazy val points: List[DVec] = List(
     DVec(-90.0, -10.0),
     DVec(-130.0, -10.0),
     DVec(-130.0, 10.0),
@@ -67,14 +69,14 @@ class SpaceStation2(
   )
 
   val docking_points = List(new DockingPoints(DVec(-130.0, 1.5), DVec(-130.0, -1.5), this, Some(4)),
-                            new DockingPoints(DVec(130.0, -1.5), DVec(130.0, 1.5), this, Some(6)))
+    new DockingPoints(DVec(130.0, -1.5), DVec(130.0, 1.5), this, Some(6)))
 
-  val four  = new Engine(4, Vec(-130.0, 0.0),   Vec(1.0, 0.0),  10, 1, 4, this)
-  val six   = new Engine(6, Vec(130.0, 0.0),    Vec(-1.0, 0.0), 10, 1, 4, this)
-  val eight = new Engine(8, Vec(0.0, 30.0),     Vec(0.0, -1.0), 10, 1, 4, this)
-  val two   = new Engine(2, Vec(0.0, -30.0),    Vec(0.0, 1.0),  10, 1, 4, this)
-  val one   = new Engine(1, Vec(-120.0, -10.0), Vec(0.0, 1.0),  10, 1, 4, this)
-  val three = new Engine(3, Vec(120.0, -10.0),  Vec(0.0, 1.0),  10, 1, 4, this)
+  val four = new Engine(4, Vec(-130.0, 0.0), Vec(1.0, 0.0), 10, 1, 4, this)
+  val six = new Engine(6, Vec(130.0, 0.0), Vec(-1.0, 0.0), 10, 1, 4, this)
+  val eight = new Engine(8, Vec(0.0, 30.0), Vec(0.0, -1.0), 10, 1, 4, this)
+  val two = new Engine(2, Vec(0.0, -30.0), Vec(0.0, 1.0), 10, 1, 4, this)
+  val one = new Engine(1, Vec(-120.0, -10.0), Vec(0.0, 1.0), 10, 1, 4, this)
+  val three = new Engine(3, Vec(120.0, -10.0), Vec(0.0, 1.0), 10, 1, 4, this)
 
   val engines = List(four, six, eight, two, one, three)
 
@@ -87,6 +89,7 @@ class SpaceStation2(
     KEY_NUMPAD3 -> three
   )
 
-  def preserveVelocity(vel:DVec) {}
+  def preserveVelocity(vel: DVec) {}
+
   def preserveAngularVelocity(ang_vel_deg: Double) {}
 }

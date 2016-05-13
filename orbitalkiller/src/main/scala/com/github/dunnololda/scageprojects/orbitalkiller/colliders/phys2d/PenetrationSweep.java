@@ -1,20 +1,20 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
 
 /**
- * This class will, given an intersection pair (an ingoing and outgoing 
+ * This class will, given an intersection pair (an ingoing and outgoing
  * intersection), calculate the penetration depth. This is the minimum distance
  * that A and B need to be separated to get rid of any overlap.
- *
+ * <p/>
  * <p>The penetration depth or separation is calculated by running a sweepline
  * between the two points of an intersection pair. We keep track of the upper
  * bound defined by edges of polygon A and the lower bound defined by B.
  * The maximum distance between these bounds is the value we are searching for.
  * </p>
- *
+ * <p/>
  * <pre>
  *        -<----
  *       |B     |
- *       |      | 
+ *       |      |
  *    out|      |in
  *  -----+--.---+-------
  * |A    |  !  /        |
@@ -27,7 +27,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
  * <p>The sweepline always runs from the ingoing to the outgoing
  * intersection. Usually the normal is perpendicular to the sweepline.</p>
  *
- * <p>We cannot always use the whole intersection area. Take a look at the 
+ * <p>We cannot always use the whole intersection area. Take a look at the
  * following example. If we would allow the vertex marked with to be included
  * in the sweep, the penetration depth would be far too big. Therefore we
  * 'cut off' the intersection area with two lines through the intersection
@@ -38,13 +38,13 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
  * </p>
  *
  * <pre>
- *   +--/---/---------------------*                                                             
- * +-|-/-+ /                    A |                                            
- *  \|/ B|/                       |                                          
- *   x   /                        |                                            
- *  /|\ /|                        |                                            
- *   +-x--------------------------+                                         
- *    / \|  
+ *   +--/---/---------------------*
+ * +-|-/-+ /                    A |
+ *  \|/ B|/                       |
+ *   x   /                        |
+ *  /|\ /|                        |
+ *   +-x--------------------------+
+ *    / \|
  * </p>
  *
  * <h3>Convexity</h3>
@@ -57,32 +57,39 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
  * needed.</p>
  *
  * @author Gideon Smeding
- *
  */
 public class PenetrationSweep {
 
-    /** The collision normal onto which the penetration depth is projected */
+    /**
+     * The collision normal onto which the penetration depth is projected
+     */
     private Vector2f normal;
-    /** The direction of our sweep, pointing from the ingoing intersection to
-     * the outgoing intersection */
+    /**
+     * The direction of our sweep, pointing from the ingoing intersection to
+     * the outgoing intersection
+     */
     private Vector2f sweepDir;
-    /** The projection of the ingoing intersection onto the sweepDir, defines
-     * a border of the intersecting area. */
+    /**
+     * The projection of the ingoing intersection onto the sweepDir, defines
+     * a border of the intersecting area.
+     */
     private double startDist;
-    /** The projection of the outgoing intersection onto the sweepDir, defines
-     * a border of the intersecting area. */
+    /**
+     * The projection of the outgoing intersection onto the sweepDir, defines
+     * a border of the intersecting area.
+     */
     private double endDist;
 
     /**
      * Constructs a Penetration Sweep object, with all its attributes set.
      * This constructor is public only for testing purposes. The static method
      * {@link PenetrationSweep#getPenetrationDepth(Intersection, Intersection, Vector2f, Vector2f[], Vector2f[])}
-     * should be called to get the penetration depth. 
+     * should be called to get the penetration depth.
      *
-     * @param normal The collision normal
-     * @param sweepDir The sweep direction
+     * @param normal            The collision normal
+     * @param sweepDir          The sweep direction
      * @param intersectionStart The start bound of the intersection area
-     * @param intersectionEnd The end bound of the intersection area.
+     * @param intersectionEnd   The end bound of the intersection area.
      */
     public PenetrationSweep(Vector2f normal, Vector2f sweepDir, Vector2f intersectionStart, Vector2f intersectionEnd) {
         super();
@@ -97,8 +104,8 @@ public class PenetrationSweep {
      * Given two intersecting polygons, the intersection points and a collision
      * normal, get the maximum penetration distance along the normal.
      *
-     * @param in The ingoing intersection
-     * @param out The outgoing intersection
+     * @param in     The ingoing intersection
+     * @param out    The outgoing intersection
      * @param normal The collision normal
      * @param vertsA The vertices of polygon A
      * @param vertsB The vertices of polygon B
@@ -119,27 +126,27 @@ public class PenetrationSweep {
 
 
         ContourWalker walkerA = ps.new ContourWalker(vertsA, in.edgeA, out.edgeA, false);
-        ContourWalker walkerB = ps.new ContourWalker(vertsB, (out.edgeB+1) % vertsB.length, (in.edgeB+1) % vertsB.length, true);
+        ContourWalker walkerB = ps.new ContourWalker(vertsB, (out.edgeB + 1) % vertsB.length, (in.edgeB + 1) % vertsB.length, true);
 
         double penetration = 0;
         double lowerBound = in.position.dot(normal);
         double upperBound = lowerBound;
 
-        while ( walkerA.hasNext() || walkerB.hasNext() ) {
+        while (walkerA.hasNext() || walkerB.hasNext()) {
             // if walker a has more and the next vertex comes before B's
             // or if walker a has more but walker b hasn't, go and take a step
-            if ( walkerA.hasNext() &&
+            if (walkerA.hasNext() &&
                     (walkerA.getNextDistance() < walkerB.getNextDistance() ||
-                            !walkerB.hasNext() ) ) {
+                            !walkerB.hasNext())) {
                 walkerA.next();
-                if ( walkerA.getDistance() < ps.startDist || walkerA.getDistance() > ps.endDist )
+                if (walkerA.getDistance() < ps.startDist || walkerA.getDistance() > ps.endDist)
                     continue; // we don't care for vertices outside of the intersecting borders
 
                 upperBound = walkerA.getPenetration();
                 lowerBound = walkerB.getPenetration(walkerA.getDistance());
             } else {
                 walkerB.next();
-                if ( walkerB.getDistance() < ps.startDist || walkerB.getDistance() > ps.endDist )
+                if (walkerB.getDistance() < ps.startDist || walkerB.getDistance() > ps.endDist)
                     continue;
 
                 upperBound = walkerA.getPenetration(walkerB.getDistance());
@@ -153,64 +160,80 @@ public class PenetrationSweep {
     }
 
 
-
-
     /**
      * The contour walker walks over the edges or vertices of a polygon.
-     * The class keeps track of two values: 
+     * The class keeps track of two values:
      * <ul>
-     * <li>The penetration, which is the projection of the current vertex 
+     * <li>The penetration, which is the projection of the current vertex
      * onto the collision normal</li>
      * <li>The distance, which is the projection of the current vertex onto
      * the sweep direction</li>
      * </ul>
-     *
+     * <p/>
      * TODO: yes this use of nested classes is strange and possibly undersirable
      * and no, it is not a misguided attempt to save memory, it simply evolved this way
      */
     public class ContourWalker {
 
-        /** The vertices of the polygon which's contour is being followed */
+        /**
+         * The vertices of the polygon which's contour is being followed
+         */
         private Vector2f[] verts;
-        /** The index of the vertex we are currently at */
+        /**
+         * The index of the vertex we are currently at
+         */
         private int currentVert;
-        /** The index of the vertex where the contour's subsection which we 
-         * walk on starts */
+        /**
+         * The index of the vertex where the contour's subsection which we
+         * walk on starts
+         */
         private int firstVert;
-        /** The index of the vertex where the contour's subsection which we 
-         * walk on ends */
+        /**
+         * The index of the vertex where the contour's subsection which we
+         * walk on ends
+         */
         private int lastVert;
-        /** True if we are walking backwards, from lastVert to firstVert.
-         * False if we are walking forwards, from firstVert to lastVert. */
+        /**
+         * True if we are walking backwards, from lastVert to firstVert.
+         * False if we are walking forwards, from firstVert to lastVert.
+         */
         private boolean isBackwards;
 
-        /** The distance of the current vertex, which is the projection of the current vertex 
-         * onto the collision normal */
+        /**
+         * The distance of the current vertex, which is the projection of the current vertex
+         * onto the collision normal
+         */
         private double distance;
-        /** The distance of the next vertex */
+        /**
+         * The distance of the next vertex
+         */
         private double nextDistance;
-        /** The penetration of the current vertex, which is the projection of the current vertex onto
-         * the sweep direction */
+        /**
+         * The penetration of the current vertex, which is the projection of the current vertex onto
+         * the sweep direction
+         */
         private double penetration;
-        /** The slope of the current edge with wich the penetration increases.
-         * The current edge is defined by the line from the current vertex to the next. */
+        /**
+         * The slope of the current edge with wich the penetration increases.
+         * The current edge is defined by the line from the current vertex to the next.
+         */
         private double penetrationDelta;
 
         /**
          * Construct a contourwalker.
          *
-         * @param verts The vertices of the polygon which's contour is being followed
-         * @param firstVert The index of the vertex where the contour's subsection which we 
-         * walk on starts
-         * @param lastVert The index of the vertex where the contour's subsection which we 
-         * walk on ends
+         * @param verts       The vertices of the polygon which's contour is being followed
+         * @param firstVert   The index of the vertex where the contour's subsection which we
+         *                    walk on starts
+         * @param lastVert    The index of the vertex where the contour's subsection which we
+         *                    walk on ends
          * @param isBackwards True iff we're walking backwards over the contour
          */
         public ContourWalker(Vector2f[] verts, int firstVert, int lastVert, boolean isBackwards) {
-            if ( firstVert < 0 || lastVert < 0 )
+            if (firstVert < 0 || lastVert < 0)
                 throw new IllegalArgumentException("Vertex numbers cannot be negative.");
 
-            if ( firstVert > verts.length || lastVert > verts.length )
+            if (firstVert > verts.length || lastVert > verts.length)
                 throw new IllegalArgumentException("The given vertex array doesn't include the first or the last vertex.");
 
             this.isBackwards = isBackwards;
@@ -226,6 +249,7 @@ public class PenetrationSweep {
 
         /**
          * Get the distance of the current vertex
+         *
          * @return the distance of the current vertex
          */
         public double getDistance() {
@@ -239,9 +263,9 @@ public class PenetrationSweep {
          * @return The next vertex's distance
          */
         public double getNextDistance() {
-            if ( distance < startDist )
+            if (distance < startDist)
                 return Math.min(nextDistance, startDist);
-            if ( distance < endDist )
+            if (distance < endDist)
                 return Math.min(nextDistance, endDist);
 
             return nextDistance;
@@ -249,6 +273,7 @@ public class PenetrationSweep {
 
         /**
          * Get the penetration of the current vertex.
+         *
          * @return the penetration of the current vertex
          */
         public double getPenetration() {
@@ -269,26 +294,26 @@ public class PenetrationSweep {
         /**
          * Let this walker take a step to the next vertex, which is either the
          * next vertex in the contour or a point on the current edge that crosses
-         * one of the sweep area borders. 
+         * one of the sweep area borders.
          */
         public void next() {
-            if ( !hasNext() )
+            if (!hasNext())
                 return;
 
             // if the edge crosses the sweep area border, set our position on the border
-            if ( distance < startDist && nextDistance > startDist ) {
+            if (distance < startDist && nextDistance > startDist) {
                 this.penetration = getPenetration(startDist);
                 this.distance = startDist;
                 return;
             }
 
-            if  ( distance < endDist && nextDistance > endDist ) {
+            if (distance < endDist && nextDistance > endDist) {
                 this.penetration = getPenetration(endDist);
                 this.distance = endDist;
                 return;
             }
 
-            if ( isBackwards ) {
+            if (isBackwards) {
                 currentVert = (currentVert - 1 + verts.length) % verts.length;
             } else {
                 currentVert = (currentVert + 1) % verts.length;
@@ -300,7 +325,7 @@ public class PenetrationSweep {
         }
 
         /**
-         * Take a look at the next vertex and sets nextDistance and 
+         * Take a look at the next vertex and sets nextDistance and
          * penetrationDelta.
          */
         private void calculateNextValues() {
@@ -310,7 +335,7 @@ public class PenetrationSweep {
             nextDistance = verts[nextVert].dot(sweepDir);
 
             penetrationDelta = verts[nextVert].dot(normal) - penetration;
-            if ( nextDistance == distance ) {
+            if (nextDistance == distance) {
                 // the next vertex is straight up, since we're searching
                 // for the maximum anyway, it's safe to set our penetration
                 // to the next vertex's penetration.
@@ -323,16 +348,17 @@ public class PenetrationSweep {
 
         /**
          * Check if there are still vertices to walk to.
+         *
          * @return True iff a call to hasNext would succeed.
          */
         public boolean hasNext() {
             // if the current edge crosses the boundaries defined by
             // start and end edge, we will definately have a next
             // vertex to report.
-            if ( distance < startDist && nextDistance > startDist )
+            if (distance < startDist && nextDistance > startDist)
                 return true;
 
-            if  ( distance < endDist && nextDistance > endDist )
+            if (distance < endDist && nextDistance > endDist)
                 return true;
 
             // first make x the distance from the 'start'

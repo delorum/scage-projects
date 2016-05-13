@@ -45,5 +45,7 @@ object HelpScreen extends ScageScreen("Help Screen") {
   }
 
   key(KEY_ESCAPE, onKeyDown = stop())
-  keyIgnorePause(KEY_Q, onKeyDown = {if(keyPressed(KEY_LCONTROL)) stopApp()})
+  keyIgnorePause(KEY_Q, onKeyDown = {
+    if (keyPressed(KEY_LCONTROL)) stopApp()
+  })
 }

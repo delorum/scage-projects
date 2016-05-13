@@ -6,7 +6,9 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
  * @author Kevin Glass
  */
 public strictfp abstract class AbstractShape implements Shape {
-    /** The circular bounds that fit the shape based on the position of the body */
+    /**
+     * The circular bounds that fit the shape based on the position of the body
+     */
     protected AABox bounds;
 
     /**

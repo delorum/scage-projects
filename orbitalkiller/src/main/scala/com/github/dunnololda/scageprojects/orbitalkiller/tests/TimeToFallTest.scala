@@ -17,15 +17,17 @@ object TimeToFallTest extends ScageScreenAppD("Time to Fall Test", 640, 480) {
     center = DVec(-1457297.4922421277, 0)
   )
 
-  val teta1 = math.acos((o.p/moon_radius - 1)/o.e)/math.Pi*180
-  val teta2 = -math.acos((o.p/moon_radius - 1)/o.e)/math.Pi*180 + 360
+  val teta1 = math.acos((o.p / moon_radius - 1) / o.e) / math.Pi * 180
+  val teta2 = -math.acos((o.p / moon_radius - 1) / o.e) / math.Pi * 180 + 360
 
-  keyIgnorePause(KEY_Q, onKeyDown = {if(keyPressed(KEY_LCONTROL)) stopApp()})
+  keyIgnorePause(KEY_Q, onKeyDown = {
+    if (keyPressed(KEY_LCONTROL)) stopApp()
+  })
 
   center = DVec.zero
 
   render {
-    drawCircle(DVec.zero, moon_radius*scale, WHITE)
+    drawCircle(DVec.zero, moon_radius * scale, WHITE)
 
     openglLocalTransform {
       openglMove(o.center * scale)
@@ -33,12 +35,12 @@ object TimeToFallTest extends ScageScreenAppD("Time to Fall Test", 640, 480) {
       drawEllipse(DVec.zero, o.a * scale, o.b * scale, WHITE)
     }
 
-    drawFilledCircle(DVec(1,0).rotateDeg(teta1)*o.distanceByTrueAnomalyDeg(teta1)*scale, 3, GREEN)
-    drawFilledCircle(DVec(1,0).rotateDeg(teta2)*o.distanceByTrueAnomalyDeg(teta2)*scale, 3, GREEN)
+    drawFilledCircle(DVec(1, 0).rotateDeg(teta1) * o.distanceByTrueAnomalyDeg(teta1) * scale, 3, GREEN)
+    drawFilledCircle(DVec(1, 0).rotateDeg(teta2) * o.distanceByTrueAnomalyDeg(teta2) * scale, 3, GREEN)
 
     val mouse_teta = o.tetaDeg360ByDir(absCoord(mouseCoord))
     drawLine(DVec.zero, absCoord(mouseCoord), WHITE)
-    drawFilledCircle(DVec(1,0).rotateDeg(mouse_teta)*o.distanceByTrueAnomalyDeg(mouse_teta)*scale, 3, WHITE)
+    drawFilledCircle(DVec(1, 0).rotateDeg(mouse_teta) * o.distanceByTrueAnomalyDeg(mouse_teta) * scale, 3, WHITE)
   }
 
   interface {

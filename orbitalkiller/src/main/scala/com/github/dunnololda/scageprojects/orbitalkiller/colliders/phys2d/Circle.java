@@ -7,7 +7,9 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
  * @author Kevin Glass
  */
 public strictfp class Circle extends AbstractShape implements DynamicShape {
-    /** The radius of the circle */
+    /**
+     * The radius of the circle
+     */
     private double radius;
 
     /**
@@ -16,7 +18,7 @@ public strictfp class Circle extends AbstractShape implements DynamicShape {
      * @param radius The radius of the circle
      */
     public Circle(double radius) {
-        super(new AABox(radius*2, radius*2));
+        super(new AABox(radius * 2, radius * 2));
 
         this.radius = radius;
     }
@@ -43,11 +45,11 @@ public strictfp class Circle extends AbstractShape implements DynamicShape {
     /**
      * Check if this circle touches another
      *
-     * @param x The x position of this circle
-     * @param y The y position of this circle
+     * @param x     The x position of this circle
+     * @param y     The y position of this circle
      * @param other The other circle
-     * @param ox The other circle's x position
-     * @param oy The other circle's y position
+     * @param ox    The other circle's x position
+     * @param oy    The other circle's y position
      * @return True if they touch
      */
     public boolean touches(double x, double y, Circle other, double ox, double oy) {
@@ -65,6 +67,6 @@ public strictfp class Circle extends AbstractShape implements DynamicShape {
         double dx = Math.abs(ox - x);
         double dy = Math.abs(oy - y);
 
-        return totalRad2 >= ((dx*dx) + (dy*dy));
+        return totalRad2 >= ((dx * dx) + (dy * dy));
     }
 }

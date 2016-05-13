@@ -3,7 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
 /**
  * An identifier for a pair of edges between two bodies. This identifies which
  * contact points we're using in any given situation
- *
+ * <p/>
  * For polygons defined by counter clockwise lists of vertices, the following
  * will hold (vertsA is the first, and vertsB the second polygon):
  * vertsA[inEdge1] is outside the overlap area
@@ -14,10 +14,10 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
  * vertsA[outEdge1+1] is outside the overlap area
  * vertsB[outEdge1] is outside the overlap area
  * vertsB[outEdge1+1] is inside the overlap area
- *
+ * <p/>
  * Keep in mind that the edges outside of the overlap area could be inside
  * another overlapping area that has another feature set.
- *
+ * <p/>
  * TODO: check if this also holds for boxes
  *
  * @author Kevin Glass
@@ -25,13 +25,21 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
 public class FeaturePair {
 
 
-    /** The edge of the first polygon entering the second polygon */
+    /**
+     * The edge of the first polygon entering the second polygon
+     */
     int inEdge1;
-    /** The first edge in the collision */
+    /**
+     * The first edge in the collision
+     */
     int outEdge1;
-    /** The second edge in the collision */
+    /**
+     * The second edge in the collision
+     */
     int inEdge2;
-    /** The second edge in the collision */
+    /**
+     * The second edge in the collision
+     */
     int outEdge2;
 
     /**

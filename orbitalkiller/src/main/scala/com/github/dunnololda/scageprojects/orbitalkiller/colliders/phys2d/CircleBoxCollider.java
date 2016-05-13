@@ -2,14 +2,16 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
 
 /**
  * A collider for circles hitting boxes, Circle = BodyA, Box = BodyB
- *
+ * <p/>
  * The create() method is used as a factory incase this class should
  * ever become stateful.
  *
  * @author Kevin Glass
  */
 public strictfp class CircleBoxCollider extends BoxCircleCollider {
-    /** The single instance of this collider to exist */
+    /**
+     * The single instance of this collider to exist
+     */
     private static CircleBoxCollider single = new CircleBoxCollider();
 
     /**
@@ -35,8 +37,8 @@ public strictfp class CircleBoxCollider extends BoxCircleCollider {
 
         // reverse the collision results by inverting normals
         // and projecting the results onto the circle
-        for (int i=0;i<count;i++) {
-            Vector2f vec = MathUtil.scale(contacts[i].getNormal(),-1);
+        for (int i = 0; i < count; i++) {
+            Vector2f vec = MathUtil.scale(contacts[i].getNormal(), -1);
             contacts[i].setNormal(vec);
 
             Vector2f pt = MathUtil.sub(contacts[i].getPosition(), circleBody.getPosition());

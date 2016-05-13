@@ -8,9 +8,13 @@ import com.github.dunnololda.scage.support.DVec;
  * @author Kevin Glass
  */
 public strictfp class Vector2f implements ROVector2f {
-    /** The x component of this vector */
+    /**
+     * The x component of this vector
+     */
     public double x;
-    /** The y component of this vector */
+    /**
+     * The y component of this vector
+     */
     public double y;
 
     /**
@@ -39,7 +43,7 @@ public strictfp class Vector2f implements ROVector2f {
      * @param other The other vector to copy into this one
      */
     public Vector2f(ROVector2f other) {
-        this(other.getX(),other.getY());
+        this(other.getX(), other.getY());
     }
 
     /**
@@ -59,7 +63,7 @@ public strictfp class Vector2f implements ROVector2f {
      * @param other The values to set into the vector
      */
     public void set(ROVector2f other) {
-        set(other.getX(),other.getY());
+        set(other.getX(), other.getY());
     }
 
     /**
@@ -94,8 +98,7 @@ public strictfp class Vector2f implements ROVector2f {
      *
      * @param v The vector to add
      */
-    public void add(ROVector2f v)
-    {
+    public void add(ROVector2f v) {
         x += v.getX();
         y += v.getY();
     }
@@ -105,8 +108,7 @@ public strictfp class Vector2f implements ROVector2f {
      *
      * @param v The vector subtract
      */
-    public void sub(ROVector2f v)
-    {
+    public void sub(ROVector2f v) {
         x -= v.getX();
         y -= v.getY();
     }
@@ -116,20 +118,18 @@ public strictfp class Vector2f implements ROVector2f {
      *
      * @param a The value to scale this vector by
      */
-    public void scale(double a)
-    {
+    public void scale(double a) {
         x *= a;
         y *= a;
     }
 
     /**
      * Normalise the vector
-     *
      */
     public void normalise() {
         double l = length();
 
-        if ( l == 0 )
+        if (l == 0)
             return;
 
         x /= l;
@@ -148,15 +148,14 @@ public strictfp class Vector2f implements ROVector2f {
     /**
      * @see ROVector2f#length()
      */
-    public double length()
-    {
+    public double length() {
         return (double) Math.sqrt(lengthSquared());
     }
 
     /**
      * Project this vector onto another
      *
-     * @param b The vector to project onto
+     * @param b      The vector to project onto
      * @param result The projected vector
      */
     public void projectOntoUnit(ROVector2f b, Vector2f result) {
@@ -170,7 +169,7 @@ public strictfp class Vector2f implements ROVector2f {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return "[Vec "+x+","+y+" ("+length()+")]";
+        return "[Vec " + x + "," + y + " (" + length() + ")]";
     }
 
     /**
@@ -193,7 +192,7 @@ public strictfp class Vector2f implements ROVector2f {
         double dx = other.getX() - getX();
         double dy = other.getY() - getY();
 
-        return (dx*dx)+(dy*dy);
+        return (dx * dx) + (dy * dy);
     }
 
     /**
@@ -210,7 +209,7 @@ public strictfp class Vector2f implements ROVector2f {
         return (other.getX() - delta < x &&
                 other.getX() + delta > x &&
                 other.getY() - delta < y &&
-                other.getY() + delta > y );
+                other.getY() + delta > y);
 
     }
 

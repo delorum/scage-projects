@@ -1,13 +1,16 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
 
 public final strictfp class MathUtil {
-    /** Prevent construction */
-    private MathUtil() {}
+    /**
+     * Prevent construction
+     */
+    private MathUtil() {
+    }
 
     /**
      * Scale a vector by a given value
      *
-     * @param a The vector to be scaled
+     * @param a     The vector to be scaled
      * @param scale The amount to scale the vector by
      * @return A newly created vector - a scaled version of the new vector
      */
@@ -33,13 +36,12 @@ public final strictfp class MathUtil {
     }
 
     /**
-     * Check the sign of a value 
+     * Check the sign of a value
      *
      * @param x The value to check
      * @return -1.0f if negative, 1.0 if positive
      */
-    public static double sign(double x)
-    {
+    public static double sign(double x) {
         return x < 0.0f ? -1.0f : 1.0f;
     }
 
@@ -50,8 +52,7 @@ public final strictfp class MathUtil {
      * @param v The vector to multiple by
      * @return A newly created vector containing the resultant vector
      */
-    public static Vector2f mul(Matrix2f A, ROVector2f v)
-    {
+    public static Vector2f mul(Matrix2f A, ROVector2f v) {
         return new Vector2f(A.col1.x * v.getX() + A.col2.x * v.getY(), A.col1.y * v.getX() + A.col2.y * v.getY());
     }
 
@@ -62,8 +63,7 @@ public final strictfp class MathUtil {
      * @param B The second matrix
      * @return A newly created matrix containing the result
      */
-    public static Matrix2f mul(Matrix2f A, Matrix2f B)
-    {
+    public static Matrix2f mul(Matrix2f A, Matrix2f B) {
         return new Matrix2f(mul(A, B.col1), mul(A, B.col2));
     }
 
@@ -83,8 +83,7 @@ public final strictfp class MathUtil {
      * @param a The vector to make absolute
      * @return A newly created result vector
      */
-    public static Vector2f abs(Vector2f a)
-    {
+    public static Vector2f abs(Vector2f a) {
         return new Vector2f(Math.abs(a.x), Math.abs(a.y));
     }
 
@@ -95,14 +94,13 @@ public final strictfp class MathUtil {
      * @param B The second matrix
      * @return A newly created matrix containing the result
      */
-    public static Matrix2f add(Matrix2f A, Matrix2f B)
-    {
+    public static Matrix2f add(Matrix2f A, Matrix2f B) {
         Vector2f temp1 = new Vector2f(A.col1);
         temp1.add(B.col1);
         Vector2f temp2 = new Vector2f(A.col2);
         temp2.add(B.col2);
 
-        return new Matrix2f(temp1,temp2);
+        return new Matrix2f(temp1, temp2);
     }
 
     /**
@@ -112,8 +110,7 @@ public final strictfp class MathUtil {
      * @param b The second vector
      * @return The cross product of the two vectors
      */
-    public static double cross(Vector2f a, Vector2f b)
-    {
+    public static double cross(Vector2f a, Vector2f b) {
         return a.x * b.y - a.y * b.x;
     }
 
@@ -124,8 +121,7 @@ public final strictfp class MathUtil {
      * @param a The vector to fidn the cross of
      * @return A newly created resultant vector
      */
-    public static Vector2f cross(double s, Vector2f a)
-    {
+    public static Vector2f cross(double s, Vector2f a) {
         return new Vector2f(-s * a.y, s * a.x);
     }
 
@@ -136,30 +132,28 @@ public final strictfp class MathUtil {
      * @param a The vector to fidn the cross of
      * @return A newly created resultant vector
      */
-    public static Vector2f cross(Vector2f a, double s)
-    {
+    public static Vector2f cross(Vector2f a, double s) {
         return new Vector2f(s * a.y, -s * a.x);
     }
 
     /**
-     * Clamp a value 
+     * Clamp a value
      *
-     * @param a The original value
-     * @param low The lower bound
+     * @param a    The original value
+     * @param low  The lower bound
      * @param high The upper bound
      * @return The clamped value
      */
-    public static double clamp(double a, double low, double high)
-    {
+    public static double clamp(double a, double low, double high) {
         return Math.max(low, Math.min(a, high));
     }
 
 
     /**
-     * Get the normal of a line x y (or edge). 
+     * Get the normal of a line x y (or edge).
      * When standing on x facing y, the normal will point
      * to the left.
-     *
+     * <p/>
      * TODO: move this function somewhere else?
      *
      * @param x startingpoint of the line

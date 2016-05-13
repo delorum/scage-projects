@@ -4,31 +4,31 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
  * Collision detection functions for colliding two polygons.
  *
  * @author Gideon Smeding
- *
  */
 public class PolygonPolygonCollider implements Collider {
     public Boolean isCCW(Vector2f[] vertices) {
         Vector2f c = new Vector2f();
-        for(Vector2f v: vertices) {
+        for (Vector2f v : vertices) {
             c.add(v);
         }
         c.scale(1.0 / vertices.length);
         Double sum = 0.0;
-        for(int i = 0; i < vertices.length; i++) {
+        for (int i = 0; i < vertices.length; i++) {
             Vector2f x = new Vector2f(vertices[i].getX(), vertices[i].getY());
             x.add(c.negate());
-            if(i == 0) {
-                Vector2f p1 = vertices[vertices.length-1];
+            if (i == 0) {
+                Vector2f p1 = vertices[vertices.length - 1];
                 Vector2f p2 = vertices[i];
-                sum += (p2.getX() - p1.getX())*(p2.getY() + p1.getY());
+                sum += (p2.getX() - p1.getX()) * (p2.getY() + p1.getY());
             } else {
-                Vector2f p1 = vertices[i-1];
+                Vector2f p1 = vertices[i - 1];
                 Vector2f p2 = vertices[i];
-                sum += (p2.getX() - p1.getX())*(p2.getY() + p1.getY());
+                sum += (p2.getX() - p1.getX()) * (p2.getY() + p1.getY());
             }
         }
         return vertices.length > 2 && sum < 0;
     }
+
     /**
      * @see Collider#collide(Contact[], Body, Body)
      */
@@ -61,21 +61,21 @@ public class PolygonPolygonCollider implements Collider {
      * This function will check for collisions between the supplied list of edge
      * pairs and find the edges where the two polygons intersect.
      *
-     * @param vertsA The rotated and translated vertices of the first polygon
-     * @param vertsB The rotated and translated vertices of the second polygon
+     * @param vertsA        The rotated and translated vertices of the first polygon
+     * @param vertsB        The rotated and translated vertices of the second polygon
      * @param collEdgeCands The edges of the two vertices that can collide. Expects the
-     * same layout as returned by
-     * {@link PolygonPolygonCollider#getCollisionCandidates(EdgeSweep, Vector2f[], Vector2f[])}
+     *                      same layout as returned by
+     *                      {@link PolygonPolygonCollider#getCollisionCandidates(EdgeSweep, Vector2f[], Vector2f[])}
      * @return The points where the two polygons overlap, with for each overlapping
      * area the ingoing and outgoing edges in feature pairs.
      */
     public Intersection[][] getIntersectionPairs(Vector2f[] vertsA, Vector2f[] vertsB, int[][] collEdgeCands) {
-        if ( collEdgeCands.length == 0 )
+        if (collEdgeCands.length == 0)
             return new Intersection[0][2];
 
         IntersectionGatherer fpl = new IntersectionGatherer(vertsA, vertsB);
 
-        for ( int i = 0; i < collEdgeCands.length; i++ ) {
+        for (int i = 0; i < collEdgeCands.length; i++) {
             fpl.intersect(collEdgeCands[i][0], collEdgeCands[i][1]);
         }
 
@@ -86,34 +86,34 @@ public class PolygonPolygonCollider implements Collider {
      * Given a list of intersections, calculate the collision information and
      * set the contacts with that information.
      *
-     * @param contacts The array of contacts to fill
-     * @param vertsA The vertices of polygon A
-     * @param vertsB The vertices of polygon B
+     * @param contacts      The array of contacts to fill
+     * @param vertsA        The vertices of polygon A
+     * @param vertsB        The vertices of polygon B
      * @param intersections The array of intersections as returned by
-     * {@link PolygonPolygonCollider#getIntersectionPairs(Vector2f[], Vector2f[], int[][])}
+     *                      {@link PolygonPolygonCollider#getIntersectionPairs(Vector2f[], Vector2f[], int[][])}
      * @return The number of contacts that have been determined and hence
      * populated in the array.
      */
     public int populateContacts(Contact[] contacts, Vector2f[] vertsA, Vector2f[] vertsB, Intersection[][] intersections) {
-        if ( intersections.length == 0 )
+        if (intersections.length == 0)
             return 0;
 
         int noContacts = 0;
 
-        for ( int i = 0; i < intersections.length; i++ ) {
-            if ( noContacts >= contacts.length )
+        for (int i = 0; i < intersections.length; i++) {
+            if (noContacts >= contacts.length)
                 return contacts.length;
 
-            if ( intersections[i].length == 2 && noContacts < contacts.length-1 ) {
+            if (intersections[i].length == 2 && noContacts < contacts.length - 1) {
                 setContactPair(
                         contacts[noContacts],
-                        contacts[noContacts+1],
+                        contacts[noContacts + 1],
                         intersections[i][0],
                         intersections[i][1],
                         vertsA, vertsB);
 
                 noContacts += 2;
-            } else if ( intersections[i].length == 1 ) {
+            } else if (intersections[i].length == 1) {
                 setContact(contacts[noContacts], intersections[i][0], vertsA, vertsB);
                 noContacts += 1;
             }
@@ -127,10 +127,10 @@ public class PolygonPolygonCollider implements Collider {
      * be paired up with another. Because we know that this only happens to very
      * shallow penetrations, it is safe to use a separation of 0.
      *
-     * @param contact The contact to be set
+     * @param contact      The contact to be set
      * @param intersection The intection to set the contact information for
-     * @param vertsA The vertices of polygon A
-     * @param vertsB The vertices of polygon B
+     * @param vertsA       The vertices of polygon A
+     * @param vertsB       The vertices of polygon B
      */
     public void setContact(Contact contact, Intersection intersection, Vector2f[] vertsA, Vector2f[] vertsB) {
         Vector2f startA = vertsA[intersection.edgeA];
@@ -154,10 +154,10 @@ public class PolygonPolygonCollider implements Collider {
      *
      * @param contact1 The first contact to be set
      * @param contact2 The first contact to be set
-     * @param in The ingoing intersection of the pair
-     * @param out The outgoing intersection of the pair
-     * @param vertsA The vertices of polygon A
-     * @param vertsB The vertices of polygon B
+     * @param in       The ingoing intersection of the pair
+     * @param out      The outgoing intersection of the pair
+     * @param vertsA   The vertices of polygon A
+     * @param vertsB   The vertices of polygon B
      */
     public void setContactPair(
             Contact contact1,
@@ -190,17 +190,15 @@ public class PolygonPolygonCollider implements Collider {
     }
 
 
-
     /**
      * This function finds pairs of edges of two polygons by projecting all the
      * edges on a line. Essentially this is just an optimization to minimize the
      * number of line-line intersections that is tested for collisions.
      *
-     * @param sweep The sweepline object to use, this allows a user of this function to add other vertices
+     * @param sweep  The sweepline object to use, this allows a user of this function to add other vertices
      * @param vertsA The vertices of the first polygon ordered counterclockwise (TODO: verify this/order matters?)
      * @param vertsB The vertices of the second polygon ordered counterclockwise
-     * @return
-     * The pairs of vertices that overlap in the sweepline and are therefore collision candidates.
+     * @return The pairs of vertices that overlap in the sweepline and are therefore collision candidates.
      * The returned array is of a shape int[n][2] where n is the number of overlapping edges.
      * For a returned array r
      * the edge between vertsA[r[x][0]] and vertsA[r[x][0] + 1]
@@ -217,17 +215,16 @@ public class PolygonPolygonCollider implements Collider {
      * This function finds pairs of edges of two polygons by projecting all the
      * edges on a line. Essentially this is just an optimization to minimize the
      * number of line-line intersections that is tested for collisions.
-     *
+     * <p/>
      * This version simply calls
      * {@link PolygonPolygonCollider#getCollisionCandidates(EdgeSweep, Vector2f[], Vector2f[]) }
      * with a new empty EdgeSweep.
      *
-     * @param vertsA The vertices of the first polygon ordered counterclockwise (TODO: verify this/order matters?)
+     * @param vertsA        The vertices of the first polygon ordered counterclockwise (TODO: verify this/order matters?)
      * @param sweepDirStart The 'real' center of the first polygon
-     * @param vertsB The vertices of the second polygon ordered counterclockwise
-     * @param sweepDirEnd The 'real' center of the second polygon
-     * @return
-     * The pairs of vertices that overlap in the sweepline and are therefore collision candidates.
+     * @param vertsB        The vertices of the second polygon ordered counterclockwise
+     * @param sweepDirEnd   The 'real' center of the second polygon
+     * @return The pairs of vertices that overlap in the sweepline and are therefore collision candidates.
      * The returned array is of a shape int[n][2] where n is the number of overlapping edges.
      * For a returned array r
      * the edge between vertsA[r[x][0]] and vertsA[r[x][0] + 1]

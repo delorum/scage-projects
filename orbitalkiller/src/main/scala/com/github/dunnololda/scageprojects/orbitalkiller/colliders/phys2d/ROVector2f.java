@@ -40,7 +40,7 @@ public interface ROVector2f {
     /**
      * Project this vector onto another
      *
-     * @param b The vector to project onto
+     * @param b      The vector to project onto
      * @param result The projected vector
      */
     public void projectOntoUnit(ROVector2f b, Vector2f result);

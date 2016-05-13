@@ -3,15 +3,16 @@ package com.github.dunnololda.scageprojects.orbitalkiller.tests
 import com.github.dunnololda.scage.ScageLibD.{DVec, print, _}
 
 object AngleTests2 extends ScageScreenAppD("Angle Tests 2", 640, 480) {
-  implicit class MyDVec(v1:DVec) {
-    def mydeg(v2:DVec):Double = {
-      val scalar = v1*v2.perpendicular
-      if(scalar >= 0) v1.absDeg(v2) else 360 - v1.absDeg(v2)
+
+  implicit class MyDVec(v1: DVec) {
+    def mydeg(v2: DVec): Double = {
+      val scalar = v1 * v2.perpendicular
+      if (scalar >= 0) v1.absDeg(v2) else 360 - v1.absDeg(v2)
     }
 
-    def mydeg2(v2:DVec):Double = {
+    def mydeg2(v2: DVec): Double = {
       val x = -v1.signedDeg(v2)
-      if(x < 0) 360 + x else x
+      if (x < 0) 360 + x else x
     }
   }
 
@@ -22,7 +23,7 @@ object AngleTests2 extends ScageScreenAppD("Angle Tests 2", 640, 480) {
 
   render {
     drawLine(windowCenter, windowCenter + DVec(0, 100), WHITE)
-    drawLine(windowCenter, windowCenter+pos, WHITE)
+    drawLine(windowCenter, windowCenter + pos, WHITE)
   }
 
   interface {

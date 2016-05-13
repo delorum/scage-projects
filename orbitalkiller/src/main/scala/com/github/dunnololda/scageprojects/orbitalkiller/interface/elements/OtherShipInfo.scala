@@ -2,20 +2,20 @@ package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.{DVec, ScageColor}
+import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._
-import OrbitalKiller._
 
-class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
+class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
   private val strings = Array("")
 
   override protected def _update(): Unit = {
-    if(monitoring_ship.isDead) {
+    if (monitoring_ship.isDead) {
       strings(0) = s"${monitoring_ship.name}: ${monitoring_ship.deathReason}"
     } else {
       if (player_ship.isDockedToShip(monitoring_ship)) {
         strings(0) = s"${monitoring_ship.name}: docked"
       } else {
-        val /*(_, */need_orbit_period_str/*)*/ = (for {
+        val /*(_, */ need_orbit_period_str /*)*/ = (for {
           (our_orbit_planet, our_orbit_planet_state) <- insideSphereOfInfluenceOfCelestialBody(player_ship.coord, player_ship.mass, currentPlanetStates)
           (os_orbit_planet, os_orbit_planet_state) <- insideSphereOfInfluenceOfCelestialBody(monitoring_ship.coord, monitoring_ship.mass, currentPlanetStates)
           if our_orbit_planet.index == os_orbit_planet.index
@@ -46,25 +46,25 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
                   val angle = DVec(0, 1).deg360(docking_dir) - player_ship.rotation
                   val x = -(b2 * (A - C) - b1 * (B - D)) / (a1 * b2 - a2 * b1)
                   val y = (a2 * (A - C) - a1 * (B - D)) / (a2 * b1 - a1 * b2)
-                  /*("N/A", */f"docking data: a=$angle%.2f x=$x%.2f y=$y%.2f"/*)*/
+                  /*("N/A", */ f"docking data: a=$angle%.2f x=$x%.2f y=$y%.2f" /*)*/
                 case None =>
-                  /*("N/A", */"N/A"/*)*/
+                  /*("N/A", */ "N/A" /*)*/
               }
             } else {
               val os_travel_time_to_our_point1_msec = os_orbit_ellipse.travelTimeOnOrbitMsec(monitoring_ship.coord, os_orbit_ellipse.orbitalPointInPoint(player_ship.coord), ccw = true)
-              val os_travel_time_to_our_point2_msec = (os_orbit_period_sec*1000 - os_travel_time_to_our_point1_msec).toLong
+              val os_travel_time_to_our_point2_msec = (os_orbit_period_sec * 1000 - os_travel_time_to_our_point1_msec).toLong
               val need_orbit_period_msec = {
-                if(os_travel_time_to_our_point1_msec > os_travel_time_to_our_point2_msec) {
+                if (os_travel_time_to_our_point1_msec > os_travel_time_to_our_point2_msec) {
                   val mu = G * our_orbit_planet_state.mass
                   def _calculateRp(t_sec: Double): Double = {
                     val a = math.pow(math.pow(t_sec / (2 * math.Pi), 2) * mu, 1.0 / 3) // большая полуось для данного периода
                     val x = player_ship.coord.dist(our_orbit_planet_state.coord)
                     math.min(2 * a - x, x)
                   }
-                  val r_p1 = _calculateRp(os_travel_time_to_our_point1_msec/1000) - our_orbit_planet.radius
-                  if(r_p1 > our_orbit_planet.air_free_altitude) os_travel_time_to_our_point1_msec
-                  else os_travel_time_to_our_point1_msec*2 + os_travel_time_to_our_point2_msec
-                } else os_travel_time_to_our_point1_msec*2 + os_travel_time_to_our_point2_msec
+                  val r_p1 = _calculateRp(os_travel_time_to_our_point1_msec / 1000) - our_orbit_planet.radius
+                  if (r_p1 > our_orbit_planet.air_free_altitude) os_travel_time_to_our_point1_msec
+                  else os_travel_time_to_our_point1_msec * 2 + os_travel_time_to_our_point2_msec
+                } else os_travel_time_to_our_point1_msec * 2 + os_travel_time_to_our_point2_msec
               }
               /*val deg_diff = (monitoring_ship.coord - our_orbit_planet_state.coord).deg360(player_ship.coord - our_orbit_planet_state.coord)
               val t1_sec = deg_diff / 360.0 * os_orbit_period
@@ -79,8 +79,8 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
               }
               val r_p1 = _calculateRp(t1_sec) - our_orbit_planet.radius
               val r_p2 = _calculateRp(t2_sec) - our_orbit_planet.radius*/
-              val our_r_p = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(0)     // координаты апогея нашей орбиты
-              val our_r_a = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(180)   // координаты перигея нашей орбиты
+              val our_r_p = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(0) // координаты апогея нашей орбиты
+              val our_r_a = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(180) // координаты перигея нашей орбиты
               val sep_in_r_p = os_orbit_ellipse.orbitalPointInPoint(our_r_p).dist(our_r_p)
               val sep_in_r_a = os_orbit_ellipse.orbitalPointInPoint(our_r_a).dist(our_r_a)
               val cur_sep = os_orbit_ellipse.orbitalPointInPoint(player_ship.coord).dist(player_ship.coord)
@@ -109,16 +109,18 @@ class OtherShipInfo(val monitoring_ship:PolygonShip) extends InterfaceElement {
                 }*/
                 s"${timeStr(need_orbit_period_msec)} ($sep_str)"
               }
-              /*(f"$deg_diff%.2f град.", */s"rendezvous data: $need_orbit_period_str"/*)*/
+              /*(f"$deg_diff%.2f град.", */ s"rendezvous data: $need_orbit_period_str" /*)*/
             }
-          }).getOrElse(/*"N/A", */"N/A")
+          }).getOrElse(/*"N/A", */ "N/A")
         val dist = mOrKmOrMKm(player_ship.coord.dist(monitoring_ship.coord))
         val vel = msecOrKmsec((player_ship.linearVelocity - monitoring_ship.linearVelocity) * (player_ship.coord - monitoring_ship.coord).n)
         strings(0) = s"${monitoring_ship.name}: dist=$dist, vel=$vel, $need_orbit_period_str"
       }
     }
   }
+
   override def data: Seq[String] = strings
+
   override val color = ScageColor.MAGENTA
 
   override val shortDescr: String = "OS"

@@ -11,8 +11,8 @@ public interface Collider {
      * specified.
      *
      * @param contacts The contacts array to populate with results
-     * @param bodyA The first body to check against
-     * @param bodyB The second body to check against
+     * @param bodyA    The first body to check against
+     * @param bodyB    The second body to check against
      * @return The number of contacts that have been determined and hence
      * populated in the array.
      */

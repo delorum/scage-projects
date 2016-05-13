@@ -6,7 +6,9 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
  * @author Kevin Glass
  */
 public strictfp class LineBoxCollider implements Collider {
-    /** The single instance of this class */
+    /**
+     * The single instance of this class
+     */
     private static LineBoxCollider single = new LineBoxCollider();
 
     /**
@@ -20,7 +22,7 @@ public strictfp class LineBoxCollider implements Collider {
     }
 
     /**
-     * Get the proportion that the src vector is of 
+     * Get the proportion that the src vector is of
      * the DENominator vector
      *
      * @param src The source vector
@@ -55,10 +57,10 @@ public strictfp class LineBoxCollider implements Collider {
 
         Vector2f res = new Vector2f();
         line.getStart().projectOntoUnit(axis, res);
-        double linePos = getProp(res,axis);
+        double linePos = getProp(res, axis);
 
-        Vector2f c = MathUtil.sub(bodyB.getPosition(),bodyA.getPosition());
-        c.projectOntoUnit(axis,res);
+        Vector2f c = MathUtil.sub(bodyB.getPosition(), bodyA.getPosition());
+        c.projectOntoUnit(axis, res);
         double centre = getProp(res, axis);
 
         Vector2f[] pts = box.getPoints(bodyB.getPosition(), bodyB.getRotation());
@@ -67,7 +69,7 @@ public strictfp class LineBoxCollider implements Collider {
 
         int outOfRange = 0;
 
-        for (int i=0;i<4;i++) {
+        for (int i = 0; i < 4; i++) {
             pts[i].sub(bodyA.getPosition());
             pts[i].projectOntoUnit(axis, res);
             tangent[i] = getProp(res, axis);
@@ -90,16 +92,16 @@ public strictfp class LineBoxCollider implements Collider {
             }
 
             normal.scale(-1);
-            for (int i=0;i<4;i++) {
+            for (int i = 0; i < 4; i++) {
                 if (tangent[i] > linePos) {
                     if (proj[i] < 0) {
                         Vector2f onAxis = new Vector2f();
-                        Line leftLine = new Line(getPt(pts,i-1),pts[i]);
-                        Line rightLine = new Line(getPt(pts,i+1),pts[i]);
-                        leftLine.getClosestPoint(line.getStart(),res);
+                        Line leftLine = new Line(getPt(pts, i - 1), pts[i]);
+                        Line rightLine = new Line(getPt(pts, i + 1), pts[i]);
+                        leftLine.getClosestPoint(line.getStart(), res);
                         res.projectOntoUnit(axis, onAxis);
                         double left = getProp(onAxis, axis);
-                        rightLine.getClosestPoint(line.getStart(),res);
+                        rightLine.getClosestPoint(line.getStart(), res);
                         res.projectOntoUnit(axis, onAxis);
                         double right = getProp(onAxis, axis);
 
@@ -107,17 +109,17 @@ public strictfp class LineBoxCollider implements Collider {
                             Vector2f pos = new Vector2f(bodyA.getPosition());
                             pos.add(line.getStart());
 
-                            resolveEndPointCollision(pos,bodyA,bodyB,normal,leftLine,rightLine,contacts[numContacts],i);
+                            resolveEndPointCollision(pos, bodyA, bodyB, normal, leftLine, rightLine, contacts[numContacts], i);
                             numContacts++;
                         }
                     } else if (proj[i] > 1) {
                         Vector2f onAxis = new Vector2f();
-                        Line leftLine = new Line(getPt(pts,i-1),pts[i]);
-                        Line rightLine = new Line(getPt(pts,i+1),pts[i]);
-                        leftLine.getClosestPoint(line.getEnd(),res);
+                        Line leftLine = new Line(getPt(pts, i - 1), pts[i]);
+                        Line rightLine = new Line(getPt(pts, i + 1), pts[i]);
+                        leftLine.getClosestPoint(line.getEnd(), res);
                         res.projectOntoUnit(axis, onAxis);
                         double left = getProp(onAxis, axis);
-                        rightLine.getClosestPoint(line.getEnd(),res);
+                        rightLine.getClosestPoint(line.getEnd(), res);
                         res.projectOntoUnit(axis, onAxis);
                         double right = getProp(onAxis, axis);
 
@@ -125,13 +127,13 @@ public strictfp class LineBoxCollider implements Collider {
                             Vector2f pos = new Vector2f(bodyA.getPosition());
                             pos.add(line.getEnd());
 
-                            resolveEndPointCollision(pos,bodyA,bodyB,normal,leftLine,rightLine,contacts[numContacts],i);
+                            resolveEndPointCollision(pos, bodyA, bodyB, normal, leftLine, rightLine, contacts[numContacts], i);
                             numContacts++;
                         }
                     } else {
                         pts[i].projectOntoUnit(lineVec, res);
                         res.add(bodyA.getPosition());
-                        contacts[numContacts].setSeparation(-(tangent[i]-linePos));
+                        contacts[numContacts].setSeparation(-(tangent[i] - linePos));
                         contacts[numContacts].setPosition(new Vector2f(res));
                         contacts[numContacts].setNormal(normal);
                         contacts[numContacts].setFeature(new FeaturePair(i));
@@ -144,16 +146,16 @@ public strictfp class LineBoxCollider implements Collider {
                 return 0;
             }
 
-            for (int i=0;i<4;i++) {
+            for (int i = 0; i < 4; i++) {
                 if (tangent[i] < linePos) {
                     if (proj[i] < 0) {
                         Vector2f onAxis = new Vector2f();
-                        Line leftLine = new Line(getPt(pts,i-1),pts[i]);
-                        Line rightLine = new Line(getPt(pts,i+1),pts[i]);
-                        leftLine.getClosestPoint(line.getStart(),res);
+                        Line leftLine = new Line(getPt(pts, i - 1), pts[i]);
+                        Line rightLine = new Line(getPt(pts, i + 1), pts[i]);
+                        leftLine.getClosestPoint(line.getStart(), res);
                         res.projectOntoUnit(axis, onAxis);
                         double left = getProp(onAxis, axis);
-                        rightLine.getClosestPoint(line.getStart(),res);
+                        rightLine.getClosestPoint(line.getStart(), res);
                         res.projectOntoUnit(axis, onAxis);
                         double right = getProp(onAxis, axis);
 
@@ -161,17 +163,17 @@ public strictfp class LineBoxCollider implements Collider {
                             Vector2f pos = new Vector2f(bodyA.getPosition());
                             pos.add(line.getStart());
 
-                            resolveEndPointCollision(pos,bodyA,bodyB,normal,leftLine,rightLine,contacts[numContacts],i);
+                            resolveEndPointCollision(pos, bodyA, bodyB, normal, leftLine, rightLine, contacts[numContacts], i);
                             numContacts++;
                         }
                     } else if (proj[i] > 1) {
                         Vector2f onAxis = new Vector2f();
-                        Line leftLine = new Line(getPt(pts,i-1),pts[i]);
-                        Line rightLine = new Line(getPt(pts,i+1),pts[i]);
-                        leftLine.getClosestPoint(line.getEnd(),res);
+                        Line leftLine = new Line(getPt(pts, i - 1), pts[i]);
+                        Line rightLine = new Line(getPt(pts, i + 1), pts[i]);
+                        leftLine.getClosestPoint(line.getEnd(), res);
                         res.projectOntoUnit(axis, onAxis);
                         double left = getProp(onAxis, axis);
-                        rightLine.getClosestPoint(line.getEnd(),res);
+                        rightLine.getClosestPoint(line.getEnd(), res);
                         res.projectOntoUnit(axis, onAxis);
                         double right = getProp(onAxis, axis);
 
@@ -179,7 +181,7 @@ public strictfp class LineBoxCollider implements Collider {
                             Vector2f pos = new Vector2f(bodyA.getPosition());
                             pos.add(line.getEnd());
 
-                            resolveEndPointCollision(pos,bodyA,bodyB,normal,leftLine,rightLine,contacts[numContacts],i);
+                            resolveEndPointCollision(pos, bodyA, bodyB, normal, leftLine, rightLine, contacts[numContacts], i);
                             numContacts++;
                         }
                     } else {
@@ -205,14 +207,14 @@ public strictfp class LineBoxCollider implements Collider {
     /**
      * Resolve the collision math around an end point
      *
-     * @param pos The position of the contact
-     * @param bodyA The first body in the collision
-     * @param bodyB The second body in the collision
-     * @param leftLine The line to the left of the vertex of collision
+     * @param pos       The position of the contact
+     * @param bodyA     The first body in the collision
+     * @param bodyB     The second body in the collision
+     * @param leftLine  The line to the left of the vertex of collision
      * @param rightLine The line to the right of the vertex of collision
-     * @param contact The contact to populate
-     * @param norm The normal determined for the line
-     * @param i The index of teh face we're resolving for feature ID
+     * @param contact   The contact to populate
+     * @param norm      The normal determined for the line
+     * @param i         The index of teh face we're resolving for feature ID
      */
     private void resolveEndPointCollision(Vector2f pos, Body bodyA, Body bodyB, Vector2f norm, Line leftLine, Line rightLine, Contact contact, int i) {
         Vector2f start = new Vector2f(pos);
@@ -221,7 +223,7 @@ public strictfp class LineBoxCollider implements Collider {
 
         rightLine.move(bodyA.getPosition());
         leftLine.move(bodyA.getPosition());
-        Line normLine = new Line(start,end);
+        Line normLine = new Line(start, end);
         Vector2f rightPoint = normLine.intersect(rightLine);
         Vector2f leftPoint = normLine.intersect(leftLine);
 
@@ -235,19 +237,20 @@ public strictfp class LineBoxCollider implements Collider {
         }
 
         norm.normalise();
-        double dis = Math.min(dis1,dis2);
+        double dis = Math.min(dis1, dis2);
 
         contact.setSeparation(-dis);
         contact.setPosition(pos);
         contact.setNormal(norm);
         contact.setFeature(new FeaturePair(i));
     }
+
     /**
      * Get a specified point in the array using wrap round
      *
-     * @param pts The points array to access
+     * @param pts   The points array to access
      * @param index The index into the array to retrieve (negative and > length
-     * will be resolved)
+     *              will be resolved)
      * @return The vector at the index requested
      */
     private Vector2f getPt(Vector2f[] pts, int index) {

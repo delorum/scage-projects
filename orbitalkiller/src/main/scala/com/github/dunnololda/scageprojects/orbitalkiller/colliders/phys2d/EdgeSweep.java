@@ -3,69 +3,79 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
 /**
  * <p>Implements a sweepline algorithm that facilitates collision detection between
  * two polygons. For two polygons A and B it determines a set of collision candidates,
- *  i.e. the edges of A and B that can collide. </p>
- *
+ * i.e. the edges of A and B that can collide. </p>
+ * <p/>
  * <p>Getting a good approximation of the set of colliding edges is important
- * because given two polygons with n and m vertices each, checking every 
+ * because given two polygons with n and m vertices each, checking every
  * combination would take n*m operations.</p>
- *
+ * <p/>
  * <p>To limit the number of candidates we project all edges of both polygons onto
  * a line. This line is the direction of the sweepline, the sweepline itself would
  * be perpendicular to it. The start and endpoints of the edges are sorted by their
  * projection onto the sweep direction.</p>
- *
+ * <p/>
  * <p>The collision candidates can now be determined by walking through the list
  * of start- and endpoints of the edges and check which edges of A and B overlap.
  * If two edges do not overlap in the projection, they will not intersect,
  * therefore it is safe to discard the combination as a collision candidate.</p>
- *
+ * <p/>
  * <p><i>Note that this approach is very similar to and indeed inspired by the
  * separating axes theorem.</i></p>
- *
+ * <p/>
  * <p>The effectiveness of this algorithm depends on the choice of sweep direction.
  * For example using the line from one polygon's center to the other's center as
- * our sweep direction will give great results if both polygons are more or less 
+ * our sweep direction will give great results if both polygons are more or less
  * round. However, when one of the polygons is very long, this will be (depending
  * on the polygon's positions) a very bad idea.<br>
  * The choice for the sweep direction is left to the user of this class.</p>
- *
+ * <p/>
  * <h3>Insertion Sort</h3>
  * <p>For this sweepline algorithm there is a major assumption
  * regarding the complexity of the sorting. The used sorting algorithm uses the
  * fact that the edges will mostly be inserted in order of their position on the
  * sweepline (already sorted).</p>
- *
+ * <p/>
  * <p>This seems justified by the observation that most polygons will be more or less
  * monotone in any direction, including the sweep direction. For convex polygons
  * this clearly holds, giving us a worst case complexity of O(n). Non-convex
- * polygons can however cause trouble with a worst case complexity of O(n*n).</p>   
- *
+ * polygons can however cause trouble with a worst case complexity of O(n*n).</p>
  *
  * @author Gideon Smeding
- *
  */
 public class EdgeSweep {
 
-    /** The doubly linked list list of inserted vertices */
+    /**
+     * The doubly linked list list of inserted vertices
+     */
     class ProjectedVertex {
-        /** Vertex number, usually the index of the vertex in a polygon's array */
+        /**
+         * Vertex number, usually the index of the vertex in a polygon's array
+         */
         public int vertex;
-        /** True if this is a vertex belonging to polygon A, false if B */
+        /**
+         * True if this is a vertex belonging to polygon A, false if B
+         */
         public boolean isA;
-        /** Distance of the projection onto the sweep direction from the origin */
+        /**
+         * Distance of the projection onto the sweep direction from the origin
+         */
         public double distance;
 
-        /** Next vertex in the list */
+        /**
+         * Next vertex in the list
+         */
         public ProjectedVertex next;
-        /** Next previous in the list */
+        /**
+         * Next previous in the list
+         */
         public ProjectedVertex previous;
 
         /**
          * Construct a list element with all it's values set except the next and
          * previous elements of the list.
          *
-         * @param vertex Vertex number, usually the index of the vertex in a polygon's array
-         * @param isA True if this is a vertex belonging to polygon A, false if B
+         * @param vertex   Vertex number, usually the index of the vertex in a polygon's array
+         * @param isA      True if this is a vertex belonging to polygon A, false if B
          * @param distance Distance of the projection onto the sweep direction from the origin
          */
         public ProjectedVertex(int vertex, boolean isA, double distance) {
@@ -75,13 +85,18 @@ public class EdgeSweep {
         }
     }
 
-    /** The last inserted element in the projected vertex list */
+    /**
+     * The last inserted element in the projected vertex list
+     */
     private ProjectedVertex current;
 
-    /** The direction in which to sweep */
+    /**
+     * The direction in which to sweep
+     */
     private Vector2f sweepDir;
 
-    /** Constructs an EdgeSweep object with the given sweep direction.
+    /**
+     * Constructs an EdgeSweep object with the given sweep direction.
      *
      * @param sweepDir The direction in which to sweep
      */
@@ -90,25 +105,25 @@ public class EdgeSweep {
     }
 
     /**
-     * Insert a new element into our list that is known to be somewhere before 
+     * Insert a new element into our list that is known to be somewhere before
      * the current element. It walks backwards over the vertex list untill a vertex
      * with a smaller distance or the start of the list is reached and inserts
      * the element there.
      *
-     * @param vertex Vertex number, usually the index of the vertex in a polygon's array
-     * @param isA True if this is a vertex belonging to polygon A, false if B
+     * @param vertex   Vertex number, usually the index of the vertex in a polygon's array
+     * @param isA      True if this is a vertex belonging to polygon A, false if B
      * @param distance Distance of the projection onto the sweep direction from the origin
      */
     private void insertBackwards(int vertex, boolean isA, double distance) {
         ProjectedVertex svl = new ProjectedVertex(vertex, isA, distance);
 
-        if ( current == null ) {
+        if (current == null) {
             current = svl;
             return;
         }
 
-        while ( current.distance > svl.distance ) {
-            if ( current.previous == null ) {
+        while (current.distance > svl.distance) {
+            if (current.previous == null) {
                 // insert before current
                 current.previous = svl;
                 svl.next = current;
@@ -124,7 +139,7 @@ public class EdgeSweep {
         svl.previous = current;
         current.next = svl;
 
-        if ( svl.next != null )
+        if (svl.next != null)
             svl.next.previous = svl;
 
         current = svl;
@@ -133,37 +148,37 @@ public class EdgeSweep {
     /**
      * Insert a vertex into the sorted list.
      *
-     * @param vertex Vertex number, usually the index of the vertex in a polygon's array
-     * @param isA True if this is a vertex belonging to polygon A, false if B
+     * @param vertex   Vertex number, usually the index of the vertex in a polygon's array
+     * @param isA      True if this is a vertex belonging to polygon A, false if B
      * @param distance Distance of the projection onto the sweep direction from the origin
      */
     public void insert(int vertex, boolean isA, double distance) {
-        if ( current == null || current.distance <= distance )
+        if (current == null || current.distance <= distance)
             insertForwards(vertex, isA, distance);
         else
             insertBackwards(vertex, isA, distance);
     }
 
     /**
-     * Insert a new element into our list that is known to be somewhere after 
+     * Insert a new element into our list that is known to be somewhere after
      * the current element. It walks forwards over the vertex list untill a vertex
      * with a smaller distance or the end of the list is reached and inserts
      * the element there.
      *
-     * @param vertex Vertex number, usually the index of the vertex in a polygon's array
-     * @param isA True if this is a vertex belonging to polygon A, false if B
+     * @param vertex   Vertex number, usually the index of the vertex in a polygon's array
+     * @param isA      True if this is a vertex belonging to polygon A, false if B
      * @param distance Distance of the projection onto the sweep direction from the origin
      */
     private void insertForwards(int vertex, boolean isA, double distance) {
         ProjectedVertex svl = new ProjectedVertex(vertex, isA, distance);
 
-        if ( current == null ) {
+        if (current == null) {
             current = svl;
             return;
         }
 
-        while ( current.distance <= svl.distance ) {
-            if ( current.next == null ) {
+        while (current.distance <= svl.distance) {
+            if (current.next == null) {
                 // insert after current
                 current.next = svl;
                 svl.previous = current;
@@ -179,18 +194,19 @@ public class EdgeSweep {
         svl.previous = current.previous;
         current.previous = svl;
 
-        if ( svl.previous != null )
+        if (svl.previous != null)
             svl.previous.next = svl;
 
         current = svl;
     }
 
-    /** Set current to the first element of the list 
+    /**
+     * Set current to the first element of the list
      * TODO: make this return something, touching the global current is ugly
      */
     private void goToStart() {
         // get the first vertex
-        while ( current.previous != null )
+        while (current.previous != null)
             current = current.previous;
     }
 
@@ -201,7 +217,7 @@ public class EdgeSweep {
      * dimension [n][2], where [i][0] is the edge of polygon A and [i][1] of B.
      */
     public int[][] getOverlappingEdges() {
-        if ( current == null )
+        if (current == null)
             return new int[0][2];
 
         goToStart();
@@ -212,30 +228,30 @@ public class EdgeSweep {
 
         double lastDist = -Double.MAX_VALUE;
 
-        while ( current != null ) {
-            if ( current.distance > lastDist ) {
+        while (current != null) {
+            if (current.distance > lastDist) {
                 lastDist = current.distance;
                 edgesA.removeScheduled();
                 edgesB.removeScheduled();
             }
 
-            if ( current.isA ) {
-                if ( !edgesA.contains(current.vertex) ) {
+            if (current.isA) {
+                if (!edgesA.contains(current.vertex)) {
                     edgesA.addEdge(current.vertex);
 
                     int[] edgeListB = edgesB.getEdges();
-                    for ( int i = 0; i < edgeListB.length; i++ )
+                    for (int i = 0; i < edgeListB.length; i++)
                         collidingEdges.add(current.vertex, edgeListB[i]);
 
                 } else {
                     edgesA.scheduleRemoval(current.vertex);
                 }
             } else {
-                if ( !edgesB.contains(current.vertex) ) {
+                if (!edgesB.contains(current.vertex)) {
                     edgesB.addEdge(current.vertex);
 
                     int[] edgeListA = edgesA.getEdges();
-                    for ( int i = 0; i < edgeListA.length; i++ )
+                    for (int i = 0; i < edgeListA.length; i++)
                         collidingEdges.add(edgeListA[i], current.vertex);
 
                 } else {
@@ -249,22 +265,27 @@ public class EdgeSweep {
         return collidingEdges.toList();
     }
 
-    /** The list of edges that are touched by the sweepline at a given time. 
-     *
+    /**
+     * The list of edges that are touched by the sweepline at a given time.
+     * <p/>
      * Note that this implementation proved faster than one with a HashSet,
      * a specialized IntegerSet library and BitSet. This is mostly because
      * this list will rarely contain more than 10 edges at a time.
      * The IntegerSet and BitSet implementation both had poor performance
      * in the getEdges function.
-     *
+     * <p/>
      * TODO: implement this with a tree to improve the performance of 'contains'?
      * If that is done, one should take care that it handles edges that are mostly
      * sorted (because that will definately be the case).
      */
     private class CurrentEdges {
-        /** The first element of the list of edges that have been inserted */
+        /**
+         * The first element of the list of edges that have been inserted
+         */
         private LinkedEdgeList currentEdges;
-        /** The edges that have been scheduled for removal but have not yet been removed */
+        /**
+         * The edges that have been scheduled for removal but have not yet been removed
+         */
         private LinkedEdgeList scheduledForRemoval;
 
         /**
@@ -276,29 +297,29 @@ public class EdgeSweep {
          * @param e The edge to be added
          */
         public void addEdge(int e) {
-            currentEdges = new LinkedEdgeList(e,currentEdges);
+            currentEdges = new LinkedEdgeList(e, currentEdges);
         }
 
         /**
-         * Schedule an edge for removal, it will be removed as soon as 
+         * Schedule an edge for removal, it will be removed as soon as
          * {@link CurrentEdges#removeScheduled()} is called.
          *
          * @param e The edge to be scheduled for removal
          */
         public void scheduleRemoval(int e) {
-            if ( currentEdges == null )
+            if (currentEdges == null)
                 return; // this shouldn't happen, but to be sure..
 
-            if ( currentEdges.edge == e ) {
+            if (currentEdges.edge == e) {
                 currentEdges = currentEdges.next;
             } else {
                 LinkedEdgeList current = currentEdges.next;
                 LinkedEdgeList last = currentEdges;
 
-                while ( current != null ) {
-                    if ( current.edge == e ) {
+                while (current != null) {
+                    if (current.edge == e) {
                         last.next = current.next;
-                        scheduledForRemoval = new LinkedEdgeList(e,scheduledForRemoval);
+                        scheduledForRemoval = new LinkedEdgeList(e, scheduledForRemoval);
                         return;
                     }
                     last = current;
@@ -307,8 +328,10 @@ public class EdgeSweep {
             }
         }
 
-        /** Remove the edges that have been scheduled for removal by
-         * {@link CurrentEdges#scheduleRemoval(int)}. */
+        /**
+         * Remove the edges that have been scheduled for removal by
+         * {@link CurrentEdges#scheduleRemoval(int)}.
+         */
         public void removeScheduled() {
             scheduledForRemoval = null;
         }
@@ -321,15 +344,15 @@ public class EdgeSweep {
          */
         public boolean contains(int e) {
             LinkedEdgeList current = currentEdges;
-            while ( current != null ) {
-                if ( current.edge == e )
+            while (current != null) {
+                if (current.edge == e)
                     return true;
                 current = current.next;
             }
 
             current = scheduledForRemoval;
-            while ( current != null ) {
-                if ( current.edge == e )
+            while (current != null) {
+                if (current.edge == e)
                     return true;
                 current = current.next;
             }
@@ -346,13 +369,13 @@ public class EdgeSweep {
         public int getNoEdges() {
             int count = 0;
             LinkedEdgeList current = currentEdges;
-            while ( current != null ) {
+            while (current != null) {
                 count++;
                 current = current.next;
             }
 
             current = scheduledForRemoval;
-            while ( current != null ) {
+            while (current != null) {
                 count++;
                 current = current.next;
             }
@@ -372,13 +395,13 @@ public class EdgeSweep {
 
             int i = 0;
             LinkedEdgeList current = currentEdges;
-            while ( current != null ) {
+            while (current != null) {
                 returnEdges[i] = current.edge;
                 i++;
                 current = current.next;
             }
             current = scheduledForRemoval;
-            while ( current != null ) {
+            while (current != null) {
                 returnEdges[i] = current.edge;
                 i++;
                 current = current.next;
@@ -387,11 +410,17 @@ public class EdgeSweep {
             return returnEdges;
         }
 
-        /** A singly linked list for edges */
+        /**
+         * A singly linked list for edges
+         */
         class LinkedEdgeList {
-            /** The edge number */
+            /**
+             * The edge number
+             */
             public int edge;
-            /** The next list element */
+            /**
+             * The next list element
+             */
             public LinkedEdgeList next;
 
             /**
@@ -408,18 +437,24 @@ public class EdgeSweep {
         }
     }
 
-    /** The list of collision candidates in a linked list */
+    /**
+     * The list of collision candidates in a linked list
+     */
     private class EdgePairs {
-        /** The first element of the list of collision candidates */
+        /**
+         * The first element of the list of collision candidates
+         */
         private EdgePair first;
-        /** The total number of collision candidates */
+        /**
+         * The total number of collision candidates
+         */
         private int size = 0;
 
         /**
          * Add a pair of edges to this list
          *
          * @param idA An edge of polygon A
-         * @param idB An edge of polygon B 
+         * @param idB An edge of polygon B
          */
         public void add(int idA, int idB) {
             first = new EdgePair(idA, idB, first);
@@ -436,7 +471,7 @@ public class EdgeSweep {
             int[][] list = new int[size][2];
 
             EdgePair current = first;
-            for ( int i = 0; i < size; i++ ) {
+            for (int i = 0; i < size; i++) {
                 list[i][0] = current.a;
                 list[i][1] = current.b;
 
@@ -446,20 +481,29 @@ public class EdgeSweep {
             return list;
         }
 
-        /** The singly linked list representing one pair of edges */
+        /**
+         * The singly linked list representing one pair of edges
+         */
         class EdgePair {
-            /** An edge of polygon A */
+            /**
+             * An edge of polygon A
+             */
             public int a;
-            /** An edge of polygon B */
+            /**
+             * An edge of polygon B
+             */
             public int b;
-            /** The next element in the list */
+            /**
+             * The next element in the list
+             */
             public EdgePair next;
 
-            /** Construct a new list element with all the attributes set to the
+            /**
+             * Construct a new list element with all the attributes set to the
              * provided values.
              *
-             * @param a An edge of polygon A
-             * @param b An edge of polygon B
+             * @param a    An edge of polygon A
+             * @param b    An edge of polygon B
              * @param next The next element in the list
              */
             public EdgePair(int a, int b, EdgePair next) {
@@ -473,11 +517,11 @@ public class EdgeSweep {
     /**
      * Insert a list of edges
      *
-     * @param isA True iff the inserted vertices are of the first object
+     * @param isA   True iff the inserted vertices are of the first object
      * @param verts The list of vertices to be inserted in counter clockwise order
      */
     public void addVerticesToSweep(boolean isA, Vector2f[] verts) {
-        for ( int i = 0, j = verts.length-1; i < verts.length; j = i, i++ ) {
+        for (int i = 0, j = verts.length - 1; i < verts.length; j = i, i++) {
             double dist = sweepDir.dot(verts[i]);
 
             insert(i, isA, dist);

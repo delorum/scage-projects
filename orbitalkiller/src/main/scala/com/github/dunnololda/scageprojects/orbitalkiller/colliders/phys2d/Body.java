@@ -8,119 +8,213 @@ import java.util.ArrayList;
  * @author Kevin Glass
  */
 public strictfp class Body {
-    /** The next ID to be assigned */
+    /**
+     * The next ID to be assigned
+     */
     private static int NEXT_ID = 0;
-    /** The maximum value indicating that body won't move */
+    /**
+     * The maximum value indicating that body won't move
+     */
     public static final double INFINITE_MASS = Double.MAX_VALUE;
 
-    /** The current position of this body */
+    /**
+     * The current position of this body
+     */
     private Vector2f position = new Vector2f();
-    /** The position of this body in the last frame */
+    /**
+     * The position of this body in the last frame
+     */
     private Vector2f lastPosition = new Vector2f();
-    /** The current rotation of this body in radians */
+    /**
+     * The current rotation of this body in radians
+     */
     private double rotation;
 
-    /** The velocity of this body */
+    /**
+     * The velocity of this body
+     */
     private Vector2f velocity = new Vector2f();
-    /** The angular velocity of this body */
+    /**
+     * The angular velocity of this body
+     */
     private double angularVelocity;
-    /** The last velocity of this body (before last update) */
+    /**
+     * The last velocity of this body (before last update)
+     */
     private Vector2f lastVelocity = new Vector2f();
-    /** The last angular velocity of this body (before last update) */
+    /**
+     * The last angular velocity of this body (before last update)
+     */
     private double lastAngularVelocity;
 
-    /** The velocity of this body */
+    /**
+     * The velocity of this body
+     */
     private Vector2f biasedVelocity = new Vector2f();
-    /** The angular velocity of this body */
+    /**
+     * The angular velocity of this body
+     */
     private double biasedAngularVelocity;
 
-    /** The force being applied to this body - i.e. driving velocity */
+    /**
+     * The force being applied to this body - i.e. driving velocity
+     */
     private Vector2f force = new Vector2f();
-    /** The angular force being applied this body - i.e. driving angular velocity */
+    /**
+     * The angular force being applied this body - i.e. driving angular velocity
+     */
     private double torque;
 
-    /** The shape representing this body */
+    /**
+     * The shape representing this body
+     */
     private Shape shape;
 
-    /** The friction on the surface of this body */
+    /**
+     * The friction on the surface of this body
+     */
     private double surfaceFriction;
-    /** The damping caused by friction of the 'air' on this body. */
+    /**
+     * The damping caused by friction of the 'air' on this body.
+     */
     private double damping;
-    /** The rotational damping. */
+    /**
+     * The rotational damping.
+     */
     private double rotDamping;
-    /** The mass of this body */
+    /**
+     * The mass of this body
+     */
     private double mass;
-    /** The inverse mass of this body */
+    /**
+     * The inverse mass of this body
+     */
     private double invMass;
-    /** The density of this body */
+    /**
+     * The density of this body
+     */
     private double I;
-    /** The inverse of this density */
+    /**
+     * The inverse of this density
+     */
     private double invI;
-    /** The name assigned to this body */
+    /**
+     * The name assigned to this body
+     */
     private String name;
-    /** The id assigned ot this body */
+    /**
+     * The id assigned ot this body
+     */
     private int id;
-    /** The restitution of this body */
+    /**
+     * The restitution of this body
+     */
     private double restitution = 0f;
-    /** The list of bodies excluded from colliding with this body */
+    /**
+     * The list of bodies excluded from colliding with this body
+     */
     private BodyList excluded = new BodyList();
-    /** True if this body is effected by gravity */
+    /**
+     * True if this body is effected by gravity
+     */
     private boolean gravity = true;
 
-    /** The collision group bitmask */
+    /**
+     * The collision group bitmask
+     */
     private long bitmask = 0; //0xFFFFFFFFFFFFFFFFL;
-    /** A hook for the library's user's data */
+    /**
+     * A hook for the library's user's data
+     */
     private Object userData = null;
-    /** The old position */
+    /**
+     * The old position
+     */
     private Vector2f oldPosition;
-    /** The new position */
+    /**
+     * The new position
+     */
     private Vector2f newPosition;
-    /** True if we've been hit by another this frame */
+    /**
+     * True if we've been hit by another this frame
+     */
     private boolean hitByAnother;
-    /** True if we're considered static at the moment */
+    /**
+     * True if we're considered static at the moment
+     */
     private boolean isResting;
-    /** The original mass of this object */
+    /**
+     * The original mass of this object
+     */
     private double originalMass;
-    /** The number of hits this frame */
+    /**
+     * The number of hits this frame
+     */
     private int hitCount = 0;
-    /** True if resting body detection is turned on */
+    /**
+     * True if resting body detection is turned on
+     */
     private boolean restingBodyDetection = false;
-    /** The velocity a body hitting a resting body has to have to consider moving it */
+    /**
+     * The velocity a body hitting a resting body has to have to consider moving it
+     */
     private double hitTolerance;
-    /** The amount a body has to rotate for it to be considered non-resting */
+    /**
+     * The amount a body has to rotate for it to be considered non-resting
+     */
     private double rotationTolerance;
-    /** The amoutn a body has to move for it to be considered non-resting */
+    /**
+     * The amoutn a body has to move for it to be considered non-resting
+     */
     private double positionTolerance;
-    /** The list of bodies this body touches */
+    /**
+     * The list of bodies this body touches
+     */
     private BodyList touching = new BodyList();
-    /** True if this body is touching a static */
+    /**
+     * True if this body is touching a static
+     */
     private boolean touchingStatic = false;
-    /** Number of bodies we're touching */
+    /**
+     * Number of bodies we're touching
+     */
     private int touchingCount;
-    /** True if this body is capable of coming to a resting state */
+    /**
+     * True if this body is capable of coming to a resting state
+     */
     private boolean canRest = true;
 
-    /** True if this body can rotate */
+    /**
+     * True if this body can rotate
+     */
     private boolean rotatable = true;
-    /** True if this body can move */
+    /**
+     * True if this body can move
+     */
     private boolean moveable = true;
-    /** True if this body is enabled */
+    /**
+     * True if this body is enabled
+     */
     private boolean enabled = true;
 
-    /** True if this body has been added to the simulation */
+    /**
+     * True if this body has been added to the simulation
+     */
     private boolean added = false;
 
-    /** The maximum velocity the the body can travel at on each axis */
+    /**
+     * The maximum velocity the the body can travel at on each axis
+     */
     private Vector2f maxVelocity;
 
     /**
      * Create a new un-named body
      *
      * @param shape The shape describing this body
-     * @param m The mass of the body
+     * @param m     The mass of the body
      */
     public Body(DynamicShape shape, double m) {
-        this("UnnamedBody",(Shape) shape,m);
+        this("UnnamedBody", (Shape) shape, m);
     }
 
     /**
@@ -145,31 +239,31 @@ public strictfp class Body {
      * Create a new un-named body
      *
      * @param shape The shape describing this body
-     * @param m The mass of the body
+     * @param m     The mass of the body
      */
     protected Body(Shape shape, double m) {
-        this("UnnamedBody",shape,m);
+        this("UnnamedBody", shape, m);
     }
 
     /**
      * Create a named body
      *
-     * @param name The name to assign to the body
+     * @param name  The name to assign to the body
      * @param shape The shape describing this body
-     * @param m The mass of the body
+     * @param m     The mass of the body
      */
-    public Body(String name,DynamicShape shape, double m) {
-        this(name,(Shape) shape,m);
+    public Body(String name, DynamicShape shape, double m) {
+        this(name, (Shape) shape, m);
     }
 
     /**
      * Create a named body
      *
-     * @param name The name to assign to the body
+     * @param name  The name to assign to the body
      * @param shape The shape describing this body
-     * @param m The mass of the body
+     * @param m     The mass of the body
      */
-    protected Body(String name,Shape shape, double m) {
+    protected Body(String name, Shape shape, double m) {
         this.name = name;
 
         id = NEXT_ID++;
@@ -189,7 +283,7 @@ public strictfp class Body {
         invI = 0.0f;
 
         originalMass = m;
-        set(shape,m);
+        set(shape, m);
     }
 
     /**
@@ -251,11 +345,11 @@ public strictfp class Body {
      * Indicate whether this body should be able to rotate. Use this feature at
      * you own risk - other bodies will react as tho this body has rotated when
      * hit so there may be artefacts involved with it's use.
-     *
+     * <p/>
      * Note also that this only prevents rotations caused by physics model updates. It
-     * is still possible to explicitly set the rotation of the body with 
+     * is still possible to explicitly set the rotation of the body with
      * #setRotation()
-     *
+     * <p/>
      * The default value is true
      *
      * @param rotatable True if this body is rotatable
@@ -268,11 +362,11 @@ public strictfp class Body {
      * Indicate whether this body should be able to moe. Use this feature at
      * you own risk - other bodies will react as tho this body has moved when
      * hit so there may be artefacts involved with it's use.
-     *
+     * <p/>
      * Note also that this only prevents movement caused by physics model updates. It
-     * is still possible to explicitly set the position of the body with 
+     * is still possible to explicitly set the position of the body with
      * #setPosition()
-     *
+     * <p/>
      * The default value is true
      *
      * @param moveable True if this body is rotatable
@@ -284,7 +378,7 @@ public strictfp class Body {
     /**
      * Enable resting body detection.
      *
-     * @param hitTolerance The velocity a body hitting a resting body has to have to consider moving it
+     * @param hitTolerance      The velocity a body hitting a resting body has to have to consider moving it
      * @param rotationTolerance The amount a body has to rotate for it to be considered non-resting
      * @param positionTolerance The amoutn a body has to move for it to be considered non-resting
      */
@@ -378,8 +472,7 @@ public strictfp class Body {
 //				    && (Math.abs(biasedAngularVelocity) < rotationTolerance)
 //				    && (torque < rotationTolerance)
 //				    && (force.lengthSquared() < positionTolerance)
-                        )
-                {
+                        ) {
                     if (!touchingStatic) {
                         touchingStatic = isTouchingStatic(new ArrayList());
                     }
@@ -387,7 +480,7 @@ public strictfp class Body {
                         isResting = true;
                         setMass(INFINITE_MASS);
                         velocity.set(0.0f, 0.0f);
-                        biasedVelocity.set(0,0);
+                        biasedVelocity.set(0, 0);
                         angularVelocity = 0.0f;
                         biasedAngularVelocity = 0;
                         force.set(0.0f, 0.0f);
@@ -417,7 +510,7 @@ public strictfp class Body {
         boolean result = false;
 
         path.add(this);
-        for (int i=0;i<touching.size();i++) {
+        for (int i = 0; i < touching.size(); i++) {
             Body body = touching.get(i);
             if (path.contains(body)) {
                 continue;
@@ -437,7 +530,7 @@ public strictfp class Body {
     }
 
     /**
-     * Get the list of bodies that this body is touching. Only works if 
+     * Get the list of bodies that this body is touching. Only works if
      * resting body detection is turned on
      *
      * @return The list of bodies this body touches
@@ -447,7 +540,7 @@ public strictfp class Body {
     }
 
     /**
-     * Get the list of bodies that this body is connected to. Only works if 
+     * Get the list of bodies that this body is connected to. Only works if
      * resting body detection is turned on
      *
      * @return The list of bodies this body touches
@@ -457,7 +550,7 @@ public strictfp class Body {
     }
 
     /**
-     * Get the list of bodies that this body is connected to. Only works if 
+     * Get the list of bodies that this body is connected to. Only works if
      * resting body detection is turned on
      *
      * @param stopAtStatic True if we should stop traversing and looking for elements one you find a static one
@@ -469,16 +562,17 @@ public strictfp class Body {
 
         return connected;
     }
+
     /**
      * Get the bodies connected to this one
      *
      * @param stopAtStatic True if we should stop traversing and looking for elements one you find a static one
-     * @param list The list we're building up
-     * @param path The list of elements we passed to get here
+     * @param list         The list we're building up
+     * @param path         The list of elements we passed to get here
      */
     private void getConnected(BodyList list, ArrayList path, boolean stopAtStatic) {
         path.add(this);
-        for (int i=0;i<touching.size();i++) {
+        for (int i = 0; i < touching.size(); i++) {
             Body body = touching.get(i);
             if (path.contains(body)) {
                 continue;
@@ -525,11 +619,11 @@ public strictfp class Body {
     }
 
     /**
-     * Indicate whether this body should be effected by 
+     * Indicate whether this body should be effected by
      * gravity
      *
      * @param gravity True if this body should be effected
-     * by gravity
+     *                by gravity
      */
     public void setGravityEffected(boolean gravity) {
         this.gravity = gravity;
@@ -597,7 +691,7 @@ public strictfp class Body {
     /**
      * Get the inertia of this body
      *
-     * @return The inertia of this body 
+     * @return The inertia of this body
      */
     public double getI() {
         return I;
@@ -605,7 +699,7 @@ public strictfp class Body {
 
     /**
      * Set the "restitution" of the body. Hard bodies transfer
-     * momentum well. A value of 1.0 would be a pool ball. The 
+     * momentum well. A value of 1.0 would be a pool ball. The
      * default is 1f
      *
      * @param rest The restitution of this body
@@ -616,7 +710,7 @@ public strictfp class Body {
 
     /**
      * Get the "restitution" of the body. Hard bodies transfer
-     * momentum well. A value of 1.0 would be a pool ball. The 
+     * momentum well. A value of 1.0 would be a pool ball. The
      * default is 0f
      *
      * @return The "restitution" of the body
@@ -629,7 +723,7 @@ public strictfp class Body {
      * Reconfigure the body
      *
      * @param shape The shape describing this body
-     * @param m The mass of the body
+     * @param m     The mass of the body
      */
     public void set(Shape shape, double m) {
         position.set(0.0f, 0.0f);
@@ -663,16 +757,13 @@ public strictfp class Body {
     private void setMass(double m) {
         mass = m;
 
-        if (mass < INFINITE_MASS)
-        {
+        if (mass < INFINITE_MASS) {
             invMass = 1.0f / mass;
             //I = mass * (size.x * size.x + size.y * size.y) / 12.0f;
 
             I = (mass * shape.getSurfaceFactor()) / 12.0f;
             invI = 1.0f / I;
-        }
-        else
-        {
+        } else {
             invMass = 0.0f;
             I = INFINITE_MASS;
             invI = 0.0f;
@@ -705,7 +796,7 @@ public strictfp class Body {
      * F = -v * damping / m
      *
      * @param damping The friction damping factor which
-     * represents the body's airodynamic properties.
+     *                represents the body's airodynamic properties.
      */
     public void setDamping(double damping) {
         this.damping = damping;
@@ -726,13 +817,12 @@ public strictfp class Body {
      * Set the rotational damping, similar to normal
      * damping. The torque F for this damping would be:
      * F = -av * damping / m
-     * where av is the angular velocity. 
-     *
-     * @see #setDamping(double)
+     * where av is the angular velocity.
      *
      * @param damping The rotational damping which
-     * represents the body's airodynamic properties
-     * when rotating. 
+     *                represents the body's airodynamic properties
+     *                when rotating.
+     * @see #setDamping(double)
      */
     public void setRotDamping(double damping) {
         this.rotDamping = damping;
@@ -744,7 +834,7 @@ public strictfp class Body {
      *
      * @return damping The rotational damping which
      * represents the body's airodynamic properties
-     * when rotating. 
+     * when rotating.
      */
     public double getRotDamping() {
         return this.rotDamping;
@@ -767,8 +857,8 @@ public strictfp class Body {
      * @param y The y position of this body
      */
     public void setPosition(double x, double y) {
-        position.set(x,y);
-        lastPosition.set(x,y);
+        position.set(x, y);
+        lastPosition.set(x, y);
     }
 
     /**
@@ -781,7 +871,7 @@ public strictfp class Body {
      */
     public void move(double x, double y) {
         lastPosition.set(position);
-        position.set(x,y);
+        position.set(x, y);
     }
 
     /**
@@ -805,7 +895,7 @@ public strictfp class Body {
     /**
      * Get the change in position in the last update
      *
-     * @return The change in position in the last update 
+     * @return The change in position in the last update
      */
     public ROVector2f getPositionDelta() {
         Vector2f vec = new Vector2f(getPosition());
@@ -827,7 +917,7 @@ public strictfp class Body {
     /**
      * Get the change in velocity in the last update
      *
-     * @return The change in velocity in the last update 
+     * @return The change in velocity in the last update
      */
     public ROVector2f getVelocityDelta() {
         Vector2f vec = new Vector2f(getVelocity());
@@ -849,7 +939,7 @@ public strictfp class Body {
     /**
      * Get the change in angular velocity in the last update
      *
-     * @return The change in angular velocity in the last update 
+     * @return The change in angular velocity in the last update
      */
     public double getAngularVelocityDelta() {
         return getAngularVelocity() - getLastAngularVelocity();
@@ -915,7 +1005,7 @@ public strictfp class Body {
      * @param y The y component of the force
      */
     public void setForce(double x, double y) {
-        force.set(x,y);
+        force.set(x, y);
     }
 
     /**
@@ -1022,7 +1112,7 @@ public strictfp class Body {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return "[Body '"+name+"' id: "+id+" pos: "+position+" vel: "+velocity+" ("+angularVelocity+")]";
+        return "[Body '" + name + "' id: " + id + " pos: " + position + " vel: " + velocity + " (" + angularVelocity + ")]";
     }
 
     /**
@@ -1089,7 +1179,7 @@ public strictfp class Body {
      * Reset the bias velocity (done every time step)
      */
     public void resetBias() {
-        biasedVelocity.set(0,0);
+        biasedVelocity.set(0, 0);
         biasedAngularVelocity = 0;
     }
 
@@ -1127,7 +1217,7 @@ public strictfp class Body {
      * Set one or more individual bits.
      *
      * @param bitmask A bitmask with the bits
-     * that will be switched on.
+     *                that will be switched on.
      */
     public void addBit(long bitmask) {
         this.bitmask = this.bitmask | bitmask;
@@ -1138,7 +1228,7 @@ public strictfp class Body {
      * The set bits will be removed.
      *
      * @param bitmask A bitmask with the bits
-     * that will be switched off.
+     *                that will be switched off.
      */
     public void removeBit(long bitmask) {
         this.bitmask -= bitmask & this.bitmask;

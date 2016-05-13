@@ -1,9 +1,13 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
 
 public strictfp class Matrix2f {
-    /** The first column of the matrix */
+    /**
+     * The first column of the matrix
+     */
     public Vector2f col1 = new Vector2f();
-    /** The second column of the matrix */
+    /**
+     * The second column of the matrix
+     */
     public Vector2f col2 = new Vector2f();
 
     /**
@@ -17,12 +21,13 @@ public strictfp class Matrix2f {
      *
      * @param angle The angle of the rotation decribed by the matrix
      */
-    public Matrix2f(double angle)
-    {
+    public Matrix2f(double angle) {
         double c = Math.cos(angle);
         double s = Math.sin(angle);
-        col1.x = c; col2.x = -s;
-        col1.y = s; col2.y = c;
+        col1.x = c;
+        col2.x = -s;
+        col1.y = s;
+        col2.y = c;
     }
 
     /**
@@ -41,8 +46,7 @@ public strictfp class Matrix2f {
      *
      * @return A newly created matrix containing the transpose of this matrix
      */
-    public Matrix2f transpose()
-    {
+    public Matrix2f transpose() {
         return new Matrix2f(new Vector2f(col1.x, col2.x),
                 new Vector2f(col1.y, col2.y));
     }
@@ -52,8 +56,7 @@ public strictfp class Matrix2f {
      *
      * @return A newly created matrix containing the invert of this matrix
      */
-    public Matrix2f invert()
-    {
+    public Matrix2f invert() {
         double a = col1.x, b = col2.x, c = col1.y, d = col2.y;
         Matrix2f B = new Matrix2f();
 
@@ -63,8 +66,10 @@ public strictfp class Matrix2f {
         }
 
         det = 1.0f / det;
-        B.col1.x =  det * d;	B.col2.x = -det * b;
-        B.col1.y = -det * c;	B.col2.y =  det * a;
+        B.col1.x = det * d;
+        B.col2.x = -det * b;
+        B.col1.y = -det * c;
+        B.col2.y = det * a;
         return B;
     }
 }

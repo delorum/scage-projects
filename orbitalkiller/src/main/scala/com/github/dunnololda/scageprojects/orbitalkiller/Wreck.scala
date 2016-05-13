@@ -1,13 +1,14 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
-import OrbitalKiller._
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.{DVec, ScageId}
+import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
-class Wreck(mass:Double, init_coord:DVec, init_velocity:DVec, init_rotation:Double, points:List[DVec], val is_main:Boolean) {
+class Wreck(mass: Double, init_coord: DVec, init_velocity: DVec, init_rotation: Double, points: List[DVec], val is_main: Boolean) {
   val index = ScageId.nextId
   private val draw_points = points :+ points.head
-  def colorIfPlayerAliveOrRed(color: => ScageColor) = if(OrbitalKiller.player_ship.isDead) RED else color
+
+  def colorIfPlayerAliveOrRed(color: => ScageColor) = if (OrbitalKiller.player_ship.isDead) RED else color
 
   val currentState = new MutableBodyState(BodyState(
     index = index,
@@ -36,14 +37,17 @@ class Wreck(mass:Double, init_coord:DVec, init_velocity:DVec, init_rotation:Doub
   )
 
   val start_tact = system_evolution.tacts
-  
+
   def coord = currentState.coord
+
   def linearVelocity = currentState.vel
+
   def angularVelocity = currentState.ang_vel
+
   def rotation = currentState.ang
 
   val render_id = render {
-    if(!drawMapMode && coord.dist2(player_ship.coord) < 100000*100000) {
+    if (!drawMapMode && coord.dist2(player_ship.coord) < 100000 * 100000) {
       openglLocalTransform {
         openglMove(currentState.coord - base)
         /*mbs.contacts.foreach(x => {
@@ -61,7 +65,7 @@ class Wreck(mass:Double, init_coord:DVec, init_velocity:DVec, init_rotation:Doub
 
   //val burn_dist = 30000.0 + math.random*10000 + earth.radius
 
-  if(!is_main) {
+  if (!is_main) {
     actionStaticPeriod(1000) {
       if (timeMultiplier > 10 || coord.dist2(player_ship.coord) > 100000l * 100000l) {
         system_evolution.removeBodyByIndex(index)

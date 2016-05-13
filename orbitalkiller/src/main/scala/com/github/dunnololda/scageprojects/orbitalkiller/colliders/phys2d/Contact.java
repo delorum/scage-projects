@@ -7,28 +7,50 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
  */
 public strictfp class Contact {
     // TODO: the positions are absolute, right? if not make them so
-    /** The position of the contact */
+    /**
+     * The position of the contact
+     */
     Vector2f position = new Vector2f();
-    /** The normal at the contact point which, for convex bodies,
-     * points away from the first body. */
+    /**
+     * The normal at the contact point which, for convex bodies,
+     * points away from the first body.
+     */
     Vector2f normal = new Vector2f();
-    /** ? */
+    /**
+     * ?
+     */
     double separation;
-    /** The impulse accumlated in the direction of the normal */
+    /**
+     * The impulse accumlated in the direction of the normal
+     */
     double accumulatedNormalImpulse;
-    /** The impulse accumlated in the direction of the tangent */
+    /**
+     * The impulse accumlated in the direction of the tangent
+     */
     double accumulatedTangentImpulse;
-    /** The mass applied throught the normal at this contact point */
+    /**
+     * The mass applied throught the normal at this contact point
+     */
     double massNormal;
-    /** The mass applied through the tangent at this contact point */
+    /**
+     * The mass applied through the tangent at this contact point
+     */
     double massTangent;
-    /** The correction factor penetration */
+    /**
+     * The correction factor penetration
+     */
     double bias;
-    /** The pair of edges this contact is between */
+    /**
+     * The pair of edges this contact is between
+     */
     FeaturePair feature = new FeaturePair();
-    /** The restitution at this point of contact */
+    /**
+     * The restitution at this point of contact
+     */
     double restitution;
-    /** The bias impulse accumulated */
+    /**
+     * The bias impulse accumulated
+     */
     double biasImpulse;
 
     /**
@@ -151,6 +173,6 @@ public strictfp class Contact {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return "[Contact "+position+" n: "+normal+" sep: "+separation+"]";
+        return "[Contact " + position + " n: " + normal + " sep: " + separation + "]";
     }
 }

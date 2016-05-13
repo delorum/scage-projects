@@ -4,7 +4,6 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
  * Collide a circle with a convex polygon
  *
  * @author Gideon Smeding
- *
  */
 public class PolygonCircleCollider extends PolygonPolygonCollider {
 
@@ -25,18 +24,18 @@ public class PolygonCircleCollider extends PolygonPolygonCollider {
         int[][] collPairs = getCollisionCandidates(vertsA, centroidA, circle.getRadius(), bodyB.getPosition());
 
         int noContacts = 0;
-        for ( int i = 0; i < collPairs.length; i++ ) {
-            if ( noContacts >= contacts.length )
+        for (int i = 0; i < collPairs.length; i++) {
+            if (noContacts >= contacts.length)
                 return contacts.length;
 
             Vector2f lineStartA = vertsA[collPairs[i][0]];
-            Vector2f lineEndA = vertsA[(collPairs[i][0]+1) % vertsA.length ];
+            Vector2f lineEndA = vertsA[(collPairs[i][0] + 1) % vertsA.length];
             Line line = new Line(lineStartA, lineEndA);
 
             double dis2 = line.distanceSquared(bodyB.getPosition());
             double r2 = circle.getRadius() * circle.getRadius();
 
-            if ( dis2 < r2 ) {
+            if (dis2 < r2) {
                 Vector2f pt = new Vector2f();
 
                 line.getClosestPoint(bodyB.getPosition(), pt);
@@ -61,9 +60,9 @@ public class PolygonCircleCollider extends PolygonPolygonCollider {
      * This uses a sweepline algorithm which is only efficient if some assumptions
      * are indeed true. See CPolygonCPolygonCollider for more information.
      *
-     * @param vertsA The vertices of a polygon that is collided with a circle
-     * @param centroid The center of the polygon
-     * @param radius The radius of the circle
+     * @param vertsA    The vertices of a polygon that is collided with a circle
+     * @param centroid  The center of the polygon
+     * @param radius    The radius of the circle
      * @param circlePos The position (center) of the circle
      * @return The list of edges that can collide with the circle
      */

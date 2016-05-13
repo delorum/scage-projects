@@ -1,11 +1,11 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 
-import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
-import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scageprojects.orbitalkiller._
 
 class OrbitInfo extends InterfaceElement {
   private val strings = Array("")
+
   override protected def _update(): Unit = {
     strings(0) = s"Орбита: ${orbitStrInPointWithVelocity(player_ship.coord, player_ship.linearVelocity, player_ship.radius, player_ship.mass, currentPlanetStates)}"
 

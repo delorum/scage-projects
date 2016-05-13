@@ -2,7 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
 
 /**
  * A collider for boxes hitting circles. Box = bodyA, Circle = bodyB
- *
+ * <p/>
  * The create() method is used as a factor although since this collider
  * is currently stateless a single instance is returned.
  *
@@ -18,7 +18,7 @@ public strictfp class BoxCircleCollider implements Collider {
         double x2 = circleBody.getPosition().getX();
         double y2 = circleBody.getPosition().getY();
 
-        boolean touches = boxBody.getShape().getBounds().touches(x1,y1,circleBody.getShape().getBounds(),x2,y2);
+        boolean touches = boxBody.getShape().getBounds().touches(x1, y1, circleBody.getShape().getBounds(), x2, y2);
         if (!touches) {
             return 0;
         }
@@ -28,16 +28,16 @@ public strictfp class BoxCircleCollider implements Collider {
 
         Vector2f[] pts = box.getPoints(boxBody.getPosition(), boxBody.getRotation());
         Line[] lines = new Line[4];
-        lines[0] = new Line(pts[0],pts[1]);
-        lines[1] = new Line(pts[1],pts[2]);
-        lines[2] = new Line(pts[2],pts[3]);
-        lines[3] = new Line(pts[3],pts[0]);
+        lines[0] = new Line(pts[0], pts[1]);
+        lines[1] = new Line(pts[1], pts[2]);
+        lines[2] = new Line(pts[2], pts[3]);
+        lines[3] = new Line(pts[3], pts[0]);
 
         double r2 = circle.getRadius() * circle.getRadius();
         int closest = -1;
         double closestDistance = Double.MAX_VALUE;
 
-        for (int i=0;i<4;i++) {
+        for (int i = 0; i < 4; i++) {
             double dis = lines[i].distanceSquared(circleBody.getPosition());
             if (dis < r2) {
                 if (closestDistance > dis) {

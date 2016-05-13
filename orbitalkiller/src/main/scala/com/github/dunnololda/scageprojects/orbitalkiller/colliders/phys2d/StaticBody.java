@@ -19,7 +19,7 @@ public strictfp class StaticBody extends Body {
     /**
      * Create a static body
      *
-     * @param name The name to assign to the body
+     * @param name  The name to assign to the body
      * @param shape The shape representing this body
      */
     public StaticBody(String name, Shape shape) {

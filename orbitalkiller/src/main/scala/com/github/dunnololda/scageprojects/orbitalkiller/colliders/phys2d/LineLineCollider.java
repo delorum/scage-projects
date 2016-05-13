@@ -4,7 +4,6 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
  * Collides two lines with oneanother.
  *
  * @author Gideon Smeding
- *
  */
 public class LineLineCollider implements Collider {
 
@@ -86,8 +85,8 @@ public class LineLineCollider implements Collider {
      * TODO: move this somewhere in math package
      *
      * @param startA Starting point of the line
-     * @param endA End point of the line
-     * @param point The point to get a closes point on the line for
+     * @param endA   End point of the line
+     * @param point  The point to get a closes point on the line for
      * @return the closest point on the line or null if the lines are parallel
      */
     public static Vector2f getClosestPoint(Vector2f startA, Vector2f endA, Vector2f point) {
@@ -99,7 +98,7 @@ public class LineLineCollider implements Collider {
         double d = endB.y * (endA.x - startA.x);
         d -= endB.x * (endA.y - startA.y);
 
-        if ( d == 0 )
+        if (d == 0)
             return null;
 
         double uA = endB.x * (startA.y - startB.getY());

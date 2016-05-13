@@ -2,50 +2,74 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
 
 /**
  * Implemenation of a bunch of maths functions to do with lines. Note
- * that lines can't be used as dynamic shapes right now - also collision 
+ * that lines can't be used as dynamic shapes right now - also collision
  * with the end of a line is undefined.
  *
  * @author Kevin Glass
  */
 public strictfp class Line extends AbstractShape implements DynamicShape {
-    /** The start point of the line */
+    /**
+     * The start point of the line
+     */
     private ROVector2f start;
-    /** The end point of the line */
+    /**
+     * The end point of the line
+     */
     private ROVector2f end;
-    /** The vector between the two points */
+    /**
+     * The vector between the two points
+     */
     private Vector2f vec;
-    /** The length of the line squared */
+    /**
+     * The length of the line squared
+     */
     private double lenSquared;
 
-    /** Temporary storage - declared globally to reduce GC */
-    private Vector2f loc = new Vector2f(0,0);
-    /** Temporary storage - declared globally to reduce GC */
-    private Vector2f v = new Vector2f(0,0);
-    /** Temporary storage - declared globally to reduce GC */
-    private Vector2f v2 = new Vector2f(0,0);
-    /** Temporary storage - declared globally to reduce GC */
-    private Vector2f proj = new Vector2f(0,0);
+    /**
+     * Temporary storage - declared globally to reduce GC
+     */
+    private Vector2f loc = new Vector2f(0, 0);
+    /**
+     * Temporary storage - declared globally to reduce GC
+     */
+    private Vector2f v = new Vector2f(0, 0);
+    /**
+     * Temporary storage - declared globally to reduce GC
+     */
+    private Vector2f v2 = new Vector2f(0, 0);
+    /**
+     * Temporary storage - declared globally to reduce GC
+     */
+    private Vector2f proj = new Vector2f(0, 0);
 
-    /** Temporary storage - declared globally to reduce GC */
-    private Vector2f closest = new Vector2f(0,0);
-    /** Temporary storage - declared globally to reduce GC */
-    private Vector2f other = new Vector2f(0,0);
+    /**
+     * Temporary storage - declared globally to reduce GC
+     */
+    private Vector2f closest = new Vector2f(0, 0);
+    /**
+     * Temporary storage - declared globally to reduce GC
+     */
+    private Vector2f other = new Vector2f(0, 0);
 
-    /** True if this line blocks on the outer edge */
+    /**
+     * True if this line blocks on the outer edge
+     */
     private boolean outerEdge = true;
-    /** True if this line blocks on the inner edge */
+    /**
+     * True if this line blocks on the inner edge
+     */
     private boolean innerEdge = true;
 
     /**
      * Create a new line based on the origin and a single point
      *
-     * @param x The end point of the line
-     * @param y The end point of the line
+     * @param x     The end point of the line
+     * @param y     The end point of the line
      * @param inner True if this line blocks on it's inner edge
      * @param outer True if this line blocks on it's outer edge
      */
     public Line(double x, double y, boolean inner, boolean outer) {
-        this(0,0,x,y);
+        this(0, 0, x, y);
 
         setBlocksInnerEdge(inner);
         setBlocksOuterEdge(outer);
@@ -58,7 +82,7 @@ public strictfp class Line extends AbstractShape implements DynamicShape {
      * @param y The end point of the line
      */
     public Line(double x, double y) {
-        this(x,y,true,true);
+        this(x, y, true, true);
     }
 
     /**
@@ -70,14 +94,14 @@ public strictfp class Line extends AbstractShape implements DynamicShape {
      * @param y2 The y coordinate of the end point
      */
     public Line(double x1, double y1, double x2, double y2) {
-        this(new Vector2f(x1,y1), new Vector2f(x2,y2));
+        this(new Vector2f(x1, y1), new Vector2f(x2, y2));
     }
 
     /**
      * Create a new line based on two points
      *
      * @param start The start point
-     * @param end The end point
+     * @param end   The end point
      */
     public Line(ROVector2f start, ROVector2f end) {
         super();
@@ -100,9 +124,9 @@ public strictfp class Line extends AbstractShape implements DynamicShape {
 //		}
         //TODO: do this properly!
         double radius = Math.max(start.length(), end.length());
-        bounds = new AABox(0,0,radius*2,radius*2);
+        bounds = new AABox(0, 0, radius * 2, radius * 2);
 
-        set(start,end);
+        set(start, end);
     }
 
     /**
@@ -181,7 +205,7 @@ public strictfp class Line extends AbstractShape implements DynamicShape {
      * Configure the line
      *
      * @param start The start point of the line
-     * @param end The end point of the line
+     * @param end   The end point of the line
      */
     public void set(ROVector2f start, ROVector2f end) {
         this.start = start;
@@ -276,7 +300,7 @@ public strictfp class Line extends AbstractShape implements DynamicShape {
     /**
      * Get the closest point on the line to a given point
      *
-     * @param point The point which we want to project
+     * @param point  The point which we want to project
      * @param result The point on the line closest to the given point
      */
     public void getClosestPoint(ROVector2f point, Vector2f result) {
@@ -318,7 +342,7 @@ public strictfp class Line extends AbstractShape implements DynamicShape {
      * end point. Curious huh?
      *
      * @param displacement The displacement of the line
-     * @param rotation The rotation of the line in radians
+     * @param rotation     The rotation of the line in radians
      * @return The newly created line
      */
     public Line getPositionedLine(ROVector2f displacement, double rotation) {
@@ -332,7 +356,7 @@ public strictfp class Line extends AbstractShape implements DynamicShape {
      * Return a translated and rotated line.
      *
      * @param displacement The displacement of the line
-     * @param rotation The rotation of the line in radians
+     * @param rotation     The rotation of the line in radians
      * @return The two endpoints of this line
      */
     public Vector2f[] getVertices(ROVector2f displacement, double rotation) {
@@ -370,7 +394,7 @@ public strictfp class Line extends AbstractShape implements DynamicShape {
      * @see java.lang.Object#toString()
      */
     public String toString() {
-        return "[Line "+start+","+end+"]";
+        return "[Line " + start + "," + end + "]";
     }
 
     /**
@@ -400,7 +424,7 @@ public strictfp class Line extends AbstractShape implements DynamicShape {
         double ix = start.getX() + (u * (end.getX() - start.getX()));
         double iy = start.getY() + (u * (end.getY() - start.getY()));
 
-        return new Vector2f(ix,iy);
+        return new Vector2f(ix, iy);
     }
 
 }

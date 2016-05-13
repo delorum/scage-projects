@@ -43,9 +43,9 @@ public strictfp class LineCircleCollider implements Collider {
 
         Vector2f position = null;
 
-        if ( uA < 0 ) { // the intersection is somewhere before startA
+        if (uA < 0) { // the intersection is somewhere before startA
             position = startA;
-        } else if ( uA > 1 ) { // the intersection is somewhere after endA
+        } else if (uA > 1) { // the intersection is somewhere after endA
             position = endA;
         } else {
             position = new Vector2f(
@@ -59,7 +59,7 @@ public strictfp class LineCircleCollider implements Collider {
         double distSquared = normal.lengthSquared();
         double radiusSquared = circle.getRadius() * circle.getRadius();
 
-        if ( distSquared < radiusSquared ) {
+        if (distSquared < radiusSquared) {
             contacts[0].setPosition(position);
             contacts[0].setFeature(new FeaturePair());
 

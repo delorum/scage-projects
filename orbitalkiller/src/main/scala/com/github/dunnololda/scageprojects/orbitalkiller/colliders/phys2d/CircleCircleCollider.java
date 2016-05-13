@@ -2,7 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
 
 /**
  * A collider for circle 2 circle collisions
- *
+ * <p/>
  * The create() method is used as a factory just in case this
  * class becomes stateful eventually.
  *
@@ -26,12 +26,12 @@ public strictfp class CircleCircleCollider implements Collider {
         Circle circleA = (Circle) bodyA.getShape();
         Circle circleB = (Circle) bodyB.getShape();
 
-        touches = circleA.touches(x1,y1,circleB,x2,y2);
+        touches = circleA.touches(x1, y1, circleB, x2, y2);
         if (!touches) {
             return 0;
         }
 
-        Vector2f normal = MathUtil.sub(bodyB.getPosition(),bodyA.getPosition());
+        Vector2f normal = MathUtil.sub(bodyB.getPosition(), bodyA.getPosition());
         double sep = (circleA.getRadius() + circleB.getRadius()) - normal.length();
 
         normal.normalise();

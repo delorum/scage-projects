@@ -10,10 +10,12 @@ import scala.collection.mutable.ArrayBuffer
 
 object InterfaceHolder {
   private val additional_messages = mutable.HashMap[String, String]()
-  def addMessage(keyword:String, message:String): Unit = {
+
+  def addMessage(keyword: String, message: String): Unit = {
     additional_messages += (keyword -> message)
   }
-  def removeMessage(keyword:String): Unit = {
+
+  def removeMessage(keyword: String): Unit = {
     additional_messages -= keyword
   }
 
@@ -34,10 +36,11 @@ object InterfaceHolder {
   val sunRelativeInfo = new SunRelativeInfo
   val earthRelativeInfo = new EarthRelativeInfo
   val moonRelativeInfo = new MoonRelativeInfo
-  
+
   val stationInfo = new OtherShipInfo(OrbitalKiller.station)
   val sat1Info = new OtherShipInfo(OrbitalKiller.sat1)
   val ship_interfaces = List(stationInfo, sat1Info)
+
   def shipsMinimized = ship_interfaces.filter(_.isMinimized)
 
   val rocketsInfo = new RocketsInfo
@@ -61,7 +64,7 @@ object InterfaceHolder {
     ship_interfaces,
     List(rocketsInfo),
     List(linearVelocityInfo, angularVelocityInfo, pilotStateInfo),
-    List(planetsInfluenceInfo, /*satelliteEscapeVelocityInfo, */orbitInfo),
+    List(planetsInfluenceInfo, /*satelliteEscapeVelocityInfo, */ orbitInfo),
     List(enginesInfo),
     List(shipParamsWhenEginesOff)
   )
@@ -75,6 +78,7 @@ object InterfaceHolder {
     gSwitcher,
     degOrKm,
     timeStepSwitcher)
+
   private def activeSwitchers = switchers.filter(_.active)
 
   def hideAllByUser(): Unit = {
@@ -93,8 +97,9 @@ object InterfaceHolder {
    * @param mouse_btn - 0 - левая кнопка, 1 - правая кнопка мыши
    * @return - true/false. true - попали в какой-то элемент интерфейса, и событие было обработано.
    */
-  def clickInterfaceElem(mouse_coord:DVec, mouse_btn:Int):Boolean = {
-    if(10 < mouse_coord.y && mouse_coord.y < 30) {  // мышкой кликнули на линии свернутых элементов
+  def clickInterfaceElem(mouse_coord: DVec, mouse_btn: Int): Boolean = {
+    if (10 < mouse_coord.y && mouse_coord.y < 30) {
+      // мышкой кликнули на линии свернутых элементов
       mouse_btn == 0 && {
         _minimized_strings.find {
           case (i, color, minimized_elem_center_x) =>
@@ -109,29 +114,32 @@ object InterfaceHolder {
           true
         })
       }
-    } else if(30 < mouse_coord.y && mouse_coord.y < 50) {  // мышкой кликнули на линии переключателей
+    } else if (30 < mouse_coord.y && mouse_coord.y < 50) {
+      // мышкой кликнули на линии переключателей
       var switchers_x_offset = 20
       activeSwitchers.zipWithIndex.find {
         case (sw, idx) =>
-          val switcher_center_x = switchers_x_offset + sw.selectedStrVariantLen/2
+          val switcher_center_x = switchers_x_offset + sw.selectedStrVariantLen / 2
           switchers_x_offset += sw.selectedStrVariantLen + between_switchers
-          switcher_center_x - sw.selectedStrVariantLen/2 < mouse_coord.x && mouse_coord.x < switcher_center_x + sw.selectedStrVariantLen/2
+          switcher_center_x - sw.selectedStrVariantLen / 2 < mouse_coord.x && mouse_coord.x < switcher_center_x + sw.selectedStrVariantLen / 2
       }.exists(x => {
-        if(mouse_btn == 1) {
+        if (mouse_btn == 1) {
           x._1.switchBack()
-        } else if(mouse_btn == 0) {
+        } else if (mouse_btn == 0) {
           x._1.switchForward()
         }
         true
       })
-    } else if(20 < mouse_coord.x && mouse_coord.x < 300) {  // кликаем на развернутых элементах интерфейса
+    } else if (20 < mouse_coord.x && mouse_coord.x < 300) {
+      // кликаем на развернутых элементах интерфейса
       mouse_btn == 0 && {
         val x = (_strings.length + 2) * 20 - mouse_coord.y
         _interface_elems_positions.find {
           case (i, pos) =>
             pos - 20 < x && x < pos + 20 * (i.data.length - 1)
         }.exists(x => {
-          x._1.hideByUser(); true
+          x._1.hideByUser();
+          true
         })
       }
     } else false
@@ -141,17 +149,17 @@ object InterfaceHolder {
     /*if(ship.otherShipsNear.isEmpty) {
       nearestShipInfo.hideByConstraint()
     } else nearestShipInfo.showByConstraint()*/
-    if(player_ship.flightMode != FreeFlightMode || !player_ship.engines.exists(_.active)) {
+    if (player_ship.flightMode != FreeFlightMode || !player_ship.engines.exists(_.active)) {
       shipParamsWhenEginesOff.hideByConstraint()
     } else {
       shipParamsWhenEginesOff.showByConstraint()
     }
-    if(player_ship.flightMode == NearestPlanetVelocity || player_ship.flightMode == NearestShipAutoDocking) {
+    if (player_ship.flightMode == NearestPlanetVelocity || player_ship.flightMode == NearestShipAutoDocking) {
       enginesInfo.hideByConstraint()
     } else {
       enginesInfo.showByConstraint()
     }
-    if(player_ship.isLanded) {
+    if (player_ship.isLanded) {
       angularVelocityInfo.hideByConstraint()
     } else {
       angularVelocityInfo.showByConstraint()
@@ -173,31 +181,31 @@ object InterfaceHolder {
     _minimized_strings.clear()
     _interface_elems_positions.clear()
     var offset = 0
-    var minimized_x_offset = 20                         // левый край очередной свернутой надписи по x
+    var minimized_x_offset = 20 // левый край очередной свернутой надписи по x
     var minimized_ship_exists = false
     interfaces.foreach {
       case l =>
         var non_minimized_exists = false
         l.foreach {
           case i =>
-            if(!i.isMinimized) {
+            if (!i.isMinimized) {
               non_minimized_exists = true
               _strings ++= i.data.map(x => (x, i.color))
-             _interface_elems_positions += ((i, offset))
-              offset += i.data.length*20
+              _interface_elems_positions += ((i, offset))
+              offset += i.data.length * 20
             } else {
-              if(!i.isInstanceOf[OtherShipInfo]) {
-                val x_position = minimized_x_offset+i.shortDescrLen/2    // центр надписи по x
-                if(i.isMinimizedByConstraint) {
+              if (!i.isInstanceOf[OtherShipInfo]) {
+                val x_position = minimized_x_offset + i.shortDescrLen / 2 // центр надписи по x
+                if (i.isMinimizedByConstraint) {
                   _minimized_strings += ((i, DARK_GRAY, x_position))
                 } else {
                   _minimized_strings += ((i, i.color, x_position))
                 }
                 minimized_x_offset += i.shortDescrLen + between_minimized_elems
               } else {
-                if(!minimized_ship_exists) {
+                if (!minimized_ship_exists) {
                   val j = new OtherShipInfoMinimized(shipsMinimized.length)
-                  val x = minimized_x_offset+j.shortDescrLen/2    // центр надписи по x
+                  val x = minimized_x_offset + j.shortDescrLen / 2 // центр надписи по x
                   _minimized_strings += ((j, j.color, x))
                   minimized_ship_exists = true
                   minimized_x_offset += j.shortDescrLen + between_minimized_elems
@@ -205,10 +213,10 @@ object InterfaceHolder {
               }
             }
         }
-      if(non_minimized_exists) {
-        _strings += (("", YELLOW))
-        offset += 20
-      }
+        if (non_minimized_exists) {
+          _strings += (("", YELLOW))
+          offset += 20
+        }
     }
   }
 
@@ -217,12 +225,12 @@ object InterfaceHolder {
 
   def draw(): Unit = {
     _strings.zipWithIndex.foreach {
-      case ((str, color), idx) => print(str, 20, (_strings.length+2 - idx)*20, player_ship.colorIfPlayerAliveOrRed(color))
+      case ((str, color), idx) => print(str, 20, (_strings.length + 2 - idx) * 20, player_ship.colorIfPlayerAliveOrRed(color))
     }
     var switchers_x_offset = 20
     activeSwitchers.zipWithIndex.foreach {
       case (switcher, idx) =>
-        val x_position = switchers_x_offset + switcher.selectedStrVariantLen/2
+        val x_position = switchers_x_offset + switcher.selectedStrVariantLen / 2
         print(switcher.selectedStrVariant, x_position, 40, player_ship.colorIfPlayerAliveOrRed(YELLOW), align = "center")
         switchers_x_offset += switcher.selectedStrVariantLen + between_switchers
     }

@@ -11,42 +11,44 @@ import org.jbox2d.dynamics.joints._
 object JBox2DTest extends ScageScreenApp("JBox2D Test", 640, 480) {
   val testStr = AppProperties.property("test", "test1")
 
-  val dt = 1f/63
+  val dt = 1f / 63
   val world = new World(new Vec2(0, 0))
   private val debug_drawer = new ScageDrawer
   world.setDebugDraw(debug_drawer)
 
-  val w = windowWidth/2
-  val h = windowHeight/2
+  val w = windowWidth / 2
+  val h = windowHeight / 2
 
-  def randomPos = Vec(w-95+math.random*190, h-95+math.random*190)
-  def randomSpeed = Vec(-1 + math.random*2, -1 + math.random*2).n*50f
+  def randomPos = Vec(w - 95 + math.random * 190, h - 95 + math.random * 190)
 
-  def createWall(fromx:Float, fromy:Float, tox:Float, toy:Float) = {
+  def randomSpeed = Vec(-1 + math.random * 2, -1 + math.random * 2).n * 50f
+
+  def createWall(fromx: Float, fromy: Float, tox: Float, toy: Float) = {
     val horizontal = fromy == toy
     val fd = new FixtureDef
     fd.restitution = 1
     fd.friction = 0
     fd.density = 0.01f
     val sd = new PolygonShape
-    if(horizontal) {
+    if (horizontal) {
       sd.setAsBox(0.5f * (tox - fromx), 2)
     } else {
       sd.setAsBox(2, 0.5f * (toy - fromy))
     }
     fd.shape = sd
     val bd = new BodyDef
-    bd.position = new Vec2(fromx + 0.5f*(tox - fromx), fromy + 0.5f*(toy - fromy))
+    bd.position = new Vec2(fromx + 0.5f * (tox - fromx), fromy + 0.5f * (toy - fromy))
     val body = world.createBody(bd)
     body.createFixture(fd)
     body
   }
+
   val w1 = createWall(w - 100, h - 100, w + 100, h - 100)
   val w2 = createWall(w - 100, h + 100, w + 100, h + 100)
   val w3 = createWall(w - 100, h - 100, w - 100, h + 100)
   val w4 = createWall(w + 100, h - 100, w + 100, h + 100)
 
-  def createCircle(position:Vec, velocity:Vec, radius:Float) = {
+  def createCircle(position: Vec, velocity: Vec, radius: Float) = {
     val fd = new FixtureDef
     fd.restitution = 1
     fd.friction = 0
@@ -63,13 +65,13 @@ object JBox2DTest extends ScageScreenApp("JBox2D Test", 640, 480) {
     body
   }
 
-  def createSquare(position:Vec, velocity:Vec, side:Float) = {
+  def createSquare(position: Vec, velocity: Vec, side: Float) = {
     val fd = new FixtureDef
     fd.restitution = 1
     fd.friction = 0
     fd.density = 1
     val sd = new PolygonShape
-    sd.setAsBox(side/2, side/2)
+    sd.setAsBox(side / 2, side / 2)
     fd.shape = sd
     val bd = new BodyDef
     bd.`type` = BodyType.DYNAMIC
@@ -80,18 +82,18 @@ object JBox2DTest extends ScageScreenApp("JBox2D Test", 640, 480) {
     body
   }
 
-  def createRect(position:Vec, velocity:Vec, side1:Float, side2:Float) = {
+  def createRect(position: Vec, velocity: Vec, side1: Float, side2: Float) = {
     val fd = new FixtureDef
     fd.restitution = 1
     fd.friction = 0
     fd.density = 1
     val sd = new PolygonShape
-    sd.setAsBox(side1/2, side2/2)
+    sd.setAsBox(side1 / 2, side2 / 2)
     fd.shape = sd
     val bd = new BodyDef
     bd.`type` = BodyType.DYNAMIC
     bd.position = new Vec2(position.x, position.y)
-    bd.angle = (45.0/180*math.Pi).toFloat
+    bd.angle = (45.0 / 180 * math.Pi).toFloat
     bd.fixedRotation = false
     bd.linearVelocity = new Vec2(velocity.x, velocity.y)
     val body = world.createBody(bd)
@@ -108,7 +110,7 @@ object JBox2DTest extends ScageScreenApp("JBox2D Test", 640, 480) {
     jd.addBody(c2)
     jd.addBody(c3)
     world.createJoint(jd)
-    List(c1,c2,c3)
+    List(c1, c2, c3)
   }
 
   def test2() = {
@@ -116,12 +118,12 @@ object JBox2DTest extends ScageScreenApp("JBox2D Test", 640, 480) {
     val c2 = createCircle(randomPos, randomSpeed, 10)
     val jd = new DistanceJointDef
     jd.bodyA = c1
-    jd.localAnchorA.set(new Vec2(0,10))
+    jd.localAnchorA.set(new Vec2(0, 10))
     jd.bodyB = c2
-    jd.localAnchorB.set(new Vec2(0,10))
+    jd.localAnchorB.set(new Vec2(0, 10))
     jd.length = 50
     world.createJoint(jd)
-    List(c1,c2)
+    List(c1, c2)
   }
 
   def test3() = {
@@ -129,12 +131,12 @@ object JBox2DTest extends ScageScreenApp("JBox2D Test", 640, 480) {
     val s2 = createSquare(randomPos, randomSpeed, 10)
     val jd = new DistanceJointDef
     jd.bodyA = s1
-    jd.localAnchorA.set(new Vec2(0,5))
+    jd.localAnchorA.set(new Vec2(0, 5))
     jd.bodyB = s2
-    jd.localAnchorB.set(new Vec2(0,5))
+    jd.localAnchorB.set(new Vec2(0, 5))
     jd.length = 50
     world.createJoint(jd)
-    List(s1,s2)
+    List(s1, s2)
   }
 
   def test4() = {
@@ -147,19 +149,19 @@ object JBox2DTest extends ScageScreenApp("JBox2D Test", 640, 480) {
     val c2 = createCircle(randomPos, randomSpeed, 10)
     val jd1 = new DistanceJointDef
     jd1.bodyA = c1
-    jd1.localAnchorA.set(new Vec2(0,10))
+    jd1.localAnchorA.set(new Vec2(0, 10))
     jd1.bodyB = c2
-    jd1.localAnchorB.set(new Vec2(0,10))
+    jd1.localAnchorB.set(new Vec2(0, 10))
     jd1.length = 50
     world.createJoint(jd1)
     val jd2 = new DistanceJointDef
     jd2.bodyA = c1
-    jd2.localAnchorA.set(new Vec2(0,-10))
+    jd2.localAnchorA.set(new Vec2(0, -10))
     jd2.bodyB = c2
-    jd2.localAnchorB.set(new Vec2(0,-10))
+    jd2.localAnchorB.set(new Vec2(0, -10))
     jd2.length = 50
     world.createJoint(jd2)
-    List(c1,c2)
+    List(c1, c2)
   }
 
   def test6() = {
@@ -167,12 +169,12 @@ object JBox2DTest extends ScageScreenApp("JBox2D Test", 640, 480) {
     val c2 = createCircle(randomPos, randomSpeed, 10)
     val jd = new DistanceJointDef
     jd.bodyA = c1
-    jd.localAnchorA.set(new Vec2(0,0))
+    jd.localAnchorA.set(new Vec2(0, 0))
     jd.bodyB = c2
-    jd.localAnchorB.set(new Vec2(0,0))
+    jd.localAnchorB.set(new Vec2(0, 0))
     jd.length = 50
     world.createJoint(jd)
-    List(c1,c2)
+    List(c1, c2)
   }
 
   def test7() = {
@@ -180,32 +182,32 @@ object JBox2DTest extends ScageScreenApp("JBox2D Test", 640, 480) {
     val c2 = createCircle(randomPos, randomSpeed, 10)
     val jd1 = new DistanceJointDef
     jd1.bodyA = c1
-    jd1.localAnchorA.set(new Vec2(0,0))
+    jd1.localAnchorA.set(new Vec2(0, 0))
     jd1.bodyB = c2
-    jd1.localAnchorB.set(new Vec2(0,0))
+    jd1.localAnchorB.set(new Vec2(0, 0))
     jd1.length = 50
     world.createJoint(jd1)
     val jd2 = new DistanceJointDef
     jd2.bodyA = c1
-    jd2.localAnchorA.set(new Vec2(0,0))
+    jd2.localAnchorA.set(new Vec2(0, 0))
     jd2.bodyB = w2
-    jd2.localAnchorB.set(new Vec2(0,0))
+    jd2.localAnchorB.set(new Vec2(0, 0))
     jd2.length = 50
     world.createJoint(jd2)
-    List(c1,c2)
+    List(c1, c2)
   }
 
   def test8() = {
-    val c1 = createCircle(Vec(w,h), Vec(0, -30), 10)
-    val c2 = createCircle(Vec(w,h-70), Vec(0, -30), 10)
+    val c1 = createCircle(Vec(w, h), Vec(0, -30), 10)
+    val c2 = createCircle(Vec(w, h - 70), Vec(0, -30), 10)
     val jd = new DistanceJointDef
     jd.bodyA = c1
-    jd.localAnchorA.set(new Vec2(0,-10))
+    jd.localAnchorA.set(new Vec2(0, -10))
     jd.bodyB = c2
-    jd.localAnchorB.set(new Vec2(0,10))
+    jd.localAnchorB.set(new Vec2(0, 10))
     jd.length = 50
     world.createJoint(jd)
-    List(c1,c2)
+    List(c1, c2)
   }
 
   val bodies = testStr match {
@@ -222,35 +224,44 @@ object JBox2DTest extends ScageScreenApp("JBox2D Test", 640, 480) {
 
   def energy = {
     bodies.map(b => {
-      b.m_mass*b.m_linearVelocity.lengthSquared()/2 + b.m_I*b.m_angularVelocity*b.m_angularVelocity/2
+      b.m_mass * b.m_linearVelocity.lengthSquared() / 2 + b.m_I * b.m_angularVelocity * b.m_angularVelocity / 2
     }).sum
   }
 
   private def nextStep() {
     world.step(dt, 8, 3)
   }
+
   nextStep()
 
   private var _center = windowCenter
 
-  keyIgnorePause(KEY_Q, onKeyDown = if(keyPressed(KEY_LCONTROL)) stopApp())
+  keyIgnorePause(KEY_Q, onKeyDown = if (keyPressed(KEY_LCONTROL)) stopApp())
 
-  keyIgnorePause(KEY_W, 10, onKeyDown = {_center += Vec(0, 5/globalScale)})
-  keyIgnorePause(KEY_A, 10, onKeyDown = {_center += Vec(-5/globalScale, 0)})
-  keyIgnorePause(KEY_S, 10, onKeyDown = {_center += Vec(0, -5/globalScale)})
-  keyIgnorePause(KEY_D, 10, onKeyDown = {_center += Vec(5/globalScale, 0)})
+  keyIgnorePause(KEY_W, 10, onKeyDown = {
+    _center += Vec(0, 5 / globalScale)
+  })
+  keyIgnorePause(KEY_A, 10, onKeyDown = {
+    _center += Vec(-5 / globalScale, 0)
+  })
+  keyIgnorePause(KEY_S, 10, onKeyDown = {
+    _center += Vec(0, -5 / globalScale)
+  })
+  keyIgnorePause(KEY_D, 10, onKeyDown = {
+    _center += Vec(5 / globalScale, 0)
+  })
 
   mouseWheelDownIgnorePause(onWheelDown = m => {
-    if(globalScale > 0.01f) {
-      if(globalScale > 1) globalScale -= 1
-      else if(globalScale > 0.1f) globalScale -= 0.1f
+    if (globalScale > 0.01f) {
+      if (globalScale > 1) globalScale -= 1
+      else if (globalScale > 0.1f) globalScale -= 0.1f
       else globalScale -= 0.01f
-      if(globalScale < 0.01f) globalScale = 0.01f
+      if (globalScale < 0.01f) globalScale = 0.01f
     }
   })
   mouseWheelUpIgnorePause(onWheelUp = m => {
-    if(globalScale < 5) {
-      if(globalScale < 1) globalScale += 0.1f
+    if (globalScale < 5) {
+      if (globalScale < 1) globalScale += 0.1f
       else globalScale += 1
     }
   })

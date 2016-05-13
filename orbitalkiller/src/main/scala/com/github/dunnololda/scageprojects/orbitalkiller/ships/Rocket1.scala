@@ -5,24 +5,30 @@ import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 
-class Rocket1(index:Int,
-              init_coord:DVec,
-              init_velocity:DVec = DVec.dzero,
-              init_rotation:Double = 0.0) extends PolygonShip(index, "Доброта", init_coord, init_velocity, init_rotation) {
-  private val _payload:Double = 196
-  private var _fuel_mass:Double = 4 // количество топлива для 1 секунды работы двигателя (расход топлива 4 кг/сек)
-  def mass:Double = _payload + _fuel_mass
+class Rocket1(index: Int,
+              init_coord: DVec,
+              init_velocity: DVec = DVec.dzero,
+              init_rotation: Double = 0.0) extends PolygonShip(index, "Доброта", init_coord, init_velocity, init_rotation) {
+  private val _payload: Double = 196
+  private var _fuel_mass: Double = 4
+
+  // количество топлива для 1 секунды работы двигателя (расход топлива 4 кг/сек)
+  def mass: Double = _payload + _fuel_mass
+
   override def fuelMass: Double = _fuel_mass
-  override def fuelMass_=(m: Double): Unit = {_fuel_mass = m}
+
+  override def fuelMass_=(m: Double): Unit = {
+    _fuel_mass = m
+  }
 
   val is_manned = false
 
-  lazy val engine_size:Double = 0.5*0.1
+  lazy val engine_size: Double = 0.5 * 0.1
 
   val start_tact = system_evolution.tacts
   val work_tacts = 1200 // количество тактов, за которое ракета пролетит 10 км
 
-  lazy val points:List[DVec] = List(
+  lazy val points: List[DVec] = List(
     DVec(1.0, -20.0),
     DVec(2.0, -21.0),
     DVec(2.0, -18.0),
@@ -34,7 +40,7 @@ class Rocket1(index:Int,
     DVec(-2.0, -18.0),
     DVec(-2.0, -21.0),
     DVec(-1.0, -20.0)
-  ).map(_*0.1)
+  ).map(_ * 0.1)
 
   lazy val convex_parts = List(
     PolygonShape(List(DVec(-0.2, -2.0), DVec(-0.2, -2.1000001), DVec(-0.1, -2.0)), Nil),
@@ -80,7 +86,7 @@ class Rocket1(index:Int,
 
   val two = new Engine(
     2,
-    position = DVec(0.0, -20.0)*0.1,
+    position = DVec(0.0, -20.0) * 0.1,
     force_dir = DVec(0.0, 1.0),
     max_power = 100000, // такая сила разгонит 200-килограммовую ракету до 500 м/сек за 1 секунду
     default_power_percent = 1,
@@ -93,12 +99,13 @@ class Rocket1(index:Int,
     KEY_NUMPAD2 -> two
   )
 
-  def preserveVelocity(vel:DVec) {}
+  def preserveVelocity(vel: DVec) {}
+
   def preserveAngularVelocity(ang_vel_deg: Double) {}
 
   override protected def drawShip(): Unit = {
-    if(!drawMapMode) {
-      if(isAlive) {
+    if (!drawMapMode) {
+      if (isAlive) {
         openglLocalTransform {
           openglMove(coord - base)
 
@@ -147,15 +154,15 @@ class Rocket1(index:Int,
     }
   }
 
-  override def afterStep(time_msec:Long): Unit = {
+  override def afterStep(time_msec: Long): Unit = {
     super.afterStep(time_msec)
-    if(system_evolution.tacts - start_tact > work_tacts) {
+    if (system_evolution.tacts - start_tact > work_tacts) {
       currentState.vel = init_velocity
       kill("Ракета самоуничтожилась", crash = true)
     }
   }
 
-  override lazy val initState:BodyState = BodyState(
+  override lazy val initState: BodyState = BodyState(
     index,
     mass,
     acc = DVec.zero,
@@ -171,9 +178,9 @@ class Rocket1(index:Int,
   override def onCollision(): Unit = {
     super.onCollision()
     currentState.contacts.foreach(c => {
-      val obstacle = if(c.a.index != index) c.a else c.b
+      val obstacle = if (c.a.index != index) c.a else c.b
       ShipsHolder.shipByIndex(obstacle.index).foreach(s => {
-        if(!s.isCrashed) {
+        if (!s.isCrashed) {
           s.kill("Корабль уничтожен ракетным ударом", crash = true)
         }
       })

@@ -4,9 +4,8 @@ package com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d;
  * Collider for a Line and a Convex Polygon.
  *
  * @author Gideon Smeding
- *
  */
-public class LinePolygonCollider  extends PolygonPolygonCollider {
+public class LinePolygonCollider extends PolygonPolygonCollider {
 
 
     /**
@@ -29,7 +28,7 @@ public class LinePolygonCollider  extends PolygonPolygonCollider {
         // to get the proper intersection pairs we make sure
         // the line's normal is pointing towards the polygon
         // TODO: verify that it's not actually pointing in the opposite direction
-        if ( isLeftOf ) {
+        if (isLeftOf) {
             Vector2f tmp = vertsA[0];
             vertsA[0] = vertsA[1];
             vertsA[1] = tmp;
@@ -46,7 +45,7 @@ public class LinePolygonCollider  extends PolygonPolygonCollider {
         int[][] collEdgeCands = sweep.getOverlappingEdges();
 
         IntersectionGatherer intGath = new IntersectionGatherer(vertsA, vertsB);
-        for ( int i = 0; i < collEdgeCands.length; i++ )
+        for (int i = 0; i < collEdgeCands.length; i++)
             intGath.intersect(collEdgeCands[i][0], collEdgeCands[i][1]);
 
         Intersection[] intersections = intGath.getIntersections();
@@ -58,24 +57,24 @@ public class LinePolygonCollider  extends PolygonPolygonCollider {
      * Given a list of intersections, calculate the collision information and
      * set the contacts with that information.
      *
-     * @param contacts The array of contacts to fill
-     * @param vertsA The vertices of polygon A
-     * @param vertsB The vertices of polygon B
+     * @param contacts      The array of contacts to fill
+     * @param vertsA        The vertices of polygon A
+     * @param vertsB        The vertices of polygon B
      * @param intersections The array of intersection as returned by
-     * {@link IntersectionGatherer#getIntersections()}
+     *                      {@link IntersectionGatherer#getIntersections()}
      * @return The number of contacts that have been set in the contact array
      */
     public int populateContacts(Contact[] contacts, Vector2f[] vertsA, Vector2f[] vertsB, Intersection[] intersections) {
-        if ( intersections.length == 0 )
+        if (intersections.length == 0)
             return 0;
 
         int noContacts = 0;
 
         // is the first intersection outgoing?
-        if ( !intersections[0].isIngoing ) {
-            setLineEndContact(contacts[noContacts], intersections[intersections.length-1], vertsA, vertsB);
+        if (!intersections[0].isIngoing) {
+            setLineEndContact(contacts[noContacts], intersections[intersections.length - 1], vertsA, vertsB);
 
-            if (contacts[noContacts].getSeparation() < -10 )
+            if (contacts[noContacts].getSeparation() < -10)
                 System.out.println("first " + contacts[noContacts].getSeparation());
 
             noContacts++;
@@ -83,12 +82,12 @@ public class LinePolygonCollider  extends PolygonPolygonCollider {
 
 
         int i = noContacts;
-        while ( i < intersections.length-1 ) {
-            if ( noContacts > contacts.length-2 )
+        while (i < intersections.length - 1) {
+            if (noContacts > contacts.length - 2)
                 return noContacts;
 
             // check if we have an intersection pair
-            if ( !intersections[i].isIngoing || intersections[i+1].isIngoing ) {
+            if (!intersections[i].isIngoing || intersections[i + 1].isIngoing) {
                 setContact(contacts[noContacts], intersections[i], vertsA, vertsB);
                 i++;
                 noContacts++;
@@ -97,12 +96,12 @@ public class LinePolygonCollider  extends PolygonPolygonCollider {
 
             setContactPair(
                     contacts[noContacts],
-                    contacts[noContacts+1],
+                    contacts[noContacts + 1],
                     intersections[i],
-                    intersections[i+1],
+                    intersections[i + 1],
                     vertsA, vertsB);
 
-            if (contacts[noContacts].getSeparation() < -10 )
+            if (contacts[noContacts].getSeparation() < -10)
                 System.out.println("m " + contacts[noContacts].getSeparation());
 
             noContacts += 2;
@@ -110,13 +109,13 @@ public class LinePolygonCollider  extends PolygonPolygonCollider {
         }
 
         // is there still an ingoing intersection left?
-        if ( i < intersections.length &&
-                intersections[intersections.length-1].isIngoing &&
+        if (i < intersections.length &&
+                intersections[intersections.length - 1].isIngoing &&
                 noContacts < contacts.length) {
-            setLineEndContact(contacts[noContacts], intersections[intersections.length-1], vertsA, vertsB);
+            setLineEndContact(contacts[noContacts], intersections[intersections.length - 1], vertsA, vertsB);
 
-            if (contacts[noContacts].getSeparation() < -10 )
-                System.out.println(" last " +contacts[noContacts].getSeparation());
+            if (contacts[noContacts].getSeparation() < -10)
+                System.out.println(" last " + contacts[noContacts].getSeparation());
             noContacts++;
         }
 
@@ -127,17 +126,17 @@ public class LinePolygonCollider  extends PolygonPolygonCollider {
     /**
      * Set a contact for an intersection where the colliding line's start- or endpoint
      * is contained in the colliding polygon.
-     *
+     * <p/>
      * TODO: The current implementation doesn't work properly: because lines are very
      * thin, they can slide into a polygon sideways which gives a very deep penetration
-     *  |
-     *  |->
-     *  |      +-----+
-     *  |->    |     |
-     *  |      |     |
-     *         |     |
-     *         +-----+
-     *
+     * |
+     * |->
+     * |      +-----+
+     * |->    |     |
+     * |      |     |
+     * |     |
+     * +-----+
+     * <p/>
      * A possible solution would be to use the velocity of the line relative to the
      * polygon to construct a collision normal and penetration depth.
      * Another possibility is to use the line's normals (both directions) and calculate
@@ -145,14 +144,14 @@ public class LinePolygonCollider  extends PolygonPolygonCollider {
      * If one has multiple normals/penetration depths to choose from, the one with the
      * minimum penetration depth will probably be the best bet.
      *
-     * @param contact The contact to set
+     * @param contact      The contact to set
      * @param intersection The intersection where the line enters or exits the polygon
-     * @param vertsA The line's vertices
-     * @param vertsB The polygon's vertices
+     * @param vertsA       The line's vertices
+     * @param vertsB       The polygon's vertices
      */
     public void setLineEndContact(Contact contact, Intersection intersection, Vector2f[] vertsA, Vector2f[] vertsB) {
         Vector2f separation = new Vector2f(intersection.position);
-        if ( intersection.isIngoing )
+        if (intersection.isIngoing)
             separation.sub(vertsA[1]);
         else
             separation.sub(vertsA[0]);

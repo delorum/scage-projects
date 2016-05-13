@@ -15,18 +15,18 @@ import java.util.LinkedList;
  * is used for the physics simulation.</li>
  * </ul>
  * </p>
- *
+ * <p/>
  * <p>While intersection tests are rather straight forward and well known problems,
  * the selection of the intersections to return is quite complicated.
  * It suprised me that I was completely unable to find applicable information on
  * this particular problem on the net.</p>
- *
+ * <p/>
  * <p>Suppose we have two colliding polygons A and B.
  * Observe that if we trace around the polygons in counterclockwise order starting
  * on an edge of the polygon that is outside the other, we will encounter first
  * an intersection that goes into the other polygon and then one that comes out
  * again.</p>
- *
+ * <p/>
  * <pre>
  *       ----
  *   out| B  |in
@@ -35,38 +35,38 @@ import java.util.LinkedList;
  *  |    ->--    |
  *   ->----------
  * </pre>
- *
- * <p>These in- and outgoing intersections can be used to determine two very 
+ * <p/>
+ * <p>These in- and outgoing intersections can be used to determine two very
  * important things:
  * <ol>
- * <li>A collision normal which simply is a line perpendicular to the line from 
+ * <li>A collision normal which simply is a line perpendicular to the line from
  * the ingoing to the outgoing intersection. </li>
- * <li>The penetration depth, which is determined by tracing along the in-out 
- * line for the longest line parallel to the normal in the overlapping area 
+ * <li>The penetration depth, which is determined by tracing along the in-out
+ * line for the longest line parallel to the normal in the overlapping area
  * (see {@link PenetrationSweep}).</li>
  * </ol>
- * Retrieving these pairs is relatively easy. We simply sort the gathered 
+ * Retrieving these pairs is relatively easy. We simply sort the gathered
  * intersections in the order they would occur when tracing the contour of A.</p>
- *
- * <p> Things get complicated when polygons don't just intersect but totally 
+ * <p/>
+ * <p> Things get complicated when polygons don't just intersect but totally
  * penetrate eachother. First of all, the collision normals would (depending on the
- * specific polygons and their intersection) oppose eachother, this has 
+ * specific polygons and their intersection) oppose eachother, this has
  * unpredictable but possibly still acceptible results.</p>
- *
+ * <p/>
  * <p>The biggest problem however is the penetration depth that will be completely
  * off. Take for example the intersection pair 1 and 2 in the example.
  * The penetration depth will be determined by the maximum vertical distance
  * between the edges of A between in and out and the edges of B between out and in
- * (both counterclockwise). 
- * Clearly this gives very large penetration depths which often are completely 
+ * (both counterclockwise).
+ * Clearly this gives very large penetration depths which often are completely
  * wrong.</p>
- *
+ * <p/>
  * <p>In the example the final result will not be very problematic: the forces
  * are most likely to cancel eachother out. But even here it's simple to see that
  * the penetration depth for the intersection pair (3,4) will be much bigger than
  * the other. There are many examples that occur frequently in practice which will
  * cause bodies to be shot in orbit (if the physics would've allowed it ;) ).</p>
- *
+ * <p/>
  * <pre>
  *       ----
  *    in|A   |out
@@ -74,16 +74,16 @@ import java.util.LinkedList;
  *  |B  |    |        |
  *  |   |    |        |
  *   ->-4----1--------
- *   out|    |in 
+ *   out|    |in
  *       ->--
  * </pre>
- *
+ * <p/>
  * <p>The/A solution actually is quite straightforward: if we throw out one of the
  * two intersection pairs, the penetration depth will be correct and there won't be
  * any normals that cancel eachother out while they shouldn't. Aditionally this
  * technique will decrease the number of feature pairs, which is good for speed.
  * </p>
- *
+ * <p/>
  * <p>Throwing out the right pairs still is quite a challange, but we can apply a
  * technique similar to the one we used to get the intersection pairs. Then we
  * traced the contour of A, now we trace the contour of B starting with an
@@ -91,13 +91,13 @@ import java.util.LinkedList;
  * we accept the pair (i.e. not throw it out) and move on to the next intersection.
  * If we encounter an ingoing intersection belonging to a different pair or an
  * outgoing intersection we throw it out.</p>
- *
+ * <p/>
  * <p>We still are not done just yet. The following example shows that it matters
  * a great deal which intersection we start with. If we start at intersection 2,
  * all the other intersection pairs will be thrown out and B will be pushed down.
  * If we had chosen to start with 4 or 6, the result would be more acceptable;
  * only (1,2) would be thrown out and B would be pushed up.</p>
- *
+ * <p/>
  * <pre>
  *       --------------
  *      |B             |
@@ -110,23 +110,23 @@ import java.util.LinkedList;
  *    in|    |out
  *       ->--
  * </pre>
- *
+ * <p/>
  * <p>This problem is not really solved currently. There is a heuristic in place
- * that will select the outgoing edge that has the largest number of vertices 
+ * that will select the outgoing edge that has the largest number of vertices
  * outside A. In other words, the largest number of vertices between the chosen
  * outgoing intersection and the last ingoing intersection (last as in clockwise
  * as opposed to counterclockwise).</p>
- *
+ * <p/>
  * <p>The heuristic is based on the idea that we are more likely to be pushed
  * from A into the direction where the largest part of B is. For the example
  * this would not work, but for many examples in practice it will.</p>
- *
+ * <p/>
  * TODO: When we're stacking a lot of triangles the heuristic fails occationaly.
  * The triangles will sometimes jump in directions they shouldn't.
- *
+ * <p/>
  * <h5>Problems</h5>
- *
- * <p>If we manage to get all intersections between polygons, we should always 
+ * <p/>
+ * <p>If we manage to get all intersections between polygons, we should always
  * encounter alternating ingoing and outgoing intersections when tracing either
  * A or B. In practice this isn't really the case for two reasons:</p>
  * <ol>
@@ -141,36 +141,47 @@ import java.util.LinkedList;
  * {@link IntersectionComparator} and {@link PointerTableComparator} suffer of
  * doubleing point rounding errors when in- and outgoing edges are close together.</li>
  * </ol>
- *
+ * <p/>
  * <p>In stead of trying to fix this issue or throw out the faulty intersections,
  * I've made some adjustments that will simply skip these intersections. I am
  * afraid that these issues might cause trouble somewhere sometime, so if possible
  * this should be fixed some time.</p>
- *
- *
+ * <p/>
+ * <p/>
  * TODO: This class could use some specialized data structures in stead of the
  * countless arrays which clutter the code with modulo indices.
  *
  * @author Gideon Smeding
- *
  */
 public class IntersectionGatherer {
 
-    /** The minimum distance two intersections have to be apart to be considered a pair */
+    /**
+     * The minimum distance two intersections have to be apart to be considered a pair
+     */
     public static double MIN_PAIR_DIST = 0.5f;
-    /** The size of the intersections array, thus determening the maximum number
-     * of intersections that the IntersectionGatherer can accept. */
+    /**
+     * The size of the intersections array, thus determening the maximum number
+     * of intersections that the IntersectionGatherer can accept.
+     */
     public static int MAX_INTERSECTIONS = 50;
-    /** The array of intersecting edges which is unsorted while gathering the
+    /**
+     * The array of intersecting edges which is unsorted while gathering the
      * intersections, but will be sorted in order of occurence along the contour
-     * of polygon A. */
+     * of polygon A.
+     */
     private SortableIntersection[] intersections;
-    /** The amount of intersections gathered */
+    /**
+     * The amount of intersections gathered
+     */
     private int noIntersections = 0;
 
-    /** The vertices of polygon A */
+    /**
+     * The vertices of polygon A
+     */
     private Vector2f[] vertsA;
-    /** The vertices of polygon B */
+    /**
+     * The vertices of polygon B
+     */
     private Vector2f[] vertsB;
 
     /**
@@ -194,17 +205,17 @@ public class IntersectionGatherer {
      * @param b The edge of polygon B to check for intersection with A
      */
     public void intersect(int a, int b) {
-        if ( noIntersections >= MAX_INTERSECTIONS )
+        if (noIntersections >= MAX_INTERSECTIONS)
             return;
 
         Vector2f startA = vertsA[a];
-        Vector2f endA = vertsA[(a+1) % vertsA.length ];
+        Vector2f endA = vertsA[(a + 1) % vertsA.length];
         Vector2f startB = vertsB[b];
-        Vector2f endB = vertsB[(b+1) % vertsB.length ];
+        Vector2f endB = vertsB[(b + 1) % vertsB.length];
         //TODO: reuse mathutil.intersect
         double d = (endB.y - startB.y) * (endA.x - startA.x) - (endB.x - startB.x) * (endA.y - startA.y);
 
-        if ( d == 0 ) // parallel lines
+        if (d == 0) // parallel lines
             return;
 
         double uA = (endB.x - startB.x) * (startA.y - startB.y) - (endB.y - startB.y) * (startA.x - startB.x);
@@ -212,7 +223,7 @@ public class IntersectionGatherer {
         double uB = (endA.x - startA.x) * (startA.y - startB.y) - (endA.y - startA.y) * (startA.x - startB.x);
         uB /= d;
 
-        if ( uA < 0 || uA > 1 || uB < 0 || uB > 1 )
+        if (uA < 0 || uA > 1 || uB < 0 || uB > 1)
             return; // intersection point isn't between the start and endpoints
 
         Vector2f position = new Vector2f(
@@ -229,7 +240,7 @@ public class IntersectionGatherer {
         // z axis of 3d cross product
         double sA = (startA.x - startB.x) * (endB.y - startB.y) - (endB.x - startB.x) * (startA.y - startB.y);
 
-        if ( sA > 0 ) {
+        if (sA > 0) {
             intersections[noIntersections] =
                     new SortableIntersection(a, b, position, true, distFromVertA, distFromVertB);
         } else {
@@ -249,7 +260,7 @@ public class IntersectionGatherer {
     public Intersection[] getIntersections() {
         Intersection[] out = new Intersection[noIntersections];
 
-        for ( int i = 0; i < noIntersections; i++ )
+        for (int i = 0; i < noIntersections; i++)
             out[i] = intersections[i];
 
         Arrays.sort(out, new IntersectionComparator());
@@ -259,16 +270,16 @@ public class IntersectionGatherer {
 
     /**
      * Get the pairs of ingoing and outgoing intersections encountered when tracing
-     * the contour of polygon A. Some pairs will be filtered out as described 
+     * the contour of polygon A. Some pairs will be filtered out as described
      * in detail in this class's documentation.
      *
      * @return An array with the intersection pairs which has the dimensions
-     * [n][2] or [n][1], where n is the number of intersections. 
+     * [n][2] or [n][1], where n is the number of intersections.
      * For a pair i getIntersectionPairs()[i][0] will contain the ingoing intersection
      * and getIntersectionPairs()[i][1] the outgoing intersection.
      */
     public Intersection[][] getIntersectionPairs() {
-        if ( noIntersections < 2 )
+        if (noIntersections < 2)
             return new Intersection[0][2];
 
         // sort the array for a trace 
@@ -276,7 +287,7 @@ public class IntersectionGatherer {
 
         // sort a pointer table which uses the indices in the intersections array
         Integer[] pointers = new Integer[noIntersections];
-        for ( int i = 0; i < noIntersections; i++ )
+        for (int i = 0; i < noIntersections; i++)
             pointers[i] = new Integer(i);
         Arrays.sort(pointers, new PointerTableComparator());
 
@@ -288,19 +299,19 @@ public class IntersectionGatherer {
 
         // now copy our results to a new array
         LinkedList outIntersections = new LinkedList();
-        for ( int i = first; i < noIntersections + first; ) {
+        for (int i = first; i < noIntersections + first; ) {
             SortableIntersection in = intersections[i % noIntersections];
-            SortableIntersection out = intersections[(i+1) % noIntersections];
+            SortableIntersection out = intersections[(i + 1) % noIntersections];
 
-            if ( in == null ) {
+            if (in == null) {
                 i += 1;
                 continue;
             }
 
-            if ( out != null && in.isIngoing && !out.isIngoing ) {
+            if (out != null && in.isIngoing && !out.isIngoing) {
                 // pairs that are too close to eachother will
                 // often cause problems, so don't create them
-                if ( !in.position.equalsDelta(out.position, MIN_PAIR_DIST) ) {
+                if (!in.position.equalsDelta(out.position, MIN_PAIR_DIST)) {
                     Intersection[] pair = {in, out};
                     outIntersections.add(pair);
                     i += 2;
@@ -322,9 +333,9 @@ public class IntersectionGatherer {
      * class documentation.
      *
      * @param pointers An array of pointers which are the indices of the
-     * intersections array. The list should be sorted with the order defined by
-     * {@link PointerTableComparator}.
-     * @return The reference pointer which is an outgoing intersection. 
+     *                 intersections array. The list should be sorted with the order defined by
+     *                 {@link PointerTableComparator}.
+     * @return The reference pointer which is an outgoing intersection.
      */
     private int getReferencePointer(Integer[] pointers) {
         // we want to find an ingoing edge with the largest number of edges outside of A
@@ -333,17 +344,17 @@ public class IntersectionGatherer {
         int maxInOutDist = 0;
         int maxInIndex = first + 1 % noIntersections;//intersections[pointers[first].intValue()].edgeB;
         int lastInEdgeB = -1;
-        for ( int i = first; i < noIntersections + first; i++ ) {
+        for (int i = first; i < noIntersections + first; i++) {
             int k = pointers[i % noIntersections].intValue();
             SortableIntersection intersection = intersections[k];
 
-            if ( intersection.isIngoing ) {
+            if (intersection.isIngoing) {
                 lastInEdgeB = intersection.edgeB;
-            } else if ( lastInEdgeB >= 0 ) {
+            } else if (lastInEdgeB >= 0) {
                 int inOutDist = (intersection.edgeB - lastInEdgeB + vertsB.length) % vertsB.length;
 
                 // did we find a new max dist?
-                if ( inOutDist > maxInOutDist ) {
+                if (inOutDist > maxInOutDist) {
                     maxInOutDist = inOutDist;
                     maxInIndex = i % noIntersections;
                 }
@@ -360,32 +371,32 @@ public class IntersectionGatherer {
      * a more thorough description.
      *
      * @param referencePointer The vertex of B that lies outside of A, we will start
-     * at the first outgoing intersection after the reference vertex.
-     * @param pointers An array of pointers which are the indices of the
-     * intersections array. The list should be sorted with the order defined by
-     * {@link PointerTableComparator}.
+     *                         at the first outgoing intersection after the reference vertex.
+     * @param pointers         An array of pointers which are the indices of the
+     *                         intersections array. The list should be sorted with the order defined by
+     *                         {@link PointerTableComparator}.
      */
     private void filterIntersections(int referencePointer, Integer[] pointers) {
         // make sure the reference vertex is real
-        if ( referencePointer >= noIntersections && referencePointer < 0 )
+        if (referencePointer >= noIntersections && referencePointer < 0)
             throw new RuntimeException("The reference vertex cannot be correct since B does not have that many vertices.");
 
         // now throw out the total penetrating intersections
         int topOut = -2; // -2 + 1 will never give an edge number
-        for ( int i = referencePointer; i < noIntersections + referencePointer; i++ ) {
+        for (int i = referencePointer; i < noIntersections + referencePointer; i++) {
             int j = i % noIntersections;
             int k = pointers[j].intValue();
             SortableIntersection intersection = intersections[k];
 
             // note that we go backwards with respect to A so we expect an outgoing edge first
-            if ( intersection.isIngoing ) {
-                if ( (topOut - 1 + noIntersections) % noIntersections == k ) { // the closing 'in' intersection
+            if (intersection.isIngoing) {
+                if ((topOut - 1 + noIntersections) % noIntersections == k) { // the closing 'in' intersection
                     topOut = -2; // reset our top 'out' intersection
                 } else {
                     intersections[k] = null; // remove the 'in'
                 }
             } else {
-                if ( topOut < 0 ) {
+                if (topOut < 0) {
                     topOut = k; // we encountered our new 'out' intersection
                 } else {
                     intersections[k] = null; // remove the out
@@ -395,31 +406,37 @@ public class IntersectionGatherer {
 
         // now get rid of the nullified intersections
         int noRemoved = 0;
-        for ( int i = 0; i < noIntersections; i++ ) {
-            if ( intersections[i] == null ) {
+        for (int i = 0; i < noIntersections; i++) {
+            if (intersections[i] == null) {
                 noRemoved++;
             } else {
-                intersections[i-noRemoved] = intersections[i];
+                intersections[i - noRemoved] = intersections[i];
             }
         }
         noIntersections -= noRemoved;
     }
 
-    /** Class representing a single intersection. It also contains some information used
-     * to sort the edges along the counters of the polygons A and B. */
+    /**
+     * Class representing a single intersection. It also contains some information used
+     * to sort the edges along the counters of the polygons A and B.
+     */
     class SortableIntersection extends Intersection {
-        /** The squared distance from the vertice that starts edgeA */
+        /**
+         * The squared distance from the vertice that starts edgeA
+         */
         public double distFromVertA;
-        /** The squared distance from the vertice that starts edgeB */
+        /**
+         * The squared distance from the vertice that starts edgeB
+         */
         public double distFromVertB;
 
         /**
          * Construct an Intersection object, immediately setting all the attributes.
          *
-         * @param edgeA The edge of polygon A that intersects
-         * @param edgeB The edge of polygon B that intersects
-         * @param position The position of the intersection in world (absolute) coordinates
-         * @param isIngoing True iff this is an intersection where polygon A enters B
+         * @param edgeA         The edge of polygon A that intersects
+         * @param edgeB         The edge of polygon B that intersects
+         * @param position      The position of the intersection in world (absolute) coordinates
+         * @param isIngoing     True iff this is an intersection where polygon A enters B
          * @param distFromVertA The squared distance from the vertice that starts edgeA
          * @param distFromVertB The squared distance from the vertice that starts edgeB
          */
@@ -430,11 +447,14 @@ public class IntersectionGatherer {
         }
     }
 
-    /** Comparator used to sort intersections by their distance from A's first
-     * vertex. */
+    /**
+     * Comparator used to sort intersections by their distance from A's first
+     * vertex.
+     */
     class IntersectionComparator implements Comparator {
 
-        /** Compares two intersections. Note that this function will/should never
+        /**
+         * Compares two intersections. Note that this function will/should never
          * return 0 because no two intersections can have the same distance from
          * vertex 0. However, due to the finite precision of doubleing points this
          * situation does occur. In those cases we try to put ingoing edges first.
@@ -445,12 +465,12 @@ public class IntersectionGatherer {
             SortableIntersection one = (SortableIntersection) first;
             SortableIntersection other = (SortableIntersection) second;
 
-            if ( one.edgeA < other.edgeA ) {
+            if (one.edgeA < other.edgeA) {
                 return -1;
-            } else if ( one.edgeA == other.edgeA ) {
-                if ( one.distFromVertA < other.distFromVertA )
+            } else if (one.edgeA == other.edgeA) {
+                if (one.distFromVertA < other.distFromVertA)
                     return -1;
-                else if ( one.distFromVertA == other.distFromVertA && one.isIngoing )
+                else if (one.distFromVertA == other.distFromVertA && one.isIngoing)
                     return -1;
             }
 
@@ -458,13 +478,16 @@ public class IntersectionGatherer {
         }
     }
 
-    /** Comparator used to sort intersections by their distance from B's first
+    /**
+     * Comparator used to sort intersections by their distance from B's first
      * vertex. This sorts an array of pointers which are the indices of the
      * intersections array. So the actual intersections are retrieved via an
-     * indirection. */
+     * indirection.
+     */
     class PointerTableComparator implements Comparator {
 
-        /** Compares two intersections. Note that this function will/should never
+        /**
+         * Compares two intersections. Note that this function will/should never
          * return 0 because no two intersections can have the same distance from
          * vertex 0. However, due to the finite precision of doubleing points this
          * situation does occur. In those cases we try to put outgoing edges first.
@@ -475,19 +498,18 @@ public class IntersectionGatherer {
             SortableIntersection one = intersections[((Integer) first).intValue()];
             SortableIntersection other = intersections[((Integer) second).intValue()];
 
-            if ( one.edgeB < other.edgeB ) {
+            if (one.edgeB < other.edgeB) {
                 return -1;
-            } else if ( one.edgeB == other.edgeB ) {
-                if ( one.distFromVertB < other.distFromVertB )
+            } else if (one.edgeB == other.edgeB) {
+                if (one.distFromVertB < other.distFromVertB)
                     return -1;
-                else if ( one.distFromVertB == other.distFromVertB && !one.isIngoing )
+                else if (one.distFromVertB == other.distFromVertB && !one.isIngoing)
                     return -1;
             }
 
             return 1;
         }
     }
-
 
 
 }

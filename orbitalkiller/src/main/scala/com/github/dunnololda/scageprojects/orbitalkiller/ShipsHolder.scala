@@ -2,11 +2,11 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
-import scala.collection.{mutable, Set}
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.{Set, mutable}
 
 object ShipsHolder {
-  def addShip(ship:PolygonShip): Unit = {
+  def addShip(ship: PolygonShip): Unit = {
     _ships += ship
     _shipsMap += (ship.index -> ship)
     _shipIndicies += ship.index
@@ -29,10 +29,12 @@ object ShipsHolder {
       }
     )
   }
-  def removeShip(ship:PolygonShip): Unit = {
+
+  def removeShip(ship: PolygonShip): Unit = {
     removeShipByIndex(ship.index)
   }
-  def removeShipByIndex(ship_index:Int): Unit = {
+
+  def removeShipByIndex(ship_index: Int): Unit = {
     _shipsMap.remove(ship_index).foreach(ship => {
       update_list = true
       system_evolution.removeBodyByIndex(ship_index)
@@ -40,9 +42,10 @@ object ShipsHolder {
     _shipIndicies -= ship_index
   }
 
-  private var update_list:Boolean = false
-  def ships:Seq[PolygonShip] = {
-    if(update_list) {
+  private var update_list: Boolean = false
+
+  def ships: Seq[PolygonShip] = {
+    if (update_list) {
       _ships --= _ships.filter(s => !_shipsMap.contains(s.index))
       update_list = false
     }
@@ -50,11 +53,14 @@ object ShipsHolder {
   }
 
   private val _ships = ArrayBuffer[PolygonShip]()
-  private val _shipsMap = mutable.HashMap[Int, PolygonShip]()//ships.map(s => (s.index, s)).toMap
-  def shipByIndex(index:Int):Option[PolygonShip] = _shipsMap.get(index)
+  private val _shipsMap = mutable.HashMap[Int, PolygonShip]()
 
-  private var _shipIndicies:mutable.HashSet[Int] = mutable.HashSet[Int]()
-  def shipIndicies:Set[Int] = _shipIndicies
+  //ships.map(s => (s.index, s)).toMap
+  def shipByIndex(index: Int): Option[PolygonShip] = _shipsMap.get(index)
 
-  def currentShipStatesExceptShip(ship_index:Int):Seq[MutableBodyState] = _ships.withFilter(_.index != ship_index).map(_.currentState)
+  private var _shipIndicies: mutable.HashSet[Int] = mutable.HashSet[Int]()
+
+  def shipIndicies: Set[Int] = _shipIndicies
+
+  def currentShipStatesExceptShip(ship_index: Int): Seq[MutableBodyState] = _ships.withFilter(_.index != ship_index).map(_.currentState)
 }
