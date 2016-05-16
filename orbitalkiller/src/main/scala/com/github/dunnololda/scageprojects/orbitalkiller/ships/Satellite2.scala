@@ -63,45 +63,51 @@ class Satellite2(index: Int,
   )
 
   val wreck_parts = List(
-    PolygonShape(List(DVec(-62.5, 7.5), DVec(-62.5, -7.5), DVec(-52.5, -7.5), DVec(-57.5, 2.5)), Nil),
-    PolygonShape(List(DVec(-62.5, 7.5), DVec(-57.5, 2.5), DVec(-42.5, 2.5), DVec(-37.5, 7.5)), Nil),
-    PolygonShape(List(DVec(-57.5, 2.5), DVec(-52.5, -7.5), DVec(-37.5, -7.5), DVec(-52.5, 2.5)), Nil),
-    PolygonShape(List(DVec(-52.5, 2.5), DVec(-37.5, -7.5), DVec(-42.5, 2.5)), Nil),
-    PolygonShape(List(DVec(-42.5, 2.5), DVec(-37.5, -7.5), DVec(-32.5, -7.5), DVec(-37.5, 7.5)), Nil),
-    PolygonShape(List(DVec(-37.5, 7.5), DVec(-32.5, -7.5), DVec(-27.5, -7.5), DVec(-32.5, 2.5)), Nil),
-    PolygonShape(List(DVec(-37.5, 7.5), DVec(-32.5, 2.5), DVec(-22.5, 2.5), DVec(-17.5, 7.5)), Nil),
-    PolygonShape(List(DVec(-32.5, 2.5), DVec(-27.5, -7.5), DVec(-17.5, -7.5), DVec(-22.5, 2.5)), Nil),
-    PolygonShape(List(DVec(-22.5, 2.5), DVec(-17.5, -7.5), DVec(-17.5, 7.5)), Nil),
-    PolygonShape(List(DVec(-17.5, 2.5), DVec(-17.5, -2.5), DVec(2.5, -2.5)), Nil),
-    PolygonShape(List(DVec(-17.5, 2.5), DVec(2.5, -2.5), DVec(2.5, 2.5)), Nil),
-    PolygonShape(List(DVec(-12.5, -2.5), DVec(-12.5, -7.5), DVec(-7.5, -12.5), DVec(2.5, -7.5)), Nil),
-    PolygonShape(List(DVec(-12.5, -2.5), DVec(2.5, -7.5), DVec(12.5, -2.5)), Nil),
-    PolygonShape(List(DVec(-7.5, -12.5), DVec(7.5, -12.5), DVec(12.5, -7.5), DVec(12.5, -2.5)), Nil),
-    PolygonShape(List(DVec(-12.5, 12.5), DVec(-12.5, 2.5), DVec(2.5, 2.5), DVec(-7.5, 12.5)), Nil),
-    PolygonShape(List(DVec(-12.5, 12.5), DVec(-2.5, 12.5), DVec(-7.5, 22.5)), Nil),
-    PolygonShape(List(DVec(-7.5, 22.5), DVec(2.5, 22.5), DVec(-7.5, 27.5)), Nil),
-    PolygonShape(List(DVec(-7.5, 27.5), DVec(2.5, 22.5), DVec(7.5, 27.5), DVec(-2.5, 37.5)), Nil),
-    PolygonShape(List(DVec(-7.5, 22.5), DVec(-2.5, 12.5), DVec(2.5, 12.5), DVec(2.5, 22.5)), Nil),
-    PolygonShape(List(DVec(-7.5, 12.5), DVec(2.5, 2.5), DVec(7.5, 7.5), DVec(2.5, 12.5)), Nil),
-    PolygonShape(List(DVec(2.5, 2.5), DVec(2.5, -2.5), DVec(17.5, -2.5)), Nil),
-    PolygonShape(List(DVec(2.5, 2.5), DVec(17.5, -2.5), DVec(27.5, 2.5)), Nil),
-    PolygonShape(List(DVec(2.5, 2.5), DVec(12.5, 2.5), DVec(12.5, 7.5), DVec(7.5, 7.5)), Nil),
-    PolygonShape(List(DVec(2.5, 12.5), DVec(7.5, 7.5), DVec(12.5, 7.5), DVec(12.5, 12.5), DVec(7.5, 22.5)), Nil),
-    PolygonShape(List(DVec(2.5, 22.5), DVec(2.5, 12.5), DVec(7.5, 22.5), DVec(7.5, 27.5)), Nil),
-    PolygonShape(List(DVec(-2.5, 42.5), DVec(-2.5, 37.5), DVec(7.5, 27.5), DVec(2.5, 37.5), DVec(2.5, 42.5)), Nil),
-    PolygonShape(List(DVec(-2.5, 52.5), DVec(-2.5, 42.5), DVec(2.5, 42.5)), Nil),
-    PolygonShape(List(DVec(-2.5, 52.5), DVec(2.5, 42.5), DVec(2.5, 52.5)), Nil),
-    PolygonShape(List(DVec(17.5, 7.5), DVec(17.5, 2.5), DVec(37.5, 2.5), DVec(37.5, 7.5)), Nil),
-    PolygonShape(List(DVec(17.5, -2.5), DVec(17.5, -7.5), DVec(27.5, -7.5), DVec(27.5, 2.5)), Nil),
-    PolygonShape(List(DVec(27.5, -7.5), DVec(37.5, -7.5), DVec(32.5, -2.5), DVec(27.5, -2.5)), Nil),
-    PolygonShape(List(DVec(27.5, 2.5), DVec(27.5, -2.5), DVec(32.5, -2.5), DVec(37.5, -7.5), DVec(37.5, -2.5)), Nil),
-    PolygonShape(List(DVec(27.5, 2.5), DVec(37.5, -2.5), DVec(37.5, 2.5)), Nil),
-    PolygonShape(List(DVec(37.5, 7.5), DVec(37.5, -7.5), DVec(47.5, -7.5)), Nil),
-    PolygonShape(List(DVec(37.5, 7.5), DVec(47.5, -7.5), DVec(52.5, -2.5), DVec(47.5, 2.5)), Nil),
-    PolygonShape(List(DVec(37.5, 7.5), DVec(47.5, 2.5), DVec(62.5, 7.5)), Nil),
-    PolygonShape(List(DVec(47.5, 2.5), DVec(52.5, -2.5), DVec(62.5, 2.5), DVec(62.5, 7.5)), Nil),
-    PolygonShape(List(DVec(47.5, -7.5), DVec(57.5, -7.5), DVec(52.5, -2.5)), Nil),
-    PolygonShape(List(DVec(52.5, -2.5), DVec(57.5, -7.5), DVec(62.5, -7.5), DVec(62.5, 2.5)), Nil)
+    PolygonShape(List(DVec(-62.5, 7.5), DVec(-62.5, -7.5), DVec(-52.5, -7.5), DVec(-57.5, 2.5)), Nil),  // 1
+    PolygonShape(List(DVec(-62.5, 7.5), DVec(-57.5, 2.5), DVec(-42.5, 2.5), DVec(-37.5, 7.5)), Nil),  // 2
+    PolygonShape(List(DVec(-57.5, 2.5), DVec(-52.5, -7.5), DVec(-37.5, -7.5), DVec(-52.5, 2.5)), Nil),  // 3
+    PolygonShape(List(DVec(-52.5, 2.5), DVec(-37.5, -7.5), DVec(-42.5, 2.5)), Nil),  // 4
+    PolygonShape(List(DVec(-42.5, 2.5), DVec(-37.5, -7.5), DVec(-32.5, -7.5), DVec(-37.5, 7.5)), Nil),  // 5
+    PolygonShape(List(DVec(-37.5, 7.5), DVec(-32.5, -7.5), DVec(-27.5, -7.5), DVec(-32.5, 2.5)), Nil),  // 6
+    PolygonShape(List(DVec(-37.5, 7.5), DVec(-32.5, 2.5), DVec(-22.5, 2.5), DVec(-17.5, 7.5)), Nil),  // 7
+    PolygonShape(List(DVec(-32.5, 2.5), DVec(-27.5, -7.5), DVec(-17.5, -7.5), DVec(-22.5, 2.5)), Nil),  // 8
+    PolygonShape(List(DVec(-22.5, 2.5), DVec(-17.5, -7.5), DVec(-17.5, 7.5)), Nil),  // 9
+    PolygonShape(List(DVec(-17.5, 2.5), DVec(-17.5, -2.5), DVec(2.5, -2.5)), Nil),  // 10
+    PolygonShape(List(DVec(-17.5, 2.5), DVec(2.5, -2.5), DVec(2.5, 2.5)), Nil),  // 11
+    PolygonShape(List(DVec(-12.5, -2.5), DVec(-12.5, -7.5), DVec(-7.5, -12.5), DVec(2.5, -7.5)), Nil),  // 12
+    PolygonShape(List(DVec(-12.5, -2.5), DVec(2.5, -7.5), DVec(12.5, -2.5)), Nil),  // 13
+    PolygonShape(List(DVec(-7.5, -12.5), DVec(7.5, -12.5), DVec(12.5, -7.5), DVec(12.5, -2.5)), Nil),  // 14
+    PolygonShape(List(DVec(-12.5, 12.5), DVec(-12.5, 2.5), DVec(2.5, 2.5), DVec(-7.5, 12.5)), Nil),  // 15
+    PolygonShape(List(DVec(-12.5, 12.5), DVec(-2.5, 12.5), DVec(-7.5, 22.5)), Nil),  // 16
+    PolygonShape(List(DVec(-7.5, 22.5), DVec(2.5, 22.5), DVec(-7.5, 27.5)), Nil),  // 17
+    PolygonShape(List(DVec(-7.5, 27.5), DVec(2.5, 22.5), DVec(7.5, 27.5), DVec(-2.5, 37.5)), Nil),  // 18
+    PolygonShape(List(DVec(-7.5, 22.5), DVec(-2.5, 12.5), DVec(2.5, 12.5), DVec(2.5, 22.5)), Nil),  // 19
+    PolygonShape(List(DVec(-7.5, 12.5), DVec(2.5, 2.5), DVec(7.5, 7.5), DVec(2.5, 12.5)), Nil),  // 20
+    PolygonShape(List(DVec(2.5, 2.5), DVec(2.5, -2.5), DVec(17.5, -2.5)), Nil),  // 21
+    PolygonShape(List(DVec(2.5, 2.5), DVec(17.5, -2.5), DVec(27.5, 2.5)), Nil),  // 22
+    PolygonShape(List(DVec(2.5, 2.5), DVec(12.5, 2.5), DVec(12.5, 7.5), DVec(7.5, 7.5)), Nil),  // 23
+    PolygonShape(List(DVec(2.5, 12.5), DVec(7.5, 7.5), DVec(12.5, 7.5), DVec(12.5, 12.5), DVec(7.5, 22.5)), Nil),  // 24
+    PolygonShape(List(DVec(2.5, 22.5), DVec(2.5, 12.5), DVec(7.5, 22.5), DVec(7.5, 27.5)), Nil),  // 25
+    PolygonShape(List(DVec(-2.5, 42.5), DVec(-2.5, 37.5), DVec(7.5, 27.5), DVec(2.5, 37.5), DVec(2.5, 42.5)), List(   // 26 NOT CONVEX
+      PolygonShape(List(DVec(-2.5, 42.5), DVec(-2.5, 37.5), DVec(2.5, 37.5), DVec(2.5, 42.5)), Nil),
+      PolygonShape(List(DVec(-2.5, 37.5), DVec(7.5, 27.5), DVec(2.5, 37.5)), Nil)
+    )),
+    PolygonShape(List(DVec(-2.5, 52.5), DVec(-2.5, 42.5), DVec(2.5, 42.5)), Nil),  // 27
+    PolygonShape(List(DVec(-2.5, 52.5), DVec(2.5, 42.5), DVec(2.5, 52.5)), Nil),  // 28
+    PolygonShape(List(DVec(17.5, 7.5), DVec(17.5, 2.5), DVec(37.5, 2.5), DVec(37.5, 7.5)), Nil),  // 29
+    PolygonShape(List(DVec(17.5, -2.5), DVec(17.5, -7.5), DVec(27.5, -7.5), DVec(27.5, 2.5)), Nil),  // 30
+    PolygonShape(List(DVec(27.5, -7.5), DVec(37.5, -7.5), DVec(32.5, -2.5), DVec(27.5, -2.5)), Nil),  // 31
+    PolygonShape(List(DVec(27.5, 2.5), DVec(27.5, -2.5), DVec(32.5, -2.5), DVec(37.5, -7.5), DVec(37.5, -2.5)), List(   // 32 NOT CONVEX
+      PolygonShape(List(DVec(-2.5, 42.5), DVec(-2.5, 37.5), DVec(2.5, 37.5), DVec(2.5, 42.5)), Nil),
+      PolygonShape(List(DVec(-2.5, 37.5), DVec(7.5, 27.5), DVec(2.5, 37.5)), Nil)
+    )),
+    PolygonShape(List(DVec(27.5, 2.5), DVec(37.5, -2.5), DVec(37.5, 2.5)), Nil),  // 33
+    PolygonShape(List(DVec(37.5, 7.5), DVec(37.5, -7.5), DVec(47.5, -7.5)), Nil),  // 34
+    PolygonShape(List(DVec(37.5, 7.5), DVec(47.5, -7.5), DVec(52.5, -2.5), DVec(47.5, 2.5)), Nil),  // 35
+    PolygonShape(List(DVec(37.5, 7.5), DVec(47.5, 2.5), DVec(62.5, 7.5)), Nil),  // 36
+    PolygonShape(List(DVec(47.5, 2.5), DVec(52.5, -2.5), DVec(62.5, 2.5), DVec(62.5, 7.5)), Nil),  // 37
+    PolygonShape(List(DVec(47.5, -7.5), DVec(57.5, -7.5), DVec(52.5, -2.5)), Nil),  // 38
+    PolygonShape(List(DVec(52.5, -2.5), DVec(57.5, -7.5), DVec(62.5, -7.5), DVec(62.5, 2.5)), Nil)  // 39
   )
 
   val docking_points = List(new DockingPoints(DVec(1.5, 52.5), DVec(-1.5, 52.5), this, Some(8)))

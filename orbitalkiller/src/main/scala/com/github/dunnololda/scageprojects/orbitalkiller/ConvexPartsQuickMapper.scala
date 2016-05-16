@@ -6,38 +6,84 @@ import com.github.dunnololda.scage.ScageLibD._
 import scala.collection.mutable.ArrayBuffer
 
 object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", property("screen.width", 640), property("screen.height", 480)) {
-  val ship_class_name = AppProperties.stringProperty("ship")
+  private val ship_class_name = AppProperties.stringProperty("ship")
 
-  val ship = {
+  private val ship = {
     val constructor = Class.forName(s"com.github.dunnololda.scageprojects.orbitalkiller.ships.$ship_class_name").getConstructors()(0)
     val args = Array(new java.lang.Integer(1), DVec.zero, DVec.zero, new java.lang.Double(0), new java.lang.Boolean(true))
     constructor.newInstance(args: _*).asInstanceOf[PolygonShip]
   }
 
-  /*if(ship.convex_parts.nonEmpty) {
-    ship.convex_parts.zipWithIndex.foreach {
-      case (convex_part, idx) =>
-        if(!isCCW(convex_part.points)) {
-          println(s"$idx convex part is not ccw!")
-        }
-    }
-  }
-
-  if(ship.wreck_parts.nonEmpty) {
-    ship.wreck_parts.zipWithIndex.foreach {
-      case (wreck_part, idx) =>
-        if(!isCCW(wreck_part.points)) {
-          println(s"$idx wreck part is not ccw!")
-        }
-    }
-  }*/
-
   private val k = ship.engine_size.toFloat * 2
+  private val non_convex = ArrayBuffer[(Seq[DVec], Int)]()
 
-  val ship_points = ship.points.map(p => p / k + windowCenter)
-  val ship_draw_points = ship.draw_points.map(p => p / k + windowCenter)
+  println(ship.convex_parts.zipWithIndex.map {
+    case (p, idx) =>
+      val ccw = isCCW(p.points)
+      val convex = isConvex(p.points)
+      val comment = {
+        if(ccw) {
+          if(convex) {
+            s"  // ${idx+1}"
+          } else {
+            non_convex += (((p.points :+ p.points.head).map(p => p / k + windowCenter), idx+1))
+            s"  // ${idx+1} NOT CONVEX"
 
-  val whole_coords = (ship_points.head.x.toFloat / k) % 1 == 0
+          }
+        } else {
+          if(convex) {
+            s"  // ${idx+1} NOT CCW"
+          } else {
+            non_convex += (((p.points :+ p.points.head).map(p => p / k + windowCenter), idx+1))
+            s"  // ${idx+1} NOT CCW AND NOT CONVEX"
+          }
+        }
+      }
+      s"  PolygonShape(List(${ p.points.map(p => s"DVec(${p.x}, ${p.y})").mkString(", ")}), ${p.convex_parts.mkString("List(", ",\n", ")")}),$comment"
+  }.mkString("lazy val convex_parts = List(\n", "\n", ")"))
+
+  println("=====================================")
+
+  println(ship.wreck_parts.zipWithIndex.flatMap {
+    case (x, idx) =>
+      val ccw = isCCW(x.points)
+      val convex = isConvex(x.points)
+      val comment = {
+        if(ccw) {
+          if(convex) {
+            s"  // ${idx+1}"
+          } else {
+            non_convex += (((x.points :+ x.points.head).map(p => p / k + windowCenter), idx+1))
+            s"  // ${idx+1} NOT CONVEX"
+          }
+        } else {
+          if(convex) {
+            s"  // ${idx+1} NOT CCW"
+          } else {
+            non_convex += (((x.points :+ x.points.head).map(p => p / k + windowCenter), idx+1))
+            s"  // ${idx+1} NOT CCW AND NOT CONVEX"
+          }
+        }
+      }
+      val comma = if(idx != ship.wreck_parts.length-1) "," else ""
+      if(x.convex_parts.isEmpty) {
+        List(s"  PolygonShape(List(${x.points.map(p => s"DVec(${p.x}, ${p.y})").mkString(", ")}), List())$comma$comment")
+      } else {
+        List(
+          s"  PolygonShape(List(${x.points.map(p => s"DVec(${p.x}, ${p.y})").mkString(", ")}), List($comment"
+        ) ::: x.convex_parts.zipWithIndex.map(pp => {
+          val comma = if(pp._2 != x.convex_parts.length-1) "," else ""
+          s"    PolygonShape(List(${pp._1.points.map(p => s"DVec(${p.x}, ${p.y})").mkString(", ")}), List())$comma"
+        }) ::: List(s"  ))$comma")
+      }
+
+  }.mkString("val wreck_parts = List(\n", "\n", ")"))
+
+  private val ship_points = ship.points.map(p => p / k + windowCenter)
+
+  private val ship_draw_points = ship.draw_points.map(p => p / k + windowCenter)
+
+  private val whole_coords = (ship_points.head.x.toFloat / k) % 1 == 0
 
   private val cell_size: Float = 1.0f
   private val cell_size2 = cell_size * cell_size
@@ -69,12 +115,33 @@ object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", 
     }
   }
 
+  def isConvex(points: Seq[DVec]): Boolean = {
+    points.length == 3 || (points.length > 3 && points.sliding(3).forall {
+      case Seq(p1, p2, p3) =>
+        val res = (p2 - p1).p*(p3 - p2) >= 0
+        if(!res) {
+          println(s"$p1 - $p2 - $p3")
+        }
+        res
+    })
+  }
+
   key(KEY_SPACE, onKeyDown = {
     if (points.length > 2) {
       val ps = points.reverse
       if (isCCW(ps)) {
-        println(s"PolygonShape(List(${ps.map(p => s"DVec(${(p.x - windowWidth / 2).toFloat * k}, ${(p.y - windowHeight / 2).toFloat * k})").mkString(", ")}), Nil),")
-        mapped += points.toList
+        val is_convex = isConvex(ps)
+        if(!is_convex) {
+          if(only_convex) {
+            println("// NOT CONVEX!")
+          } else {
+            println(s"PolygonShape(List(${ps.map(p => s"DVec(${(p.x - windowWidth / 2).toFloat * k}, ${(p.y - windowHeight / 2).toFloat * k})").mkString(", ")}), List()),  // NOT CONVEX")
+            mapped += points.toList
+          }
+        } else {
+          println(s"PolygonShape(List(${ps.map(p => s"DVec(${(p.x - windowWidth / 2).toFloat * k}, ${(p.y - windowHeight / 2).toFloat * k})").mkString(", ")}), List()),")
+          mapped += points.toList
+        }
       } else {
         println("// NOT COUNTER-CLOCKWISE!")
       }
@@ -87,6 +154,10 @@ object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", 
     println("=====================================")
     mapped.clear()
   })
+
+  private var only_convex = true
+
+  key(KEY_X, onKeyDown = only_convex = !only_convex)
 
   key(KEY_Q, onKeyDown = if (keyPressed(KEY_RCONTROL) || keyPressed(KEY_LCONTROL)) stopApp())
 
@@ -148,6 +219,12 @@ object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", 
     }
     drawSlidingLines(ship_draw_points, GRAY)
 
+    non_convex.foreach(x => {
+      val c = x._1.sum/x._1.length
+      print(x._2, c.toVec, color = WHITE, size = (max_font_size/globalScale).toFloat)
+      drawSlidingLines(x._1, color = WHITE)
+    })
+
     mapped.foreach(pp => {
       drawFilledPolygon(pp, GRAY)
       //drawSlidingLines(pp.:+(pp.head), WHITE)
@@ -159,5 +236,9 @@ object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", 
       val c = points.sum / points.length
       drawFilledCircle(c, 3 / globalScale, WHITE)
     }
+  }
+
+  interface {
+    print(s"non-convex: ${if(only_convex) "not allowed" else "allowed"}", 20, 20, WHITE)
   }
 }

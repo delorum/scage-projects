@@ -151,11 +151,11 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
         s"  DVec(${pp.x}, ${pp.y})"
       }).mkString("lazy val points:List[DVec] = List(\n", ",\n", "\n)"))
       println()
-      println("lazy val convex_parts = Nil")
+      println("lazy val convex_parts = List()")
       println()
-      println("val wreck_parts = Nil")
+      println("val wreck_parts = List()")
       println()
-      println("val docking_points = Nil")
+      println("val docking_points = List()")
       println()
       engines.zipWithIndex.foreach { case (e, idx) =>
         val mapping = engines_mapping.getOrElse(idx, 0)
