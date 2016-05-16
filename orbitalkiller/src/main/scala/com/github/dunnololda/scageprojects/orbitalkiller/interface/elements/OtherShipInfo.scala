@@ -15,6 +15,7 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
       if (player_ship.isDockedToShip(monitoring_ship)) {
         strings(0) = s"${monitoring_ship.name}: docked"
       } else {
+        // TODO:  переписать, используя orbitRender
         val /*(_, */ need_orbit_period_str /*)*/ = (for {
           (our_orbit_planet, our_orbit_planet_state) <- insideSphereOfInfluenceOfCelestialBody(player_ship.coord, player_ship.mass, currentPlanetStates)
           (os_orbit_planet, os_orbit_planet_state) <- insideSphereOfInfluenceOfCelestialBody(monitoring_ship.coord, monitoring_ship.mass, currentPlanetStates)
@@ -114,7 +115,7 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
           }).getOrElse(/*"N/A", */ "N/A")
         val dist = mOrKmOrMKm(player_ship.coord.dist(monitoring_ship.coord))
         val vel = msecOrKmsec((player_ship.linearVelocity - monitoring_ship.linearVelocity) * (player_ship.coord - monitoring_ship.coord).n)
-        strings(0) = s"${monitoring_ship.name}: dist=$dist, vel=$vel, $need_orbit_period_str"
+        strings(0) = s"${monitoring_ship.name} (${if(monitoring_ship.currentState.active) "active" else "non-active"}): dist=$dist, vel=$vel, $need_orbit_period_str"
       }
     }
   }

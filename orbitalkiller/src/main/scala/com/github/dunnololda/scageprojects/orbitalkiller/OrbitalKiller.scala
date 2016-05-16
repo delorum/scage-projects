@@ -1198,6 +1198,22 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       player_ship.orbitRender = orbitRender(player_ship.index, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_evolution.allBodyStates)
       InterfaceHolder.shipInterfaces.foreach(si => {
         if (!si.isMinimized && !si.monitoring_ship.isCrashed) {
+          if(!si.monitoring_ship.currentState.active) {
+            si.monitoring_ship.orbitRender match {
+              case Some(or) =>
+                or.ellipseOrbit match {
+                  case Some(e) =>
+                    val new_e = e.withNewFocusPosition(or.planet.coord)
+                    si.monitoring_ship.currentState.coord = si.monitoring_ship.orbitalPointAfterDeactivateTime(new_e)
+                    val (vt, vr) = new_e.orbitalVelocityInPoint(si.monitoring_ship.currentState.coord)
+                    val r = -(or.planet.coord - si.monitoring_ship.currentState.coord).n
+                    val t = r.perpendicular
+                    si.monitoring_ship.currentState.vel = vr * r + vt * t + or.planet.linearVelocity
+                  case None =>
+                }
+              case None =>
+            }
+          }
           si.monitoring_ship.orbitRender = {
             orbitRender(si.monitoring_ship.index, player_ship.colorIfPlayerAliveOrRed(MAGENTA), player_ship.colorIfPlayerAliveOrRed(MAGENTA), system_evolution.allBodyStates)
           }

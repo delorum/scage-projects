@@ -598,6 +598,8 @@ package object orbitalkiller {
   }
 
   class MutableBodyState(body: BodyState) {
+    var active:Boolean = true
+
     val init_aabb = body.aabb
     val restitution = body.restitution
 
@@ -1264,8 +1266,8 @@ package object orbitalkiller {
       }
     }
 
-    private val f_minus_f2 = f - f2
-    private val inv_n = a * math.sqrt(a / mu) // это 1/n
+    val f_minus_f2 = f - f2
+    val inv_n = a * math.sqrt(a / mu) // это 1/n
 
     def tetaDeg360ByDir(dir: DVec) = f_minus_f2.deg360(dir)
 
@@ -1478,6 +1480,12 @@ package object orbitalkiller {
     def orbitalPointAfterTime(point1: DVec, time_sec: Long, ccw: Boolean, num_iterations: Int = default_num_iterations): DVec = {
       if (ccw) orbitalPointAfterTimeCCW(point1, time_sec, num_iterations)
       else orbitalPointAfterTimeCW(point1, time_sec, num_iterations)
+    }
+
+    def withNewFocusPosition(new_f:DVec):EllipseOrbit = {
+      val new_f2 = new_f - f_minus_f2
+      val new_center = (new_f2 - new_f).n * c + new_f
+      new EllipseOrbit(a, b, e, c, p, r_p, r_a, t, new_f, new_f2, new_center, mu)
     }
   }
 

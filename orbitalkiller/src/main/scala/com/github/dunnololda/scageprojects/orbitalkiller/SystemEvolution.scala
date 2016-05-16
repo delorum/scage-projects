@@ -197,7 +197,7 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
     val substeps = if (bulletsInSystem) 60 else 1
     val dt = if (bulletsInSystem) base_dt / 60 else base_dt
     (1 to substeps).foreach(_ => {
-      mutable_system.foreach(_._2.body.init())
+      all_bodies.foreach(_.init())
 
       val collisions = {
         /*already_checked.clear()
@@ -213,7 +213,9 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
         } yield c*/
         for {
           (b1, idx) <- all_bodies.zipWithIndex.init
+          if b1.active
           b2 <- all_bodies.drop(idx + 1)
+          if b2.active
           if !b1.is_static || !b2.is_static
           if !excludeCollisionCheck(b1.index, b2.index)
           c <- maybeCollisions(b1, b2)
@@ -223,7 +225,7 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
 
       // Integrate forces first part
       mutable_system.foreach { case (_, MutableSystemPart(mb, force, torque)) =>
-        if (!mb.is_static) {
+        if (mb.active && !mb.is_static) {
           val next_force = force(tacts, mutable_system_helper)
           val next_acc = next_force * mb.invMass
           val next_torque = torque(tacts, mutable_system_helper)
@@ -245,7 +247,7 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
 
       // Integrate velocities and forces last part
       mutable_system.foreach { case (_, MutableSystemPart(mb, force, torque)) =>
-        if (!mb.is_static) {
+        if (mb.active && !mb.is_static) {
           mb.coord += mb.vel * dt
           mb.ang = correctAngle((mb.ang + mb.ang_vel * dt) % 360)
           mb.aabb = mb.shape.aabb(mb.coord, mb.ang)

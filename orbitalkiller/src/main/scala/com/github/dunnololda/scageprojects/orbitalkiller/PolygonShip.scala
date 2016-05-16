@@ -1020,4 +1020,10 @@ abstract class PolygonShip(
       }
     }
   }
+
+  protected var deactivate_moment_sec:Long = 0l
+  protected var deactivate_point:DVec = DVec.zero
+  def orbitalPointAfterDeactivateTime(e:EllipseOrbit):DVec = {
+    e.orbitalPointAfterTime(deactivate_point, OrbitalKiller.timeMsec/1000 - deactivate_moment_sec, ccw = true)
+  }
 }
