@@ -16,7 +16,7 @@ case class BodyOrbitRender(bs_coord: DVec,
                            bs_mass: Double,
                            planet_coord: DVec,
                            planet_vel: DVec,
-                           planet_mass: Double,
+                           planet:CelestialBody,
                            orbit: KeplerOrbit,
                            render: () => Unit) {
   lazy val ellipseOrbit: Option[EllipseOrbit] = orbit match {
@@ -102,6 +102,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   val system_evolution = new SystemEvolution(base_dt)
 
   def tacts: Long = system_evolution.tacts
+  def timeMsec: Long = (tacts*base_dt*1000).toLong
 
   def currentBodyState(index: Int): Option[MutableBodyState] = system_evolution.bodyState(index)
 
@@ -971,7 +972,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                   (h.f + (h.f_minus_center_n * r).rotateRad(true_anomaly)) * scale
                 }).toList
                 if (body_index != player_ship.index) {
-                  Some(BodyOrbitRender(bs_coord, bs_vel, bs.ang, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, h, () => {
+                  Some(BodyOrbitRender(bs_coord, bs_vel, bs.ang, bs_mass, planet_state_coord, planet_state_vel, planet, h, () => {
                     drawSlidingLines(yy, hyperbola_color)
                     if(InterfaceHolder.namesSwitcher.showNames) {
                       openglLocalTransform {
@@ -982,7 +983,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                     }
                   }))
                 } else {
-                  Some(BodyOrbitRender(bs_coord, bs_vel, bs.ang, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, h, () => {
+                  Some(BodyOrbitRender(bs_coord, bs_vel, bs.ang, bs_mass, planet_state_coord, planet_state_vel, planet, h, () => {
                     drawSlidingLines(yy, hyperbola_color)
                     if(InterfaceHolder.namesSwitcher.showNames) {
                       openglLocalTransform {
@@ -1081,7 +1082,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                 }
               case e: EllipseOrbit =>
                 if (body_index != player_ship.index) {
-                  Some(BodyOrbitRender(bs_coord, bs_vel, bs.ang, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, e, () => {
+                  Some(BodyOrbitRender(bs_coord, bs_vel, bs.ang, bs_mass, planet_state_coord, planet_state_vel, planet, e, () => {
                     openglLocalTransform {
                       openglMove(e.center * scale)
                       openglRotateDeg(Vec(-1, 0).signedDeg(e.f2 - e.f))
@@ -1101,7 +1102,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                     }
                   }))
                 } else {
-                  Some(BodyOrbitRender(bs_coord, bs_vel, bs.ang, bs_mass, planet_state_coord, planet_state_vel, planet_state_mass, e, () => {
+                  Some(BodyOrbitRender(bs_coord, bs_vel, bs.ang, bs_mass, planet_state_coord, planet_state_vel, planet, e, () => {
                     openglLocalTransform {
                       openglMove(e.center * scale)
                       openglRotateDeg(Vec(-1, 0).signedDeg(e.f2 - e.f))
