@@ -39,8 +39,10 @@ object InterfaceHolder {
 
   private val ship_interfaces = ArrayBuffer[OtherShipInfo]()
   def shipInterfaces:Seq[OtherShipInfo] = ship_interfaces
-  def addShipInterface(ship:PolygonShip): Unit = {
-    ship_interfaces += new OtherShipInfo(ship)
+  def addShipInterface(ship:PolygonShip): OtherShipInfo = {
+    val i = new OtherShipInfo(ship)
+    ship_interfaces += i
+    i
   }
 
   def shipsMinimized = ship_interfaces.filter(_.isMinimized)

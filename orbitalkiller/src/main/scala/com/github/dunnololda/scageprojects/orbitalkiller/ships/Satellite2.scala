@@ -135,36 +135,7 @@ class Satellite2(index: Int,
 
   override val is_manned: Boolean = false
 
-  override def afterStep(time_msec: Long): Unit = {
-    // если расстояние от данного корабля до нашего больше 1000 км и перигей орбиты выше верхней границы атмосферы
-    val condition = coord.dist2(OrbitalKiller.player_ship.coord) > 1000000l*1000000l && orbitRender.exists(or => {
-      or.ellipseOrbit.exists(e => e.r_p > or.planet.radius + or.planet.air_free_altitude)
-    })
-    if(currentState.active) {
-      if(condition) {
-        currentState.active = false
-        deactivate_moment_sec = time_msec/1000
-        deactivate_point = coord
-      } else {
-        super.afterStep(time_msec)
-      }
-    } else {
-      if(!condition) {
-        currentState.active = true
-        super.afterStep(time_msec)
-      } else {
-        currentState.coord = orbitRender match {
-          case Some(or) =>
-            or.ellipseOrbit match {
-              case Some(e) =>
-                e.orbitalPointAfterTime(deactivate_point, OrbitalKiller.timeMsec/1000 - deactivate_moment_sec, ccw = true)
-              case None =>
-                currentState.coord
-            }
-          case None =>
-            currentState.coord
-        }
-      }
-    }
+  OrbitalKiller.actionStaticPeriodIgnorePause(1000) {
+    println(currentState.active)
   }
 }
