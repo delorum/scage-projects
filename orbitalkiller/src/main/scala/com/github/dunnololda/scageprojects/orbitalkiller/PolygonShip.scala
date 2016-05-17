@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements.OtherShipInfo
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -206,15 +207,12 @@ abstract class PolygonShip(
   }
 
   def isLanded: Boolean = {
-    insideSphereOfInfluenceOfCelestialBody(coord, mass, OrbitalKiller.currentPlanetStates) match {
-      case Some((planet, planet_state)) =>
-        checkAllConditions(
-          () => coord.dist(planet_state.coord) - planet.radius < radius,
-          () => ((linearVelocity - planet_state.vel) * (coord - planet_state.coord).n).abs < 0.5,
-          () => (((linearVelocity - planet_state.vel) * (coord - planet_state.coord).p) / coord.dist(planet_state.coord) * planet.radius - planet.groundSpeedMsec).abs < 0.5)
-      case None =>
-        false
-    }
+    orbitData.exists(or => {
+      checkAllConditions(
+        () => coord.dist(or.planet_coord) - or.planet.radius < radius,
+        () => ((linearVelocity - or.planet_vel) * (coord - or.planet_coord).n).abs < 0.5,
+        () => (((linearVelocity - or.planet_vel) * (coord - or.planet_coord).p) / coord.dist(or.planet_coord) * or.planet.radius - or.planet.groundSpeedMsec).abs < 0.5)
+    })
   }
 
   def isLandedOnPlanet(planet: CelestialBody): Boolean = {
@@ -230,17 +228,13 @@ abstract class PolygonShip(
   def linearVelocity = if (isAlive) currentState.vel else main_ship_wreck.headOption.map(_.linearVelocity).getOrElse(currentState.vel)
 
   def relativeLinearVelocity = {
-    linearVelocity - insideSphereOfInfluenceOfCelestialBody(coord, mass, OrbitalKiller.currentPlanetStates).map(_._2.vel).getOrElse(DVec.zero)
+    linearVelocity - orbitData.map(_.planet_vel).getOrElse(DVec.zero)
   }
 
   def velocityStr: String = {
-    insideSphereOfInfluenceOfCelestialBody(coord, mass, OrbitalKiller.currentPlanetStates) match {
-      case Some((planet, planet_state)) =>
-        if (player_ship.isAlive) {
-          s"${msecOrKmsec((linearVelocity - planet_state.vel).norma)} (${planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
-        } else {
-          s"${msecOrKmsec((linearVelocity - planet_state.vel).norma)} (${planet.name}), ${msecOrKmsec(linearVelocity.norma)} (абсолютная)"
-        }
+    orbitData match {
+      case Some(or) =>
+        s"${msecOrKmsec((linearVelocity - or.planet_vel).norma)} (${or.planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
       case None =>
         s"${msecOrKmsec(linearVelocity.norma)} (абсолютная)"
     }
@@ -619,9 +613,12 @@ abstract class PolygonShip(
    * @return
    */
   def shipCloser500KmNonMinimized: Option[PolygonShip] = {
-    ShipsHolder.ships.filter(s => s.index != index && s.isAlive && s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l && InterfaceHolder.shipInterfaces.exists(i => {
-      i.monitoring_ship.index == s.index && !i.isMinimized
-    })).sortBy(s => coord.dist2(s.coord)).headOption
+    ShipsHolder.ships.filter(s => {
+      s.index != index &&
+      s.isAlive &&
+      s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l &&
+      s.shipInterface.exists(!_.isMinimized)
+    }).sortBy(s => coord.dist2(s.coord)).headOption
   }
 
   /**
@@ -874,35 +871,41 @@ abstract class PolygonShip(
     is_static = false)
 
   lazy val currentState: MutableBodyState = initState.toMutableBodyState
-
+  private var ship_interface:Option[OtherShipInfo] = None
+  def shipInterface:Option[OtherShipInfo] = ship_interface
   if(!ship_designer) {
     ShipsHolder.addShip(this)
     if(create_interface) {
-      InterfaceHolder.addShipInterface(this)
+      ship_interface = Some(InterfaceHolder.addShipInterface(this))
     }
   }
 
-  var orbitRender: Option[BodyOrbitRender] = None
+  var orbitData: Option[OrbitData] = None
 
   def beforeStep(): Unit = {
-    engines.foreach(e => {
-      if (e.active) {
-        if (e.workTimeTacts <= 0 || player_ship.fuelMass <= 0) {
-          e.active = false
-        } else {
-          if (e.ship.fuelMass - e.fuelConsumptionPerTact <= 0) {
+    if(currentState.active) {
+      engines.foreach(e => {
+        if (e.active) {
+          if (e.workTimeTacts <= 0 || player_ship.fuelMass <= 0) {
             e.active = false
+          } else {
+            if (e.ship.fuelMass - e.fuelConsumptionPerTact <= 0) {
+              e.active = false
+            }
           }
         }
+      })
+      if (currentState.ang_vel != 0 && math.abs(currentState.ang_vel) < OrbitalKiller.angular_velocity_error) {
+        currentState.ang_vel = 0
       }
-    })
-    if (currentState.ang_vel != 0 && math.abs(currentState.ang_vel) < OrbitalKiller.angular_velocity_error) {
-      currentState.ang_vel = 0
+      currentState.mass = mass /*currentMass(_tacts)*/
     }
-    currentState.mass = mass /*currentMass(_tacts)*/
   }
 
-  def afterStep(time_msec: Long): Unit = {
+  protected var deactivate_moment_sec:Long = 0l
+  protected var deactivate_point:DVec = DVec.zero
+
+  private def _afterStep(time_msec:Long): Unit = {
     // сила от реактивных двигателей и сила сопротивления воздуха
     val reactive_force = currentReactiveForce(0, currentState) + {
       earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5)
@@ -1008,6 +1011,44 @@ abstract class PolygonShip(
         } else e.active = false
       }
     })
+  }
+
+  def afterStep(time_msec: Long): Unit = {
+    // условие сделать корабль неактивным и не обрабатывать его:
+    // если это не корабль игрока, расстояние от данного корабля до корабля игрока больше 1000 км,
+    // перигей орбиты выше верхней границы атмосферы (орбита стабильная), двигатели не включены,
+    // интерфейс данного корабля существует и свернут
+    val condition = index != player_ship.index &&
+      coord.dist2(OrbitalKiller.player_ship.coord) > 1000000l*1000000l &&
+      orbitData.exists(or => or.ellipseOrbit.exists(e => e.r_p > or.planet.radius + or.planet.air_free_altitude)) &&
+      engines.forall(!_.active) &&
+      (ship_interface.isEmpty || ship_interface.exists(_.isMinimized))
+    if(currentState.active) {
+      _afterStep(time_msec)
+      if(condition) {
+        currentState.active = false
+        deactivate_moment_sec = time_msec/1000
+        deactivate_point = coord
+      }
+    } else {
+      if(!condition) {
+        orbitData match {
+          case Some(or) =>
+            or.ellipseOrbit match {
+              case Some(e) =>
+                val new_e = e.withNewFocusPosition(or.planet.coord)
+                currentState.coord = new_e.orbitalPointAfterTime(deactivate_point, OrbitalKiller.timeMsec/1000 - deactivate_moment_sec, or.ccw)
+                val (vt, vr) = new_e.orbitalVelocityInPoint(currentState.coord)
+                val r = if(or.ccw) (currentState.coord - or.planet.coord).n else -(currentState.coord - or.planet.coord).n
+                val t = r.perpendicular
+                currentState.vel = vr * r + vt * t + or.planet.linearVelocity
+              case None =>
+            }
+          case None =>
+        }
+        currentState.active = true
+      }
+    }
   }
 
   def onCollision(): Unit = {

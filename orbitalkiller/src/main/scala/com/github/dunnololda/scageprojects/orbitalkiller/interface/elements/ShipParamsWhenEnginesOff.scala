@@ -57,7 +57,7 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
           case None => "N/A"
         }
       } else {
-        orbitStrInPointWithVelocity(player_ship.coord, player_ship.linearVelocity, player_ship.radius, player_ship.mass, currentPlanetStates)
+        player_ship.orbitData.map(_.orbitStrDefinition).getOrElse("N/A")
       }
     }
   }

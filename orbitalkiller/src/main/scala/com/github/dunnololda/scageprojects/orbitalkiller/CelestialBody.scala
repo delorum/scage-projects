@@ -21,6 +21,7 @@ trait CelestialBody {
   def initState: BodyState
 
   def half_hill_radius: Double
+  lazy val half_hill_radius2: Double = half_hill_radius*half_hill_radius
 
   def air_free_altitude: Double
 
@@ -32,7 +33,7 @@ trait CelestialBody {
 
   val g = G * mass / (radius * radius) // ускорение свободного падения, м/с^2
 
-  var orbitRender: Option[BodyOrbitRender] = None
+  var orbitRender: Option[OrbitData] = None
 }
 
 class Planet(val index: Int,

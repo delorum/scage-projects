@@ -16,14 +16,12 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
         strings(0) = s"${monitoring_ship.name}: docked"
       } else {
         val /*(_, */ need_orbit_period_str /*)*/ = (for {
-          (our_orbit_planet, our_orbit_planet_state) <- insideSphereOfInfluenceOfCelestialBody(player_ship.coord, player_ship.mass, currentPlanetStates)
-          (os_orbit_planet, os_orbit_planet_state) <- insideSphereOfInfluenceOfCelestialBody(monitoring_ship.coord, monitoring_ship.mass, currentPlanetStates)
+          OrbitData(_, _, _, _, _, _, our_orbit_planet, our_orbit_kepler, our_ccw, _) <- player_ship.orbitData
+          OrbitData(_, _, _, _, _, _, os_orbit_planet, os_orbit_kepler, os_ccw, _) <- monitoring_ship.orbitData
           if our_orbit_planet.index == os_orbit_planet.index
-          our_orbit_kepler = calculateOrbit(our_orbit_planet_state.mass, our_orbit_planet_state.coord, player_ship.mass, player_ship.coord - our_orbit_planet_state.coord, player_ship.linearVelocity - our_orbit_planet_state.vel, G)
-          os_orbit_kepler = calculateOrbit(os_orbit_planet_state.mass, os_orbit_planet_state.coord, monitoring_ship.mass, monitoring_ship.coord - os_orbit_planet_state.coord, monitoring_ship.linearVelocity - os_orbit_planet_state.vel, G)
-          if our_orbit_kepler.isInstanceOf[EllipseOrbit] && os_orbit_kepler.isInstanceOf[EllipseOrbit]
-          our_orbit_ellipse = our_orbit_kepler.asInstanceOf[EllipseOrbit]
-          os_orbit_ellipse = os_orbit_kepler.asInstanceOf[EllipseOrbit]
+          if our_ccw == os_ccw
+          our_orbit_ellipse <- player_ship.orbitData.flatMap(_.ellipseOrbit)
+          os_orbit_ellipse <- monitoring_ship.orbitData.flatMap(_.ellipseOrbit)
           our_orbit_period_sec = our_orbit_ellipse.t
           os_orbit_period_sec = os_orbit_ellipse.t
         } yield {
@@ -51,14 +49,14 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
                   /*("N/A", */ "N/A" /*)*/
               }
             } else {
-              val os_travel_time_to_our_point1_msec = os_orbit_ellipse.travelTimeOnOrbitMsec(monitoring_ship.coord, os_orbit_ellipse.orbitalPointInPoint(player_ship.coord), ccw = true)
+              val os_travel_time_to_our_point1_msec = os_orbit_ellipse.travelTimeOnOrbitMsec(monitoring_ship.coord, os_orbit_ellipse.orbitalPointInPoint(player_ship.coord), os_ccw)
               val os_travel_time_to_our_point2_msec = (os_orbit_period_sec * 1000 - os_travel_time_to_our_point1_msec).toLong
               val need_orbit_period_msec = {
                 if (os_travel_time_to_our_point1_msec > os_travel_time_to_our_point2_msec) {
-                  val mu = G * our_orbit_planet_state.mass
+                  val mu = G * our_orbit_planet.mass
                   def _calculateRp(t_sec: Double): Double = {
                     val a = math.pow(math.pow(t_sec / (2 * math.Pi), 2) * mu, 1.0 / 3) // большая полуось для данного периода
-                    val x = player_ship.coord.dist(our_orbit_planet_state.coord)
+                    val x = player_ship.coord.dist(our_orbit_planet.coord)
                     math.min(2 * a - x, x)
                   }
                   val r_p1 = _calculateRp(os_travel_time_to_our_point1_msec / 1000) - our_orbit_planet.radius
@@ -79,16 +77,17 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
               }
               val r_p1 = _calculateRp(t1_sec) - our_orbit_planet.radius
               val r_p2 = _calculateRp(t2_sec) - our_orbit_planet.radius*/
-              val our_r_p = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(0) // координаты апогея нашей орбиты
+              /*val our_r_p = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(0) // координаты апогея нашей орбиты
               val our_r_a = our_orbit_ellipse.orbitalPointByTrueAnomalyDeg(180) // координаты перигея нашей орбиты
               val sep_in_r_p = os_orbit_ellipse.orbitalPointInPoint(our_r_p).dist(our_r_p)
-              val sep_in_r_a = os_orbit_ellipse.orbitalPointInPoint(our_r_a).dist(our_r_a)
+              val sep_in_r_a = os_orbit_ellipse.orbitalPointInPoint(our_r_a).dist(our_r_a)*/
               val cur_sep = os_orbit_ellipse.orbitalPointInPoint(player_ship.coord).dist(player_ship.coord)
-              val sep_str = if (sep_in_r_p <= sep_in_r_a) {
+              /*val sep_str = if (sep_in_r_p <= sep_in_r_a) {
                 s"min sep = in r_p, ${mOrKmOrMKm(sep_in_r_p)}, cur sep = ${mOrKmOrMKm(cur_sep)}"
               } else {
                 s"min sep = in r_a, ${mOrKmOrMKm(sep_in_r_a)}, cur sep = ${mOrKmOrMKm(cur_sep)}"
-              }
+              }*/
+              val sep_str = s"cur sep = ${mOrKmOrMKm(cur_sep)}"
               val need_orbit_period_str = {
                 /*if (r_p1 >= our_orbit_planet.air_free_altitude) {
                   if (r_p2 >= our_orbit_planet.air_free_altitude) {

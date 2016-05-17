@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.ships
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller.{DockingPoints, PolygonShape, PolygonShip, Engine}
+import com.github.dunnololda.scageprojects.orbitalkiller._
 
 class Satellite2(index: Int,
                  init_coord: DVec,
