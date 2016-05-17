@@ -207,15 +207,12 @@ abstract class PolygonShip(
   }
 
   def isLanded: Boolean = {
-    insideSphereOfInfluenceOfCelestialBody(coord, mass, OrbitalKiller.currentPlanetStates) match {
-      case Some((planet, planet_state)) =>
-        checkAllConditions(
-          () => coord.dist(planet_state.coord) - planet.radius < radius,
-          () => ((linearVelocity - planet_state.vel) * (coord - planet_state.coord).n).abs < 0.5,
-          () => (((linearVelocity - planet_state.vel) * (coord - planet_state.coord).p) / coord.dist(planet_state.coord) * planet.radius - planet.groundSpeedMsec).abs < 0.5)
-      case None =>
-        false
-    }
+    orbitData.exists(or => {
+      checkAllConditions(
+        () => coord.dist(or.planet_coord) - or.planet.radius < radius,
+        () => ((linearVelocity - or.planet_vel) * (coord - or.planet_coord).n).abs < 0.5,
+        () => (((linearVelocity - or.planet_vel) * (coord - or.planet_coord).p) / coord.dist(or.planet_coord) * or.planet.radius - or.planet.groundSpeedMsec).abs < 0.5)
+    })
   }
 
   def isLandedOnPlanet(planet: CelestialBody): Boolean = {
@@ -231,17 +228,13 @@ abstract class PolygonShip(
   def linearVelocity = if (isAlive) currentState.vel else main_ship_wreck.headOption.map(_.linearVelocity).getOrElse(currentState.vel)
 
   def relativeLinearVelocity = {
-    linearVelocity - insideSphereOfInfluenceOfCelestialBody(coord, mass, OrbitalKiller.currentPlanetStates).map(_._2.vel).getOrElse(DVec.zero)
+    linearVelocity - orbitData.map(_.planet_vel).getOrElse(DVec.zero)
   }
 
   def velocityStr: String = {
-    insideSphereOfInfluenceOfCelestialBody(coord, mass, OrbitalKiller.currentPlanetStates) match {
-      case Some((planet, planet_state)) =>
-        if (player_ship.isAlive) {
-          s"${msecOrKmsec((linearVelocity - planet_state.vel).norma)} (${planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
-        } else {
-          s"${msecOrKmsec((linearVelocity - planet_state.vel).norma)} (${planet.name}), ${msecOrKmsec(linearVelocity.norma)} (абсолютная)"
-        }
+    orbitData match {
+      case Some(or) =>
+        s"${msecOrKmsec((linearVelocity - or.planet_vel).norma)} (${or.planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
       case None =>
         s"${msecOrKmsec(linearVelocity.norma)} (абсолютная)"
     }
@@ -1044,9 +1037,9 @@ abstract class PolygonShip(
             or.ellipseOrbit match {
               case Some(e) =>
                 val new_e = e.withNewFocusPosition(or.planet.coord)
-                currentState.coord = new_e.orbitalPointAfterTime(deactivate_point, OrbitalKiller.timeMsec/1000 - deactivate_moment_sec, ccw = true)
+                currentState.coord = new_e.orbitalPointAfterTime(deactivate_point, OrbitalKiller.timeMsec/1000 - deactivate_moment_sec, or.ccw)
                 val (vt, vr) = new_e.orbitalVelocityInPoint(currentState.coord)
-                val r = (currentState.coord - or.planet.coord).n
+                val r = if(or.ccw) (currentState.coord - or.planet.coord).n else -(currentState.coord - or.planet.coord).n
                 val t = r.perpendicular
                 currentState.vel = vr * r + vt * t + or.planet.linearVelocity
               case None =>

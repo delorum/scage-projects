@@ -21,6 +21,7 @@ trait CelestialBody {
   def initState: BodyState
 
   def half_hill_radius: Double
+  lazy val half_hill_radius2: Double = half_hill_radius*half_hill_radius
 
   def air_free_altitude: Double
 

@@ -134,8 +134,4 @@ class Satellite2(index: Int,
   def preserveAngularVelocity(ang_vel_deg: Double) {}
 
   override val is_manned: Boolean = false
-
-  OrbitalKiller.actionStaticPeriodIgnorePause(1000) {
-    println(currentState.active)
-  }
 }

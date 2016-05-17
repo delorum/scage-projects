@@ -28,6 +28,15 @@ case class OrbitData(bs_coord: DVec,
     case x: HyperbolaOrbit => Some(x)
     case _ => None
   }
+
+  lazy val orbitStrDefinition:String = orbit.strDefinition(planet.name,
+                                                           planet.radius,
+                                                           planet.linearVelocity,
+                                                           planet.groundSpeedMsec,
+                                                           planet.g,
+                                                           bs_coord,
+                                                           bs_vel,
+                                                           planet.radius)
 }
 
 sealed trait ViewMode {
@@ -130,7 +139,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     if (player_ship.flightMode != Maneuvering) {
       //println(s"updateFutureTrajectory: $reason")
       system_cache.clear()
-      _calculate_orbits = true
+      _recalculate_orbits = true
     }
   }
 
@@ -368,7 +377,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }
 
-  def satelliteSpeedStrInPoint(coord: DVec, velocity: DVec, mass: Double): String = {
+  /*def satelliteSpeedStrInPoint(coord: DVec, velocity: DVec, mass: Double): String = {
     insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
       case Some((planet, planet_state)) =>
         val ss = satelliteSpeed(coord, velocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
@@ -376,9 +385,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       case None =>
         "N/A"
     }
-  }
+  }*/
 
-  def escapeVelocityStrInPoint(coord: DVec, velocity: DVec, mass: Double): String = {
+  /*def escapeVelocityStrInPoint(coord: DVec, velocity: DVec, mass: Double): String = {
     insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
       case Some((planet, planet_state)) =>
         val ss = escapeVelocity(coord, velocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
@@ -386,7 +395,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       case None =>
         "N/A"
     }
-  }
+  }*/
 
   def curvatureRadiusInPoint(body_state: BodyState): Double = {
     math.abs(body_state.vel.norma2 / (body_state.acc * body_state.vel.p))
@@ -405,13 +414,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }
 
-  def orbitInPointWithVelocity(coord: DVec, velocity: DVec, mass: Double): Option[KeplerOrbit] = {
+  /*def orbitInPointWithVelocity(coord: DVec, velocity: DVec, mass: Double): Option[KeplerOrbit] = {
     insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
       case Some((planet, planet_state)) =>
         Some(calculateOrbit(planet_state.mass, planet_state.coord, mass, coord - planet_state.coord, velocity - planet_state.vel, G))
       case None => None
     }
-  }
+  }*/
 
   def orbitAroundCelestialInPointWithVelocity(coord: DVec, velocity: DVec, mass: Double): Option[((CelestialBody, MutableBodyState), KeplerOrbit)] = {
     insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
@@ -482,7 +491,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     else {
       val x = planet_states.find {
         case (smaller_planet, smaller_planet_state) =>
-          ship_coord.dist(smaller_planet_state.coord) <= smaller_planet.half_hill_radius
+          ship_coord.dist2(smaller_planet_state.coord) <= smaller_planet.half_hill_radius2
       }
       if (x.nonEmpty) x else Some(planet_states.last)
     }
@@ -835,10 +844,12 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     else InterfaceHolder.showAllByUser()
   })
   keyIgnorePause(KEY_R, onKeyDown = {
-    player_ship.rockets_enabled = !player_ship.rockets_enabled
-    if (player_ship.rockets_enabled) {
-      if (InterfaceHolder.rocketsInfo.isMinimizedByUser) {
-        InterfaceHolder.rocketsInfo.showByUser()
+    if(!player_ship.isDocked) {
+      player_ship.rockets_enabled = !player_ship.rockets_enabled
+      if (player_ship.rockets_enabled) {
+        if (InterfaceHolder.rocketsInfo.isMinimizedByUser) {
+          InterfaceHolder.rocketsInfo.showByUser()
+        }
       }
     }
   })
@@ -1187,7 +1198,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }
 
-  private var _calculate_orbits = false
+  private var _recalculate_orbits = false
 
   private def updateOrbits() {
     //println("updateOrbits")
@@ -1217,13 +1228,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       moon.orbitRender = calculateOrbitData(moon.index, player_ship.colorIfPlayerAliveOrRed(GREEN), player_ship.colorIfPlayerAliveOrRed(GREEN), system_state_when_engines_off, Set(earth.index, sun.index))
       earth.orbitRender = calculateOrbitData(earth.index, player_ship.colorIfPlayerAliveOrRed(ORANGE), player_ship.colorIfPlayerAliveOrRed(ORANGE), system_state_when_engines_off, Set(sun.index))
     }
-    _calculate_orbits = false
+    _recalculate_orbits = false
   }
 
   updateOrbits()
 
   actionDynamicPeriodIgnorePause(1000 / timeMultiplier) {
-    if (drawMapMode && (!onPause || _calculate_orbits)) {
+    if (/*drawMapMode && (*/!onPause || _recalculate_orbits/*)*/) {
       updateOrbits()
     }
   }

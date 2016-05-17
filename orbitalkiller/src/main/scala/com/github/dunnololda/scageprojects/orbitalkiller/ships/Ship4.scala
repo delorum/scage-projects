@@ -343,9 +343,9 @@ class Ship4(index: Int,
         case CirclularOrbit => // выход на орбиту
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, correction_check_period)) {
             if (math.abs(angularVelocity) < angular_velocity_error) {
-              insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
-                case Some((planet, planet_state)) =>
-                  val ss = satelliteSpeed(coord, linearVelocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
+              orbitData match {
+                case Some(or) =>
+                  val ss = satelliteSpeed(coord, linearVelocity, or.planet.coord, or.planet.linearVelocity, or.planet.mass, G)
                   if (linearVelocity.dist(ss) > linear_velocity_error) {
                     preserveVelocity(ss)
                   } else flightMode = FreeFlightMode
