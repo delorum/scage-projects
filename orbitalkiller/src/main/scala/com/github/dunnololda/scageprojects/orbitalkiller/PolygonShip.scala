@@ -903,7 +903,7 @@ abstract class PolygonShip(
   }
 
   protected var deactivate_moment_sec:Long = 0l
-  protected var deactivate_point:DVec = DVec.zero
+  protected var deactivate_point_relative:DVec = DVec.zero
 
   private def _afterStep(time_msec:Long): Unit = {
     // сила от реактивных двигателей и сила сопротивления воздуха
@@ -1028,7 +1028,7 @@ abstract class PolygonShip(
       if(condition) {
         currentState.active = false
         deactivate_moment_sec = time_msec/1000
-        deactivate_point = coord
+        deactivate_point_relative = coord - orbitData.map(_.planet.coord).getOrElse(DVec.zero)
       }
     } else {
       if(!condition) {
@@ -1037,7 +1037,7 @@ abstract class PolygonShip(
             or.ellipseOrbit match {
               case Some(e) =>
                 val new_e = e.withNewFocusPosition(or.planet.coord)
-                currentState.coord = new_e.orbitalPointAfterTime(deactivate_point, OrbitalKiller.timeMsec/1000 - deactivate_moment_sec, or.ccw)
+                currentState.coord = new_e.orbitalPointAfterTime(deactivate_point_relative + or.planet.coord, OrbitalKiller.timeMsec/1000 - deactivate_moment_sec, or.ccw)
                 val (vt, vr) = new_e.orbitalVelocityInPoint(currentState.coord)
                 val r = if(or.ccw) (currentState.coord - or.planet.coord).n else -(currentState.coord - or.planet.coord).n
                 val t = r.perpendicular
