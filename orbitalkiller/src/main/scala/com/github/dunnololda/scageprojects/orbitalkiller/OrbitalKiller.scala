@@ -366,7 +366,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           rotationAngleDeg = -player_ship.rotation
           view_mode = FixedOnShip
         case Landing => // посадка на планету
-          center = player_ship.coord
+          center = player_ship.coord + _ship_offset
           rotationCenter = player_ship.coord
           rotationAngleDeg = {
             val nearest_body_coord = if (player_ship.coord.dist2(earth.coord) < player_ship.coord.dist2(moon.coord)) earth.coord else moon.coord

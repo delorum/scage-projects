@@ -988,9 +988,7 @@ abstract class PolygonShip(
         val active_engines = engines.filter(e => e.active && 0 < e.stopMomentTacts)
         if (active_engines.nonEmpty) {
           val cur_force = reactive_force.norma
-          val allowed_force = (mass + dockData.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
-            air_resistance.norma
-          }
+          val allowed_force = (mass + dockData.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g
           if(cur_force > allowed_force) {
             val force_diff = cur_force - allowed_force
             val force_diff_for_engine = force_diff / active_engines.length
@@ -1019,9 +1017,7 @@ abstract class PolygonShip(
         val air_resistance = earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5)
         val reactive_force = currentReactiveForce(0, currentState) + air_resistance
         val cur_force = reactive_force.norma
-        val allowed_force = (mass + dockData.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
-          air_resistance.norma
-        }
+        val allowed_force = (mass + dockData.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g
         if(cur_force > allowed_force) {
           val force_diff = cur_force - allowed_force
           val force_diff_for_engine = force_diff / active_engines_except.length
