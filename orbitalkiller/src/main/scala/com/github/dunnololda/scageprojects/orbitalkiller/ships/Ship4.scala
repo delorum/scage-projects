@@ -73,8 +73,8 @@ class Ship4(index: Int,
   )
 
   val docking_points = List(
-    new DockingPoints(DVec(-1.5, 10.5), DVec(1.5, 10.5), this, Some(8)),
-    new DockingPoints(DVec(-1.5, -5.5), DVec(1.5, -5.5), this, Some(2))
+    new DockingPoints(DVec(-1.5, 9.5), DVec(1.5, 9.5), this, Some(8)),
+    new DockingPoints(DVec(1.5, -5.5), DVec(-1.5, -5.5), this, Some(2))
   )
 
   // миллион ньютонов тяги при расходе 4 килограмма в секунду - это соответствует скорости истечения газов 250 км/сек
