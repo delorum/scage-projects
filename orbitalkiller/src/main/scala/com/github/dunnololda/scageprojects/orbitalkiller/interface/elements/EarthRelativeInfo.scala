@@ -15,7 +15,7 @@ class EarthRelativeInfo extends InterfaceElement {
     } else {
       f"${(correctAngle(DVec(0, 1).deg360(player_ship.coord - earth.coord) - earth.currentState.ang) / 360.0 * earth.length) / 1000}%.2f км"
     }
-    if (player_ship.isLandedOnPlanet(earth)) {
+    if (player_ship.isLandedOnEarth) {
       strings(0) = s"Земля: landed, pos=$ship_earth_position"
     } else {
       val ship_earth_vertical_speed_str = msecOrKmsec((player_ship.linearVelocity - earth.linearVelocity) * (player_ship.coord - earth.coord).n)

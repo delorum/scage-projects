@@ -207,20 +207,15 @@ abstract class PolygonShip(
   }
 
   def isLanded: Boolean = {
-    orbitData.exists(or => {
-      checkAllConditions(
-        () => coord.dist(or.planet_coord) - or.planet.radius < radius,
-        () => ((linearVelocity - or.planet_vel) * (coord - or.planet_coord).n).abs < 0.5,
-        () => (((linearVelocity - or.planet_vel) * (coord - or.planet_coord).p) / coord.dist(or.planet_coord) * or.planet.radius - or.planet.groundSpeedMsec).abs < 0.5)
-    })
+    orbitData.exists(_.is_landed)
   }
 
-  def isLandedOnPlanet(planet: CelestialBody): Boolean = {
-    checkAllConditions(
-      () => coord.dist(planet.coord) - planet.radius < radius,
-      () => ((linearVelocity - planet.linearVelocity) * (coord - planet.coord).n).abs < 0.5,
-      () => (((linearVelocity - planet.linearVelocity) * (coord - planet.coord).p) / coord.dist(planet.coord) * planet.radius - planet.groundSpeedMsec).abs < 0.5
-    )
+  def isLandedOnEarth: Boolean = {
+    orbitData.exists(_.is_landed_on_earth)
+  }
+
+  def isLandedOnMoon: Boolean = {
+    orbitData.exists(_.is_landed_on_moon)
   }
 
   def coord = if (isAlive) currentState.coord else main_ship_wreck.headOption.map(_.coord).getOrElse(currentState.coord)

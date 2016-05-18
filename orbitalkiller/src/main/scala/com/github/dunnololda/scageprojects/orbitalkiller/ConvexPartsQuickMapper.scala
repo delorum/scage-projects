@@ -119,9 +119,9 @@ object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", 
     points.length == 3 || (points.length > 3 && points.sliding(3).forall {
       case Seq(p1, p2, p3) =>
         val res = (p2 - p1).p*(p3 - p2) >= 0
-        if(!res) {
+        /*if(!res) {
           println(s"$p1 - $p2 - $p3")
-        }
+        }*/
         res
     })
   }
