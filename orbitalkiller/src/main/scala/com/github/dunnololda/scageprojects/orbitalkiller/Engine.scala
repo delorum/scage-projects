@@ -82,6 +82,7 @@ class Engine(val index: Int,
       if (ship.fuelMassWhenEnginesOff < 0) {
         _power = prev
       }
+      ship.syncOtherEnginesPower(index)
     }
   }
 
@@ -108,6 +109,7 @@ class Engine(val index: Int,
           is_active = false
           //ship.selected_engine = ship.engines.filter(_.active).lastOption
         }
+        ship.syncOtherEnginesPower(index)
       } else {
         is_active = false
         //ship.selected_engine = ship.engines.filter(_.active).lastOption

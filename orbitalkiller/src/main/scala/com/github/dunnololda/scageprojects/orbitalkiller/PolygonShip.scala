@@ -903,9 +903,8 @@ abstract class PolygonShip(
 
   private def _afterStep(time_msec:Long): Unit = {
     // сила от реактивных двигателей и сила сопротивления воздуха
-    val reactive_force = currentReactiveForce(0, currentState) + {
-      earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5)
-    }
+    val air_resistance = earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5)
+    val reactive_force = currentReactiveForce(0, currentState) + air_resistance
     if (!ship_is_crashed) {
       val dvel = currentState.dvel.norma
       if (dvel > 10) {
@@ -989,12 +988,16 @@ abstract class PolygonShip(
         val active_engines = engines.filter(e => e.active && 0 < e.stopMomentTacts)
         if (active_engines.nonEmpty) {
           val cur_force = reactive_force.norma
-          val allowed_force = mass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g
-          val force_diff = cur_force - allowed_force
-          val force_diff_for_engine = force_diff / active_engines.length
-          active_engines.foreach(e => if (force_diff_for_engine < e.power) {
-            e.power -= force_diff_for_engine
-          })
+          val allowed_force = (mass + dockData.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
+            air_resistance.norma
+          }
+          if(cur_force > allowed_force) {
+            val force_diff = cur_force - allowed_force
+            val force_diff_for_engine = force_diff / active_engines.length
+            active_engines.foreach(e => if (force_diff_for_engine < e.power) {
+              e.power -= force_diff_for_engine
+            })
+          }
         }
       }
     }
@@ -1007,6 +1010,27 @@ abstract class PolygonShip(
         } else e.active = false
       }
     })
+  }
+
+  def syncOtherEnginesPower(except_engine:Int): Unit = {
+    if (InterfaceHolder.gSwitcher.maxGSet) {
+      val active_engines_except = engines.filter(e => e.active && 0 < e.stopMomentTacts && e.index != except_engine)
+      if (active_engines_except.nonEmpty) {
+        val air_resistance = earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5)
+        val reactive_force = currentReactiveForce(0, currentState) + air_resistance
+        val cur_force = reactive_force.norma
+        val allowed_force = (mass + dockData.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
+          air_resistance.norma
+        }
+        if(cur_force > allowed_force) {
+          val force_diff = cur_force - allowed_force
+          val force_diff_for_engine = force_diff / active_engines_except.length
+          active_engines_except.foreach(e => if (force_diff_for_engine < e.power) {
+            e.power -= force_diff_for_engine
+          })
+        }
+      }
+    }
   }
 
   def afterStep(time_msec: Long): Unit = {
