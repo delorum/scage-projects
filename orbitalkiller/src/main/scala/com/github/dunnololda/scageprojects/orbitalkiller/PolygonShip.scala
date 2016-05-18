@@ -727,6 +727,7 @@ abstract class PolygonShip(
     if (isDocked) {
       undock()
     }
+    ship_interface.foreach(_.forceUpdate())
     if (crash) {
       ShipsHolder.removeShip(this)
       delOperation(render_id)

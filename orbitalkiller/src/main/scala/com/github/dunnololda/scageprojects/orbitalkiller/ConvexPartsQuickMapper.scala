@@ -1,7 +1,13 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.cli.AppProperties
+import com.github.dunnololda.scage.ScageLibD.DVec
+import com.github.dunnololda.scage.ScageLibD.Vec
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scage.ScageLibD.max_font_size
+import com.github.dunnololda.scage.ScageLibD.print
+import com.github.dunnololda.scage.ScageLibD.property
+import com.github.dunnololda.scage.ScageLibD.stopApp
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -14,7 +20,7 @@ object ConvexPartsQuickMapper extends ScageScreenAppD("ConvexPartsQuickMapper", 
     constructor.newInstance(args: _*).asInstanceOf[PolygonShip]
   }
 
-  private val k = ship.engine_size.toFloat * 2
+  private val k = optProperty[Float]("cell_size").getOrElse(ship.engine_size.toFloat)
   private val non_convex = ArrayBuffer[(Seq[DVec], Int)]()
 
   println(ship.convex_parts.zipWithIndex.map {

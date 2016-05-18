@@ -20,7 +20,7 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
     })
   }
 
-  private val k = ship.map(_.engine_size.toFloat).getOrElse(property("cell_size", 1.0f))
+  private val k = optProperty[Float]("cell_size").getOrElse(ship.map(_.engine_size.toFloat).getOrElse(1.0f))
   private val cell_size: Float = 1.0f
   private val cell_size2 = cell_size * cell_size
   private val cell_size_double = cell_size * 2
@@ -161,7 +161,7 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
         val mapping = engines_mapping.getOrElse(idx, 0)
         val (index, val_name, _) = engineMappingStr(mapping)
         val position = e.coord - mass_center
-        println( s"""val $val_name = new Engine($index, position = DVec(${position.x * k}, ${position.y * k}), force_dir = DVec(${e.force_dir.x}, ${e.force_dir.y}), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)""")
+        println( s"""val $val_name = new Engine($index, DVec(${position.x * k}, ${position.y * k}), DVec(${e.force_dir.x}, ${e.force_dir.y}), 1000000, 1, 4, this)""")
       }
       println()
       println(engines.zipWithIndex.map { case (e, idx) =>

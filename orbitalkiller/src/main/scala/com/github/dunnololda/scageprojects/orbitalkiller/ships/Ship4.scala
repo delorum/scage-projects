@@ -25,48 +25,67 @@ class Ship4(index: Int,
 
   val is_manned = true
 
-  lazy val engine_size: Double = 1
+  lazy val engine_size: Double = 0.7
 
   lazy val points: List[DVec] = List(
-    DVec(3.5, 2.5),
-    DVec(1.5, 6.5),
-    DVec(1.5, 10.5),
-    DVec(-1.5, 10.5),
-    DVec(-1.5, 6.5),
-    DVec(-3.5, 2.5),
-    DVec(-3.5, -3.5),
-    DVec(3.5, -3.5)
+    DVec(4.5, -4.5),
+    DVec(4.5, -2.5),
+    DVec(3.5, -1.5),
+    DVec(3.5, 1.5),
+    DVec(1.5, 5.5),
+    DVec(1.5, 9.5),
+    DVec(-1.5, 9.5),
+    DVec(-1.5, 5.5),
+    DVec(-3.5, 1.5),
+    DVec(-3.5, -1.5),
+    DVec(-4.5, -2.5),
+    DVec(-4.5, -4.5),
+    DVec(-3.5, -4.5),
+    DVec(-2.5, -5.5),
+    DVec(2.5, -5.5),
+    DVec(3.5, -4.5)
   )
 
   lazy val convex_parts = List(
-    PolygonShape(List(DVec(-3.5, -3.5), DVec(3.5, -3.5), DVec(3.5, 2.5), DVec(-3.5, 2.5)), Nil),
-    PolygonShape(List(DVec(-3.5, 2.5), DVec(3.5, 2.5), DVec(1.5, 6.5), DVec(-1.5, 6.5)), Nil),
-    PolygonShape(List(DVec(-1.5, 10.5), DVec(-1.5, 6.5), DVec(1.5, 6.5), DVec(1.5, 10.5)), Nil)
+    PolygonShape(List(DVec(-4.5, -4.5), DVec(-3.5, -4.5), DVec(-3.5, -1.5), DVec(-4.5, -2.5)), List()),
+    PolygonShape(List(DVec(-3.5, -4.5), DVec(-2.5, -5.5), DVec(2.5, -5.5), DVec(3.5, -4.5), DVec(3.5, 1.5), DVec(1.5, 5.5), DVec(-1.5, 5.5), DVec(-3.5, 1.5)), List()),
+    PolygonShape(List(DVec(3.5, -4.5), DVec(4.5, -4.5), DVec(4.5, -2.5), DVec(3.5, -1.5)), List()),
+    PolygonShape(List(DVec(-1.5, 5.5), DVec(1.5, 5.5), DVec(1.5, 9.5), DVec(-1.5, 9.5)), List())
   )
 
   val wreck_parts = List(
-    PolygonShape(List(DVec(-3.5, -3.5), DVec(-0.5, -3.5), DVec(-0.5, -0.5), DVec(-3.5, -0.5)), Nil),
-    PolygonShape(List(DVec(-0.5, -3.5), DVec(3.5, -3.5), DVec(3.5, -0.5), DVec(-0.5, -0.5)), Nil),
-    PolygonShape(List(DVec(-3.5, 2.5), DVec(-3.5, -0.5), DVec(0.5, -0.5), DVec(0.5, 2.5)), Nil),
-    PolygonShape(List(DVec(0.5, -0.5), DVec(3.5, -0.5), DVec(3.5, 2.5), DVec(0.5, 2.5)), Nil),
-    PolygonShape(List(DVec(-3.5, 2.5), DVec(-0.5, 2.5), DVec(-0.5, 6.5), DVec(-1.5, 6.5)), Nil),
-    PolygonShape(List(DVec(-0.5, 2.5), DVec(3.5, 2.5), DVec(1.5, 6.5), DVec(-0.5, 6.5)), Nil),
-    PolygonShape(List(DVec(-1.5, 6.5), DVec(1.5, 6.5), DVec(1.5, 8.5), DVec(-1.5, 8.5)), Nil),
-    PolygonShape(List(DVec(-1.5, 8.5), DVec(1.5, 8.5), DVec(1.5, 10.5), DVec(-1.5, 10.5)), Nil)
+    PolygonShape(List(DVec(-4.5, -4.5), DVec(-1.5, -4.5), DVec(-4.5, -2.5)), List()),
+    PolygonShape(List(DVec(-4.5, -2.5), DVec(-1.5, -4.5), DVec(0.5, -3.5), DVec(0.5, -0.5)), List()),
+    PolygonShape(List(DVec(-4.5, -2.5), DVec(0.5, -0.5), DVec(-0.5, 2.5), DVec(-3.5, -1.5)), List()),
+    PolygonShape(List(DVec(-3.5, -1.5), DVec(-0.5, 2.5), DVec(-3.5, 1.5)), List()),
+    PolygonShape(List(DVec(-3.5, 1.5), DVec(-0.5, 2.5), DVec(0.5, 6.5), DVec(-1.5, 5.5)), List()),
+    PolygonShape(List(DVec(-1.5, 5.5), DVec(0.5, 6.5), DVec(-0.5, 8.5), DVec(-1.5, 7.5)), List()),
+    PolygonShape(List(DVec(-1.5, 7.5), DVec(-0.5, 8.5), DVec(0.5, 9.5), DVec(-1.5, 9.5)), List()),
+    PolygonShape(List(DVec(-0.5, 8.5), DVec(0.5, 6.5), DVec(1.5, 7.5), DVec(1.5, 9.5), DVec(0.5, 9.5)), List()),
+    PolygonShape(List(DVec(-0.5, 2.5), DVec(1.5, 5.5), DVec(1.5, 7.5), DVec(0.5, 6.5)), List()),
+    PolygonShape(List(DVec(-0.5, 2.5), DVec(0.5, -0.5), DVec(1.5, 1.5), DVec(2.5, 3.5), DVec(1.5, 5.5)), List()),
+    PolygonShape(List(DVec(0.5, -0.5), DVec(3.5, -1.5), DVec(3.5, 1.5), DVec(2.5, 3.5)), List()),
+    PolygonShape(List(DVec(-3.5, -4.5), DVec(-2.5, -5.5), DVec(0.5, -5.5), DVec(-1.5, -4.5)), List()),
+    PolygonShape(List(DVec(-1.5, -4.5), DVec(0.5, -5.5), DVec(3.5, -3.5), DVec(0.5, -3.5)), List()),
+    PolygonShape(List(DVec(0.5, -3.5), DVec(3.5, -3.5), DVec(4.5, -2.5), DVec(3.5, -1.5), DVec(0.5, -0.5)), List()),
+    PolygonShape(List(DVec(0.5, -5.5), DVec(2.5, -5.5), DVec(3.5, -4.5), DVec(3.5, -3.5)), List()),
+    PolygonShape(List(DVec(3.5, -4.5), DVec(4.5, -4.5), DVec(4.5, -2.5), DVec(3.5, -3.5)), List())
   )
 
   val docking_points = List(new DockingPoints(DVec(-1.5, 10.5), DVec(1.5, 10.5), this, Some(8)))
 
   // миллион ньютонов тяги при расходе 4 килограмма в секунду - это соответствует скорости истечения газов 250 км/сек
   // что в 50 раз выше наивысшего полученного на практике значения для химического топлива: литий/водород/фтор - 5000 м/сек
-  val four = new Engine(4, Vec(-3.5, 0.0), Vec(1.0, 0.0), 1000000, 1, 4, this)
-  val six = new Engine(6, Vec(3.5, 0.0), Vec(-1.0, 0.0), 1000000, 1, 4, this)
-  val seven = new Engine(7, Vec(-1.5, 9.0), Vec(1.0, 0.0), 10000, 100, 0.04, this)
-  val nine = new Engine(9, Vec(1.5, 9.0), Vec(-1.0, 0.0), 10000, 100, 0.04, this)
-  val eight = new Engine(8, Vec(0.0, 10.5), Vec(0.0, -1.0), 1000000, 1, 4, this)
-  val two = new Engine(2, Vec(0.0, -3.5), Vec(0.0, 1.0), 1000000, 1, 4, this)
+  val four  = new Engine(4, DVec(-3.5, 0.0),  DVec(1.0, 0.0),  1000000, 1, 4, this)
+  val six   = new Engine(6, DVec(3.5, 0.0),   DVec(-1.0, 0.0), 1000000, 1, 4, this)
+  val seven = new Engine(7, DVec(-1.5, 8.0),  DVec(1.0, 0.0),  10000,   100, 0.04, this)
+  val nine  = new Engine(9, DVec(1.5, 8.0),   DVec(-1.0, 0.0), 10000,   100, 0.04, this)
+  val eight = new Engine(8, DVec(0.0, 9.5),   DVec(0.0, -1.0), 1000000, 1, 4, this)
+  val one   = new Engine(1, DVec(-4.0, -4.5), DVec(0.0, 1.0),  500000,  1, 4, this)
+  val three = new Engine(3, DVec(4.0, -4.5),  DVec(0.0, 1.0),  500000,  1, 4, this)
+  val two   = new Engine(2, DVec(0.0, -5.5),  DVec(0.0, 1.0),  1000000, 1, 4, this)
 
-  val engines = List(four, six, seven, nine, eight, two)
+  val engines = List(four, six, seven, nine, eight, two, one, three)
 
   val engines_mapping = Map(
     KEY_NUMPAD4 -> four,
@@ -74,7 +93,9 @@ class Ship4(index: Int,
     KEY_NUMPAD7 -> seven,
     KEY_NUMPAD9 -> nine,
     KEY_NUMPAD8 -> eight,
-    KEY_NUMPAD2 -> two
+    KEY_NUMPAD2 -> two,
+    KEY_NUMPAD1 -> one,
+    KEY_NUMPAD3 -> three
   )
 
   /**

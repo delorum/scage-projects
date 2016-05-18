@@ -7,8 +7,12 @@ class OrbitInfo extends InterfaceElement {
   private val strings = Array("")
 
   override protected def _update(): Unit = {
-    strings(0) = s"Орбита: ${player_ship.orbitData.map(_.orbitStrDefinition).getOrElse("N/A")}"
-
+    if(player_ship.engines.exists(_.active)) {
+      strings(0) = s"Орбита: ${orbitStrInPointWithVelocity(player_ship.coord, player_ship.linearVelocity, player_ship.radius, player_ship.mass, currentPlanetStates)}"
+    } else if(_update_needed) {
+      strings(0) = s"Орбита: ${player_ship.orbitData.map(_.orbitStrDefinition).getOrElse("N/A")}"
+    }
+    _update_needed = false
     /*val equation = insideSphereOfInfluenceOfCelestialBody(ship.coord, ship.mass, currentPlanetStates) match {
       case Some((planet, planet_state)) =>
         val orbit = calculateOrbit(planet_state.mass, planet_state.coord, ship.mass, ship.coord - planet_state.coord, ship.linearVelocity - planet_state.vel, G)

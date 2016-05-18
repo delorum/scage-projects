@@ -35,7 +35,7 @@ abstract class InterfaceElement {
     _minimized_by_constraint = true
   }
 
-  private var _update_needed = true
+  protected var _update_needed = true
 
   def markUpdateNeeded(): Unit = {
     _update_needed = true

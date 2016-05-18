@@ -154,7 +154,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     if (player_ship.flightMode != Maneuvering) {
       //println(s"updateFutureTrajectory: $reason")
       system_cache.clear()
-      _recalculate_orbits = true
+      _update_orbits = true
     }
   }
 
@@ -246,16 +246,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def planetByIndex(index: Int): Option[CelestialBody] = planets.get(index)
 
   // стоим на поверхности Земли
-  val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
-  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  //val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
+  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   // суборбитальная траектория
   //val ship_start_position = earth.coord + DVec(500, earth.radius + 100000)
   //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
 
   // на круговой орбите в 200 км от поверхности Земли
-  //val ship_start_position = earth.coord + DVec(-100, earth.radius + 199000)
-  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
+  val ship_start_position = earth.coord + DVec(-100, earth.radius + 199000)
+  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
 
   // стоим на поверхности Луны
   //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
@@ -964,7 +964,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   val scale = 1e-6
 
-  private def calculateOrbitData(body_index: Int,
+  private def updateOrbitData(body_index: Int,
                                  body_radius:Double,
                                  hyperbola_color: ScageColor,
                                  ellipse_color: ScageColor,
@@ -1214,43 +1214,47 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }
 
-  private var _recalculate_orbits = false
+  private var _update_orbits = false
 
   private def updateOrbits() {
     //println("updateOrbits")
     if (player_ship.flightMode == Maneuvering || !onPause || !player_ship.engines.exists(_.active)) {
       // если в режиме маневрирования, или не в режиме маневрирования, но не на паузе, или на паузе, но двигатели не работают - рисуем текущее состояние
-      player_ship.orbitData = calculateOrbitData(player_ship.index, player_ship.radius, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_evolution.allBodyStates)
+      player_ship.orbitData = updateOrbitData(player_ship.index, player_ship.radius, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_evolution.allBodyStates)
+      InterfaceHolder.orbitInfo.markUpdateNeeded()
       InterfaceHolder.shipInterfaces.foreach(si => {
         if (!si.isMinimized && !si.monitoring_ship.isCrashed && si.monitoring_ship.currentState.active) {
           si.monitoring_ship.orbitData = {
-            calculateOrbitData(si.monitoring_ship.index, si.monitoring_ship.radius, player_ship.colorIfPlayerAliveOrRed(MAGENTA), player_ship.colorIfPlayerAliveOrRed(MAGENTA), system_evolution.allBodyStates)
+            updateOrbitData(si.monitoring_ship.index, si.monitoring_ship.radius, player_ship.colorIfPlayerAliveOrRed(MAGENTA), player_ship.colorIfPlayerAliveOrRed(MAGENTA), system_evolution.allBodyStates)
           }
+          si.markUpdateNeeded()
         }
       })
-      moon.orbitRender = calculateOrbitData(moon.index, moon.radius, player_ship.colorIfPlayerAliveOrRed(GREEN), player_ship.colorIfPlayerAliveOrRed(GREEN), system_evolution.allBodyStates, Set(earth.index, sun.index))
-      earth.orbitRender = calculateOrbitData(earth.index, earth.radius, player_ship.colorIfPlayerAliveOrRed(ORANGE), player_ship.colorIfPlayerAliveOrRed(ORANGE), system_evolution.allBodyStates, Set(sun.index))
+      moon.orbitRender = updateOrbitData(moon.index, moon.radius, player_ship.colorIfPlayerAliveOrRed(GREEN), player_ship.colorIfPlayerAliveOrRed(GREEN), system_evolution.allBodyStates, Set(earth.index, sun.index))
+      earth.orbitRender = updateOrbitData(earth.index, earth.radius, player_ship.colorIfPlayerAliveOrRed(ORANGE), player_ship.colorIfPlayerAliveOrRed(ORANGE), system_evolution.allBodyStates, Set(sun.index))
     } else {
       // в эту секцию мы попадаем, если мы не в режиме маневрирования, не на паузе, и двигатели работают
       val system_state_when_engines_off = getFutureState(player_ship.engines.map(_.stopMomentTacts).max)
-      player_ship.orbitData = calculateOrbitData(player_ship.index, player_ship.radius, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_state_when_engines_off)
+      player_ship.orbitData = updateOrbitData(player_ship.index, player_ship.radius, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_state_when_engines_off)
+      InterfaceHolder.orbitInfo.markUpdateNeeded()
       InterfaceHolder.shipInterfaces.foreach(si => {
         if (!si.isMinimized && !si.monitoring_ship.isCrashed) {
           si.monitoring_ship.orbitData = {
-            calculateOrbitData(si.monitoring_ship.index, si.monitoring_ship.radius, player_ship.colorIfPlayerAliveOrRed(MAGENTA), player_ship.colorIfPlayerAliveOrRed(MAGENTA), system_state_when_engines_off)
+            updateOrbitData(si.monitoring_ship.index, si.monitoring_ship.radius, player_ship.colorIfPlayerAliveOrRed(MAGENTA), player_ship.colorIfPlayerAliveOrRed(MAGENTA), system_state_when_engines_off)
           }
+          si.markUpdateNeeded()
         }
       })
-      moon.orbitRender = calculateOrbitData(moon.index, moon.radius, player_ship.colorIfPlayerAliveOrRed(GREEN), player_ship.colorIfPlayerAliveOrRed(GREEN), system_state_when_engines_off, Set(earth.index, sun.index))
-      earth.orbitRender = calculateOrbitData(earth.index, earth.radius, player_ship.colorIfPlayerAliveOrRed(ORANGE), player_ship.colorIfPlayerAliveOrRed(ORANGE), system_state_when_engines_off, Set(sun.index))
+      moon.orbitRender = updateOrbitData(moon.index, moon.radius, player_ship.colorIfPlayerAliveOrRed(GREEN), player_ship.colorIfPlayerAliveOrRed(GREEN), system_state_when_engines_off, Set(earth.index, sun.index))
+      earth.orbitRender = updateOrbitData(earth.index, earth.radius, player_ship.colorIfPlayerAliveOrRed(ORANGE), player_ship.colorIfPlayerAliveOrRed(ORANGE), system_state_when_engines_off, Set(sun.index))
     }
-    _recalculate_orbits = false
+    _update_orbits = false
   }
 
   updateOrbits()
 
   actionDynamicPeriodIgnorePause(1000 / timeMultiplier) {
-    if (/*drawMapMode && (*/!onPause || _recalculate_orbits/*)*/) {
+    if (/*drawMapMode && (*/!onPause || _update_orbits/*)*/) {
       updateOrbits()
     }
   }

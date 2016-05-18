@@ -57,11 +57,6 @@ class Satellite1(index: Int,
     PolygonShape(List(DVec(4.0, -16.0), DVec(12.0, -8.0), DVec(4.0, -8.0)), Nil)
   )
 
-  convex_parts.foreach(p => {
-    println(s"PolygonShape(List(${p.points.map(p => s"DVec(${p.x}, ${p.y})").mkString(", ")}), Nil),")
-  })
-  println("==========================")
-
   val wreck_parts = List(
     PolygonShape(List(DVec(-44.0, 8.0), DVec(-44.0, -4.0), DVec(-36.0, -4.0)), Nil),
     PolygonShape(List(DVec(-44.0, 8.0), DVec(-36.0, -4.0), DVec(-32.0, -4.0), DVec(-32.0, 8.0)), Nil),
@@ -83,12 +78,6 @@ class Satellite1(index: Int,
     PolygonShape(List(DVec(40.0, -4.0), DVec(44.0, -4.0), DVec(44.0, 8.0), DVec(40.0, 8.0)), Nil),
     PolygonShape(List(DVec(-20.0, -4.0), DVec(-16.0, -4.0), DVec(-16.0, 8.0)), Nil)
   )
-
-  wreck_parts.foreach(p => {
-    println(s"PolygonShape(List(${p.points.map(p => s"DVec(${p.x}, ${p.y})").mkString(", ")}), Nil),")
-  })
-
-  println("==========================")
 
   val docking_points: List[DockingPoints] = Nil
 
