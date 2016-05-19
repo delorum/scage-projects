@@ -1032,11 +1032,14 @@ abstract class PolygonShip(
   def afterStep(time_msec: Long): Unit = {
     // условие сделать корабль неактивным и не обрабатывать его:
     // если это не корабль игрока, расстояние от данного корабля до корабля игрока больше 1000 км,
-    // перигей орбиты выше верхней границы атмосферы (орбита стабильная), двигатели не включены,
+    // перигей орбиты выше верхней границы атмосферы (орбита стабильная) или мы стоим на земле,
+    // двигатели не включены,
     // интерфейс данного корабля существует и свернут
     val condition = index != player_ship.index &&
       coord.dist2(OrbitalKiller.player_ship.coord) > 1000000l*1000000l &&
-      orbitData.exists(or => or.ellipseOrbit.exists(e => e.r_p > or.planet.radius + or.planet.air_free_altitude)) &&
+      orbitData.exists(or => {
+        or.is_landed || or.ellipseOrbit.exists(e => e.r_p > or.planet.radius + or.planet.air_free_altitude)
+      }) &&
       engines.forall(!_.active) &&
       (ship_interface.isEmpty || ship_interface.exists(_.isMinimized))
     if(currentState.active) {
@@ -1050,15 +1053,22 @@ abstract class PolygonShip(
       if(!condition) {
         orbitData match {
           case Some(or) =>
-            or.ellipseOrbit match {
-              case Some(e) =>
-                val new_e = e.withNewFocusPosition(or.planet.coord)
-                currentState.coord = new_e.orbitalPointAfterTime(deactivate_point_relative + or.planet.coord, OrbitalKiller.timeMsec/1000 - deactivate_moment_sec, or.ccw)
-                val (vt, vr) = new_e.orbitalVelocityInPoint(currentState.coord)
-                val r = if(or.ccw) (currentState.coord - or.planet.coord).n else -(currentState.coord - or.planet.coord).n
-                val t = r.perpendicular
-                currentState.vel = vr * r + vt * t + or.planet.linearVelocity
-              case None =>
+            val time_sec = OrbitalKiller.timeMsec / 1000 - deactivate_moment_sec
+            if(!or.is_landed) {
+              or.ellipseOrbit match {
+                case Some(e) =>
+                  val new_e = e.withNewFocusPosition(or.planet.coord)
+                  currentState.coord = new_e.orbitalPointAfterTime(deactivate_point_relative + or.planet.coord, time_sec, or.ccw)
+                  val (vt, vr) = new_e.orbitalVelocityInPoint(currentState.coord)
+                  val r = if (or.ccw) (currentState.coord - or.planet.coord).n else -(currentState.coord - or.planet.coord).n
+                  val t = r.perpendicular
+                  currentState.vel = vr * r + vt * t + or.planet.linearVelocity
+                case None =>
+              }
+            } else {
+              val ang_diff = or.planet.currentState.ang_vel*time_sec
+              currentState.coord = deactivate_point_relative.rotateDeg(ang_diff) + or.planet.coord
+              currentState.vel = or.planet.linearVelocity + (currentState.coord - or.planet.coord).p*or.planet.groundSpeedMsec
             }
           case None =>
         }

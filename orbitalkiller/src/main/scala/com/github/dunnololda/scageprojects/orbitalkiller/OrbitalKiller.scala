@@ -4,7 +4,7 @@ import java.io.FileOutputStream
 
 import com.github.dunnololda.scage.ScageLibD.{DVec, ScageColor, Vec, addGlyphs, appVersion, max_font_size, messageBounds, print, property, stopApp, _}
 import com.github.dunnololda.scage.support.ScageId
-import com.github.dunnololda.scageprojects.orbitalkiller.ships.{Satellite2, Satellite1, Ship4, SpaceStation2}
+import com.github.dunnololda.scageprojects.orbitalkiller.ships._
 
 import scala.collection._
 
@@ -312,6 +312,15 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     init_velocity = sat2_init_velocity,
     init_rotation = 45
   )
+
+  // стоим на поверхности Земли
+  val cargo1_start_position = earth.coord + DVec(485, earth.radius + 2)
+  val cargo1_init_velocity = earth.linearVelocity + (cargo1_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+
+  val cargo1 = new Cargo1(ScageId.nextId,
+    init_coord = cargo1_start_position,
+    init_velocity = cargo1_init_velocity,
+    init_rotation = 0)
 
   def nameByIndex(index: Int): Option[String] = {
     planets.get(index) match {

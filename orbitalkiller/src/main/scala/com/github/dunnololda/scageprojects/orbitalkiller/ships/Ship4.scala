@@ -430,7 +430,8 @@ class Ship4(index: Int,
               shipCloser500KmNonMinimized match {
                 case Some(os) =>
                   InterfaceHolder.dockingSwitcher.setDockingAuto()
-                  val ship_docking_point = docking_points.head.curP1 + 0.5 * (docking_points.head.curP2 - docking_points.head.curP1)
+                  val dp = docking_points.sortBy(_.curP1.dist2(os.coord)).head
+                  val ship_docking_point = dp.curP1 + 0.5 * (dp.curP2 - dp.curP1)
                   os.docking_points.sortBy(osdp => osdp.curP1.dist(ship_docking_point)).headOption match {
                     case Some(osdp) =>
                       if (osdp.curP1.dist(ship_docking_point) > 2000) {
