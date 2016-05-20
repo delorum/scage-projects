@@ -556,7 +556,7 @@ abstract class PolygonShip(
         vertical_speed_msec = 0
         horizontal_speed_msec = 0
       }
-      if (prev_flight_mode == Maneuvering && flight_mode != Maneuvering) {
+      if (prev_flight_mode == Maneuvering && flight_mode == FreeFlightMode) {
         engines.foreach(e => e.workTimeTacts = 0)
       }
     }
