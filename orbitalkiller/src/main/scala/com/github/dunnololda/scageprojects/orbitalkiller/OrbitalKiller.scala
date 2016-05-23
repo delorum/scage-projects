@@ -246,7 +246,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def planetByIndex(index: Int): Option[CelestialBody] = planets.get(index)
 
   // стоим на поверхности Земли
-  val ship_start_position = earth.coord + DVec(500, earth.radius + 3.5)
+  val ship_start_position = earth.coord + DVec(485, earth.radius + 10.5)
   val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   // суборбитальная траектория
@@ -703,7 +703,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           e.workTimeTacts = 0
         }
       })
-      player_ship.selected_engine = None
+      player_ship.clearEngineSelection()
     }
   })
 
@@ -730,29 +730,29 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   keyIgnorePause(KEY_UP, repeatTime(KEY_UP), onKeyDown = {
     if (player_ship.isAlive) {
       if (player_ship.flightMode != NearestPlanetVelocity) {
-        player_ship.selected_engine.foreach(e => e.powerPercent += 1)
+        player_ship.selectedEngine.foreach(e => e.powerPercent += 1)
       } else {
         player_ship.vertical_speed_msec += 1
       }
     }
-  }, onKeyUp = if (player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selected_engine.exists(_.active)) {
+  }, onKeyUp = if (player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selectedEngine.exists(_.active)) {
     updateFutureTrajectory("KEY_UP")
   })
   keyIgnorePause(KEY_DOWN, repeatTime(KEY_DOWN), onKeyDown = {
     if (player_ship.isAlive) {
       if (player_ship.flightMode != NearestPlanetVelocity) {
-        player_ship.selected_engine.foreach(e => e.powerPercent -= 1)
+        player_ship.selectedEngine.foreach(e => e.powerPercent -= 1)
       } else {
         player_ship.vertical_speed_msec -= 1
       }
     }
-  }, onKeyUp = if (player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selected_engine.exists(_.active)) {
+  }, onKeyUp = if (player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selectedEngine.exists(_.active)) {
     updateFutureTrajectory("KEY_DOWN")
   })
   keyIgnorePause(KEY_RIGHT, repeatTime(KEY_RIGHT), onKeyDown = {
     if (player_ship.isAlive) {
       if (player_ship.flightMode != NearestPlanetVelocity) {
-        player_ship.selected_engine.foreach(e => {
+        player_ship.selectedEngine.foreach(e => {
           e.workTimeTacts += InterfaceHolder.timeStepSwitcher.timeStep
           //updateFutureTrajectory()
         })
@@ -760,13 +760,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         player_ship.horizontal_speed_msec -= 1
       }
     }
-  }, onKeyUp = if (player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selected_engine.exists(_.active)) {
+  }, onKeyUp = if (player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selectedEngine.exists(_.active)) {
     updateFutureTrajectory("KEY_RIGHT")
   })
   keyIgnorePause(KEY_LEFT, repeatTime(KEY_LEFT), onKeyDown = {
     if (player_ship.isAlive) {
       if (player_ship.flightMode != NearestPlanetVelocity) {
-        player_ship.selected_engine.foreach(e => {
+        player_ship.selectedEngine.foreach(e => {
           /*if(e.worktimeTacts > 0) {*/
           e.workTimeTacts -= InterfaceHolder.timeStepSwitcher.timeStep
           //updateFutureTrajectory()
@@ -777,7 +777,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       }
     }
   }, onKeyUp = {
-    if (player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selected_engine.exists(_.active)) {
+    if (player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selectedEngine.exists(_.active)) {
       updateFutureTrajectory("KEY_LEFT")
     }
   })

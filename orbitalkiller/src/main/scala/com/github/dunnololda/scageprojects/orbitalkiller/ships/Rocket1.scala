@@ -115,7 +115,7 @@ class Rocket1(index: Int,
   def preserveAngularVelocity(ang_vel_deg: Double) {}
 
   override protected def drawShip(): Unit = {
-    if (!drawMapMode) {
+    if (!drawMapMode && dockData.isEmpty) {
       if (isAlive) {
         openglLocalTransform {
           openglMove(coord - base)

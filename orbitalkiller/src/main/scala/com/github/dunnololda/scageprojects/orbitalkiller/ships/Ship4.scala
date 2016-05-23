@@ -73,8 +73,25 @@ class Ship4(index: Int,
   )
 
   val docking_points = List(
-    new DockingPoints(DVec(-1.5, 9.5), DVec(1.5, 9.5), this, Some(8)),
-    new DockingPoints(DVec(1.5, -5.5), DVec(-1.5, -5.5), this, None)
+    new DockingPoints(DVec(-1.5, 9.5), DVec(1.5, 9.5), this, Some(8), Nil),
+    new DockingPoints(DVec(1.5, -5.5), DVec(-1.5, -5.5), this, Some(2), List(
+      DVec(2.5, -5.5),
+      DVec(3.5, -4.5),
+      DVec(4.5, -4.5),
+      DVec(4.5, -2.5),
+      DVec(3.5, -1.5),
+      DVec(3.5, 1.5),
+      DVec(1.5, 5.5),
+      DVec(1.5, 9.5),
+      DVec(-1.5, 9.5),
+      DVec(-1.5, 5.5),
+      DVec(-3.5, 1.5),
+      DVec(-3.5, -1.5),
+      DVec(-4.5, -2.5),
+      DVec(-4.5, -4.5),
+      DVec(-3.5, -4.5),
+      DVec(-2.5, -5.5)
+    ))
   )
 
   // миллион ньютонов тяги при расходе 4 килограмма в секунду - это соответствует скорости истечения газов 250 км/сек
@@ -646,7 +663,7 @@ class Ship4(index: Int,
   ).map(_ * 0.1)
 
   override protected def drawShip(): Unit = {
-    if (!drawMapMode) {
+    if (dockData.isEmpty && !drawMapMode) {
       if (isAlive) {
         openglLocalTransform {
           openglMove(coord - base)
