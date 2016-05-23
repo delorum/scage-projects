@@ -258,6 +258,17 @@ class PlanetWithAir(index: Int,
     airPressureMmHg(altitude(ship_coord, planet_coord))
   }
 
+  def terminalVelocity(ship_mass:Double, ship_coord: DVec, planet_coord: DVec, A: Double, C: Double): Option[Double] = {
+    val h = altitude(ship_coord, planet_coord)
+    val P = airPressurePascale(h)
+    val T = temperature(h)
+    if (T <= 0) None
+    else {
+      val ro = P * M / (R * T) // density of air
+      Some(math.sqrt(2*ship_mass*g/(ro*A*C)))
+    }
+  }
+
   // another model
   // http://fiz.1september.ru/articlef.php?ID=200801702
 

@@ -675,6 +675,13 @@ class Ship4(index: Int,
             if (!InterfaceHolder.earthRelativeInfo.isMinimized) {
               // direction to earth
               drawArrow(Vec.zero, (earth.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.earthRelativeInfo.color))
+              earth.terminalVelocity(mass, coord, earth.coord, 28, 0.5) match {
+                case Some(tv) =>
+                  val cos_a = tv/relativeLinearVelocity.norma
+                  val a = math.acos(cos_a)
+                  drawDashedLine(Vec.zero, DVec(0,1).rotateRad(math.Pi/2-a)*radius, 0.4, colorIfPlayerAliveOrRed(InterfaceHolder.earthRelativeInfo.color))
+                case None =>
+              }
             }
             if (!InterfaceHolder.moonRelativeInfo.isMinimized) {
               // direction to moon
