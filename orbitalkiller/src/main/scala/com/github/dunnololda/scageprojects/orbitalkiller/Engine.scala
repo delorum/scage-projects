@@ -81,8 +81,11 @@ class Engine(val index: Int,
       _power = new_power
       if (ship.fuelMassWhenEnginesOff < 0) {
         _power = prev
+      } else {
+        if (ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) {
+          ship.syncOtherEnginesPower(index)
+        }
       }
-      ship.syncOtherEnginesPower(index)
     }
   }
 
@@ -105,11 +108,13 @@ class Engine(val index: Int,
           timeMultiplier = realtime
           if (workTimeTacts == 0) workTimeTacts = 10
           //ship.selected_engine = Some(this)
+          if(ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) {
+            ship.syncOtherEnginesPower(index)
+          }
         } else {
           is_active = false
           //ship.selected_engine = ship.engines.filter(_.active).lastOption
         }
-        ship.syncOtherEnginesPower(index)
       } else {
         is_active = false
         //ship.selected_engine = ship.engines.filter(_.active).lastOption
