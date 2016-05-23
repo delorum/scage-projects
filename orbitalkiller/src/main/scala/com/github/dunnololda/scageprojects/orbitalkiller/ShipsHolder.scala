@@ -62,5 +62,5 @@ object ShipsHolder {
 
   def shipIndicies: Set[Int] = _shipIndicies
 
-  def currentShipStatesExceptShip(ship_index: Int): Seq[MutableBodyState] = _ships.withFilter(_.index != ship_index).map(_.currentState)
+  def currentShipStatesExceptShip(ship_index: Int): Seq[MutableBodyState] = _ships.withFilter(x => x.currentState.active && x.index != ship_index).map(_.currentState)
 }
