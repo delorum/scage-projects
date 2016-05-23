@@ -162,11 +162,11 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
   }
 
   def allBodyStates: mutable.Map[Int, MutableBodyState] = {
-    mutable_system.map(kv => (kv._1, kv._2.body))
+    mutable_system.filter(_._2.body.active).map(kv => (kv._1, kv._2.body))
   }
 
   def bodyStates(indicies: Set[Int]): mutable.Map[Int, MutableBodyState] = {
-    mutable_system.filter(kv => indicies.contains(kv._1)).map(kv => (kv._1, kv._2.body))
+    mutable_system.filter(kv => kv._2.body.active && indicies.contains(kv._1)).map(kv => (kv._1, kv._2.body))
   }
 
   def bodyState(index: Int): Option[MutableBodyState] = mutable_system.get(index).map(_.body)
@@ -277,7 +277,11 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
 
   def copy: SystemEvolution = {
     val x = new SystemEvolution(base_dt, system_center, tacts)
-    mutable_system.foreach(p => x.addBody(p._2.copy(body = p._2.body.copy)))
+    mutable_system.foreach(p => {
+      if(p._2.body.active) {
+        x.addBody(p._2.copy(body = p._2.body.copy))
+      }
+    })
     x
   }
 }
@@ -303,9 +307,9 @@ class EvolutionHelper(mutable_system: mutable.HashMap[Int, MutableSystemPart]) {
     mutable_system.get(body_index).map(bs => func(bs.body)).getOrElse(0.0)
   }
 
-  def bodyStates(indicies: collection.Set[Int]) = mutable_system.filter(kv => indicies.contains(kv._1)).map(kv => kv._2.body).toSeq
+  def bodyStates(indicies: collection.Set[Int]) = mutable_system.filter(kv => kv._2.body.active && indicies.contains(kv._1)).map(kv => kv._2.body).toSeq
 
-  def bodyStatesMap(indicies: Set[Int]) = mutable_system.filter(kv => indicies.contains(kv._1)).map(kv => (kv._1, kv._2.body))
+  def bodyStatesMap(indicies: Set[Int]) = mutable_system.filter(kv => kv._2.body.active && indicies.contains(kv._1)).map(kv => (kv._1, kv._2.body))
 
-  def bodyState(index: Int) = mutable_system.get(index).map(_.body)
+  def bodyState(index: Int) = mutable_system.get(index).filter(_.body.active).map(_.body)
 }

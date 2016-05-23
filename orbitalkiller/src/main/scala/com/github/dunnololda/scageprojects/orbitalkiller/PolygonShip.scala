@@ -882,10 +882,10 @@ abstract class PolygonShip(
     if(currentState.active) {
       engines.foreach(e => {
         if (e.active) {
-          if (e.workTimeTacts <= 0 || player_ship.fuelMass <= 0) {
+          if (e.workTimeTacts <= 0 || fuelMass <= 0) {
             e.active = false
           } else {
-            if (e.ship.fuelMass - e.fuelConsumptionPerTact <= 0) {
+            if (fuelMass - e.fuelConsumptionPerTact <= 0) {
               e.active = false
             }
           }
@@ -1004,7 +1004,7 @@ abstract class PolygonShip(
         if (e.workTimeTacts > 0) {
           e.workTimeTacts -= 1
           //InterfaceHolder.enginesInfo.addWorkTime(base_dt*1000*e.power/e.max_power)
-          e.ship.fuelMass -= e.fuelConsumptionPerTact
+          fuelMass -= e.fuelConsumptionPerTact
         } else e.active = false
       }
     })
