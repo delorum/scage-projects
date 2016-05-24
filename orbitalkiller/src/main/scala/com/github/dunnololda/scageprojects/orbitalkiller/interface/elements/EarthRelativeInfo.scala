@@ -20,8 +20,7 @@ class EarthRelativeInfo extends InterfaceElement {
     } else {
       val ship_earth_vertical_speed_str = msecOrKmsec((player_ship.linearVelocity - earth.linearVelocity) * (player_ship.coord - earth.coord).n)
       val ship_earth_tangent_speed_str = msecOrKmsec(((player_ship.linearVelocity - earth.linearVelocity) * (player_ship.coord - earth.coord).p) / player_ship.coord.dist(earth.coord) * earth.radius - earth.groundSpeedMsec)
-      val terminal_velocity_str = earth.terminalVelocity(player_ship.mass, player_ship.coord, earth.coord, 28, 0.5).map(x => s"(t.vel=${msecOrKmsec(x)})").getOrElse("")
-      strings(0) = s"Земля: dist=${mOrKmOrMKm(player_ship.coord.dist(earth.coord) - earth.radius)}, v.vel=$ship_earth_vertical_speed_str$terminal_velocity_str, h.vel=$ship_earth_tangent_speed_str, pos=$ship_earth_position"
+      strings(0) = s"Земля: dist=${mOrKmOrMKm(player_ship.coord.dist(earth.coord) - earth.radius)}, v.vel=$ship_earth_vertical_speed_str, h.vel=$ship_earth_tangent_speed_str, pos=$ship_earth_position"
     }
   }
 

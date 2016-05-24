@@ -214,17 +214,15 @@ class Ship4(index: Int,
     if (difference > angular_velocity_error) {
       val (tacts, power) = maxPossiblePowerAndTactsForRotation(seven.max_power, seven.force_dir, seven.position, currentState.I, ang_vel_deg, angularVelocity, angular_velocity_error)
       seven.power = power
-      //six.power = power
-      activateOnlyTheseEngines(seven /*, six*/)
       seven.workTimeTacts = tacts
-      //six.workTimeTacts = tacts
+      seven.active = true
+      nine.active = false
     } else if (difference < -angular_velocity_error) {
       val (tacts, power) = maxPossiblePowerAndTactsForRotation(nine.max_power, nine.force_dir, nine.position, currentState.I, ang_vel_deg, angularVelocity, angular_velocity_error)
       nine.power = power
-      //four.power = power
-      activateOnlyTheseEngines(nine /*, four*/)
       nine.workTimeTacts = tacts
-      //four.workTimeTacts = tacts
+      nine.active = true
+      seven.active = false
     }
     last_correction_or_check_moment = OrbitalKiller.tacts
   }
@@ -338,7 +336,7 @@ class Ship4(index: Int,
               preserveAngularVelocity(0)
             }
           }
-        case VelocityAligned => // ориентация по траектории
+        case RelativeVelocityAligned => // ориентация по траектории
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, correction_check_period)) {
             val angle = DVec(0, 1).deg360(relativeLinearVelocity)
             if (angleMinDiff(rotation, angle) < angle_error) {
@@ -348,10 +346,9 @@ class Ship4(index: Int,
               } else {
                 preserveAngularVelocity(0)
               }
-            }
-            else preserveAngle(angle)
+            } else preserveAngle(angle)
           }
-        case OppositeVelocityAligned => // ориентация против траектории
+        case OppositeRelativeVelocityAligned => // ориентация против траектории
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, correction_check_period)) {
             val angle = DVec(0, -1).deg360(relativeLinearVelocity)
             if (angleMinDiff(rotation, angle) < angle_error) {
@@ -361,8 +358,7 @@ class Ship4(index: Int,
               } else {
                 preserveAngularVelocity(0)
               }
-            }
-            else preserveAngle(angle)
+            } else preserveAngle(angle)
           }
         case CirclularOrbit => // выход на орбиту
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, correction_check_period)) {
@@ -675,13 +671,6 @@ class Ship4(index: Int,
             if (!InterfaceHolder.earthRelativeInfo.isMinimized) {
               // direction to earth
               drawArrow(Vec.zero, (earth.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.earthRelativeInfo.color))
-              earth.terminalVelocity(mass, coord, earth.coord, 28, 0.5) match {
-                case Some(tv) =>
-                  val cos_a = tv/relativeLinearVelocity.norma
-                  val a = math.acos(cos_a)
-                  drawDashedLine(Vec.zero, DVec(0,1).rotateRad(math.Pi/2-a)*radius, 0.4, colorIfPlayerAliveOrRed(InterfaceHolder.earthRelativeInfo.color))
-                case None =>
-              }
             }
             if (!InterfaceHolder.moonRelativeInfo.isMinimized) {
               // direction to moon
@@ -776,6 +765,21 @@ class Ship4(index: Int,
           drawSlidingLines(draw_points, colorIfPlayerAliveOrRed(WHITE))
         }
       }
+    }
+  }
+
+  override def selectOrSwitchEngineActive(engine_code: Int) {
+    //timeMultiplier = realtime
+    if (!dockData.exists(d => d.our_dp.disabled_engine.exists(_ == index))) {
+      engines_mapping.get(engine_code).foreach(e => {
+        if (selected_engine.exists(_ == e)) {
+          e.switchActive()
+        } else {
+          selected_engine = Some(e)
+        }
+      })
+    } else {
+
     }
   }
 }

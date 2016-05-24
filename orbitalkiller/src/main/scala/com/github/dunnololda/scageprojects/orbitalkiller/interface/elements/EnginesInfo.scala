@@ -40,7 +40,7 @@ class EnginesInfo extends InterfaceElement {
           f"${e.index}: ${e.power / 1000}%.1f кН (${e.workTimeStr})"
         }).mkString(", ")
       }
-    }${val x = player_ship.engines.filter(e => e.active).map(e => e.fuelConsumptionPerTact * e.power / e.max_power).sum / base_dt; if (x != 0) f" (${gOrKg(x)} в сек)" else ""}"
+    }${val x = player_ship.engines.filter(e => e.active).map(e => e.fuelConsumptionPerSec).sum; if (x != 0) f" (${gOrKg(x)} в сек)" else ""}"
     if (engines_str.isEmpty) {
       //strings_when_engines_nonactive(0) = s"Двигательная установка: ${if (engines_active) "[rактивирована]" else "отключена"}. Общее время работы двигателей: ${timeStr(engines_work_time_msec.toLong)}"
       strings_when_engines_nonactive(0) = s"Двигательная установка: ${if (engines_active) "[rактивирована]" else "отключена"}"

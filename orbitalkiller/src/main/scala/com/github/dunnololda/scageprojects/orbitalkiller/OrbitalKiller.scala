@@ -151,7 +151,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   }
 
   def updateFutureTrajectory(reason: String) {
-    if (player_ship.flightMode != Maneuvering) {
+    if (onPause) {
       //println(s"updateFutureTrajectory: $reason")
       system_cache.clear()
       _update_orbits = true
@@ -836,14 +836,14 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   keyIgnorePause(KEY_1, onKeyDown = if (player_ship.isAlive) player_ship.flightMode = FreeFlightMode)
   keyIgnorePause(KEY_2, onKeyDown = if (player_ship.isAlive) player_ship.flightMode = Killrot)
   keyIgnorePause(KEY_3, onKeyDown = if (player_ship.isAlive) {
-    if (keyPressed(KEY_LSHIFT) || keyPressed(KEY_RSHIFT)) player_ship.flightMode = OppositeVelocityAligned else player_ship.flightMode = VelocityAligned
+    if (keyPressed(KEY_LSHIFT) || keyPressed(KEY_RSHIFT)) player_ship.flightMode = OppositeRelativeVelocityAligned else player_ship.flightMode = RelativeVelocityAligned
   })
   keyIgnorePause(KEY_4, onKeyDown = if (player_ship.isAlive) player_ship.flightMode = CirclularOrbit)
   keyIgnorePause(KEY_5, onKeyDown = if (player_ship.isAlive) player_ship.flightMode = NearestShipVelocity)
   keyIgnorePause(KEY_6, onKeyDown = if (player_ship.isAlive) player_ship.flightMode = NearestShipAligned)
   keyIgnorePause(KEY_7, onKeyDown = if (player_ship.isAlive) player_ship.flightMode = NearestShipAutoDocking)
   keyIgnorePause(KEY_8, onKeyDown = if (player_ship.isAlive) player_ship.flightMode = NearestPlanetVelocity)
-  //keyIgnorePause(KEY_9, onKeyDown = if(ship.pilotIsAlive) ship.flightMode = AbsoluteStop)
+  // KEY_9 - vacant
   keyIgnorePause(KEY_0, onKeyDown = if (player_ship.isAlive) player_ship.flightMode = Maneuvering)
 
   keyIgnorePause(KEY_P, onKeyDown = switchPause())
