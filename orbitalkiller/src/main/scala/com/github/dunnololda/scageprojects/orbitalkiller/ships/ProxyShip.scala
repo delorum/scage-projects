@@ -109,4 +109,9 @@ class ProxyShip(ship1:PolygonShip,
       }
     })
   }
+
+  override def kill(reason: String, crash: Boolean): Unit = {
+    ship1.kill(reason, crash)
+    ship2.kill(reason, crash)
+  }
 }
