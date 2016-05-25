@@ -1,8 +1,9 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.ships
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scage.support.ScageId
-import com.github.dunnololda.scageprojects.orbitalkiller.{PolygonShape, DockingPoints, Engine, PolygonShip}
+import com.github.dunnololda.scage.support.{DVec, ScageId}
+import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller._
 
 class ProxyShip(ship1:PolygonShip,
                 ship2:PolygonShip,
@@ -17,8 +18,12 @@ class ProxyShip(ship1:PolygonShip,
   ship1.rotation, false, false) {
 
   lazy val ship1_coord_diff = ship1.coord - init_coord
+  lazy val ship1_draw_points = ship1.draw_points.map(_ + ship1_coord_diff)
   lazy val ship2_coord_diff = ship2.coord - init_coord
+  lazy val ship2_draw_points = ship2.draw_points.map(_ + ship2_coord_diff)
   lazy val ship2_rotation_diff = ship2.rotation - ship1.rotation
+
+  val is_player = ship1.index == player_ship.index || ship2.index == player_ship.index
   
   def updateShipState(ship_index:Int): Unit = {
     if(ship_index == ship1.index) {
@@ -34,7 +39,7 @@ class ProxyShip(ship1:PolygonShip,
 
   def mass = ship1.mass + ship2.mass
 
-  override val engines: List[Engine] = ship1.engines.filterNot(e => ship1_dp.disabled_engine.exists(_ == e.index)).map(e => {
+  override val _engines: List[Engine] = ship1.engines.filterNot(e => ship1_dp.disabled_engine.exists(_ == e.index)).map(e => {
     new Engine(e.index, e.position + ship1_coord_diff, e.force_dir, e.max_power, e.default_power_percent, e.fuel_consumption_per_sec_at_full_power, this)
   }) ::: ship2.engines.filterNot(e => ship2_dp.disabled_engine.exists(_ == e.index)).map(e => {
     new Engine(e.index + 10, e.position + ship2_coord_diff, e.force_dir, e.max_power, e.default_power_percent, e.fuel_consumption_per_sec_at_full_power, this)
@@ -70,11 +75,22 @@ class ProxyShip(ship1:PolygonShip,
   override val is_manned: Boolean = ship1.is_manned || ship2.is_manned
 
   override val docking_points: List[DockingPoints] = {
-    /*ship1.docking_points.filterNot(dp => ship1.dockData.exists(x => x.our_dp == dp || x.other_ship_dp == dp)).map(dp => {
-      new Docking Pointsdp.p1 + ship1_coord_diff)
+    ship1.docking_points.filterNot(dp => dp.index == ship1_dp.index).map(dp => {
+      new DockingPoints(
+        dp.p1 + ship1_coord_diff,
+        dp.p2 + ship1_coord_diff,
+        this,
+        dp.disabled_engine,
+        dp.part_of_shape.map(_ + ship1_coord_diff))
     }) :::
-    ship2.docking_points.filterNot(dp => ship2.dockData.exists(x => x.our_dp == dp || x.other_ship_dp == dp))*/
-    Nil
+    ship2.docking_points.filterNot(dp => dp.index == ship2_dp.index).map(dp => {
+      new DockingPoints(
+        dp.p1 + ship2_coord_diff,
+        dp.p2 + ship2_coord_diff,
+        this,
+        dp.disabled_engine.map(_ + 10),
+        dp.part_of_shape.map(_ + ship2_coord_diff))
+    })
   }
 
   private val _keys_mapping = Map(
@@ -89,13 +105,13 @@ class ProxyShip(ship1:PolygonShip,
   )
 
   override val engines_mapping: Map[Int, Engine] = if(ship1.is_manned) {
-    engines.filter(_.index < 10).map(e => (_keys_mapping(e.index), e)).toMap
+    _engines.filter(_.index < 10).map(e => (_keys_mapping(e.index), e)).toMap
   } else if(ship2.is_manned) {
-    engines.filter(_.index > 10).map(e => (_keys_mapping(e.index-10), e)).toMap
+    _engines.filter(_.index > 10).map(e => (_keys_mapping(e.index-10), e)).toMap
   } else Map()
   
   override protected def _afterStepConsumeFuel() {
-    engines.foreach(e => {
+    _engines.foreach(e => {
       if (e.active) {
         if (e.workTimeTacts > 0) {
           e.workTimeTacts -= 1
@@ -113,5 +129,95 @@ class ProxyShip(ship1:PolygonShip,
   override def kill(reason: String, crash: Boolean): Unit = {
     ship1.kill(reason, crash)
     ship2.kill(reason, crash)
+  }
+
+  override def drawShip(): Unit = {
+    if (dockData.isEmpty && !drawMapMode && (is_player || coord.dist2(player_ship.coord) < 100000 * 100000)) {
+      if (isAlive) {
+        openglLocalTransform {
+          openglMove(coord - base)
+          drawFilledCircle(DVec.zero, 0.3, colorIfPlayerAliveOrRed(GREEN)) // mass center
+
+          if (OrbitalKiller.globalScale >= 0.8) {
+            if (is_player) {
+              if (!InterfaceHolder.linearVelocityInfo.isMinimized) {
+                // current velocity
+                drawArrow(DVec.zero, linearVelocity.n * radius, colorIfPlayerAliveOrRed(BLUE))
+                drawArrow(DVec.zero, relativeLinearVelocity.n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
+              }
+              if (!InterfaceHolder.sunRelativeInfo.isMinimized) {
+                // direction to earth
+                drawArrow(Vec.zero, (sun.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.sunRelativeInfo.color))
+              }
+              if (!InterfaceHolder.earthRelativeInfo.isMinimized) {
+                // direction to earth
+                drawArrow(Vec.zero, (earth.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.earthRelativeInfo.color))
+              }
+              if (!InterfaceHolder.moonRelativeInfo.isMinimized) {
+                // direction to moon
+                drawArrow(Vec.zero, (moon.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.moonRelativeInfo.color))
+              }
+              InterfaceHolder.shipInterfaces.foreach(si => {
+                if (!si.isMinimized && si.monitoring_ship.isAlive) {
+                  drawArrow(Vec.zero, (si.monitoring_ship.coord - coord).n * radius, colorIfPlayerAliveOrRed(si.color))
+                }
+              })
+            }
+          }
+
+          openglLocalTransform {
+            openglRotateDeg(rotation)
+
+            _engines.foreach {
+              case e => drawEngine(e)
+            }
+
+            if (OrbitalKiller.globalScale >= 0.8) {
+              if(is_player) {
+                if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
+                  docking_points.foreach(dp => {
+                    drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
+                    drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
+                  })
+                }
+              } else {
+                if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
+                  docking_points.foreach(dp => {
+                    val (p1_on_the_right_way, p2_on_the_right_way) = OrbitalKiller.player_ship.nearestDockingPoints(coord).map(_.pointsOnTheRightWay(dp)).getOrElse((false, false))
+
+                    val c1 = if (p1_on_the_right_way) GREEN else RED
+                    val c2 = if (p2_on_the_right_way) GREEN else RED
+
+                    val v1 = (dp.p1 - dp.p2).n
+                    val v2 = v1.perpendicular
+
+                    drawDashedLine(dp.p1, dp.p1 + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c1))
+                    drawDashedLine(dp.p2, dp.p2 + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c2))
+
+                    drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
+                    drawCircle(dp.p1, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
+                    drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
+                    drawCircle(dp.p2, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
+                  })
+                }
+              }
+            }
+
+            openglMove(ship1_coord_diff)
+            drawSlidingLines(ship1.draw_points, WHITE)
+            if (OrbitalKiller.globalScale >= 0.8) {
+              drawFilledCircle(ship1_dp.p1, 0.3, colorIfPlayerAliveOrRed(GREEN))
+              drawFilledCircle(ship1_dp.p2, 0.3, colorIfPlayerAliveOrRed(GREEN))
+            }
+          }
+
+          openglLocalTransform {
+            openglRotateDeg(rotation  + ship2_rotation_diff)
+            openglMove(ship2_coord_diff)
+            drawSlidingLines(ship2.draw_points, WHITE)
+          }
+        }
+      }
+    }
   }
 }

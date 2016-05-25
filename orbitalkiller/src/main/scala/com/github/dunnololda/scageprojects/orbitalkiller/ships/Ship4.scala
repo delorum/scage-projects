@@ -105,7 +105,7 @@ class Ship4(index: Int,
   val three = new Engine(3, DVec(4.0, -4.5),  DVec(0.0, 1.0),  500000,  1, 4, this)
   val two   = new Engine(2, DVec(0.0, -5.5),  DVec(0.0, 1.0),  1000000, 1, 4, this)
 
-  val engines = List(four, six, seven, nine, eight, two, one, three)
+  protected val _engines = List(four, six, seven, nine, eight, two, one, three)
 
   val engines_mapping = Map(
     KEY_NUMPAD4 -> four,
@@ -313,9 +313,10 @@ class Ship4(index: Int,
           InterfaceHolder.dockUndock.setDocked()
           InterfaceHolder.dockingSwitcher.setDockingManual()
         }
-      } else if (isDocked && InterfaceHolder.dockUndock.needUndock) {
-        undock()
       }
+    }
+    if (isDocked && InterfaceHolder.dockUndock.needUndock) {
+      undock()
     }
   }
 
@@ -680,7 +681,6 @@ class Ship4(index: Int,
               drawArrow(DVec.zero, linearVelocity.n * radius, colorIfPlayerAliveOrRed(BLUE))
               drawArrow(DVec.zero, relativeLinearVelocity.n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
             }
-            //drawArrow(DVec.zero, linearAcceleration.n * 100, ORANGE)        // current acceleration
             if (!InterfaceHolder.sunRelativeInfo.isMinimized) {
               // direction to earth
               drawArrow(Vec.zero, (sun.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.sunRelativeInfo.color))
@@ -771,7 +771,7 @@ class Ship4(index: Int,
             }
           }
 
-          engines.foreach {
+          _engines.foreach {
             case e => drawEngine(e)
           }
         }
@@ -782,21 +782,6 @@ class Ship4(index: Int,
           drawSlidingLines(draw_points, colorIfPlayerAliveOrRed(WHITE))
         }
       }
-    }
-  }
-
-  override def selectOrSwitchEngineActive(engine_code: Int) {
-    //timeMultiplier = realtime
-    if (!dockData.exists(d => d.our_dp.disabled_engine.exists(_ == index))) {
-      engines_mapping.get(engine_code).foreach(e => {
-        if (selected_engine.exists(_ == e)) {
-          e.switchActive()
-        } else {
-          selected_engine = Some(e)
-        }
-      })
-    } else {
-
     }
   }
 }

@@ -140,8 +140,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         val system_evolution_copy = system_evolution.copy
         val steps = tacts - system_evolution_copy.tacts
         (1l to steps).foreach(x => {
-          system_evolution_copy.bodyState(player_ship.index).foreach(bs => {
-            bs.mass = player_ship.currentMass(system_evolution_copy.tacts)
+          system_evolution_copy.bodyState(player_ship.dockData.map(_.proxy_ship.index).getOrElse(player_ship.index)).foreach(bs => {
+            bs.mass = player_ship.dockData.map(_.proxy_ship.currentMass(system_evolution_copy.tacts)).getOrElse(player_ship.currentMass(system_evolution_copy.tacts))
           })
           system_evolution_copy.step()
         })
@@ -973,7 +973,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   val scale = 1e-6
 
-  private def updateOrbitData(body_index: Int,
+  def updateOrbitData(body_index: Int,
                                  body_radius:Double,
                                  hyperbola_color: ScageColor,
                                  ellipse_color: ScageColor,
@@ -1229,13 +1229,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     //println("updateOrbits")
     if (player_ship.flightMode == Maneuvering || !onPause || !player_ship.engines.exists(_.active)) {
       // если в режиме маневрирования, или не в режиме маневрирования, но не на паузе, или на паузе, но двигатели не работают - рисуем текущее состояние
-      player_ship.orbitData = updateOrbitData(player_ship.index, player_ship.radius, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_evolution.allBodyStates)
+      player_ship.updateOrbitData(player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_evolution.allBodyStates)
       InterfaceHolder.orbitInfo.markUpdateNeeded()
       InterfaceHolder.shipInterfaces.foreach(si => {
         if (!si.isMinimized && !si.monitoring_ship.isCrashed && si.monitoring_ship.currentState.active) {
-          si.monitoring_ship.orbitData = {
-            updateOrbitData(si.monitoring_ship.index, si.monitoring_ship.radius, player_ship.colorIfPlayerAliveOrRed(MAGENTA), player_ship.colorIfPlayerAliveOrRed(MAGENTA), system_evolution.allBodyStates)
-          }
+          si.monitoring_ship.updateOrbitData(player_ship.colorIfPlayerAliveOrRed(MAGENTA), player_ship.colorIfPlayerAliveOrRed(MAGENTA), system_evolution.allBodyStates)
           si.markUpdateNeeded()
         }
       })
@@ -1244,13 +1242,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     } else {
       // в эту секцию мы попадаем, если мы не в режиме маневрирования, не на паузе, и двигатели работают
       val system_state_when_engines_off = getFutureState(player_ship.engines.map(_.stopMomentTacts).max)
-      player_ship.orbitData = updateOrbitData(player_ship.index, player_ship.radius, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_state_when_engines_off)
+      player_ship.updateOrbitData(player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_state_when_engines_off)
       InterfaceHolder.orbitInfo.markUpdateNeeded()
       InterfaceHolder.shipInterfaces.foreach(si => {
         if (!si.isMinimized && !si.monitoring_ship.isCrashed) {
-          si.monitoring_ship.orbitData = {
-            updateOrbitData(si.monitoring_ship.index, si.monitoring_ship.radius, player_ship.colorIfPlayerAliveOrRed(MAGENTA), player_ship.colorIfPlayerAliveOrRed(MAGENTA), system_state_when_engines_off)
-          }
+          si.monitoring_ship.updateOrbitData(player_ship.colorIfPlayerAliveOrRed(MAGENTA), player_ship.colorIfPlayerAliveOrRed(MAGENTA), system_state_when_engines_off)
           si.markUpdateNeeded()
         }
       })

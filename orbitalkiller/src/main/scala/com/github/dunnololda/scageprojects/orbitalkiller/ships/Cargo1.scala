@@ -9,7 +9,7 @@ class Cargo1(index: Int,
              init_rotation: Double = 0.0,
              ship_designer:Boolean = false) extends PolygonShip(index, "Приятель", init_coord, init_velocity, init_rotation, ship_designer, true) {
 
-  private val _payload:Double = 1*1000
+  private val _payload:Double = 5*1000
   private var _fuel_mass:Double = 0*1000
   def mass:Double = _payload + _fuel_mass
   override def fuelMass: Double = _fuel_mass
@@ -52,7 +52,7 @@ class Cargo1(index: Int,
     ))
   )
 
-  val engines = List()
+  val _engines = List()
 
   val engines_mapping: Map[Int, Engine] = Map()
 

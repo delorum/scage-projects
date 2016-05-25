@@ -104,7 +104,7 @@ class Rocket1(index: Int,
     fuel_consumption_per_sec_at_full_power = 4,
     this)
 
-  val engines = List(two)
+  val _engines = List(two)
 
   val engines_mapping = Map(
     KEY_NUMPAD2 -> two
@@ -151,7 +151,7 @@ class Rocket1(index: Int,
 
           drawSlidingLines(draw_points, colorIfPlayerAliveOrRed(WHITE))
 
-          engines.foreach {
+          _engines.foreach {
             case e => drawEngine(e)
           }
         }
