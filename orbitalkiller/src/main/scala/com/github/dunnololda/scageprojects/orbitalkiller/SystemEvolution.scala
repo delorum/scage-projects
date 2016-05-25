@@ -64,6 +64,21 @@ class Joint(val a: MutableBodyState, val vertexA: DVec, val b: MutableBodyState,
     println(f"${(a.vel - prev_a_vel)*(b.coord - a.coord).p}%.5f : ${(b.vel - prev_b_vel)*(b.coord - a.coord).p}%.5f")
     println(f"${a.ang_vel - prev_a_ang_vel}%.5f : ${b.ang_vel - prev_b_ang_vel}%.5f")*/
   }
+
+  val m_distance = b.coord.dist(a.coord)
+
+  def solveConstraint2(_dt: Double): Unit = {
+    val axis = b.coord - a.coord
+    val currentDistance = axis.norma
+    val unitAxis = axis/currentDistance
+    val relVel = (b.vel - a.vel)*unitAxis
+    val relDist = currentDistance - m_distance
+    val remove = relVel+relDist/_dt
+    val impulse = remove / (a.invMass + b.invMass)
+    val I = unitAxis*impulse
+    a.vel = a.vel + ( I * a.invMass )
+    b.vel = b.vel - ( I * b.invMass )
+  }
 }
 
 case class MutableSystemPart(body: MutableBodyState,
@@ -120,7 +135,7 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
   private val collision_exclusions = mutable.HashMap[Int, mutable.HashSet[Int]]()
 
   def addCollisionExclusion(index1: Int, index2: Int): Unit = {
-    if (index1 != index2) {
+    if (index1 != index2) {                                                ship
       if (index1 < index2) {
         collision_exclusions.getOrElseUpdate(index1, mutable.HashSet[Int]()) += index2
       } else {
