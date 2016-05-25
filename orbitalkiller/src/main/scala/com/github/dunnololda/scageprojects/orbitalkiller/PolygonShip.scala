@@ -1,12 +1,12 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scage.support.{ScageId, DVec}
+import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements.OtherShipInfo
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.ProxyShip
 
-import scala.collection.{Set, mutable}
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 sealed trait FlightMode {
@@ -148,32 +148,26 @@ abstract class PolygonShip(
   }
 
   def switchEngineSelected(engine_code: Int) {
-    engines_mapping.get(engine_code).foreach(e => if (isSelectedEngine(e)) selected_engine = None else selected_engine = Some(e))
+    engines_by_keycodes_map.get(engine_code).foreach(e => if (isSelectedEngine(e)) selected_engine = None else selected_engine = Some(e))
   }
 
-  protected def _engines: List[Engine]
+  protected def _engines: List[Engine]  
   def engines: List[Engine] = dock_data.map(_.proxy_ship.engines).getOrElse(_engines)
-
-  def engines_mapping: Map[Int, Engine]
+  def engines_by_keycodes_map: Map[Int, Engine]
+  lazy val engines_by_index = _engines.map(e => (e.index, e)).toMap
 
   /*def switchEngineActive(engine_code:Int) {
     //timeMultiplier = realtime
     engines_mapping.get(engine_code).foreach(e => e.switchActive())
   }*/
 
-  def selectOrSwitchEngineActive(engine_code: Int) {
+  def selectOrSwitchEngineActive(key_code: Int) {
     //timeMultiplier = realtime
-    dockData match {
+    dock_data match {
       case Some(dd) =>
-        dd.proxy_ship.engines_mapping.get(engine_code).foreach(e => {
-          if (dd.proxy_ship.selected_engine.exists(_ == e)) {
-            e.switchActive()
-          } else {
-            dd.proxy_ship.selected_engine = Some(e)
-          }
-        })
+        dd.proxy_ship.selectOrSwitchEngineActive(index, key_code)
       case None =>
-        engines_mapping.get(engine_code).foreach(e => {
+        engines_by_keycodes_map.get(key_code).foreach(e => {
           if (selected_engine.exists(_ == e)) {
             e.switchActive()
           } else {
@@ -197,7 +191,7 @@ abstract class PolygonShip(
 
   def docking_points: List[DockingPoints]
 
-  private var dock_data: Option[DockData] = None
+  protected var dock_data: Option[DockData] = None
 
   def dockData = dock_data
 
@@ -222,6 +216,8 @@ abstract class PolygonShip(
         os.currentState.active = false
         setDocked(Some(DockData(os, /*joints, */dp, osdp, proxy_ship)))
         os.setDocked(Some(DockData(this, /*joints, */osdp, dp, proxy_ship)))
+        ship_interface.foreach(_.forceUpdate())
+        os.ship_interface.foreach(_.forceUpdate())
     }
   }
 
@@ -424,7 +420,7 @@ abstract class PolygonShip(
   }
 
   protected def drawShip(): Unit = {
-    if (dockData.isEmpty && !drawMapMode && coord.dist2(player_ship.coord) < 100000 * 100000) {
+    if (dock_data.isEmpty && !drawMapMode && coord.dist2(player_ship.coord) < 100000 * 100000) {
       if (isAlive) {
         openglLocalTransform {
           openglMove(coord - base)
@@ -447,7 +443,7 @@ abstract class PolygonShip(
 
           if (OrbitalKiller.globalScale >= 0.8) {
             if (isDocked) {
-              dockData.foreach(d => {
+              dock_data.foreach(d => {
                 drawFilledCircle(d.our_dp.p1, 0.3, colorIfPlayerAliveOrRed(GREEN))
                 drawFilledCircle(d.our_dp.p2, 0.3, colorIfPlayerAliveOrRed(GREEN))
               })
@@ -564,10 +560,10 @@ abstract class PolygonShip(
 
   private var flight_mode: FlightMode = FreeFlightMode
 
-  def flightMode: FlightMode = dockData.map(_.proxy_ship.flightMode).getOrElse(flight_mode)
+  def flightMode: FlightMode = dock_data.map(_.proxy_ship.flightMode).getOrElse(flight_mode)
 
   def flightMode_=(new_flight_mode: FlightMode) {
-    dockData match {
+    dock_data match {
       case Some(dd) =>
         dd.proxy_ship.flightMode = new_flight_mode
       case None =>
@@ -582,7 +578,7 @@ abstract class PolygonShip(
             _engines.foreach(e => e.power = {
               if (InterfaceHolder.gSwitcher.maxGSet) {
                 math.min(
-                  (mass + dockData.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
+                  (mass + dock_data.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
                     earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5).norma
                   },
                   e.max_power * 0.5)
@@ -936,11 +932,14 @@ abstract class PolygonShip(
 
   private var _orbit_data: Option[OrbitData] = None
   def orbitData:Option[OrbitData] = dock_data.map(_.proxy_ship.orbitData).getOrElse(_orbit_data)
-  def updateOrbitData(hyperbola_color:ScageColor, ellipse_color:ScageColor, some_system_state: mutable.Map[Int, MutableBodyState]): Unit = {
+  def updateOrbitData(update_count:Long, hyperbola_color:ScageColor, ellipse_color:ScageColor, some_system_state: mutable.Map[Int, MutableBodyState]): Unit = {
     dock_data match {
-      case Some(dd) => dd.proxy_ship.updateOrbitData(hyperbola_color, ellipse_color, some_system_state)
+      case Some(dd) =>
+        dd.proxy_ship.updateOrbitData(update_count, hyperbola_color, ellipse_color, some_system_state)
       case None =>
-        _orbit_data = OrbitalKiller.updateOrbitData(index, radius, hyperbola_color, ellipse_color, some_system_state, planet_indices)
+        if(_orbit_data.isEmpty || _orbit_data.exists(_.update_count != update_count)) {
+          _orbit_data = OrbitalKiller.updateOrbitData(update_count, index, radius, hyperbola_color, ellipse_color, some_system_state, planet_indices)
+        }
     }
   }
 
@@ -1066,7 +1065,7 @@ abstract class PolygonShip(
         val active_engines = _engines.filter(e => e.active && 0 < e.stopMomentTacts)
         if (active_engines.nonEmpty) {
           val cur_force = reactive_force.norma
-          val allowed_force = (mass + dockData.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g
+          val allowed_force = (mass + dock_data.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g
           if(cur_force > allowed_force) {
             val force_diff = cur_force - allowed_force
             val force_diff_for_engine = force_diff / active_engines.length
@@ -1088,7 +1087,7 @@ abstract class PolygonShip(
         val air_resistance = earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5)
         val reactive_force = currentReactiveForce(0, currentState) + air_resistance
         val cur_force = reactive_force.norma
-        val allowed_force = (mass + dockData.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g
+        val allowed_force = (mass + dock_data.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g
         if(cur_force > allowed_force) {
           val force_diff = cur_force - allowed_force
           val force_diff_for_engine = force_diff / active_engines_except.length

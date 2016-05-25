@@ -106,7 +106,7 @@ class Rocket1(index: Int,
 
   val _engines = List(two)
 
-  val engines_mapping = Map(
+  val engines_by_keycodes_map = Map(
     KEY_NUMPAD2 -> two
   )
 

@@ -54,7 +54,7 @@ class Cargo1(index: Int,
 
   val _engines = List()
 
-  val engines_mapping: Map[Int, Engine] = Map()
+  val engines_by_keycodes_map: Map[Int, Engine] = Map()
 
   def preserveVelocity(vel:DVec) {}
   def preserveAngularVelocity(ang_vel_deg: Double) {}

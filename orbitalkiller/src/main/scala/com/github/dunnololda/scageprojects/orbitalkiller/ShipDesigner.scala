@@ -47,7 +47,7 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
   private val engines = collection.mutable.ArrayBuffer[EngineData](ship.toSeq.flatMap(_.engines.map(e => EngineData(e.position.toVec / k + mass_center, e.force_dir.toVec))): _*)
   private val engines_mapping = collection.mutable.HashMap[Int, Int](engines.zipWithIndex.map {
     case (ed, idx) =>
-      val x = ship.flatMap(s => s.engines_mapping.find(kv => kv._2.position.toVec / k == ed.coord - mass_center).map(_._1)).getOrElse(0)
+      val x = ship.flatMap(s => s.engines_by_keycodes_map.find(kv => kv._2.position.toVec / k == ed.coord - mass_center).map(_._1)).getOrElse(0)
       (idx, x)
   }: _*)
   private var selected_engine = 0

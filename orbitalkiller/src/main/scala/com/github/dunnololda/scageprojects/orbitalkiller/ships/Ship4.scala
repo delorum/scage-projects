@@ -107,7 +107,7 @@ class Ship4(index: Int,
 
   protected val _engines = List(four, six, seven, nine, eight, two, one, three)
 
-  val engines_mapping = Map(
+  val engines_by_keycodes_map = Map(
     KEY_NUMPAD4 -> four,
     KEY_NUMPAD6 -> six,
     KEY_NUMPAD7 -> seven,

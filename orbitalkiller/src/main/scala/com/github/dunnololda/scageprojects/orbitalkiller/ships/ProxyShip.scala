@@ -104,11 +104,25 @@ class ProxyShip(ship1:PolygonShip,
     9 -> KEY_NUMPAD9
   )
 
-  override val engines_mapping: Map[Int, Engine] = if(ship1.is_manned) {
-    _engines.filter(_.index < 10).map(e => (_keys_mapping(e.index), e)).toMap
-  } else if(ship2.is_manned) {
-    _engines.filter(_.index > 10).map(e => (_keys_mapping(e.index-10), e)).toMap
-  } else Map()
+  override val engines_by_keycodes_map: Map[Int, Engine] = Map()
+  val engines_by_keycodes_2: Map[(Int, Int), Engine] = {
+    _engines.map(e => if(e.index < 10) ((ship1.index, _keys_mapping(e.index)), e) else ((ship2.index, _keys_mapping(e.index-10)), e)).toMap
+  }
+
+  def selectOrSwitchEngineActive(ship_index:Int, key_code: Int) {
+    dock_data match {
+      case Some(dd) =>
+        dd.proxy_ship.selectOrSwitchEngineActive(index, key_code)
+      case None =>
+        engines_by_keycodes_2.get((ship_index, key_code)).foreach(e => {
+          if (selected_engine.exists(_ == e)) {
+            e.switchActive()
+          } else {
+            selected_engine = Some(e)
+          }
+        })
+    }
+  }
   
   override protected def _afterStepConsumeFuel() {
     _engines.foreach(e => {
