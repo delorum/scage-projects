@@ -45,6 +45,10 @@ class Engine(val index: Int,
     fuel_consumption_per_sec_at_full_power * (_power / max_power) * base_dt
   }
 
+  def fuelConsumptionPerSec: Double = {
+    fuel_consumption_per_sec_at_full_power * (_power / max_power)
+  }
+
   def stopMomentTacts = stop_moment_tacts
 
   private var _power: Double = 0.0
@@ -82,7 +86,7 @@ class Engine(val index: Int,
       if (ship.fuelMassWhenEnginesOff < 0) {
         _power = prev
       } else {
-        if (ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) {
+        if((ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) && InterfaceHolder.gSwitcher.maxGSet) {
           ship.syncOtherEnginesPower(index)
         }
       }
@@ -107,17 +111,14 @@ class Engine(val index: Int,
           }
           timeMultiplier = realtime
           if (workTimeTacts == 0) workTimeTacts = 10
-          //ship.selected_engine = Some(this)
-          if(ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) {
+          if((ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) && InterfaceHolder.gSwitcher.maxGSet) {
             ship.syncOtherEnginesPower(index)
           }
         } else {
           is_active = false
-          //ship.selected_engine = ship.engines.filter(_.active).lastOption
         }
       } else {
         is_active = false
-        //ship.selected_engine = ship.engines.filter(_.active).lastOption
       }
       updateFutureTrajectory("engine active")
     }

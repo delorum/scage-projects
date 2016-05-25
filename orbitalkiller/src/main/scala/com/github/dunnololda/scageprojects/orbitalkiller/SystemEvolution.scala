@@ -64,6 +64,21 @@ class Joint(val a: MutableBodyState, val vertexA: DVec, val b: MutableBodyState,
     println(f"${(a.vel - prev_a_vel)*(b.coord - a.coord).p}%.5f : ${(b.vel - prev_b_vel)*(b.coord - a.coord).p}%.5f")
     println(f"${a.ang_vel - prev_a_ang_vel}%.5f : ${b.ang_vel - prev_b_ang_vel}%.5f")*/
   }
+
+  val m_distance = b.coord.dist(a.coord)
+
+  def solveConstraint2(_dt: Double): Unit = {
+    val axis = b.coord - a.coord
+    val currentDistance = axis.norma
+    val unitAxis = axis/currentDistance
+    val relVel = (b.vel - a.vel)*unitAxis
+    val relDist = currentDistance - m_distance
+    val remove = relVel+relDist/_dt
+    val impulse = remove / (a.invMass + b.invMass)
+    val I = unitAxis*impulse
+    a.vel = a.vel + ( I * a.invMass )
+    b.vel = b.vel - ( I * b.invMass )
+  }
 }
 
 case class MutableSystemPart(body: MutableBodyState,
@@ -162,11 +177,11 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
   }
 
   def allBodyStates: mutable.Map[Int, MutableBodyState] = {
-    mutable_system.map(kv => (kv._1, kv._2.body))
+    mutable_system.filter(_._2.body.active).map(kv => (kv._1, kv._2.body))
   }
 
   def bodyStates(indicies: Set[Int]): mutable.Map[Int, MutableBodyState] = {
-    mutable_system.filter(kv => indicies.contains(kv._1)).map(kv => (kv._1, kv._2.body))
+    mutable_system.filter(kv => kv._2.body.active && indicies.contains(kv._1)).map(kv => (kv._1, kv._2.body))
   }
 
   def bodyState(index: Int): Option[MutableBodyState] = mutable_system.get(index).map(_.body)
@@ -277,7 +292,11 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
 
   def copy: SystemEvolution = {
     val x = new SystemEvolution(base_dt, system_center, tacts)
-    mutable_system.foreach(p => x.addBody(p._2.copy(body = p._2.body.copy)))
+    mutable_system.foreach(p => {
+      if(p._2.body.active) {
+        x.addBody(p._2.copy(body = p._2.body.copy))
+      }
+    })
     x
   }
 }
@@ -305,7 +324,7 @@ class EvolutionHelper(mutable_system: mutable.HashMap[Int, MutableSystemPart]) {
 
   def bodyStates(indicies: collection.Set[Int]) = mutable_system.filter(kv => kv._2.body.active && indicies.contains(kv._1)).map(kv => kv._2.body).toSeq
 
-  //def bodyStatesMap(indicies: Set[Int]) = mutable_system.filter(kv => kv._2.body.active && indicies.contains(kv._1)).map(kv => (kv._1, kv._2.body))
+  def bodyStatesMap(indicies: Set[Int]) = mutable_system.filter(kv => kv._2.body.active && indicies.contains(kv._1)).map(kv => (kv._1, kv._2.body))
 
   def bodyState(index: Int) = mutable_system.get(index).filter(_.body.active).map(_.body)
 }

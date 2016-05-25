@@ -12,53 +12,55 @@ sealed trait FlightMode {
   def rusStr: String
 }
 
+// 1
 case object FreeFlightMode extends FlightMode {
   override def rusStr: String = "свободный"
 }
 
-// 1
+// 2
 case object Killrot extends FlightMode {
   override def rusStr: String = "запрет вращения"
 }
 
-// 2
-//case object AxisAligned             extends FlightMode
-case object VelocityAligned extends FlightMode {
+// 3
+case object RelativeVelocityAligned extends FlightMode {
   override def rusStr: String = "ориентация по траектории"
 }
 
-// 3
-case object OppositeVelocityAligned extends FlightMode {
+// shift+3
+case object OppositeRelativeVelocityAligned extends FlightMode {
   override def rusStr: String = "ориентация против траектории"
 }
 
-// shift+3
+// 4
 case object CirclularOrbit extends FlightMode {
   override def rusStr: String = "выход на круговую орбиту"
 }
 
-// 4
+// 5
 case object NearestShipVelocity extends FlightMode {
   override def rusStr: String = "уравнять скорость с кораблем"
 }
 
-// 5
+// 6
 case object NearestShipAligned extends FlightMode {
   override def rusStr: String = "ориентация на корабль"
 }
 
-// 6
+// 7
 case object NearestShipAutoDocking extends FlightMode {
   override def rusStr: String = "стыковка с кораблем"
 }
 
-// 7
+// 8
 case object NearestPlanetVelocity extends FlightMode {
   override def rusStr: String = "уравнять скорость с ближайшей планетой"
 }
 
-// 8
-//case object AbsoluteStop            extends FlightMode
+// 9
+// vacant
+
+// 0
 case object Maneuvering extends FlightMode {
   override def rusStr: String = "маневрирование"
 }
@@ -128,7 +130,7 @@ abstract class PolygonShip(
                             ship_designer:Boolean,
                             create_interface:Boolean) {
   println(s"$name -> $index")
-  private var selected_engine: Option[Engine] = None
+  protected var selected_engine: Option[Engine] = None
   def selectedEngine:Option[Engine] = dockData.map(_.proxy_ship.selected_engine).getOrElse(selected_engine)
   def clearEngineSelection(): Unit = {
     dockData match {
@@ -259,7 +261,19 @@ abstract class PolygonShip(
   def velocityStr: String = {
     orbitData match {
       case Some(or) =>
-        s"${msecOrKmsec((linearVelocity - or.planet_vel).norma)} (${or.planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
+        or.planet match {
+          case air_planet:PlanetWithAir =>
+            if(air_planet.altitude(coord, air_planet.coord) < air_planet.air_free_altitude) {
+              val vel1 = (linearVelocity - or.planet_vel).norma
+              val vel2 = air_planet.velocityRelativeToAir(coord, linearVelocity, air_planet.coord, air_planet.linearVelocity, air_planet.init_ang_vel).norma
+              val atmo_efficiency = air_planet.terminalVelocity(mass, coord, air_planet.coord, 28, 0.5).map(tvel => vel2/tvel*100).getOrElse(100.0)
+              f"${msecOrKmsec(vel1)} $atmo_efficiency%.2f%% (${or.planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
+            } else {
+              s"${msecOrKmsec((linearVelocity - or.planet_vel).norma)} (${or.planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
+            }
+          case _ =>
+            s"${msecOrKmsec((linearVelocity - or.planet_vel).norma)} (${or.planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
+        }
       case None =>
         s"${msecOrKmsec(linearVelocity.norma)} (абсолютная)"
     }
@@ -583,14 +597,14 @@ abstract class PolygonShip(
             (flight_mode == Killrot ||
               flight_mode == NearestShipVelocity ||
               flight_mode == NearestShipAligned ||
-              flight_mode == VelocityAligned ||
-              flight_mode == OppositeVelocityAligned)) {
+              flight_mode == RelativeVelocityAligned ||
+              flight_mode == OppositeRelativeVelocityAligned)) {
             saveFlightModeAndEngineStates(prev_flight_mode)
           } else if (flight_mode == NearestPlanetVelocity) {
             vertical_speed_msec = 0
             horizontal_speed_msec = 0
           }
-          if (prev_flight_mode == Maneuvering && flight_mode == FreeFlightMode) {
+          if (prev_flight_mode == Maneuvering && flight_mode != FreeFlightMode && flight_mode != Killrot) {
             engines.foreach(e => e.workTimeTacts = 0)
           }
         }
@@ -920,7 +934,7 @@ abstract class PolygonShip(
           if (e.workTimeTacts <= 0 || fuelMass <= 0) {
             e.active = false
           } else {
-            if (e.ship.fuelMass - e.fuelConsumptionPerTact <= 0) {
+            if (fuelMass - e.fuelConsumptionPerTact <= 0) {
               e.active = false
             }
           }
@@ -1050,6 +1064,7 @@ abstract class PolygonShip(
   }
 
   def syncOtherEnginesPower(except_engine:Int): Unit = {
+    println(s"syncOtherEnginesPower(except_engine=$except_engine)")
     if (InterfaceHolder.gSwitcher.maxGSet) {
       val active_engines_except = engines.filter(e => e.active && 0 < e.stopMomentTacts && e.index != except_engine)
       if (active_engines_except.nonEmpty) {

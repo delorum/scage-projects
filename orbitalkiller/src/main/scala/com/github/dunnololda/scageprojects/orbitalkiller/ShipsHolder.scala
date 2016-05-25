@@ -1,5 +1,6 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
+import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
 import scala.collection.mutable.ArrayBuffer
