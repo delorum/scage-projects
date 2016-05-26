@@ -68,7 +68,7 @@ case object Maneuvering extends FlightMode {
 
 // 0
 
-class DockingPoints(val p1: DVec, val p2: DVec, ship: PolygonShip, val disabled_engine: Option[Int], val part_of_shape:List[DVec]) {
+class DockingPoints(val p1: DVec, val p2: DVec, ship: PolygonShip, val disabled_engine: Option[Int], val ordered_hull:List[DVec]) {
   val index = ScageId.nextId
   val joint_point = p1 + (p2 - p1) * 0.5
   val dock_dist = 0.5
@@ -115,8 +115,8 @@ abstract class PolygonShip(
                             val index: Int,
                             val name: String,
                             protected val init_coord: DVec,
-                            init_velocity: DVec = DVec.dzero,
-                            init_rotation: Double = 0,
+                            protected val init_velocity: DVec = DVec.dzero,
+                            protected val init_rotation: Double = 0,
                             ship_designer:Boolean,
                             create_interface:Boolean) {
   println(s"$name -> $index")
@@ -176,7 +176,7 @@ abstract class PolygonShip(
       case (dp, os, osdp) =>
         val correction = osdp.curP1 - dp.curP1
         currentState.coord += correction
-        val proxy_ship = new ProxyShip(this, os, dp.part_of_shape, osdp.part_of_shape, dp, osdp)
+        val proxy_ship = new ProxyShip(this, coord, rotation, dp, os, os.coord, os.rotation, osdp)
         currentState.active = false
         os.currentState.active = false
         setDocked(Some(DockData(os, dp, osdp, proxy_ship)))
@@ -950,7 +950,7 @@ abstract class PolygonShip(
     }
   }
   
-  private val sun_critical_dist2 = math.pow(sun.radius + 30000000000.0, 2)
+  private lazy val sun_critical_dist2 = math.pow(sun.radius + 30000000000.0, 2)
   private def checkSunDistance(): Unit = {
     // если подлетаем к поверхности Солнца ближе, чем 30 миллионов километров, то бууум!)
     if (coord.dist2(sun.coord) < sun_critical_dist2) {

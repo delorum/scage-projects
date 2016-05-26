@@ -6,10 +6,12 @@ import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 
 class ProxyShip(ship1:PolygonShip,
-                ship2:PolygonShip,
-                ship1_hull_points:List[DVec],
-                ship2_hull_points:List[DVec],
+                ship1_init_coord:DVec,
+                ship1_init_rotation:Double,
                 ship1_dp:DockingPoints,
+                ship2:PolygonShip,
+                ship2_init_coord:DVec,
+                ship2_init_rotation:Double,
                 ship2_dp:DockingPoints) extends PolygonShip(
   ScageId.nextId,
   s"${ship1.name}-${ship2.name}",
@@ -17,11 +19,15 @@ class ProxyShip(ship1:PolygonShip,
   (ship1.mass*ship1.linearVelocity + ship2.mass*ship2.linearVelocity)/(ship1.mass + ship2.mass),
   ship1.rotation, false, false) {
 
-  lazy val ship1_coord_diff = ship1.coord - init_coord
+  println(s"ship1_init_coord=$ship1_init_coord")
+  println(s"ship2_init_coord=$ship2_init_coord")
+  println(s"init_coord=$init_coord")
+
+  lazy val ship1_coord_diff = (ship1_init_coord - init_coord).rotateDeg(init_rotation)
   lazy val ship1_draw_points = ship1.draw_points.map(_ + ship1_coord_diff)
-  lazy val ship2_coord_diff = ship2.coord - init_coord
+  lazy val ship2_rotation_diff = ship2_init_rotation - ship1_init_rotation
+  lazy val ship2_coord_diff = (ship2_init_coord - init_coord).rotateDeg(init_rotation)
   lazy val ship2_draw_points = ship2.draw_points.map(_ + ship2_coord_diff)
-  lazy val ship2_rotation_diff = ship2.rotation - ship1.rotation
 
   def coordDiff(ship_index:Int):DVec = {
     ship_index match {
@@ -40,7 +46,7 @@ class ProxyShip(ship1:PolygonShip,
       ship1.currentState.ang = rotation
       ship1.currentState.ang_vel = currentState.ang_vel
     } else if(ship_index == ship2.index) {
-      ship2.currentState.coord = currentState.coord + ship2_coord_diff.rotateDeg(rotation)
+      ship2.currentState.coord = currentState.coord + ship2_coord_diff.rotateDeg(rotation + ship2_rotation_diff)
       ship2.currentState.vel = currentState.vel
       ship2.currentState.ang = rotation  + ship2_rotation_diff
       ship2.currentState.ang_vel = currentState.ang_vel
@@ -65,7 +71,10 @@ class ProxyShip(ship1:PolygonShip,
    * можно получить, повернув на текущий угол и прибавив координату ц.м.
    * @return
    */
-  override lazy val points: List[DVec] = ship1_hull_points.map(_ + ship1_coord_diff) ::: ship2_hull_points.map(_ + ship2_coord_diff)
+  override lazy val points: List[DVec] = {
+    ship1_dp.ordered_hull.map(_ + ship1_coord_diff) :::
+    ship2_dp.ordered_hull.map(_ + ship2_coord_diff)
+  }
 
   override val wreck_parts: List[PolygonShape] = {
     ship1.wreck_parts.map(p => p.copy(points = p.points.map(_ + ship1_coord_diff))) :::
@@ -87,7 +96,7 @@ class ProxyShip(ship1:PolygonShip,
         dp.p2 + ship1_coord_diff,
         this,
         dp.disabled_engine,
-        dp.part_of_shape.map(_ + ship1_coord_diff))
+        dp.ordered_hull.map(_ + ship1_coord_diff))
     }) :::
     ship2.docking_points.filterNot(dp => dp.index == ship2_dp.index).map(dp => {
       new DockingPoints(
@@ -95,7 +104,7 @@ class ProxyShip(ship1:PolygonShip,
         dp.p2 + ship2_coord_diff,
         this,
         dp.disabled_engine.map(_ + 10),
-        dp.part_of_shape.map(_ + ship2_coord_diff))
+        dp.ordered_hull.map(_ + ship2_coord_diff))
     })
   }
 
@@ -159,7 +168,8 @@ class ProxyShip(ship1:PolygonShip,
 
           openglLocalTransform {
             openglRotateDeg(rotation)
-
+            drawSlidingLines(draw_points, GREEN)
+            convex_parts.foreach(p => drawSlidingLines(p.points.init ::: List(p.points.head), GREEN))
             ship1.engines.foreach {
               case e => ship1.drawEngine(e, ship1_coord_diff)
             }
@@ -199,7 +209,7 @@ class ProxyShip(ship1:PolygonShip,
             }
 
             openglMove(ship1_coord_diff)
-            drawSlidingLines(ship1.draw_points, WHITE)
+            //drawSlidingLines(ship1.draw_points, WHITE)
             if (OrbitalKiller.globalScale >= 0.8) {
               drawFilledCircle(ship1_dp.p1, 0.3, colorIfPlayerAliveOrRed(GREEN))
               drawFilledCircle(ship1_dp.p2, 0.3, colorIfPlayerAliveOrRed(GREEN))
@@ -209,7 +219,7 @@ class ProxyShip(ship1:PolygonShip,
           openglLocalTransform {
             openglRotateDeg(rotation  + ship2_rotation_diff)
             openglMove(ship2_coord_diff)
-            drawSlidingLines(ship2.draw_points, WHITE)
+            //drawSlidingLines(ship2.draw_points, WHITE)
           }
         }
       }
