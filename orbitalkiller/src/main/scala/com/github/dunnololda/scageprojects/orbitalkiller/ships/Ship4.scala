@@ -105,7 +105,7 @@ class Ship4(index: Int,
   val three = new Engine(3, DVec(4.0, -4.5),  DVec(0.0, 1.0),  500000,  1, 4, this)
   val two   = new Engine(2, DVec(0.0, -5.5),  DVec(0.0, 1.0),  1000000, 1, 4, this)
 
-  protected val _engines = List(four, six, seven, nine, eight, two, one, three)
+  val engines = List(four, six, seven, nine, eight, two, one, three)
 
   val engines_by_keycodes_map = Map(
     KEY_NUMPAD4 -> four,
@@ -131,16 +131,7 @@ class Ship4(index: Int,
   private def howManyTacts(to: Double, from: Double, a: Double, dt: Double): (Int, Double) = {
     val tacts = ((to - from) / (a * dt)).toInt + 1
     val result_to = from + tacts * a * dt
-    //println(s"$from -> $to : $result_to : $tacts")
     (tacts, result_to)
-    /*if(a == 0) tacts
-    else if(a > 0) {
-      if(from >= to) tacts
-      else howManyTacts(to, from + a*dt, a, base_dt, tacts+1)
-    } else {
-      if(from <= to) tacts
-      else howManyTacts(to, from + a*dt, a, base_dt, tacts+1)
-    }*/
   }
 
   private val default_percent_seq = ((99.0 to 1.0 by -1.0) ++ (0.9 to 0.1 by -0.1)).view
@@ -192,50 +183,44 @@ class Ship4(index: Int,
         (tacts, power)
     }.getOrElse({
       //println("maxPossiblePowerForLinearMovement fallback")
-      (1000, max_power * 0.01)
+      (correction_check_period, max_power * 0.01)
     })
   }
 
-  private def maxPossiblePowerAndTactsForRotation(max_power: Double,
-                                                  force_dir: DVec,
-                                                  position: DVec,
-                                                  I: Double,
-                                                  to: Double,
-                                                  from: Double,
-                                                  max_diff: Double): (Int, Double) = {
+  private def maxPossiblePowerAndTactsForRotation(e:Engine, need_ang_vel: Double): (Int, Double) = {
     default_percent_seq.map {
       case percent =>
-        val power = max_power * 0.01 * percent
-        val torque = (-force_dir * power) */ position
-        val ang_acc = (torque / I).toDeg
-        (howManyTacts(to, from, ang_acc, base_dt), power, percent)
+        val power = e.max_power * 0.01 * percent
+        val torque = (-e.force_dir * power) */ e.position
+        val ang_acc = (torque / currentState.I).toDeg
+        (howManyTacts(need_ang_vel, currentState.ang_vel, ang_acc, base_dt), power, percent)
     }.find {
-      case ((tacts, result_to), power, percent) =>
-        //println(s"maxPossiblePowerAndTactsForRotation find: $power, $percent: ${math.abs(to - result_to)}")
-        val check = math.abs(to - result_to) < max_diff
-        /*if(check) {
-          println(s"maxPossiblePowerAndTactsForRotation = ($tacts, $power, $percent)")
-        }*/
-        check
+      case ((tacts, result_ang_vel), power, percent) =>
+        math.abs(need_ang_vel - result_ang_vel) < angular_velocity_error
     }.map {
       case ((tacts, result_to), power, percent) =>
         (tacts, power)
     }.getOrElse({
-      //println("maxPossiblePowerForRotation fallback")
-      (1000, max_power * 0.1)
+      (correction_check_period, e.max_power * 0.1)
     })
   }
 
   override def preserveAngularVelocity(ang_vel_deg: Double) {
     val difference = angularVelocity - ang_vel_deg
     if (difference > angular_velocity_error) {
-      val (tacts, power) = maxPossiblePowerAndTactsForRotation(seven.max_power, seven.force_dir, seven.position, currentState.I, ang_vel_deg, angularVelocity, angular_velocity_error)
+      val (tacts, power) = {
+        dock_data.map(_.proxy_ship.maxPossiblePowerAndTactsForRotation(seven, ang_vel_deg))
+                        .getOrElse(maxPossiblePowerAndTactsForRotation(seven, ang_vel_deg))
+      }
       seven.power = power
       seven.workTimeTacts = tacts
       seven.active = true
       nine.active = false
     } else if (difference < -angular_velocity_error) {
-      val (tacts, power) = maxPossiblePowerAndTactsForRotation(nine.max_power, nine.force_dir, nine.position, currentState.I, ang_vel_deg, angularVelocity, angular_velocity_error)
+      val (tacts, power) = {
+        dock_data.map(_.proxy_ship.maxPossiblePowerAndTactsForRotation(nine, ang_vel_deg))
+                        .getOrElse(maxPossiblePowerAndTactsForRotation(nine, ang_vel_deg))
+      }
       nine.power = power
       nine.workTimeTacts = tacts
       nine.active = true
@@ -261,14 +246,24 @@ class Ship4(index: Int,
     val activate_engines = ArrayBuffer[Engine]()
 
     if (ship_velocity_n - need_vel_n > n_diff) {
-      val (tacts, power) = maxPossiblePowerForLinearMovement(eight.max_power, eight.force_dir.y, mass, need_vel_n, ship_velocity_n, n_diff)
+      val (tacts, power) = maxPossiblePowerForLinearMovement(eight.max_power,
+                                                             eight.force_dir.y,
+                                                             mass,
+                                                             need_vel_n,
+                                                             ship_velocity_n,
+                                                             n_diff)
       eight.power = power
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
       eight.workTimeTacts = tacts
       activate_engines += eight
     } else if (ship_velocity_n - need_vel_n < -n_diff) {
-      val (tacts, power) = maxPossiblePowerForLinearMovement(two.max_power, two.force_dir.y, mass, need_vel_n, ship_velocity_n, n_diff)
+      val (tacts, power) = maxPossiblePowerForLinearMovement(two.max_power,
+                                                             two.force_dir.y,
+                                                             mass,
+                                                             need_vel_n,
+                                                             ship_velocity_n,
+                                                             n_diff)
       two.power = power
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
@@ -277,14 +272,24 @@ class Ship4(index: Int,
     }
 
     if (ship_velocity_p - need_vel_p > p_diff) {
-      val (tacts, power) = maxPossiblePowerForLinearMovement(six.max_power, six.force_dir.x, mass, need_vel_p, ship_velocity_p, p_diff)
+      val (tacts, power) = maxPossiblePowerForLinearMovement(six.max_power,
+                                                             six.force_dir.x,
+                                                             mass,
+                                                             need_vel_p,
+                                                             ship_velocity_p,
+                                                             p_diff)
       six.power = power
       /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
       println("===========================")*/
       six.workTimeTacts = tacts
       activate_engines += six
     } else if (ship_velocity_p - need_vel_p < -p_diff) {
-      val (tacts, power) = maxPossiblePowerForLinearMovement(four.max_power, four.force_dir.x, mass, need_vel_p, ship_velocity_p, p_diff)
+      val (tacts, power) = maxPossiblePowerForLinearMovement(four.max_power,
+                                                             four.force_dir.x,
+                                                             mass,
+                                                             need_vel_p,
+                                                             ship_velocity_p,
+                                                             p_diff)
       four.power = power
       /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
       println("===========================")*/
@@ -771,7 +776,7 @@ class Ship4(index: Int,
             }
           }
 
-          _engines.foreach {
+          engines.foreach {
             case e => drawEngine(e)
           }
         }

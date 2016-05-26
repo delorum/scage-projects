@@ -133,28 +133,16 @@ abstract class PolygonShip(
                             create_interface:Boolean) {
   println(s"$name -> $index")
   protected var selected_engine: Option[Engine] = None
-  def selectedEngine:Option[Engine] = dockData.map(_.proxy_ship.selected_engine).getOrElse(selected_engine)
+  def selectedEngine:Option[Engine] = selected_engine
   def clearEngineSelection(): Unit = {
-    dockData match {
-      case Some(dd) =>
-        dd.proxy_ship.clearEngineSelection()
-      case None =>
-        selected_engine = None
-    }
+    selected_engine = None
   }
-
   def isSelectedEngine(e: Engine): Boolean = {
     selected_engine.exists(x => x == e)
   }
-
-  def switchEngineSelected(engine_code: Int) {
-    engines_by_keycodes_map.get(engine_code).foreach(e => if (isSelectedEngine(e)) selected_engine = None else selected_engine = Some(e))
-  }
-
-  protected def _engines: List[Engine]  
-  def engines: List[Engine] = dock_data.map(_.proxy_ship.engines).getOrElse(_engines)
+  
+  def engines: List[Engine]
   def engines_by_keycodes_map: Map[Int, Engine]
-  lazy val engines_by_index = _engines.map(e => (e.index, e)).toMap
 
   /*def switchEngineActive(engine_code:Int) {
     //timeMultiplier = realtime
@@ -162,19 +150,13 @@ abstract class PolygonShip(
   }*/
 
   def selectOrSwitchEngineActive(key_code: Int) {
-    //timeMultiplier = realtime
-    dock_data match {
-      case Some(dd) =>
-        dd.proxy_ship.selectOrSwitchEngineActive(index, key_code)
-      case None =>
-        engines_by_keycodes_map.get(key_code).foreach(e => {
-          if (selected_engine.exists(_ == e)) {
-            e.switchActive()
-          } else {
-            selected_engine = Some(e)
-          }
-        })
-    }
+    engines_by_keycodes_map.get(key_code).foreach(e => {
+      if (selected_engine.exists(_ == e)) {
+        e.switchActive()
+      } else {
+        selected_engine = Some(e)
+      }
+    })
   }
 
   def mass: Double
@@ -289,71 +271,59 @@ abstract class PolygonShip(
   def rotation = if (isAlive) currentState.ang else main_ship_wreck.headOption.map(_.rotation).getOrElse(currentState.ang)
 
   def currentReactiveForce(time: Long, bs: BodyState): DVec = {
-    _engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(DVec.dzero) {
+    engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(DVec.dzero) {
       case (sum, e) => sum + e.force.rotateDeg(bs.ang)
     }
   }
 
   def currentReactiveForce(tacts: Long, bs: MutableBodyState): DVec = {
-    _engines.filter(e => e.active && tacts < e.stopMomentTacts).foldLeft(DVec.dzero) {
+    engines.filter(e => e.active && tacts < e.stopMomentTacts).foldLeft(DVec.dzero) {
       case (sum, e) => sum + e.force.rotateDeg(bs.ang)
     }
   }
 
-  def fuelConsumptionPerTact: Double = {
-    _engines.filter(e => e.active).foldLeft(0.0) {
-      case (sum, e) => sum + e.fuelConsumptionPerTact
-    }
-  }
-
-  def fuelMassWhenEnginesOff: Double = {
-    fuelMass - _engines.filter(e => e.active).map(e => e.workTimeTacts * e.fuelConsumptionPerTact).sum
-  }
-
-  def fuelMassWhenEnginesOffWithoutEngine(ee: Engine): Double = {
-    fuelMass - _engines.filter(e => e.active && e != ee).map(e => e.workTimeTacts * e.fuelConsumptionPerTact).sum
-  }
-
   def currentMass(time: Long, bs: BodyState): Double = {
-    mass - _engines.filter(e => e.active).foldLeft(0.0) {
+    mass - engines.filter(e => e.active).foldLeft(0.0) {
       case (sum, e) =>
         sum + e.fuelConsumptionPerTact * (math.min(time, e.stopMomentTacts) - (e.stopMomentTacts - e.workTimeTacts))
     }
   }
 
   def currentMass(time: Long): Double = {
-    mass - _engines.filter(e => e.active).foldLeft(0.0) {
+    mass - engines.filter(e => e.active).foldLeft(0.0) {
       case (sum, e) =>
         sum + e.fuelConsumptionPerTact * (math.min(time, e.stopMomentTacts) - (e.stopMomentTacts - e.workTimeTacts))
     }
   }
 
-  def currentTorque(time: Long, bs: BodyState): Double = {
-    _engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0.0) {
-      case (sum, e) => sum + e.torque
+  def currentTorque(time: Long, coord_diff:DVec = DVec.zero): Double = {
+    engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0.0) {
+      case (sum, e) => sum + (-e.force */ (e.position + coord_diff))
     }
   }
 
-  def currentTorque(time: Long, bs: MutableBodyState): Double = {
-    _engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0.0) {
-      case (sum, e) => sum + e.torque
+  def fuelConsumptionPerTact: Double = {
+    engines.filter(e => e.active).foldLeft(0.0) {
+      case (sum, e) => sum + e.fuelConsumptionPerTact
     }
   }
 
-  def currentTorque(time: Long): Double = {
-    _engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0.0) {
-      case (sum, e) => sum + e.torque
-    }
+  def fuelMassWhenEnginesOff: Double = {
+    fuelMass - engines.filter(e => e.active).map(e => e.workTimeTacts * e.fuelConsumptionPerTact).sum
+  }
+
+  def fuelMassWhenEnginesOffWithoutEngine(ee: Engine): Double = {
+    fuelMass - engines.filter(e => e.active && e != ee).map(e => e.workTimeTacts * e.fuelConsumptionPerTact).sum
   }
 
   def deactivateAllEngines(): Unit = {
-    _engines.foreach(_.active = false)
+    engines.foreach(_.active = false)
   }
 
   def activateOnlyTheseEngines(engines_to_activate: Engine*) {
     //timeMultiplier = realtime
     engines_to_activate.foreach(_.active = true)
-    _engines.withFilter(e => e.active && !engines_to_activate.contains(e)).foreach(_.active = false)
+    engines.withFilter(e => e.active && !engines_to_activate.contains(e)).foreach(_.active = false)
   }
 
   def activateOnlyOneEngine(e: Engine) {
@@ -361,7 +331,7 @@ abstract class PolygonShip(
   }
 
   def allEnginesInactive: Boolean = {
-    _engines.forall(!_.active)
+    engines.forall(!_.active)
   }
 
   def engineColor(e: Engine, in_shadow: Boolean): ScageColor = {
@@ -372,14 +342,14 @@ abstract class PolygonShip(
     max_size * e.power / e.max_power
   }
 
-  protected def drawEngine(e: Engine) {
+  def drawEngine(e: Engine, coord_diff:DVec = DVec.zero) {
     if (!dock_data.exists(_.our_dp.disabled_engine.exists(_ == e.index))) {
       val is_vertical = e.force_dir.x == 0
       val (center, width, height) = e.force_dir match {
-        case DVec(0, -1) => (e.position + DVec(0, 0.25) * engine_size, 1 * engine_size, 0.5 * engine_size)
-        case DVec(0, 1) => (e.position + DVec(0, -0.25) * engine_size, 1 * engine_size, 0.5 * engine_size)
-        case DVec(-1, 0) => (e.position + DVec(0.25, 0) * engine_size, 0.5 * engine_size, 1 * engine_size)
-        case DVec(1, 0) => (e.position + DVec(-0.25, 0) * engine_size, 0.5 * engine_size, 1 * engine_size)
+        case DVec(0, -1) => (e.position + coord_diff + DVec(0, 0.25) * engine_size, 1 * engine_size, 0.5 * engine_size)
+        case DVec(0, 1) => (e.position + coord_diff + DVec(0, -0.25) * engine_size, 1 * engine_size, 0.5 * engine_size)
+        case DVec(-1, 0) => (e.position + coord_diff + DVec(0.25, 0) * engine_size, 0.5 * engine_size, 1 * engine_size)
+        case DVec(1, 0) => (e.position + coord_diff + DVec(-0.25, 0) * engine_size, 0.5 * engine_size, 1 * engine_size)
         case _ => throw new Exception("engine force dir other than vertical or horizontal is not supported")
       }
 
@@ -468,7 +438,7 @@ abstract class PolygonShip(
             }
           }
 
-          _engines.foreach {
+          engines.foreach {
             case e => drawEngine(e)
           }
         }
@@ -540,14 +510,14 @@ abstract class PolygonShip(
   def haveSavedFlightMode = prev_flight_mode_and_engine_states.nonEmpty
 
   def saveFlightModeAndEngineStates(prev_flight_mode: FlightMode): Unit = {
-    prev_flight_mode_and_engine_states = Some((prev_flight_mode, _engines.map(e => (e.workTimeTacts, e.power, e.active))))
+    prev_flight_mode_and_engine_states = Some((prev_flight_mode, engines.map(e => (e.workTimeTacts, e.power, e.active))))
   }
 
   def restoreFlightModeAndEngineStates(): Unit = {
     prev_flight_mode_and_engine_states match {
       case Some((prev_flight_mode, engine_states)) =>
         flightMode = prev_flight_mode
-        _engines.zip(engine_states).foreach {
+        engines.zip(engine_states).foreach {
           case (e, (tacts, power, active)) =>
             e.active = active
             e.workTimeTacts = tacts
@@ -559,60 +529,53 @@ abstract class PolygonShip(
   }
 
   private var flight_mode: FlightMode = FreeFlightMode
-
-  def flightMode: FlightMode = dock_data.map(_.proxy_ship.flightMode).getOrElse(flight_mode)
-
+  def flightMode: FlightMode = flight_mode
   def flightMode_=(new_flight_mode: FlightMode) {
-    dock_data match {
-      case Some(dd) =>
-        dd.proxy_ship.flightMode = new_flight_mode
-      case None =>
-        val prev_flight_mode = flight_mode
-        flight_mode = new_flight_mode
-        last_correction_or_check_moment = 0l
-        if (flight_mode == Maneuvering) {
-          val ten_min_or_max_time_at_full_power = math.min((fuelMass / _engines.map(_.maxFuelConsumptionPerTact).max).toLong, 37800)
-          if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
-            _engines.foreach(e => e.power = 10000)
+    val prev_flight_mode = flight_mode
+    flight_mode = new_flight_mode
+    last_correction_or_check_moment = 0l
+    if (flight_mode == Maneuvering) {
+      val ten_min_or_max_time_at_full_power = math.min((fuelMass / engines.map(_.maxFuelConsumptionPerTact).max).toLong, 37800)
+      if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
+        engines.foreach(e => e.power = 10000)
+      } else {
+        engines.foreach(e => e.power = {
+          if (InterfaceHolder.gSwitcher.maxGSet) {
+            math.min(
+              (mass + dock_data.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
+                earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5).norma
+              },
+              e.max_power * 0.5)
           } else {
-            _engines.foreach(e => e.power = {
-              if (InterfaceHolder.gSwitcher.maxGSet) {
-                math.min(
-                  (mass + dock_data.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
-                    earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5).norma
-                  },
-                  e.max_power * 0.5)
-              } else {
-                e.max_power * 0.5
-              }
-            })
+            e.max_power * 0.5
           }
-          _engines.filterNot(_.active).foreach(e => e.workTimeTacts = ten_min_or_max_time_at_full_power) // 10 minutes in tacts (10*60*63)
-          val active_engines = _engines.filter(_.active)
-          if (active_engines.map(ae => ae.fuelConsumptionPerTact * ten_min_or_max_time_at_full_power).sum <= fuelMass) {
-            active_engines.foreach(e => e.workTimeTacts = ten_min_or_max_time_at_full_power)
-          } else {
-            val fuel_for_every_active_engine = fuelMass / active_engines.length
-            active_engines.foreach(e => e.workTimeTacts = (fuel_for_every_active_engine / e.fuelConsumptionPerTact).toLong)
-          }
-        } else {
-          if (flight_mode == FreeFlightMode) {
-            _engines.foreach(e => e.active = false)
-          } else if (prev_flight_mode == Maneuvering &&
-            (flight_mode == Killrot ||
-              flight_mode == NearestShipVelocity ||
-              flight_mode == NearestShipAligned ||
-              flight_mode == RelativeVelocityAligned ||
-              flight_mode == OppositeRelativeVelocityAligned)) {
-            saveFlightModeAndEngineStates(prev_flight_mode)
-          } else if (flight_mode == NearestPlanetVelocity) {
-            vertical_speed_msec = 0
-            horizontal_speed_msec = 0
-          }
-          if (prev_flight_mode == Maneuvering && flight_mode != FreeFlightMode && flight_mode != Killrot) {
-            _engines.foreach(e => e.workTimeTacts = 0)
-          }
-        }
+        })
+      }
+      engines.filterNot(_.active).foreach(e => e.workTimeTacts = ten_min_or_max_time_at_full_power) // 10 minutes in tacts (10*60*63)
+      val active_engines = engines.filter(_.active)
+      if (active_engines.map(ae => ae.fuelConsumptionPerTact * ten_min_or_max_time_at_full_power).sum <= fuelMass) {
+        active_engines.foreach(e => e.workTimeTacts = ten_min_or_max_time_at_full_power)
+      } else {
+        val fuel_for_every_active_engine = fuelMass / active_engines.length
+        active_engines.foreach(e => e.workTimeTacts = (fuel_for_every_active_engine / e.fuelConsumptionPerTact).toLong)
+      }
+    } else {
+      if (flight_mode == FreeFlightMode) {
+        engines.foreach(e => e.active = false)
+      } else if (prev_flight_mode == Maneuvering &&
+        (flight_mode == Killrot ||
+          flight_mode == NearestShipVelocity ||
+          flight_mode == NearestShipAligned ||
+          flight_mode == RelativeVelocityAligned ||
+          flight_mode == OppositeRelativeVelocityAligned)) {
+        saveFlightModeAndEngineStates(prev_flight_mode)
+      } else if (flight_mode == NearestPlanetVelocity) {
+        vertical_speed_msec = 0
+        horizontal_speed_msec = 0
+      }
+      if (prev_flight_mode == Maneuvering && flight_mode != FreeFlightMode && flight_mode != Killrot) {
+        engines.foreach(e => e.workTimeTacts = 0)
+      }
     }
   }
 
@@ -774,7 +737,7 @@ abstract class PolygonShip(
     is_dead = true
     death_reason = reason
     flightMode = FreeFlightMode
-    _engines.foreach(_.active = false)
+    engines.foreach(_.active = false)
     /*if(this.index == OrbitalKiller.ship.index) {
       viewMode = FixedOnShipAbsolute
     }*/
@@ -945,7 +908,7 @@ abstract class PolygonShip(
 
   def beforeStep(): Unit = {
     if(currentState.active) {
-      _engines.foreach(e => {
+      engines.foreach(e => {
         if (e.active) {
           if (e.workTimeTacts <= 0 || fuelMass <= 0) {
             e.active = false
@@ -1035,10 +998,10 @@ abstract class PolygonShip(
         val time_before_death_msec = ((before_death_counter / rate) * base_dt * 1000).toLong
         if (time_before_death_msec <= 1000) {
           // 1 секунда до гибели от перегрузки
-          if (_engines.exists(_.active)) {
+          if (engines.exists(_.active)) {
             // если работают какие-то двигатели
             flightMode = FreeFlightMode // отключаем двигатели
-            _engines.foreach(_.active = false)
+            engines.foreach(_.active = false)
           }
         }
       }
@@ -1059,7 +1022,7 @@ abstract class PolygonShip(
   private def checkEnginesPower(reactive_force:DVec): Unit = {
     // автоматическая регулировка мощности двигателей в соответствие с настройкой gSwitcher
     if (InterfaceHolder.gSwitcher.maxGSet && pilot_average_g > InterfaceHolder.gSwitcher.maxG) {
-      val active_engines = _engines.filter(e => e.active && 0 < e.stopMomentTacts)
+      val active_engines = engines.filter(e => e.active && 0 < e.stopMomentTacts)
       if (active_engines.nonEmpty) {
         val cur_force = reactive_force.norma
         val allowed_force = (mass + dock_data.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g
@@ -1074,8 +1037,8 @@ abstract class PolygonShip(
     }
   }
 
-  protected def consumeFuel() {
-    _engines.foreach(e => {
+  def consumeFuel() {
+    engines.foreach(e => {
       if (e.active) {
         if (e.workTimeTacts > 0) {
           e.workTimeTacts -= 1
@@ -1121,7 +1084,7 @@ abstract class PolygonShip(
   def syncOtherEnginesPower(except_engine:Int): Unit = {
     println(s"syncOtherEnginesPower(except_engine=$except_engine)")
     if (InterfaceHolder.gSwitcher.maxGSet) {
-      val active_engines_except = _engines.filter(e => e.active && 0 < e.stopMomentTacts && e.index != except_engine)
+      val active_engines_except = engines.filter(e => e.active && 0 < e.stopMomentTacts && e.index != except_engine)
       if (active_engines_except.nonEmpty) {
         val air_resistance = earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5)
         val reactive_force = currentReactiveForce(0, currentState) + air_resistance
@@ -1150,7 +1113,7 @@ abstract class PolygonShip(
         _orbit_data.exists(or => {
           or.is_landed || or.ellipseOrbit.exists(e => e.r_p > or.planet.radius + or.planet.air_free_altitude)
         }) &&
-        _engines.forall(!_.active) &&
+        engines.forall(!_.active) &&
         (ship_interface.isEmpty || ship_interface.exists(_.isMinimized))
       if (currentState.active) {
         calculateShipState(time_msec)

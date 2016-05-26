@@ -30,20 +30,18 @@ class ProxyShip(ship1:PolygonShip,
       ship1.currentState.coord = currentState.coord + ship1_coord_diff.rotateDeg(rotation)
       ship1.currentState.vel = currentState.vel
       ship1.currentState.ang = rotation
+      ship1.currentState.ang_vel = currentState.ang_vel
     } else if(ship_index == ship2.index) {
       ship2.currentState.coord = currentState.coord + ship2_coord_diff.rotateDeg(rotation)
       ship2.currentState.vel = currentState.vel
       ship2.currentState.ang = rotation  + ship2_rotation_diff
+      ship2.currentState.ang_vel = currentState.ang_vel
     }
   }
 
   def mass = ship1.mass + ship2.mass
 
-  override val _engines: List[Engine] = ship1.engines.filterNot(e => ship1_dp.disabled_engine.exists(_ == e.index)).map(e => {
-    new Engine(e.index, e.position + ship1_coord_diff, e.force_dir, e.max_power, e.default_power_percent, e.fuel_consumption_per_sec_at_full_power, this)
-  }) ::: ship2.engines.filterNot(e => ship2_dp.disabled_engine.exists(_ == e.index)).map(e => {
-    new Engine(e.index + 10, e.position + ship2_coord_diff, e.force_dir, e.max_power, e.default_power_percent, e.fuel_consumption_per_sec_at_full_power, this)
-  })
+  override val engines: List[Engine] = ship1.engines ::: ship2.engines
 
   override def fuelMass: Double = ship1.fuelMass + ship2.fuelMass
 
@@ -93,56 +91,75 @@ class ProxyShip(ship1:PolygonShip,
     })
   }
 
-  private val _keys_mapping = Map(
-    1 -> KEY_NUMPAD1,
-    2 -> KEY_NUMPAD2,
-    3 -> KEY_NUMPAD3,
-    4 -> KEY_NUMPAD4,
-    6 -> KEY_NUMPAD6,
-    7 -> KEY_NUMPAD7,
-    8 -> KEY_NUMPAD8,
-    9 -> KEY_NUMPAD9
-  )
-
   override val engines_by_keycodes_map: Map[Int, Engine] = Map()
-  val engines_by_keycodes_2: Map[(Int, Int), Engine] = {
-    _engines.map(e => if(e.index < 10) ((ship1.index, _keys_mapping(e.index)), e) else ((ship2.index, _keys_mapping(e.index-10)), e)).toMap
+
+  override def consumeFuel() {
+    ship1.consumeFuel()
+    ship2.consumeFuel()
   }
 
-  def selectOrSwitchEngineActive(ship_index:Int, key_code: Int) {
-    dock_data match {
-      case Some(dd) =>
-        dd.proxy_ship.selectOrSwitchEngineActive(index, key_code)
-      case None =>
-        engines_by_keycodes_2.get((ship_index, key_code)).foreach(e => {
-          if (selected_engine.exists(_ == e)) {
-            e.switchActive()
-          } else {
-            selected_engine = Some(e)
-          }
-        })
-    }
+  override def currentReactiveForce(time: Long, bs: BodyState): DVec = {
+    ship1.currentReactiveForce(time, bs) + ship2.currentReactiveForce(time, bs)
   }
-  
-  override protected def consumeFuel() {
-    _engines.foreach(e => {
-      if (e.active) {
-        if (e.workTimeTacts > 0) {
-          e.workTimeTacts -= 1
-          //InterfaceHolder.enginesInfo.addWorkTime(base_dt*1000*e.power/e.max_power)
-          if(e.index < 10) {
-            ship1.fuelMass -= e.fuelConsumptionPerTact
-          } else {
-            ship2.fuelMass -= e.fuelConsumptionPerTact
-          }
-        } else e.active = false
-      }
-    })
+
+  override def currentReactiveForce(tacts: Long, bs: MutableBodyState): DVec = {
+    ship1.currentReactiveForce(tacts, bs) + ship2.currentReactiveForce(tacts, bs)
+  }
+
+  override def currentTorque(time: Long, coord_diff:DVec = DVec.zero): Double = {
+    ship1.currentTorque(time, coord_diff + ship1_coord_diff) + ship2.currentTorque(time, coord_diff + ship2_coord_diff)
   }
 
   override def kill(reason: String, crash: Boolean): Unit = {
     ship1.kill(reason, crash)
     ship2.kill(reason, crash)
+  }
+
+  /**
+   * Сколько тактов работы двигателя потребуется, чтобы достичь скорости to, при условии, что текущая скорость равна from,
+   * ускорение равно a, один такт равен dt секунд
+   *
+   * @param to - скорость, которой хотим достичь
+   * @param from - текущая скорость
+   * @param a - ускорение
+   * @param dt - сколько секунд в одном такте
+   * @return два значения: сколько тактов потребуется, какой значения скорости фактически достигнем
+   */
+  private def howManyTacts(to: Double, from: Double, a: Double, dt: Double): (Int, Double) = {
+    val tacts = ((to - from) / (a * dt)).toInt + 1
+    val result_to = from + tacts * a * dt
+    (tacts, result_to)
+  }
+
+  private val default_percent_seq = ((99.0 to 1.0 by -1.0) ++ (0.9 to 0.1 by -0.1)).view
+  def maxPossiblePowerAndTactsForRotation(e:Engine,
+                                          need_ang_vel: Double): (Int, Double) = {
+    val coord_diff = e.ship.index match {
+      case ship1.index => ship1_coord_diff
+      case ship2.index => ship2_coord_diff
+      case _ => DVec.zero
+    }
+    default_percent_seq.map {
+      case percent =>
+        val power = e.max_power * 0.01 * percent
+        val torque = (-e.force_dir * power) */ (e.position + coord_diff)
+        val ang_acc = (torque / currentState.I).toDeg
+        (howManyTacts(need_ang_vel, currentState.ang_vel, ang_acc, base_dt), power, percent)
+    }.find {
+      case ((tacts, result_ang_vel), power, percent) =>
+        //println(s"maxPossiblePowerAndTactsForRotation find: $power, $percent: ${math.abs(need_ang_vel - result_ang_vel)}")
+        val check = math.abs(need_ang_vel - result_ang_vel) < angular_velocity_error
+        /*if(check) {
+          println(s"maxPossiblePowerAndTactsForRotation = ($tacts, $power, $percent)")
+        }*/
+        check
+    }.map {
+      case ((tacts, result_to), power, percent) =>
+        (tacts, power)
+    }.getOrElse({
+      //println("maxPossiblePowerForRotation fallback")
+      (correction_check_period, e.max_power * 0.1)
+    })
   }
 
   override def drawShip(): Unit = {
@@ -182,8 +199,11 @@ class ProxyShip(ship1:PolygonShip,
           openglLocalTransform {
             openglRotateDeg(rotation)
 
-            _engines.foreach {
-              case e => drawEngine(e)
+            ship1.engines.foreach {
+              case e => ship1.drawEngine(e, ship1_coord_diff)
+            }
+            ship2.engines.foreach {
+              case e => ship2.drawEngine(e, ship2_coord_diff)
             }
 
             if (OrbitalKiller.globalScale >= 0.8) {

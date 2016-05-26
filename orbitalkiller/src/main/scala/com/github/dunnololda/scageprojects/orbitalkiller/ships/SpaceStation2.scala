@@ -77,7 +77,7 @@ class SpaceStation2(index: Int,
   val one = new Engine(1, Vec(-120.0, -10.0), Vec(0.0, 1.0), 10, 1, 4, this)
   val three = new Engine(3, Vec(120.0, -10.0), Vec(0.0, 1.0), 10, 1, 4, this)
 
-  val _engines = List(four, six, eight, two, one, three)
+  val engines = List(four, six, eight, two, one, three)
 
   val engines_by_keycodes_map = Map(
     KEY_NUMPAD4 -> four,

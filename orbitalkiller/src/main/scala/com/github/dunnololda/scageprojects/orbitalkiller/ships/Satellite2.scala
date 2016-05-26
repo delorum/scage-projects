@@ -119,7 +119,7 @@ class Satellite2(index: Int,
   val seven = new Engine(7, position = DVec(-2.5, 50.0), force_dir = DVec(1.0, 0.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
   val nine = new Engine(9, position = DVec(2.5, 50.0), force_dir = DVec(-1.0, 0.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
 
-  val _engines = List(eight, two, four, six, seven, nine)
+  val engines = List(eight, two, four, six, seven, nine)
 
   val engines_by_keycodes_map = Map(
     KEY_NUMPAD8 -> eight,

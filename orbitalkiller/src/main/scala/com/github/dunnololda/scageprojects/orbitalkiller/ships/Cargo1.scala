@@ -52,7 +52,7 @@ class Cargo1(index: Int,
     ))
   )
 
-  val _engines = List()
+  val engines = List()
 
   val engines_by_keycodes_map: Map[Int, Engine] = Map()
 

@@ -15,12 +15,11 @@ class EnginesInfo extends InterfaceElement {
   private var strings = strings_when_engines_nonactive
 
   override protected def _update(): Unit = {
-    val ship = player_ship.dockData.map(_.proxy_ship).getOrElse(player_ship)
     var engines_active = false
     val engines_str = s"${
-      if (ship.isAlive) {
-        ship.engines.filter(e => e.active || ship.isSelectedEngine(e)).map(e => {
-          if (ship.isSelectedEngine(e)) {
+      if (player_ship.isAlive) {
+        player_ship.engines.filter(e => e.active || player_ship.isSelectedEngine(e)).map(e => {
+          if (player_ship.isSelectedEngine(e)) {
             if (e.active) {
               engines_active = true
               f"[r${e.index}: ${e.power / 1000}%.1f кН (${e.workTimeStr})]"
@@ -37,11 +36,11 @@ class EnginesInfo extends InterfaceElement {
           }
         }).mkString(", ")
       } else {
-        ship.engines.map(e => {
+        player_ship.engines.map(e => {
           f"${e.index}: ${e.power / 1000}%.1f кН (${e.workTimeStr})"
         }).mkString(", ")
       }
-    }${val x = ship.engines.filter(e => e.active).map(e => e.fuelConsumptionPerSec).sum; if (x != 0) f" (${gOrKg(x)} в сек)" else ""}"
+    }${val x = player_ship.engines.filter(e => e.active).map(e => e.fuelConsumptionPerSec).sum; if (x != 0) f" (${gOrKg(x)} в сек)" else ""}"
     if (engines_str.isEmpty) {
       //strings_when_engines_nonactive(0) = s"Двигательная установка: ${if (engines_active) "[rактивирована]" else "отключена"}. Общее время работы двигателей: ${timeStr(engines_work_time_msec.toLong)}"
       strings_when_engines_nonactive(0) = s"Двигательная установка: ${if (engines_active) "[rактивирована]" else "отключена"}"
@@ -57,8 +56,7 @@ class EnginesInfo extends InterfaceElement {
   override def data: Seq[String] = strings
 
   override def color: ScageColor = {
-    val ship = player_ship.dockData.map(_.proxy_ship).getOrElse(player_ship)
-    if (isMinimized && ship.engines.exists(_.active)) ScageColor.RED else ScageColor.YELLOW
+    if (isMinimized && player_ship.engines.exists(_.active)) ScageColor.RED else ScageColor.YELLOW
   }
 
   override val shortDescr: String = "En"
