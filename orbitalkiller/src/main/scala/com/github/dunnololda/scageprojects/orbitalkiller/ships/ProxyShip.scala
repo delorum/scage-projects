@@ -46,7 +46,7 @@ class ProxyShip(ship1:PolygonShip,
       ship1.currentState.ang = rotation
       ship1.currentState.ang_vel = currentState.ang_vel
     } else if(ship_index == ship2.index) {
-      ship2.currentState.coord = currentState.coord + ship2_coord_diff.rotateDeg(rotation + ship2_rotation_diff)
+      ship2.currentState.coord = currentState.coord + ship2_coord_diff.rotateDeg(init_rotation + rotation + ship2_rotation_diff)
       ship2.currentState.vel = currentState.vel
       ship2.currentState.ang = rotation  + ship2_rotation_diff
       ship2.currentState.ang_vel = currentState.ang_vel
@@ -63,7 +63,7 @@ class ProxyShip(ship1:PolygonShip,
 
   override lazy val convex_parts: List[PolygonShape] = {
     ship1.convex_parts.map(p => p.copy(points = p.points.map(_ + ship1_coord_diff))) :::
-    ship2.convex_parts.map(p => p.copy(points = p.points.map(_ + ship2_coord_diff)))
+    ship2.convex_parts.map(p => p.copy(points = p.points.map(p => p.rotateDeg(ship2_rotation_diff) + ship2_coord_diff)))
   }
 
   /**
@@ -73,12 +73,12 @@ class ProxyShip(ship1:PolygonShip,
    */
   override lazy val points: List[DVec] = {
     ship1_dp.ordered_hull.map(_ + ship1_coord_diff) :::
-    ship2_dp.ordered_hull.map(_ + ship2_coord_diff)
+    ship2_dp.ordered_hull.map(p => p.rotateDeg(ship2_rotation_diff) + ship2_coord_diff)
   }
 
   override val wreck_parts: List[PolygonShape] = {
     ship1.wreck_parts.map(p => p.copy(points = p.points.map(_ + ship1_coord_diff))) :::
-    ship2.wreck_parts.map(p => p.copy(points = p.points.map(_ + ship2_coord_diff)))
+    ship2.wreck_parts.map(p => p.copy(points = p.points.map(p => p.rotateDeg(ship2_rotation_diff) + ship2_coord_diff)))
   }
 
   override lazy val engine_size: Double = math.min(ship1.engine_size, ship2.engine_size)
@@ -169,7 +169,8 @@ class ProxyShip(ship1:PolygonShip,
           openglLocalTransform {
             openglRotateDeg(rotation)
             drawSlidingLines(draw_points, GREEN)
-            convex_parts.foreach(p => drawSlidingLines(p.points.init ::: List(p.points.head), GREEN))
+            //convex_parts.foreach(p => drawSlidingLines(p.points ::: List(p.points.head), GREEN))
+            //wreck_parts.foreach(p => drawSlidingLines(p.points ::: List(p.points.head), GREEN))
             ship1.engines.foreach {
               case e => ship1.drawEngine(e, ship1_coord_diff)
             }

@@ -43,6 +43,8 @@ class Cargo1(index: Int,
 
   val docking_points = List(
     new DockingPoints(DVec(1.5, 2.5), DVec(-1.5, 2.5), this, None, List(
+      // |  |
+      // \__/
       DVec(-2.5, 2.5),
       DVec(-2.5, -1.5),
       DVec(-1.5, -2.5),

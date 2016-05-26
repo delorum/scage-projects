@@ -22,8 +22,8 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
           strings(0) = s"${monitoring_ship.name}: docked"
         } else {
           val /*(_, */ need_orbit_period_str /*)*/ = (for {
-            OrbitData(_, _, _, _, _, _, _, our_orbit_planet, our_orbit_kepler, our_ccw, _) <- player_ship.orbitData
-            OrbitData(_, _, _, _, _, _, _, os_orbit_planet, os_orbit_kepler, os_ccw, _) <- monitoring_ship.orbitData
+            OrbitData(_, _, _, _, _, _, _, _, our_orbit_planet, our_orbit_kepler, our_ccw, _) <- player_ship.orbitData
+            OrbitData(_, _, _, _, _, _, _, _, os_orbit_planet, os_orbit_kepler, os_ccw, _) <- monitoring_ship.orbitData
             if our_orbit_planet.index == os_orbit_planet.index
             if our_ccw == os_ccw
             our_orbit_ellipse <- player_ship.orbitData.flatMap(_.ellipseOrbit)
@@ -32,7 +32,8 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
             os_orbit_period_sec = os_orbit_ellipse.t
           } yield {
               if (InterfaceHolder.dockingSwitcher.dockingEnabled && player_ship.coord.dist(monitoring_ship.coord) <= 2000) {
-                val ship_docking_point = player_ship.docking_points.head.curP1 + 0.5 * (player_ship.docking_points.head.curP2 - player_ship.docking_points.head.curP1)
+                val dp = player_ship.docking_points.sortBy(_.curP1.dist2(monitoring_ship.coord)).head
+                val ship_docking_point = dp.curP1 + 0.5 * (dp.curP2 - dp.curP1)
                 monitoring_ship.docking_points.sortBy(osdp => osdp.curP1.dist(ship_docking_point)).headOption match {
                   case Some(osdp) =>
                     val vv1 = (osdp.curP1 - osdp.curP2).n

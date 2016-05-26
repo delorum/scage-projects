@@ -486,7 +486,7 @@ class Ship4(index: Int,
                   InterfaceHolder.dockingSwitcher.setDockingAuto()
                   val dp = docking_points.sortBy(_.curP1.dist2(os.coord)).head
                   val ship_docking_point = dp.curP1 + 0.5 * (dp.curP2 - dp.curP1)
-                  os.docking_points.sortBy(osdp => osdp.curP1.dist(ship_docking_point)).headOption match {
+                  os.docking_points.sortBy(osdp => osdp.curP1.dist2(ship_docking_point)).headOption match {
                     case Some(osdp) =>
                       if (osdp.curP1.dist(ship_docking_point) > 2000) {
                         // система стыковки начинает работать с расстояния двух километров
@@ -796,6 +796,7 @@ class Ship4(index: Int,
           }*/
 
           drawSlidingLines(draw_points, colorIfPlayerAliveOrRed(WHITE))
+          //convex_parts.foreach(c => drawSlidingLines(c.points ::: List(c.points.head), colorIfPlayerAliveOrRed(WHITE)))
 
           if (OrbitalKiller.globalScale >= 0.8) {
             if (isDocked) {
