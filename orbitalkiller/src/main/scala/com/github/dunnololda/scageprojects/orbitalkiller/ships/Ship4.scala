@@ -187,40 +187,58 @@ class Ship4(index: Int,
     })
   }
 
-  private def maxPossiblePowerAndTactsForRotation(e:Engine, need_ang_vel: Double): (Int, Double) = {
+  private def maxPossiblePowerAndTactsForRotation(max_power: Double,
+                                                  force_dir: DVec,
+                                                  position: DVec,
+                                                  I: Double,
+                                                  to: Double,
+                                                  from: Double,
+                                                  max_diff: Double): (Int, Double) = {
     default_percent_seq.map {
       case percent =>
-        val power = e.max_power * 0.01 * percent
-        val torque = (-e.force_dir * power) */ e.position
-        val ang_acc = (torque / currentState.I).toDeg
-        (howManyTacts(need_ang_vel, currentState.ang_vel, ang_acc, base_dt), power, percent)
+        val power = max_power * 0.01 * percent
+        val torque = (-force_dir * power) */ position
+        val ang_acc = (torque / I).toDeg
+        (howManyTacts(to, from, ang_acc, base_dt), power, percent)
     }.find {
-      case ((tacts, result_ang_vel), power, percent) =>
-        math.abs(need_ang_vel - result_ang_vel) < angular_velocity_error
+      case ((tacts, result_to), power, percent) =>
+        //println(s"maxPossiblePowerAndTactsForRotation find: $power, $percent: ${math.abs(to - result_to)}")
+        val check = math.abs(to - result_to) < max_diff
+        /*if(check) {
+          println(s"maxPossiblePowerAndTactsForRotation = ($tacts, $power, $percent)")
+        }*/
+        check
     }.map {
       case ((tacts, result_to), power, percent) =>
         (tacts, power)
     }.getOrElse({
-      (correction_check_period, e.max_power * 0.1)
+      //println("maxPossiblePowerForRotation fallback")
+      (correction_check_period, max_power * 0.1)
     })
   }
 
   override def preserveAngularVelocity(ang_vel_deg: Double) {
     val difference = angularVelocity - ang_vel_deg
     if (difference > angular_velocity_error) {
-      val (tacts, power) = {
-        dock_data.map(_.proxy_ship.maxPossiblePowerAndTactsForRotation(seven, ang_vel_deg))
-                        .getOrElse(maxPossiblePowerAndTactsForRotation(seven, ang_vel_deg))
-      }
+      val (tacts, power) = maxPossiblePowerAndTactsForRotation(seven.max_power,
+                                                               seven.force_dir,
+                                                               seven.position + dock_data.map(_.proxy_ship.coordDiff(index)).getOrElse(DVec.zero),
+                                                               dock_data.map(_.proxy_ship.currentState.I).getOrElse(currentState.I),
+                                                               ang_vel_deg,
+                                                               dock_data.map(_.proxy_ship.currentState.ang_vel).getOrElse(currentState.ang_vel),
+                                                               angular_velocity_error)
       seven.power = power
       seven.workTimeTacts = tacts
       seven.active = true
       nine.active = false
     } else if (difference < -angular_velocity_error) {
-      val (tacts, power) = {
-        dock_data.map(_.proxy_ship.maxPossiblePowerAndTactsForRotation(nine, ang_vel_deg))
-                        .getOrElse(maxPossiblePowerAndTactsForRotation(nine, ang_vel_deg))
-      }
+      val (tacts, power) = maxPossiblePowerAndTactsForRotation(nine.max_power,
+                                                               nine.force_dir,
+                                                               nine.position + dock_data.map(_.proxy_ship.coordDiff(index)).getOrElse(DVec.zero),
+                                                               dock_data.map(_.proxy_ship.currentState.I).getOrElse(currentState.I),
+                                                               ang_vel_deg,
+                                                               dock_data.map(_.proxy_ship.currentState.ang_vel).getOrElse(currentState.ang_vel),
+                                                               angular_velocity_error)
       nine.power = power
       nine.workTimeTacts = tacts
       nine.active = true
@@ -248,7 +266,7 @@ class Ship4(index: Int,
     if (ship_velocity_n - need_vel_n > n_diff) {
       val (tacts, power) = maxPossiblePowerForLinearMovement(eight.max_power,
                                                              eight.force_dir.y,
-                                                             mass,
+                                                             dock_data.map(_.proxy_ship.mass).getOrElse(mass),
                                                              need_vel_n,
                                                              ship_velocity_n,
                                                              n_diff)
@@ -260,7 +278,7 @@ class Ship4(index: Int,
     } else if (ship_velocity_n - need_vel_n < -n_diff) {
       val (tacts, power) = maxPossiblePowerForLinearMovement(two.max_power,
                                                              two.force_dir.y,
-                                                             mass,
+                                                             dock_data.map(_.proxy_ship.mass).getOrElse(mass),
                                                              need_vel_n,
                                                              ship_velocity_n,
                                                              n_diff)
@@ -274,7 +292,7 @@ class Ship4(index: Int,
     if (ship_velocity_p - need_vel_p > p_diff) {
       val (tacts, power) = maxPossiblePowerForLinearMovement(six.max_power,
                                                              six.force_dir.x,
-                                                             mass,
+                                                             dock_data.map(_.proxy_ship.mass).getOrElse(mass),
                                                              need_vel_p,
                                                              ship_velocity_p,
                                                              p_diff)
@@ -286,7 +304,7 @@ class Ship4(index: Int,
     } else if (ship_velocity_p - need_vel_p < -p_diff) {
       val (tacts, power) = maxPossiblePowerForLinearMovement(four.max_power,
                                                              four.force_dir.x,
-                                                             mass,
+                                                             dock_data.map(_.proxy_ship.mass).getOrElse(mass),
                                                              need_vel_p,
                                                              ship_velocity_p,
                                                              p_diff)

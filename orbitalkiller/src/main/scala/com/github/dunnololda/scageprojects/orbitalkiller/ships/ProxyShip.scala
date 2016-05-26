@@ -23,6 +23,14 @@ class ProxyShip(ship1:PolygonShip,
   lazy val ship2_draw_points = ship2.draw_points.map(_ + ship2_coord_diff)
   lazy val ship2_rotation_diff = ship2.rotation - ship1.rotation
 
+  def coordDiff(ship_index:Int):DVec = {
+    ship_index match {
+      case ship1.index => ship1_coord_diff
+      case ship2.index => ship2_coord_diff
+      case _ => DVec.zero
+    }
+  }
+
   val is_player = ship1.index == player_ship.index || ship2.index == player_ship.index
   
   def updateShipState(ship_index:Int): Unit = {
@@ -113,53 +121,6 @@ class ProxyShip(ship1:PolygonShip,
   override def kill(reason: String, crash: Boolean): Unit = {
     ship1.kill(reason, crash)
     ship2.kill(reason, crash)
-  }
-
-  /**
-   * Сколько тактов работы двигателя потребуется, чтобы достичь скорости to, при условии, что текущая скорость равна from,
-   * ускорение равно a, один такт равен dt секунд
-   *
-   * @param to - скорость, которой хотим достичь
-   * @param from - текущая скорость
-   * @param a - ускорение
-   * @param dt - сколько секунд в одном такте
-   * @return два значения: сколько тактов потребуется, какой значения скорости фактически достигнем
-   */
-  private def howManyTacts(to: Double, from: Double, a: Double, dt: Double): (Int, Double) = {
-    val tacts = ((to - from) / (a * dt)).toInt + 1
-    val result_to = from + tacts * a * dt
-    (tacts, result_to)
-  }
-
-  private val default_percent_seq = ((99.0 to 1.0 by -1.0) ++ (0.9 to 0.1 by -0.1)).view
-  def maxPossiblePowerAndTactsForRotation(e:Engine,
-                                          need_ang_vel: Double): (Int, Double) = {
-    val coord_diff = e.ship.index match {
-      case ship1.index => ship1_coord_diff
-      case ship2.index => ship2_coord_diff
-      case _ => DVec.zero
-    }
-    default_percent_seq.map {
-      case percent =>
-        val power = e.max_power * 0.01 * percent
-        val torque = (-e.force_dir * power) */ (e.position + coord_diff)
-        val ang_acc = (torque / currentState.I).toDeg
-        (howManyTacts(need_ang_vel, currentState.ang_vel, ang_acc, base_dt), power, percent)
-    }.find {
-      case ((tacts, result_ang_vel), power, percent) =>
-        //println(s"maxPossiblePowerAndTactsForRotation find: $power, $percent: ${math.abs(need_ang_vel - result_ang_vel)}")
-        val check = math.abs(need_ang_vel - result_ang_vel) < angular_velocity_error
-        /*if(check) {
-          println(s"maxPossiblePowerAndTactsForRotation = ($tacts, $power, $percent)")
-        }*/
-        check
-    }.map {
-      case ((tacts, result_to), power, percent) =>
-        (tacts, power)
-    }.getOrElse({
-      //println("maxPossiblePowerForRotation fallback")
-      (correction_check_period, e.max_power * 0.1)
-    })
   }
 
   override def drawShip(): Unit = {

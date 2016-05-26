@@ -100,20 +100,8 @@ class DockingPoints(val p1: DVec, val p2: DVec, ship: PolygonShip, val disabled_
     val vv1 = (dp.curP1 - dp.curP2).n * dock_dist
     val vv2 = vv1.perpendicular
 
-    val p1_on_the_right_way = checkAllConditions(
-      () => (curP1 - (dp.curP1 + vv1)).perpendicular * vv2 < 0 && (curP1 - (dp.curP1 - vv1)).perpendicular * vv2 > 0 /*,     // p1_inside_line
-      () => {                                                                                                         // p1_norm_speed
-        val x = dp.curP1vel - curP1vel
-        x * (curP1 - dp.curP1) > 0 && x.norma < 10
-      }*/
-    )
-    val p2_on_the_right_way = checkAllConditions(
-      () => (curP2 - (dp.curP2 + vv1)).perpendicular * vv2 < 0 && (curP2 - (dp.curP2 - vv1)).perpendicular * vv2 > 0 /*, // p2_inside_line
-      () => {                                                                                                         // p2_norm_speed
-        val x = dp.curP2vel - curP2vel
-        x * (curP2 - dp.curP2) > 0 && x.norma < 10
-      }*/
-    )
+    val p1_on_the_right_way = (curP1 - (dp.curP1 + vv1)).perpendicular * vv2 < 0 && (curP1 - (dp.curP1 - vv1)).perpendicular * vv2 > 0  // p1 inside line
+    val p2_on_the_right_way = (curP2 - (dp.curP2 + vv1)).perpendicular * vv2 < 0 && (curP2 - (dp.curP2 - vv1)).perpendicular * vv2 > 0  // p2_inside_line
     (p1_on_the_right_way, p2_on_the_right_way)
   }
 }
@@ -186,18 +174,13 @@ abstract class PolygonShip(
   def dock(): Unit = {
     possibleDockPointsWithNearestShip.headOption.foreach {
       case (dp, os, osdp) =>
-        /*val joint1 = system_evolution.addJoint(currentState, dp.p1, os.currentState, osdp.p1)
-        val joint2 = system_evolution.addJoint(currentState, dp.p2, os.currentState, osdp.p2)
-        val joints = List(joint1, joint2)*/
-        /*val joint = system_evolution.addJoint(currentState, dp.joint_point, os.currentState, osdp.joint_point)
-        val joints = List(joint)*/
         val correction = osdp.curP1 - dp.curP1
         currentState.coord += correction
         val proxy_ship = new ProxyShip(this, os, dp.part_of_shape, osdp.part_of_shape, dp, osdp)
         currentState.active = false
         os.currentState.active = false
-        setDocked(Some(DockData(os, /*joints, */dp, osdp, proxy_ship)))
-        os.setDocked(Some(DockData(this, /*joints, */osdp, dp, proxy_ship)))
+        setDocked(Some(DockData(os, dp, osdp, proxy_ship)))
+        os.setDocked(Some(DockData(this, osdp, dp, proxy_ship)))
         ship_interface.foreach(_.forceUpdate())
         os.ship_interface.foreach(_.forceUpdate())
     }
@@ -205,8 +188,7 @@ abstract class PolygonShip(
 
   def undock(): Unit = {
     dock_data.foreach {
-      case DockData(os, /*joints, */our_dp, other_ship_dp, proxy_ship) =>
-        //joints.foreach(system_evolution.removeJoint)
+      case DockData(os, our_dp, other_ship_dp, proxy_ship) =>
         proxy_ship.updateShipState(index)
         proxy_ship.updateShipState(os.index)
         currentState.active = true
