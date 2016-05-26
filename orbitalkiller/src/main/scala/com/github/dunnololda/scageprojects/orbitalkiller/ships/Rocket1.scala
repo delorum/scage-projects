@@ -186,8 +186,8 @@ class Rocket1(index: Int,
     is_static = false,
     is_bullet = true)
 
-  override def onCollision(): Unit = {
-    super.onCollision()
+  override def checkCriticalCollision(): Unit = {
+    super.checkCriticalCollision()
     currentState.contacts.foreach(c => {
       val obstacle = if (c.a.index != index) c.a else c.b
       ShipsHolder.shipByIndex(obstacle.index).foreach(s => {

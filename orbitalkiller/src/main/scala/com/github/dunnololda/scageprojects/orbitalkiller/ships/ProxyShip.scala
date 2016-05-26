@@ -124,7 +124,7 @@ class ProxyShip(ship1:PolygonShip,
     }
   }
   
-  override protected def _afterStepConsumeFuel() {
+  override protected def consumeFuel() {
     _engines.foreach(e => {
       if (e.active) {
         if (e.workTimeTacts > 0) {

@@ -281,8 +281,8 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
       if (collisions.nonEmpty) {
         collisions.foreach(c => {
           c.positionalCorrection(tacts)
-          ShipsHolder.shipByIndex(c.a.index).foreach(s => s.onCollision())
-          ShipsHolder.shipByIndex(c.b.index).foreach(s => s.onCollision())
+          ShipsHolder.shipByIndex(c.a.index).foreach(s => s.checkCriticalCollision())
+          ShipsHolder.shipByIndex(c.b.index).foreach(s => s.checkCriticalCollision())
         })
       }
     })
