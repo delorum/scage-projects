@@ -335,26 +335,25 @@ abstract class PolygonShip(
   // TODO: учитывать поворот корабля в proxy ship - обновлять force_dir!
   def drawEngine(e: Engine, coord_diff:DVec = DVec.zero, rotation_diff:Double = 0) {
     if (!dock_data.exists(_.our_dp.disabled_engine.exists(_ == e.index))) {
-      val r = {
-        if(rotation_diff.plusMinusOneEqual(-90)) -90
-        else if(rotation_diff.plusMinusOneEqual(90)) 90
-        else if(rotation_diff.plusMinusOneEqual(180)) 180
-        else if(rotation_diff.plusMinusOneEqual(-180)) -180
-        else 0
+      val force_dir = {
+        if(rotation_diff.plusMinusOneEqual(-90)) -e.force_dir.perpendicular
+        else if(rotation_diff.plusMinusOneEqual(90)) e.force_dir.perpendicular
+        else if(rotation_diff.plusMinusOneEqual(180)) e.force_dir*(-1)
+        else if(rotation_diff.plusMinusOneEqual(-180)) e.force_dir*(-1)
+        else e.force_dir
       }
-      val force_dir = e.force_dir.rotateDeg(r)
-      val is_vertical = force_dir.x.plusMinusOneEqual(0)
+      val is_vertical = force_dir.x == 0
       val (center, width, height) = force_dir match {
         case DVec(0, -1) =>
-          ((e.position + DVec(0, 0.25) * engine_size).rotateDeg(rotation_diff) + coord_diff, 1 * engine_size, 0.5 * engine_size)
+          ((e.position.rotateDeg(rotation_diff) + DVec(0, 0.25) * engine_size) + coord_diff, 1 * engine_size, 0.5 * engine_size)
         case DVec(0, 1) =>
-          ((e.position + DVec(0, -0.25) * engine_size).rotateDeg(rotation_diff) + coord_diff, 1 * engine_size, 0.5 * engine_size)
+          ((e.position.rotateDeg(rotation_diff) + DVec(0, -0.25) * engine_size) + coord_diff, 1 * engine_size, 0.5 * engine_size)
         case DVec(-1, 0) =>
-          ((e.position + DVec(0.25, 0) * engine_size).rotateDeg(rotation_diff) + coord_diff, 0.5 * engine_size, 1 * engine_size)
+          ((e.position.rotateDeg(rotation_diff) + DVec(0.25, 0) * engine_size) + coord_diff, 0.5 * engine_size, 1 * engine_size)
         case DVec(1, 0) =>
-          ((e.position + DVec(-0.25, 0) * engine_size).rotateDeg(rotation_diff) + coord_diff, 0.5 * engine_size, 1 * engine_size)
+          ((e.position.rotateDeg(rotation_diff) + DVec(-0.25, 0) * engine_size) + coord_diff, 0.5 * engine_size, 1 * engine_size)
         case _ =>
-          println(s"${e.ship.name} ${e.index} ${e.force_dir} $rotation_diff $r $force_dir")
+          println(s"${e.ship.name} ${e.index} ${e.force_dir} $rotation_diff $force_dir")
           throw new Exception("engine force dir other than vertical or horizontal is not supported")
       }
       print(e.index, (e.position.rotateDeg(rotation_diff) + coord_diff).toVec, (max_font_size/globalScale).toFloat, WHITE)
@@ -375,6 +374,7 @@ abstract class PolygonShip(
       }
 
       drawRectCentered(center, width, height, color = engineColor(e, in_shadow))
+      drawArrow(center, center + force_dir*radius/6, WHITE)
       if (isSelectedEngine(e)) drawRectCentered(center, width * 1.5, height * 1.5, color = engineColor(e, in_shadow))
       if (e.active && e.power > 0) {
         if (is_vertical) {
