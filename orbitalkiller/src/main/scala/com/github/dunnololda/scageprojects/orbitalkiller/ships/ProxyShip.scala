@@ -12,8 +12,7 @@ class ProxyShip(ship1:PolygonShip,
                 ship2:PolygonShip,
                 ship2_init_coord:DVec,
                 ship2_init_rotation:Double,
-                ship2_dp:DockingPoints,
-                ships_rotation_diff:Double) extends PolygonShip(
+                ship2_dp:DockingPoints) extends PolygonShip(
   ScageId.nextId,
   s"${ship1.name}-${ship2.name}",
   (ship1.mass*ship1.coord + ship2.mass*ship2.coord)/(ship1.mass + ship2.mass),
@@ -68,6 +67,49 @@ class ProxyShip(ship1:PolygonShip,
   }
 
   /**
+   * Все другие корабли, отсортированные по расстоянию по убыванию (первый - ближайший).
+   * @return
+   */
+  override def shipsNear: Seq[PolygonShip] = ShipsHolder.ships.filter(s => {
+    s.currentState.active &&
+    s.index != index &&
+    s.index != ship1.index && s.index != ship2.index &&
+    !dock_data.exists(dd => s.index != dd.dock_to_ship.index) &&
+    s.isAlive
+  }).sortBy(s => coord.dist2(s.coord))
+
+  /**
+   * Корабли ближе x км от нас. Метод используется для вычисления автоматического наведения ракет.
+   * @param x - расстояние в километрах
+   * @return
+   */
+  override def shipsCloserXKm(x: Long): Seq[PolygonShip] = ShipsHolder.ships.filter(s => {
+    s.currentState.active &&
+    s.index != index &&
+    s.index != ship1.index && s.index != ship2.index &&
+    !dock_data.exists(dd => s.index != dd.dock_to_ship.index) &&
+    s.isAlive &&
+    s.coord.dist2(coord) < x * 1000l * x * 1000l
+  }).sortBy(s => coord.dist2(s.coord))
+
+  /**
+   * Корабль ближе 500 км от нас, интерфейс которого не свернут. Если таких несколько, то ближайший.
+   * Метод используется в алогритмах автоматического уравнивания скорости, поддержания направления, стыковки
+   * @return
+   */
+  override def shipCloser500KmNonMinimized: Option[PolygonShip] = {
+    ShipsHolder.ships.filter(s => {
+      s.currentState.active &&
+      s.index != index &&
+      s.index != ship1.index && s.index != ship2.index &&
+      !dock_data.exists(dd => s.index != dd.dock_to_ship.index) &&
+      s.isAlive &&
+      s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l &&
+      s.shipInterface.exists(!_.isMinimized)
+    }).sortBy(s => coord.dist2(s.coord)).headOption
+  }
+
+  /**
    * Точки, обозначающие корпус корабля. Задаются координатами относительно центра масс. Фактическую координату точки в данный момент времени
    * можно получить, повернув на текущий угол и прибавив координату ц.м.
    * @return
@@ -109,7 +151,7 @@ class ProxyShip(ship1:PolygonShip,
     })
   }
 
-  override val engines_by_keycodes_map: Map[Int, Engine] = Map()
+  override val engines_by_keycodes: Map[Int, Engine] = Map()
 
   override def consumeFuel() {
     ship1.consumeFuel()
@@ -176,21 +218,23 @@ class ProxyShip(ship1:PolygonShip,
               case e => ship1.drawEngine(e, ship1_coord_diff)
             }
             ship2.engines.foreach {
-              case e => ship2.drawEngine(e, ship2_coord_diff) // TODO: скорее всего рисует неправильно
+              case e => ship2.drawEngine(e, ship2_coord_diff, ship2_rotation_diff)
             }
 
             if (OrbitalKiller.globalScale >= 0.8) {
               if(is_player) {
                 if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
-                  docking_points.foreach(dp => {
+                  shipCloser1Km.foreach(s => nearestDockingPoints(s.coord).foreach(dp => {
                     drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
                     drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
-                  })
+                  }))
                 }
               } else {
                 if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
-                  docking_points.foreach(dp => {
-                    val (p1_on_the_right_way, p2_on_the_right_way) = OrbitalKiller.player_ship.nearestDockingPoints(coord).map(_.pointsOnTheRightWay(dp)).getOrElse((false, false))
+                  shipCloser1Km.foreach(s => nearestDockingPoints(s.coord).foreach(dp => {
+                    val (p1_on_the_right_way, p2_on_the_right_way) = {
+                      shipCloser1Km.flatMap(_.nearestDockingPoints(coord).map(_.pointsOnTheRightWay(dp))).getOrElse((false, false))
+                    }
 
                     val c1 = if (p1_on_the_right_way) GREEN else RED
                     val c2 = if (p2_on_the_right_way) GREEN else RED
@@ -205,7 +249,7 @@ class ProxyShip(ship1:PolygonShip,
                     drawCircle(dp.p1, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
                     drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
                     drawCircle(dp.p2, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
-                  })
+                  }))
                 }
               }
             }

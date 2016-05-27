@@ -79,7 +79,7 @@ class SpaceStation2(index: Int,
 
   val engines = List(four, six, eight, two, one, three)
 
-  val engines_by_keycodes_map = Map(
+  val engines_by_keycodes = Map(
     KEY_NUMPAD4 -> four,
     KEY_NUMPAD6 -> six,
     KEY_NUMPAD8 -> eight,

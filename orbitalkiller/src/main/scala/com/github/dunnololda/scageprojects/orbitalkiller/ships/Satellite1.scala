@@ -90,7 +90,7 @@ class Satellite1(index: Int,
 
   val engines = List(two, eight, one, three, four, six)
 
-  val engines_by_keycodes_map = Map(
+  val engines_by_keycodes = Map(
     KEY_NUMPAD2 -> two,
     KEY_NUMPAD8 -> eight,
     KEY_NUMPAD1 -> one,

@@ -1,6 +1,6 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.ships
 
-import com.github.dunnololda.scage.support.DVec
+import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.{DockingPoints, PolygonShape, Engine, PolygonShip}
 
 class Cargo1(index: Int,
@@ -43,8 +43,7 @@ class Cargo1(index: Int,
 
   val docking_points = List(
     new DockingPoints(DVec(1.5, 2.5), DVec(-1.5, 2.5), this, None, List(
-      // |  |
-      // \__/
+      // 1 - 6
       DVec(-2.5, 2.5),
       DVec(-2.5, -1.5),
       DVec(-1.5, -2.5),
@@ -54,9 +53,17 @@ class Cargo1(index: Int,
     ))
   )
 
-  val engines = List()
+  val two = new Engine(2, DVec(0.0, -2.5), DVec(0.0, 1.0), 1000000, 1, 4, this)
+  val four = new Engine(4, DVec(-2.5, 0.0), DVec(1.0, 0.0), 1000000, 1, 4, this)
+  val six = new Engine(6, DVec(2.5, 0.0), DVec(-1.0, 0.0), 1000000, 1, 4, this)
 
-  val engines_by_keycodes_map: Map[Int, Engine] = Map()
+  val engines = List(two, four, six)
+
+  val engines_by_keycodes = Map(
+    KEY_NUMPAD2 -> two,
+    KEY_NUMPAD4 -> four,
+    KEY_NUMPAD6 -> six
+  )
 
   def preserveVelocity(vel:DVec) {}
   def preserveAngularVelocity(ang_vel_deg: Double) {}

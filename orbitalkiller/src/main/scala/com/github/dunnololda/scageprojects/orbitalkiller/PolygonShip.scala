@@ -135,7 +135,7 @@ abstract class PolygonShip(
   }
   
   def engines: List[Engine]
-  def engines_by_keycodes_map: Map[Int, Engine]
+  def engines_by_keycodes: Map[Int, Engine]
 
   /*def switchEngineActive(engine_code:Int) {
     //timeMultiplier = realtime
@@ -143,7 +143,7 @@ abstract class PolygonShip(
   }*/
 
   def selectOrSwitchEngineActive(key_code: Int) {
-    engines_by_keycodes_map.get(key_code).foreach(e => {
+    engines_by_keycodes.get(key_code).foreach(e => {
       if (selected_engine.exists(_ == e)) {
         e.switchActive()
       } else {
@@ -181,7 +181,7 @@ abstract class PolygonShip(
       case (dp, os, osdp) =>
         val correction = osdp.curP1 - dp.curP1
         currentState.coord += correction
-        val proxy_ship = new ProxyShip(this, coord, rotation, dp, os, os.coord, os.rotation, osdp, os.rotation - rotation)
+        val proxy_ship = new ProxyShip(this, coord, rotation, dp, os, os.coord, os.rotation, osdp)
         currentState.active = false
         os.currentState.active = false
         setDocked(Some(DockData(os, dp, osdp, proxy_ship)))
@@ -329,16 +329,21 @@ abstract class PolygonShip(
     max_size * e.power / e.max_power
   }
 
-  def drawEngine(e: Engine, coord_diff:DVec = DVec.zero) {
+  def drawEngine(e: Engine, coord_diff:DVec = DVec.zero, rotation_diff:Double = 0) {
     if (!dock_data.exists(_.our_dp.disabled_engine.exists(_ == e.index))) {
       val is_vertical = e.force_dir.x == 0
       val (center, width, height) = e.force_dir match {
-        case DVec(0, -1) => (e.position + coord_diff + DVec(0, 0.25) * engine_size, 1 * engine_size, 0.5 * engine_size)
-        case DVec(0, 1) => (e.position + coord_diff + DVec(0, -0.25) * engine_size, 1 * engine_size, 0.5 * engine_size)
-        case DVec(-1, 0) => (e.position + coord_diff + DVec(0.25, 0) * engine_size, 0.5 * engine_size, 1 * engine_size)
-        case DVec(1, 0) => (e.position + coord_diff + DVec(-0.25, 0) * engine_size, 0.5 * engine_size, 1 * engine_size)
+        case DVec(0, -1) =>
+          ((e.position + DVec(0, 0.25) * engine_size).rotateDeg(rotation_diff) + coord_diff, 1 * engine_size, 0.5 * engine_size)
+        case DVec(0, 1) =>
+          ((e.position + DVec(0, -0.25) * engine_size).rotateDeg(rotation_diff) + coord_diff, 1 * engine_size, 0.5 * engine_size)
+        case DVec(-1, 0) =>
+          ((e.position + DVec(0.25, 0) * engine_size).rotateDeg(rotation_diff) + coord_diff, 0.5 * engine_size, 1 * engine_size)
+        case DVec(1, 0) =>
+          ((e.position + DVec(-0.25, 0) * engine_size).rotateDeg(rotation_diff) + coord_diff, 0.5 * engine_size, 1 * engine_size)
         case _ => throw new Exception("engine force dir other than vertical or horizontal is not supported")
       }
+      print(e.index, (e.position.rotateDeg(rotation_diff) + coord_diff).toVec, (max_font_size/globalScale).toFloat, WHITE)
 
       val in_shadow = {
         // ниже код вычисляет, в тени находится двигатель или нет
@@ -605,7 +610,10 @@ abstract class PolygonShip(
    * @return
    */
   def shipsNear: Seq[PolygonShip] = ShipsHolder.ships.filter(s => {
-    s.index != index && !dock_data.exists(dd => s.index != dd.dock_to_ship.index) && s.isAlive
+    s.currentState.active &&
+    s.index != index &&
+    !dock_data.exists(dd => s.index != dd.dock_to_ship.index) &&
+    s.isAlive
   }).sortBy(s => coord.dist2(s.coord))
 
   /**
@@ -614,7 +622,11 @@ abstract class PolygonShip(
    * @return
    */
   def shipsCloserXKm(x: Long): Seq[PolygonShip] = ShipsHolder.ships.filter(s => {
-    s.index != index && !dock_data.exists(dd => s.index != dd.dock_to_ship.index) && s.isAlive && s.coord.dist2(coord) < x * 1000l * x * 1000l
+    s.currentState.active &&
+    s.index != index &&
+    !dock_data.exists(dd => s.index != dd.dock_to_ship.index) &&
+    s.isAlive &&
+    s.coord.dist2(coord) < x * 1000l * x * 1000l
   }).sortBy(s => coord.dist2(s.coord))
 
   /**
@@ -638,6 +650,7 @@ abstract class PolygonShip(
    */
   def shipCloser500KmNonMinimized: Option[PolygonShip] = {
     ShipsHolder.ships.filter(s => {
+      s.currentState.active &&
       s.index != index &&
       !dock_data.exists(dd => s.index != dd.dock_to_ship.index) &&
       s.isAlive &&
