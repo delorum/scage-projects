@@ -73,42 +73,8 @@ class Ship4(index: Int,
   )
 
   val docking_points = List(
-    new DockingPoints(DVec(-1.5, 9.5), DVec(1.5, 9.5), this, Some(8), List(
-      DVec(-1.5, 9.5),
-      DVec(-1.5, 5.5),
-      DVec(-3.5, 1.5),
-      DVec(-3.5, -1.5),
-      DVec(-4.5, -2.5),
-      DVec(-4.5, -4.5),
-      DVec(-3.5, -4.5),
-      DVec(-2.5, -5.5),
-      DVec(2.5, -5.5),
-      DVec(3.5, -4.5),
-      DVec(4.5, -4.5),
-      DVec(4.5, -2.5),
-      DVec(3.5, -1.5),
-      DVec(3.5, 1.5),
-      DVec(1.5, 5.5),
-      DVec(1.5, 9.5)
-    )),
-    new DockingPoints(DVec(1.5, -5.5), DVec(-1.5, -5.5), this, Some(2), List(
-      DVec(2.5, -5.5),
-      DVec(3.5, -4.5),
-      DVec(4.5, -4.5),
-      DVec(4.5, -2.5),
-      DVec(3.5, -1.5),
-      DVec(3.5, 1.5),
-      DVec(1.5, 5.5),
-      DVec(1.5, 9.5),
-      DVec(-1.5, 9.5),
-      DVec(-1.5, 5.5),
-      DVec(-3.5, 1.5),
-      DVec(-3.5, -1.5),
-      DVec(-4.5, -2.5),
-      DVec(-4.5, -4.5),
-      DVec(-3.5, -4.5),
-      DVec(-2.5, -5.5)
-    ))
+    new DockingPoints(DVec(-1.5, 9.5), DVec(1.5, 9.5), this, Some(8), createOrderedHull(List(7 -> 16, 1 -> 6))),
+    new DockingPoints(DVec(1.5, -5.5), DVec(-1.5, -5.5), this, Some(2), createOrderedHull(List(15 -> 16, 1 -> 14)))
   )
 
   // миллион ньютонов тяги при расходе 4 килограмма в секунду - это соответствует скорости истечения газов 250 км/сек
@@ -805,7 +771,7 @@ class Ship4(index: Int,
                 drawFilledCircle(d.our_dp.p2, 0.3, colorIfPlayerAliveOrRed(GREEN))
               })
             } else if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
-              shipCloser1Km.foreach(s => nearestDockingPoints(s.coord).foreach(dp => {
+              shipCloser500KmNonMinimized.foreach(s => nearestDockingPoints(s.coord).foreach(dp => {
                 drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
                 drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
               }))

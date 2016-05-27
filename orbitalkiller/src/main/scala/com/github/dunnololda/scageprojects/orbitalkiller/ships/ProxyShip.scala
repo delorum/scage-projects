@@ -22,6 +22,7 @@ class ProxyShip(ship1:PolygonShip,
   println(s"init_rotation=$init_rotation")
   println(s"ship1_init_coord=$ship1_init_coord")
   println(s"ship2_init_coord=$ship2_init_coord")
+  println(s"ship2_rotation_diff=$ship2_rotation_diff")
   println(s"init_coord=$init_coord")
 
   lazy val ship1_coord_diff = (ship1_init_coord - init_coord).rotateDeg(-init_rotation)
@@ -74,7 +75,7 @@ class ProxyShip(ship1:PolygonShip,
     s.currentState.active &&
     s.index != index &&
     s.index != ship1.index && s.index != ship2.index &&
-    !dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index) &&
+    !dock_data.exists(dd => s.index == dd.dock_to_ship.index || s.index == dd.proxy_ship.index) &&
     s.isAlive
   }).sortBy(s => coord.dist2(s.coord))
 
@@ -87,7 +88,7 @@ class ProxyShip(ship1:PolygonShip,
     s.currentState.active &&
     s.index != index &&
     s.index != ship1.index && s.index != ship2.index &&
-    !dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index) &&
+    !dock_data.exists(dd => s.index == dd.dock_to_ship.index || s.index == dd.proxy_ship.index) &&
     s.isAlive &&
     s.coord.dist2(coord) < x * 1000l * x * 1000l
   }).sortBy(s => coord.dist2(s.coord))
@@ -102,7 +103,7 @@ class ProxyShip(ship1:PolygonShip,
       s.currentState.active &&
       s.index != index &&
       s.index != ship1.index && s.index != ship2.index &&
-      !dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index) &&
+      !dock_data.exists(dd => s.index == dd.dock_to_ship.index || s.index == dd.proxy_ship.index) &&
       s.isAlive &&
       s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l &&
       s.shipInterface.exists(!_.isMinimized)
@@ -173,6 +174,8 @@ class ProxyShip(ship1:PolygonShip,
       }
     }
   }
+
+  // TODO: направления двигателей ship2 могут меняться - зависят от ship2_rotation_diff. Но пока нет логики управления этими двигателями, не важно
 
   override def currentReactiveForce(time: Long, bs: BodyState): DVec = {
     ship1.currentReactiveForce(time, bs) + ship2.currentReactiveForce(time, bs)
@@ -246,7 +249,7 @@ class ProxyShip(ship1:PolygonShip,
                   }))
                 }
               } else {
-                if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
+                if (InterfaceHolder.dockingSwitcher.dockingEnabled && ship_interface.exists(!_.isMinimized)) {
                   shipCloser1Km.foreach(s => nearestDockingPoints(s.coord).foreach(dp => {
                     val (p1_on_the_right_way, p2_on_the_right_way) = {
                       shipCloser1Km.flatMap(_.nearestDockingPoints(coord).map(_.pointsOnTheRightWay(dp))).getOrElse((false, false))

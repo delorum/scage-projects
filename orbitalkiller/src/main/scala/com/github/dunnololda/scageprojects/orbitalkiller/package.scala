@@ -1913,4 +1913,8 @@ package object orbitalkiller {
     else if (conditions.head()) checkAllConditions(conditions.tail: _*)
     else false
   }
+
+  implicit class MyDouble(d:Double) {
+    def plusMinusOneEqual(x:Double):Boolean = math.abs(d - x) < 1
+  }
 }

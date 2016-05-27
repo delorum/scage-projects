@@ -25,19 +25,19 @@ class SpaceStation2(index: Int,
 
   lazy val engine_size: Double = 10
 
-  lazy val points: List[DVec] = List(
-    DVec(-90.0, -10.0),
-    DVec(-130.0, -10.0),
-    DVec(-130.0, 10.0),
-    DVec(-90.0, 10.0),
-    DVec(-50.0, 30.0),
-    DVec(50.0, 30.0),
-    DVec(90.0, 10.0),
-    DVec(130.0, 10.0),
-    DVec(130.0, -10.0),
-    DVec(90.0, -10.0),
+  lazy val points:List[DVec] = List(
+    DVec(-50.0, -30.0),
     DVec(50.0, -30.0),
-    DVec(-50.0, -30.0)
+    DVec(90.0, -10.0),
+    DVec(130.0, -10.0),
+    DVec(130.0, 10.0),
+    DVec(90.0, 10.0),
+    DVec(50.0, 30.0),
+    DVec(-50.0, 30.0),
+    DVec(-90.0, 10.0),
+    DVec(-130.0, 10.0),
+    DVec(-130.0, -10.0),
+    DVec(-90.0, -10.0)
   )
 
   lazy val convex_parts = List(
@@ -67,8 +67,10 @@ class SpaceStation2(index: Int,
     PolygonShape(List(DVec(100.0, -10.0), DVec(130.0, -10.0), DVec(130.0, 10.0), DVec(120.0, 10.0)), Nil)
   )
 
-  val docking_points = List(new DockingPoints(DVec(-130.0, 1.5), DVec(-130.0, -1.5), this, Some(4), Nil),
-    new DockingPoints(DVec(130.0, -1.5), DVec(130.0, 1.5), this, Some(6), Nil))
+  val docking_points = List(
+    new DockingPoints(DVec(-130.0, 1.5), DVec(-130.0, -1.5), this, Some(4), createOrderedHull(List(11 -> 12, 1 -> 10))),
+    new DockingPoints(DVec(130.0, -1.5), DVec(130.0, 1.5), this, Some(6), createOrderedHull(List(5 -> 12, 1 -> 4)))
+  )
 
   val four = new Engine(4, Vec(-130.0, 0.0), Vec(1.0, 0.0), 10, 1, 4, this)
   val six = new Engine(6, Vec(130.0, 0.0), Vec(-1.0, 0.0), 10, 1, 4, this)

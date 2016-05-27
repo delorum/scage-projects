@@ -42,15 +42,7 @@ class Cargo1(index: Int,
   )
 
   val docking_points = List(
-    new DockingPoints(DVec(1.5, 2.5), DVec(-1.5, 2.5), this, None, List(
-      // 1 - 6
-      DVec(-2.5, 2.5),
-      DVec(-2.5, -1.5),
-      DVec(-1.5, -2.5),
-      DVec(1.5, -2.5),
-      DVec(2.5, -1.5),
-      DVec(2.5, 2.5)
-    ))
+    new DockingPoints(DVec(1.5, 2.5), DVec(-1.5, 2.5), this, None, createOrderedHull(List(1 -> 6)))
   )
 
   val two = new Engine(2, DVec(0.0, -2.5), DVec(0.0, 1.0), 1000000, 1, 4, this)

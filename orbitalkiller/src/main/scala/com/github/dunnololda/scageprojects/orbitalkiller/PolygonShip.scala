@@ -165,6 +165,9 @@ abstract class PolygonShip(
   def wreck_parts: List[PolygonShape]
 
   def docking_points: List[DockingPoints]
+  def createOrderedHull(order:List[(Int, Int)]):List[DVec] = order.flatMap {
+    case ((from, to)) => points.drop(from-1).take(to)
+  }
 
   protected var dock_data: Option[DockData] = None
 
@@ -329,6 +332,7 @@ abstract class PolygonShip(
     max_size * e.power / e.max_power
   }
 
+  // TODO: учитывать поворот корабля в proxy ship - обновлять force_dir!
   def drawEngine(e: Engine, coord_diff:DVec = DVec.zero, rotation_diff:Double = 0) {
     if (!dock_data.exists(_.our_dp.disabled_engine.exists(_ == e.index))) {
       val is_vertical = e.force_dir.x == 0
@@ -409,7 +413,7 @@ abstract class PolygonShip(
                 drawFilledCircle(d.our_dp.p1, 0.3, colorIfPlayerAliveOrRed(GREEN))
                 drawFilledCircle(d.our_dp.p2, 0.3, colorIfPlayerAliveOrRed(GREEN))
               })
-            } else if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
+            } else if (InterfaceHolder.dockingSwitcher.dockingEnabled && ship_interface.exists(!_.isMinimized)) {
               shipCloser1Km.foreach(s => nearestDockingPoints(s.coord).foreach(dp => {
                 val (p1_on_the_right_way, p2_on_the_right_way) = {
                   shipCloser1Km.flatMap(_.nearestDockingPoints(coord).map(_.pointsOnTheRightWay(dp))).getOrElse((false, false))
@@ -612,7 +616,7 @@ abstract class PolygonShip(
   def shipsNear: Seq[PolygonShip] = ShipsHolder.ships.filter(s => {
     s.currentState.active &&
     s.index != index &&
-    !dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index) &&
+    !dock_data.exists(dd => s.index == dd.dock_to_ship.index || s.index == dd.proxy_ship.index) &&
     s.isAlive
   }).sortBy(s => coord.dist2(s.coord))
 
@@ -624,7 +628,7 @@ abstract class PolygonShip(
   def shipsCloserXKm(x: Long): Seq[PolygonShip] = ShipsHolder.ships.filter(s => {
     s.currentState.active &&
     s.index != index &&
-    !dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index) &&
+      !dock_data.exists(dd => s.index == dd.dock_to_ship.index || s.index == dd.proxy_ship.index) &&
     s.isAlive &&
     s.coord.dist2(coord) < x * 1000l * x * 1000l
   }).sortBy(s => coord.dist2(s.coord))
@@ -649,14 +653,21 @@ abstract class PolygonShip(
    * @return
    */
   def shipCloser500KmNonMinimized: Option[PolygonShip] = {
-    ShipsHolder.ships.filter(s => {
+    def _check(s:PolygonShip):Boolean = {
+      /*println(s"${s.name} s.currentState.active = ${s.currentState.active}")
+      println(s"${s.name} s.index != index = ${s.index != index}")
+      println(s"${s.name} !dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index) = ${!dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index)}")
+      println(s"${s.name} s.isAlive = ${s.isAlive}")
+      println(s"${s.name} s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l = ${s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l}")
+      println(s"${s.name} s.shipInterface.exists(!_.isMinimized) = ${s.shipInterface.exists(!_.isMinimized)}")*/
       s.currentState.active &&
       s.index != index &&
-      !dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index) &&
+      !dock_data.exists(dd => s.index == dd.dock_to_ship.index || s.index == dd.proxy_ship.index) &&
       s.isAlive &&
       s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l &&
       s.shipInterface.exists(!_.isMinimized)
-    }).sortBy(s => coord.dist2(s.coord)).headOption
+    }
+    ShipsHolder.ships.filter(s => _check(s)).sortBy(s => coord.dist2(s.coord)).headOption
   }
 
   /**
@@ -913,7 +924,7 @@ abstract class PolygonShip(
     is_static = false)
 
   lazy val currentState: MutableBodyState = initState.toMutableBodyState
-  private var ship_interface:Option[OtherShipInfo] = None
+  protected var ship_interface:Option[OtherShipInfo] = None
   def shipInterface:Option[OtherShipInfo] = ship_interface
   if(!ship_designer) {
     ShipsHolder.addShip(this)
