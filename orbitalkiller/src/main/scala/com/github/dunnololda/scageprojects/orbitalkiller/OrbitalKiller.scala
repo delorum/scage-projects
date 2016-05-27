@@ -274,7 +274,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   val player_ship = new Ship4(ScageId.nextId,
     init_coord = ship_start_position,
     init_velocity = ship_init_velocity,
-    init_rotation = 180
+    init_rotation = 45
   )
 
   // на круговой орбите в 200 км от поверхности Земли
@@ -328,7 +328,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   val cargo1 = new Cargo1(ScageId.nextId,
     init_coord = cargo1_start_position,
     init_velocity = cargo1_init_velocity,
-    init_rotation = 0)
+    init_rotation = 45)
 
   def nameByIndex(index: Int): Option[String] = {
     planets.get(index) match {

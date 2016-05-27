@@ -495,7 +495,7 @@ class Ship4(index: Int,
                         val vv1 = (osdp.curP1 - osdp.curP2).n
                         val docking_point = osdp.curP1 + 0.5 * (osdp.curP2 - osdp.curP1)
                         val docking_dir = -vv1.perpendicular
-                        val angle = DVec(0, 1).deg360(docking_dir)
+                        val angle = dp.dock_dir.deg360(docking_dir)
                         if (angleMinDiff(rotation, angle) < angle_error) {
                           if (math.abs(angularVelocity) < angular_velocity_error) {
                             val A = ship_docking_point.x
@@ -805,10 +805,14 @@ class Ship4(index: Int,
                 drawFilledCircle(d.our_dp.p2, 0.3, colorIfPlayerAliveOrRed(GREEN))
               })
             } else if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
-              docking_points.foreach(dp => {
+              shipCloser1Km.foreach(s => nearestDockingPoints(s.coord).foreach(dp => {
                 drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
                 drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
-              })
+              }))
+              /*docking_points.foreach(dp => {
+                drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
+                drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
+              })*/
             }
           }
 
