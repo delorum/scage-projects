@@ -335,8 +335,16 @@ abstract class PolygonShip(
   // TODO: учитывать поворот корабля в proxy ship - обновлять force_dir!
   def drawEngine(e: Engine, coord_diff:DVec = DVec.zero, rotation_diff:Double = 0) {
     if (!dock_data.exists(_.our_dp.disabled_engine.exists(_ == e.index))) {
-      val is_vertical = e.force_dir.x == 0
-      val (center, width, height) = e.force_dir match {
+      val r = {
+        if(rotation_diff.plusMinusOneEqual(-90)) -90
+        else if(rotation_diff.plusMinusOneEqual(90)) 90
+        else if(rotation_diff.plusMinusOneEqual(180)) 180
+        else if(rotation_diff.plusMinusOneEqual(-180)) -180
+        else 0
+      }
+      val force_dir = e.force_dir.rotateDeg(r)
+      val is_vertical = force_dir.x.plusMinusOneEqual(0)
+      val (center, width, height) = force_dir match {
         case DVec(0, -1) =>
           ((e.position + DVec(0, 0.25) * engine_size).rotateDeg(rotation_diff) + coord_diff, 1 * engine_size, 0.5 * engine_size)
         case DVec(0, 1) =>
@@ -345,7 +353,9 @@ abstract class PolygonShip(
           ((e.position + DVec(0.25, 0) * engine_size).rotateDeg(rotation_diff) + coord_diff, 0.5 * engine_size, 1 * engine_size)
         case DVec(1, 0) =>
           ((e.position + DVec(-0.25, 0) * engine_size).rotateDeg(rotation_diff) + coord_diff, 0.5 * engine_size, 1 * engine_size)
-        case _ => throw new Exception("engine force dir other than vertical or horizontal is not supported")
+        case _ =>
+          println(s"${e.ship.name} ${e.index} ${e.force_dir} $rotation_diff $r $force_dir")
+          throw new Exception("engine force dir other than vertical or horizontal is not supported")
       }
       print(e.index, (e.position.rotateDeg(rotation_diff) + coord_diff).toVec, (max_font_size/globalScale).toFloat, WHITE)
 
@@ -385,6 +395,7 @@ abstract class PolygonShip(
     }
   }
 
+  // TODO: зарефакторить этот метод: вынести его отдельные элементы в отдельные методы и оверрайдить их в потомках при необходимости.
   protected def drawShip(): Unit = {
     if (dock_data.isEmpty && !drawMapMode && coord.dist2(player_ship.coord) < 100000 * 100000) {
       if (isAlive) {

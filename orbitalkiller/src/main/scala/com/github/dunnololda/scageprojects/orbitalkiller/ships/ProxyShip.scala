@@ -178,15 +178,24 @@ class ProxyShip(ship1:PolygonShip,
   // TODO: направления двигателей ship2 могут меняться - зависят от ship2_rotation_diff. Но пока нет логики управления этими двигателями, не важно
 
   override def currentReactiveForce(time: Long, bs: BodyState): DVec = {
-    ship1.currentReactiveForce(time, bs) + ship2.currentReactiveForce(time, bs)
+    ship1.currentReactiveForce(time, bs) +
+    ship2.engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(DVec.dzero) {
+      case (sum, e) => sum + (e.force_dir.rotateDeg(ship2_rotation_diff)*e.power).rotateDeg(bs.ang)
+    }
   }
 
   override def currentReactiveForce(tacts: Long, bs: MutableBodyState): DVec = {
-    ship1.currentReactiveForce(tacts, bs) + ship2.currentReactiveForce(tacts, bs)
+    ship1.currentReactiveForce(tacts, bs) +
+    ship2.engines.filter(e => e.active && tacts < e.stopMomentTacts).foldLeft(DVec.dzero) {
+      case (sum, e) => sum + (e.force_dir.rotateDeg(ship2_rotation_diff)*e.power).rotateDeg(bs.ang)
+    }
   }
 
   override def currentTorque(time: Long, coord_diff:DVec = DVec.zero): Double = {
-    ship1.currentTorque(time, coord_diff + ship1_coord_diff) + ship2.currentTorque(time, coord_diff + ship2_coord_diff)
+    ship1.currentTorque(time, coord_diff + ship1_coord_diff) +
+    ship2.engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0.0) {
+      case (sum, e) => sum + (-(e.force_dir.rotateDeg(ship2_rotation_diff)*e.power) */ (e.position + coord_diff + ship2_coord_diff))
+    }
   }
 
   override def kill(reason: String, crash: Boolean): Unit = {
