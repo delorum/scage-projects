@@ -343,20 +343,20 @@ class Ship4(index: Int,
     if (x > 180) 360 - x else x
   }
 
-  override def afterStep(time_msec: Long): Unit = {
-    super.afterStep(time_msec)
-    if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
-      if (canDockWithNearestShip && notDocked &&
-        (InterfaceHolder.dockingSwitcher.dockingAuto || (InterfaceHolder.dockingSwitcher.dockingManual && InterfaceHolder.dockUndock.needDock))) {
-        dock()
-        if (isDocked) {
-          InterfaceHolder.dockUndock.setDocked()
-          InterfaceHolder.dockingSwitcher.setDockingManual()
-        }
-      }
-    }
-    if (isDocked && InterfaceHolder.dockUndock.needUndock) {
-      undock()
+  override def tryDock:Boolean = {
+    InterfaceHolder.dockingSwitcher.dockingEnabled && canDockWithNearestShip && notDocked &&
+    (InterfaceHolder.dockingSwitcher.dockingAuto || (InterfaceHolder.dockingSwitcher.dockingManual && InterfaceHolder.dockUndock.needDock))
+  }
+
+  override def tryUndock:Boolean = {
+    isDocked && InterfaceHolder.dockUndock.needUndock
+  }
+
+  override def dock(): Unit = {
+    super.dock()
+    if (isDocked) {
+      InterfaceHolder.dockUndock.setDocked()
+      InterfaceHolder.dockingSwitcher.setDockingManual()
     }
   }
 

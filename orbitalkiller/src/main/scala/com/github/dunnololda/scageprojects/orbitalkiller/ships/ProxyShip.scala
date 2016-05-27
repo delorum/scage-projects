@@ -74,7 +74,7 @@ class ProxyShip(ship1:PolygonShip,
     s.currentState.active &&
     s.index != index &&
     s.index != ship1.index && s.index != ship2.index &&
-    !dock_data.exists(dd => s.index != dd.dock_to_ship.index) &&
+    !dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index) &&
     s.isAlive
   }).sortBy(s => coord.dist2(s.coord))
 
@@ -87,7 +87,7 @@ class ProxyShip(ship1:PolygonShip,
     s.currentState.active &&
     s.index != index &&
     s.index != ship1.index && s.index != ship2.index &&
-    !dock_data.exists(dd => s.index != dd.dock_to_ship.index) &&
+    !dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index) &&
     s.isAlive &&
     s.coord.dist2(coord) < x * 1000l * x * 1000l
   }).sortBy(s => coord.dist2(s.coord))
@@ -102,12 +102,15 @@ class ProxyShip(ship1:PolygonShip,
       s.currentState.active &&
       s.index != index &&
       s.index != ship1.index && s.index != ship2.index &&
-      !dock_data.exists(dd => s.index != dd.dock_to_ship.index) &&
+      !dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index) &&
       s.isAlive &&
       s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l &&
       s.shipInterface.exists(!_.isMinimized)
     }).sortBy(s => coord.dist2(s.coord)).headOption
   }
+
+  override def tryDock:Boolean = ship1.tryDock || ship2.tryDock
+  override def tryUndock:Boolean = ship1.tryUndock || ship2.tryUndock
 
   /**
    * Точки, обозначающие корпус корабля. Задаются координатами относительно центра масс. Фактическую координату точки в данный момент времени
@@ -156,6 +159,19 @@ class ProxyShip(ship1:PolygonShip,
   override def consumeFuel() {
     ship1.consumeFuel()
     ship2.consumeFuel()
+  }
+
+  override def checkDockingSituation(): Unit = {
+    if(tryDock) {
+      dock()
+    }
+    if(tryUndock) {
+      if(dock_data.nonEmpty) {
+        undock()
+      } else {
+        ship1.undock()
+      }
+    }
   }
 
   override def currentReactiveForce(time: Long, bs: BodyState): DVec = {

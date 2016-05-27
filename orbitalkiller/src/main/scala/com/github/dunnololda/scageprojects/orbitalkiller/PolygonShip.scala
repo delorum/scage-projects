@@ -612,7 +612,7 @@ abstract class PolygonShip(
   def shipsNear: Seq[PolygonShip] = ShipsHolder.ships.filter(s => {
     s.currentState.active &&
     s.index != index &&
-    !dock_data.exists(dd => s.index != dd.dock_to_ship.index) &&
+    !dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index) &&
     s.isAlive
   }).sortBy(s => coord.dist2(s.coord))
 
@@ -624,7 +624,7 @@ abstract class PolygonShip(
   def shipsCloserXKm(x: Long): Seq[PolygonShip] = ShipsHolder.ships.filter(s => {
     s.currentState.active &&
     s.index != index &&
-    !dock_data.exists(dd => s.index != dd.dock_to_ship.index) &&
+    !dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index) &&
     s.isAlive &&
     s.coord.dist2(coord) < x * 1000l * x * 1000l
   }).sortBy(s => coord.dist2(s.coord))
@@ -652,7 +652,7 @@ abstract class PolygonShip(
     ShipsHolder.ships.filter(s => {
       s.currentState.active &&
       s.index != index &&
-      !dock_data.exists(dd => s.index != dd.dock_to_ship.index) &&
+      !dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index) &&
       s.isAlive &&
       s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l &&
       s.shipInterface.exists(!_.isMinimized)
@@ -670,6 +670,9 @@ abstract class PolygonShip(
       })
     })
   }
+
+  def tryDock:Boolean = false
+  def tryUndock:Boolean = false
 
   def possibleDockPointsWithNearestShip: List[(DockingPoints, PolygonShip, DockingPoints)] = {
     for {
@@ -1074,6 +1077,15 @@ abstract class PolygonShip(
     })
   }
 
+  def checkDockingSituation(): Unit = {
+    if (tryDock) {
+      dock()
+    }
+    if (tryUndock) {
+      undock()
+    }
+  }
+
   /**
    * В этом методе мы:
    * проверяем, не произошло ли столкновение со скоростью больше 10 м/сек, если да, разваливаемся на части
@@ -1105,6 +1117,7 @@ abstract class PolygonShip(
       checkEnginesPower(reactive_force)
     }
     consumeFuel()
+    checkDockingSituation()
   }
 
   def syncOtherEnginesPower(except_engine:Int): Unit = {
