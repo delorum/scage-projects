@@ -110,7 +110,7 @@ class Satellite2(index: Int,
     PolygonShape(List(DVec(52.5, -2.5), DVec(57.5, -7.5), DVec(62.5, -7.5), DVec(62.5, 2.5)), Nil)  // 39
   )
 
-  val docking_points = List(new DockingPoints(DVec(1.5, 52.5), DVec(-1.5, 52.5), this, Some(8)))
+  val docking_points = List(new DockingPoints(DVec(1.5, 52.5), DVec(-1.5, 52.5), this, Some(8), Nil))
 
   val eight = new Engine(8, position = DVec(0.0, 52.5), force_dir = DVec(0.0, -1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
   val two = new Engine(2, position = DVec(0.0, -12.5), force_dir = DVec(0.0, 1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
@@ -121,7 +121,7 @@ class Satellite2(index: Int,
 
   val engines = List(eight, two, four, six, seven, nine)
 
-  val engines_mapping = Map(
+  val engines_by_keycodes = Map(
     KEY_NUMPAD8 -> eight,
     KEY_NUMPAD2 -> two,
     KEY_NUMPAD4 -> four,

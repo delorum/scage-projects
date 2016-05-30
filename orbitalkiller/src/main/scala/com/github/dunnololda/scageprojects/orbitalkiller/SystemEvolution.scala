@@ -135,7 +135,7 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
   private val collision_exclusions = mutable.HashMap[Int, mutable.HashSet[Int]]()
 
   def addCollisionExclusion(index1: Int, index2: Int): Unit = {
-    if (index1 != index2) {                                                ship
+    if (index1 != index2) {
       if (index1 < index2) {
         collision_exclusions.getOrElseUpdate(index1, mutable.HashSet[Int]()) += index2
       } else {
@@ -281,8 +281,8 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
       if (collisions.nonEmpty) {
         collisions.foreach(c => {
           c.positionalCorrection(tacts)
-          ShipsHolder.shipByIndex(c.a.index).foreach(s => s.onCollision())
-          ShipsHolder.shipByIndex(c.b.index).foreach(s => s.onCollision())
+          ShipsHolder.shipByIndex(c.a.index).foreach(s => s.checkCriticalCollision())
+          ShipsHolder.shipByIndex(c.b.index).foreach(s => s.checkCriticalCollision())
         })
       }
     })

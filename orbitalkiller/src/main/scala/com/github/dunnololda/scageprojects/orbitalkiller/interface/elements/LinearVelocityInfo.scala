@@ -8,7 +8,7 @@ class LinearVelocityInfo extends InterfaceElement {
   private val strings = Array(f"Линейная скорость: ${player_ship.velocityStr}")
 
   override protected def _update(): Unit = {
-    strings(0) = f"Линейная скорость: ${player_ship.velocityStr}"
+    strings(0) = f"Линейная скорость: ${player_ship.thisOrActualProxyShipVelocityStr}"
   }
 
   override def data: Seq[String] = strings

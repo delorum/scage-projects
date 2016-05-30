@@ -106,7 +106,7 @@ class Rocket1(index: Int,
 
   val engines = List(two)
 
-  val engines_mapping = Map(
+  val engines_by_keycodes = Map(
     KEY_NUMPAD2 -> two
   )
 
@@ -115,7 +115,7 @@ class Rocket1(index: Int,
   def preserveAngularVelocity(ang_vel_deg: Double) {}
 
   override protected def drawShip(): Unit = {
-    if (!drawMapMode) {
+    if (!drawMapMode && dockData.isEmpty) {
       if (isAlive) {
         openglLocalTransform {
           openglMove(coord - base)
@@ -186,8 +186,8 @@ class Rocket1(index: Int,
     is_static = false,
     is_bullet = true)
 
-  override def onCollision(): Unit = {
-    super.onCollision()
+  override def checkCriticalCollision(): Unit = {
+    super.checkCriticalCollision()
     currentState.contacts.foreach(c => {
       val obstacle = if (c.a.index != index) c.a else c.b
       ShipsHolder.shipByIndex(obstacle.index).foreach(s => {

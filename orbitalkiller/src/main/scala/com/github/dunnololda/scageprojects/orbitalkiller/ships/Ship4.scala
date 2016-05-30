@@ -73,8 +73,8 @@ class Ship4(index: Int,
   )
 
   val docking_points = List(
-    new DockingPoints(DVec(-1.5, 9.5), DVec(1.5, 9.5), this, Some(8)),
-    new DockingPoints(DVec(1.5, -5.5), DVec(-1.5, -5.5), this, Some(2))
+    new DockingPoints(DVec(-1.5, 9.5), DVec(1.5, 9.5), this, Some(8), createOrderedHull(List(7 -> 16, 1 -> 6))),
+    new DockingPoints(DVec(1.5, -5.5), DVec(-1.5, -5.5), this, Some(2), createOrderedHull(List(15 -> 16, 1 -> 14)))
   )
 
   // миллион ньютонов тяги при расходе 4 килограмма в секунду - это соответствует скорости истечения газов 250 км/сек
@@ -90,7 +90,7 @@ class Ship4(index: Int,
 
   val engines = List(four, six, seven, nine, eight, two, one, three)
 
-  val engines_mapping = Map(
+  val engines_by_keycodes = Map(
     KEY_NUMPAD4 -> four,
     KEY_NUMPAD6 -> six,
     KEY_NUMPAD7 -> seven,
@@ -114,16 +114,7 @@ class Ship4(index: Int,
   private def howManyTacts(to: Double, from: Double, a: Double, dt: Double): (Int, Double) = {
     val tacts = ((to - from) / (a * dt)).toInt + 1
     val result_to = from + tacts * a * dt
-    //println(s"$from -> $to : $result_to : $tacts")
     (tacts, result_to)
-    /*if(a == 0) tacts
-    else if(a > 0) {
-      if(from >= to) tacts
-      else howManyTacts(to, from + a*dt, a, base_dt, tacts+1)
-    } else {
-      if(from <= to) tacts
-      else howManyTacts(to, from + a*dt, a, base_dt, tacts+1)
-    }*/
   }
 
   private val default_percent_seq = ((99.0 to 1.0 by -1.0) ++ (0.9 to 0.1 by -0.1)).view
@@ -175,7 +166,7 @@ class Ship4(index: Int,
         (tacts, power)
     }.getOrElse({
       //println("maxPossiblePowerForLinearMovement fallback")
-      (1000, max_power * 0.01)
+      (correction_check_period, max_power * 0.01)
     })
   }
 
@@ -205,20 +196,32 @@ class Ship4(index: Int,
         (tacts, power)
     }.getOrElse({
       //println("maxPossiblePowerForRotation fallback")
-      (1000, max_power * 0.1)
+      (correction_check_period, max_power * 0.1)
     })
   }
 
   override def preserveAngularVelocity(ang_vel_deg: Double) {
     val difference = angularVelocity - ang_vel_deg
     if (difference > angular_velocity_error) {
-      val (tacts, power) = maxPossiblePowerAndTactsForRotation(seven.max_power, seven.force_dir, seven.position, currentState.I, ang_vel_deg, angularVelocity, angular_velocity_error)
+      val (tacts, power) = maxPossiblePowerAndTactsForRotation(seven.max_power,
+                                                               seven.force_dir,
+                                                               actualPosition(seven.position),
+                                                               thisOrActualProxyShipI,
+                                                               ang_vel_deg,
+                                                               thisOrActualProxyShipAngularVelocity,
+                                                               angular_velocity_error)
       seven.power = power
       seven.workTimeTacts = tacts
       seven.active = true
       nine.active = false
     } else if (difference < -angular_velocity_error) {
-      val (tacts, power) = maxPossiblePowerAndTactsForRotation(nine.max_power, nine.force_dir, nine.position, currentState.I, ang_vel_deg, angularVelocity, angular_velocity_error)
+      val (tacts, power) = maxPossiblePowerAndTactsForRotation(nine.max_power,
+                                                               nine.force_dir,
+                                                               actualPosition(nine.position),
+                                                               thisOrActualProxyShipI,
+                                                               ang_vel_deg,
+                                                               thisOrActualProxyShipAngularVelocity,
+                                                               angular_velocity_error)
       nine.power = power
       nine.workTimeTacts = tacts
       nine.active = true
@@ -244,14 +247,24 @@ class Ship4(index: Int,
     val activate_engines = ArrayBuffer[Engine]()
 
     if (ship_velocity_n - need_vel_n > n_diff) {
-      val (tacts, power) = maxPossiblePowerForLinearMovement(eight.max_power, eight.force_dir.y, mass, need_vel_n, ship_velocity_n, n_diff)
+      val (tacts, power) = maxPossiblePowerForLinearMovement(eight.max_power,
+                                                             eight.force_dir.y,
+                                                             thisOrActualProxyShipMass,
+                                                             need_vel_n,
+                                                             ship_velocity_n,
+                                                             n_diff)
       eight.power = power
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
       eight.workTimeTacts = tacts
       activate_engines += eight
     } else if (ship_velocity_n - need_vel_n < -n_diff) {
-      val (tacts, power) = maxPossiblePowerForLinearMovement(two.max_power, two.force_dir.y, mass, need_vel_n, ship_velocity_n, n_diff)
+      val (tacts, power) = maxPossiblePowerForLinearMovement(two.max_power,
+                                                             two.force_dir.y,
+                                                             thisOrActualProxyShipMass,
+                                                             need_vel_n,
+                                                             ship_velocity_n,
+                                                             n_diff)
       two.power = power
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
@@ -260,14 +273,24 @@ class Ship4(index: Int,
     }
 
     if (ship_velocity_p - need_vel_p > p_diff) {
-      val (tacts, power) = maxPossiblePowerForLinearMovement(six.max_power, six.force_dir.x, mass, need_vel_p, ship_velocity_p, p_diff)
+      val (tacts, power) = maxPossiblePowerForLinearMovement(six.max_power,
+                                                             six.force_dir.x,
+                                                             thisOrActualProxyShipMass,
+                                                             need_vel_p,
+                                                             ship_velocity_p,
+                                                             p_diff)
       six.power = power
       /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
       println("===========================")*/
       six.workTimeTacts = tacts
       activate_engines += six
     } else if (ship_velocity_p - need_vel_p < -p_diff) {
-      val (tacts, power) = maxPossiblePowerForLinearMovement(four.max_power, four.force_dir.x, mass, need_vel_p, ship_velocity_p, p_diff)
+      val (tacts, power) = maxPossiblePowerForLinearMovement(four.max_power,
+                                                             four.force_dir.x,
+                                                             thisOrActualProxyShipMass,
+                                                             need_vel_p,
+                                                             ship_velocity_p,
+                                                             p_diff)
       four.power = power
       /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
       println("===========================")*/
@@ -286,19 +309,20 @@ class Ship4(index: Int,
     if (x > 180) 360 - x else x
   }
 
-  override def afterStep(time_msec: Long): Unit = {
-    super.afterStep(time_msec)
-    if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
-      if (canDockWithNearestShip && notDocked &&
-        (InterfaceHolder.dockingSwitcher.dockingAuto || (InterfaceHolder.dockingSwitcher.dockingManual && InterfaceHolder.dockUndock.needDock))) {
-        dock()
-        if (isDocked) {
-          InterfaceHolder.dockUndock.setDocked()
-          InterfaceHolder.dockingSwitcher.setDockingManual()
-        }
-      } else if (isDocked && InterfaceHolder.dockUndock.needUndock) {
-        undock()
-      }
+  override def tryDock:Boolean = {
+    InterfaceHolder.dockingSwitcher.dockingEnabled && canDockWithNearestShip && notDocked &&
+    (InterfaceHolder.dockingSwitcher.dockingAuto || (InterfaceHolder.dockingSwitcher.dockingManual && InterfaceHolder.dockUndock.needDock))
+  }
+
+  override def tryUndock:Boolean = {
+    isDocked && InterfaceHolder.dockUndock.needUndock
+  }
+
+  override def dock(): Unit = {
+    super.dock()
+    if (isDocked) {
+      InterfaceHolder.dockUndock.setDocked()
+      InterfaceHolder.dockingSwitcher.setDockingManual()
     }
   }
 
@@ -363,7 +387,7 @@ class Ship4(index: Int,
         case CirclularOrbit => // выход на орбиту
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, correction_check_period)) {
             if (math.abs(angularVelocity) < angular_velocity_error) {
-              orbitData match {
+              thisOrActualProxyShipOrbitData match {
                 case Some(or) =>
                   val ss = satelliteSpeed(coord, linearVelocity, or.planet.coord, or.planet.linearVelocity, or.planet.mass, G)
                   if (linearVelocity.dist(ss) > linear_velocity_error) {
@@ -428,7 +452,7 @@ class Ship4(index: Int,
                   InterfaceHolder.dockingSwitcher.setDockingAuto()
                   val dp = docking_points.sortBy(_.curP1.dist2(os.coord)).head
                   val ship_docking_point = dp.curP1 + 0.5 * (dp.curP2 - dp.curP1)
-                  os.docking_points.sortBy(osdp => osdp.curP1.dist(ship_docking_point)).headOption match {
+                  os.docking_points.sortBy(osdp => osdp.curP1.dist2(ship_docking_point)).headOption match {
                     case Some(osdp) =>
                       if (osdp.curP1.dist(ship_docking_point) > 2000) {
                         // система стыковки начинает работать с расстояния двух километров
@@ -437,7 +461,7 @@ class Ship4(index: Int,
                         val vv1 = (osdp.curP1 - osdp.curP2).n
                         val docking_point = osdp.curP1 + 0.5 * (osdp.curP2 - osdp.curP1)
                         val docking_dir = -vv1.perpendicular
-                        val angle = DVec(0, 1).deg360(docking_dir)
+                        val angle = dp.dock_dir.deg360(docking_dir)
                         if (angleMinDiff(rotation, angle) < angle_error) {
                           if (math.abs(angularVelocity) < angular_velocity_error) {
                             val A = ship_docking_point.x
@@ -638,7 +662,7 @@ class Ship4(index: Int,
   ).map(_ * 0.1)
 
   override protected def drawShip(): Unit = {
-    if (!drawMapMode) {
+    if (dock_data.isEmpty && !drawMapMode) {
       if (isAlive) {
         openglLocalTransform {
           openglMove(coord - base)
@@ -663,7 +687,6 @@ class Ship4(index: Int,
               drawArrow(DVec.zero, linearVelocity.n * radius, colorIfPlayerAliveOrRed(BLUE))
               drawArrow(DVec.zero, relativeLinearVelocity.n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
             }
-            //drawArrow(DVec.zero, linearAcceleration.n * 100, ORANGE)        // current acceleration
             if (!InterfaceHolder.sunRelativeInfo.isMinimized) {
               // direction to earth
               drawArrow(Vec.zero, (sun.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.sunRelativeInfo.color))
@@ -739,18 +762,23 @@ class Ship4(index: Int,
           }*/
 
           drawSlidingLines(draw_points, colorIfPlayerAliveOrRed(WHITE))
+          //convex_parts.foreach(c => drawSlidingLines(c.points ::: List(c.points.head), colorIfPlayerAliveOrRed(WHITE)))
 
           if (OrbitalKiller.globalScale >= 0.8) {
             if (isDocked) {
-              dockData.foreach(d => {
+              dock_data.foreach(d => {
                 drawFilledCircle(d.our_dp.p1, 0.3, colorIfPlayerAliveOrRed(GREEN))
                 drawFilledCircle(d.our_dp.p2, 0.3, colorIfPlayerAliveOrRed(GREEN))
               })
             } else if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
-              docking_points.foreach(dp => {
+              shipCloser500KmNonMinimized.foreach(s => nearestDockingPoints(s.coord).foreach(dp => {
                 drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
                 drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
-              })
+              }))
+              /*docking_points.foreach(dp => {
+                drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
+                drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
+              })*/
             }
           }
 
@@ -765,21 +793,6 @@ class Ship4(index: Int,
           drawSlidingLines(draw_points, colorIfPlayerAliveOrRed(WHITE))
         }
       }
-    }
-  }
-
-  override def selectOrSwitchEngineActive(engine_code: Int) {
-    //timeMultiplier = realtime
-    if (!dockData.exists(d => d.our_dp.disabled_engine.exists(_ == index))) {
-      engines_mapping.get(engine_code).foreach(e => {
-        if (selected_engine.exists(_ == e)) {
-          e.switchActive()
-        } else {
-          selected_engine = Some(e)
-        }
-      })
-    } else {
-
     }
   }
 }

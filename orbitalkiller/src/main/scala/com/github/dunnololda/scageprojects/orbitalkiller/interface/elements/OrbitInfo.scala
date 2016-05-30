@@ -7,10 +7,11 @@ class OrbitInfo extends InterfaceElement {
   private val strings = Array("")
 
   override protected def _update(): Unit = {
-    if(player_ship.engines.exists(_.active)) {
-      strings(0) = s"Орбита: ${orbitStrInPointWithVelocity(player_ship.coord, player_ship.linearVelocity, player_ship.radius, player_ship.mass, currentPlanetStates)}"
+    val ship = player_ship.thisOrActualProxyShip
+    if(ship.engines.exists(_.active)) {
+      strings(0) = s"Орбита: ${orbitStrInPointWithVelocity(ship.coord, ship.linearVelocity, ship.radius, ship.mass, currentPlanetStates)}"
     } else if(_update_needed) {
-      strings(0) = s"Орбита: ${player_ship.orbitData.map(_.orbitStrDefinition).getOrElse("N/A")}"
+      strings(0) = s"Орбита: ${ship.thisOrActualProxyShipOrbitData.map(_.orbitStrDefinition).getOrElse("N/A")}"
     }
     _update_needed = false
     /*val equation = insideSphereOfInfluenceOfCelestialBody(ship.coord, ship.mass, currentPlanetStates) match {

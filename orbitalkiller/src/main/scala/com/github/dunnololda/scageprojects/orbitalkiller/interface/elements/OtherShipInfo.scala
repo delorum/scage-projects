@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scage.support.{DVec, ScageColor}
+import com.github.dunnololda.scage.support.ScageColor
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 
@@ -22,17 +22,18 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
           strings(0) = s"${monitoring_ship.name}: docked"
         } else {
           val /*(_, */ need_orbit_period_str /*)*/ = (for {
-            OrbitData(_, _, _, _, _, _, _, our_orbit_planet, our_orbit_kepler, our_ccw, _) <- player_ship.orbitData
-            OrbitData(_, _, _, _, _, _, _, os_orbit_planet, os_orbit_kepler, os_ccw, _) <- monitoring_ship.orbitData
+            OrbitData(_, _, _, _, _, _, _, _, our_orbit_planet, our_orbit_kepler, our_ccw, _) <- player_ship.thisOrActualProxyShipOrbitData
+            OrbitData(_, _, _, _, _, _, _, _, os_orbit_planet, os_orbit_kepler, os_ccw, _) <- monitoring_ship.thisOrActualProxyShipOrbitData
             if our_orbit_planet.index == os_orbit_planet.index
             if our_ccw == os_ccw
-            our_orbit_ellipse <- player_ship.orbitData.flatMap(_.ellipseOrbit)
-            os_orbit_ellipse <- monitoring_ship.orbitData.flatMap(_.ellipseOrbit)
+            our_orbit_ellipse <- player_ship.thisOrActualProxyShipOrbitData.flatMap(_.ellipseOrbit)
+            os_orbit_ellipse <- monitoring_ship.thisOrActualProxyShipOrbitData.flatMap(_.ellipseOrbit)
             our_orbit_period_sec = our_orbit_ellipse.t
             os_orbit_period_sec = os_orbit_ellipse.t
           } yield {
               if (InterfaceHolder.dockingSwitcher.dockingEnabled && player_ship.coord.dist(monitoring_ship.coord) <= 2000) {
-                val ship_docking_point = player_ship.docking_points.head.curP1 + 0.5 * (player_ship.docking_points.head.curP2 - player_ship.docking_points.head.curP1)
+                val dp = player_ship.docking_points.sortBy(_.curP1.dist2(monitoring_ship.coord)).head
+                val ship_docking_point = dp.curP1 + 0.5 * (dp.curP2 - dp.curP1)
                 monitoring_ship.docking_points.sortBy(osdp => osdp.curP1.dist(ship_docking_point)).headOption match {
                   case Some(osdp) =>
                     val vv1 = (osdp.curP1 - osdp.curP2).n
@@ -47,7 +48,7 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
                     val b1 = docking_dir.x
                     val b2 = docking_dir.y
                     // координаты точки стыковки корабля в системе координат с началом в docking_point и базисными векторами (vv1, docking_dir)
-                    val angle = DVec(0, 1).deg360(docking_dir) - player_ship.rotation
+                    val angle = dp.dock_dir.deg360(docking_dir) - player_ship.rotation
                     val x = -(b2 * (A - C) - b1 * (B - D)) / (a1 * b2 - a2 * b1)
                     val y = (a2 * (A - C) - a1 * (B - D)) / (a2 * b1 - a1 * b2)
                     /*("N/A", */ f"docking data: a=$angle%.2f x=$x%.2f y=$y%.2f" /*)*/

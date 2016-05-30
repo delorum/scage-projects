@@ -1,10 +1,12 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scage.support.DVec
+import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements.OtherShipInfo
+import com.github.dunnololda.scageprojects.orbitalkiller.ships.ProxyShip
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 sealed trait FlightMode {
@@ -64,8 +66,16 @@ case object Maneuvering extends FlightMode {
   override def rusStr: String = "маневрирование"
 }
 
-class DockingPoints(val p1: DVec, val p2: DVec, ship: PolygonShip, val disabled_engine: Option[Int]) {
+// 0
+
+class DockingPoints(val p1: DVec,
+                    val p2: DVec,
+                    ship: PolygonShip,
+                    val disabled_engine: Option[Int],
+                    val ordered_hull:List[DVec]) {
+  val index = ScageId.nextId
   val joint_point = p1 + (p2 - p1) * 0.5
+  val dock_dir = joint_point.n
   val dock_dist = 0.5
 
   // в метрах, при каком расстоянии между точками стыковки двух кораблей происходит захватю Для простоты это значение - одинаковая для всех константа. Вынесли сюда, чтобы было одно место, где поменять.
@@ -95,68 +105,58 @@ class DockingPoints(val p1: DVec, val p2: DVec, ship: PolygonShip, val disabled_
     val vv1 = (dp.curP1 - dp.curP2).n * dock_dist
     val vv2 = vv1.perpendicular
 
-    val p1_on_the_right_way = checkAllConditions(
-      () => (curP1 - (dp.curP1 + vv1)).perpendicular * vv2 < 0 && (curP1 - (dp.curP1 - vv1)).perpendicular * vv2 > 0 /*,     // p1_inside_line
-      () => {                                                                                                         // p1_norm_speed
-        val x = dp.curP1vel - curP1vel
-        x * (curP1 - dp.curP1) > 0 && x.norma < 10
-      }*/
-    )
-    val p2_on_the_right_way = checkAllConditions(
-      () => (curP2 - (dp.curP2 + vv1)).perpendicular * vv2 < 0 && (curP2 - (dp.curP2 - vv1)).perpendicular * vv2 > 0 /*, // p2_inside_line
-      () => {                                                                                                         // p2_norm_speed
-        val x = dp.curP2vel - curP2vel
-        x * (curP2 - dp.curP2) > 0 && x.norma < 10
-      }*/
-    )
+    val p1_on_the_right_way = (curP1 - (dp.curP1 + vv1)).perpendicular * vv2 < 0 && (curP1 - (dp.curP1 - vv1)).perpendicular * vv2 > 0  // p1 inside line
+    val p2_on_the_right_way = (curP2 - (dp.curP2 + vv1)).perpendicular * vv2 < 0 && (curP2 - (dp.curP2 - vv1)).perpendicular * vv2 > 0  // p2_inside_line
     (p1_on_the_right_way, p2_on_the_right_way)
   }
 }
 
-case class DockData(dock_to_ship: PolygonShip, joints: List[Joint], our_dp: DockingPoints, other_ship_dp: DockingPoints)
+case class DockData(dock_to_ship: PolygonShip,
+                    our_dp: DockingPoints,
+                    other_ship_dp: DockingPoints,
+                    proxy_ship:ProxyShip)
 
 abstract class PolygonShip(
                             val index: Int,
                             val name: String,
-                            init_coord: DVec,
-                            init_velocity: DVec = DVec.dzero,
-                            init_rotation: Double = 0,
+                            protected val init_coord: DVec,
+                            protected val init_velocity: DVec = DVec.dzero,
+                            protected val init_rotation: Double = 0,
                             ship_designer:Boolean,
                             create_interface:Boolean) {
   println(s"$name -> $index")
-  var selected_engine: Option[Engine] = None
-
+  protected var selected_engine: Option[Engine] = None
+  def selectedEngine:Option[Engine] = selected_engine
+  def clearEngineSelection(): Unit = {
+    selected_engine = None
+  }
   def isSelectedEngine(e: Engine): Boolean = {
     selected_engine.exists(x => x == e)
   }
-
-  def switchEngineSelected(engine_code: Int) {
-    engines_mapping.get(engine_code).foreach(e => if (isSelectedEngine(e)) selected_engine = None else selected_engine = Some(e))
-  }
-
+  
   def engines: List[Engine]
-
-  def engines_mapping: Map[Int, Engine]
+  def engines_by_keycodes: Map[Int, Engine]
 
   /*def switchEngineActive(engine_code:Int) {
     //timeMultiplier = realtime
     engines_mapping.get(engine_code).foreach(e => e.switchActive())
   }*/
 
-  def selectOrSwitchEngineActive(engine_code: Int) {
-    //timeMultiplier = realtime
-    if (!dockData.exists(d => d.our_dp.disabled_engine.exists(_ == index))) {
-      engines_mapping.get(engine_code).foreach(e => {
-        if (selected_engine.exists(_ == e)) {
-          e.switchActive()
-        } else {
-          selected_engine = Some(e)
-        }
-      })
-    }
+  def selectOrSwitchEngineActive(key_code: Int) {
+    engines_by_keycodes.get(key_code).foreach(e => {
+      if (selected_engine.exists(_ == e)) {
+        e.switchActive()
+      } else {
+        selected_engine = Some(e)
+      }
+    })
   }
 
   def mass: Double
+
+  def thisOrActualProxyShipMass:Double = dock_data.map(_.proxy_ship.thisOrActualProxyShipMass).getOrElse(mass)
+
+  def thisOrActualProxyShipI: Double = dock_data.map(_.proxy_ship.thisOrActualProxyShipI).getOrElse(currentState.I)
 
   def fuelMass: Double
 
@@ -169,8 +169,11 @@ abstract class PolygonShip(
   def wreck_parts: List[PolygonShape]
 
   def docking_points: List[DockingPoints]
+  def createOrderedHull(order:List[(Int, Int)]):List[DVec] = order.flatMap {
+    case ((from, to)) => points.drop(from-1).take(to)
+  }
 
-  private var dock_data: Option[DockData] = None
+  protected var dock_data: Option[DockData] = None
 
   def dockData = dock_data
 
@@ -183,20 +186,26 @@ abstract class PolygonShip(
   def dock(): Unit = {
     possibleDockPointsWithNearestShip.headOption.foreach {
       case (dp, os, osdp) =>
-        val joint1 = system_evolution.addJoint(currentState, dp.p1, os.currentState, osdp.p1)
-        val joint2 = system_evolution.addJoint(currentState, dp.p2, os.currentState, osdp.p2)
-        val joints = List(joint1, joint2)
-        /*val joint = system_evolution.addJoint(currentState, dp.joint_point, os.currentState, osdp.joint_point)
-        val joints = List(joint)*/
-        setDocked(Some(DockData(os, joints, dp, osdp)))
-        os.setDocked(Some(DockData(this, joints, osdp, dp)))
+        val correction = osdp.curP1 - dp.curP1
+        currentState.coord += correction
+        val proxy_ship = new ProxyShip(this, coord, rotation, dp, os, os.coord, os.rotation, osdp)
+        currentState.active = false
+        os.currentState.active = false
+        setDocked(Some(DockData(os, dp, osdp, proxy_ship)))
+        os.setDocked(Some(DockData(this, osdp, dp, proxy_ship)))
+        ship_interface.foreach(_.forceUpdate())
+        os.ship_interface.foreach(_.forceUpdate())
     }
   }
 
   def undock(): Unit = {
     dock_data.foreach {
-      case DockData(os, joints, our_dp, other_ship_dp) =>
-        joints.foreach(system_evolution.removeJoint)
+      case DockData(os, our_dp, other_ship_dp, proxy_ship) =>
+        proxy_ship.updateShipState(index)
+        proxy_ship.updateShipState(os.index)
+        currentState.active = true
+        os.currentState.active = true
+        ShipsHolder.removeShipByIndex(proxy_ship.index)
         os.setDocked(None)
     }
     dock_data = None
@@ -206,16 +215,41 @@ abstract class PolygonShip(
     dock_data = d
   }
 
+  def nearestDockingPoints(coord:DVec):Option[DockingPoints] = {
+    docking_points.sortBy(_.curP1.dist(coord)).headOption
+  }
+  
+  /**
+   * Возвращает либо индекс данного корабля, либо, если он пристыкован - индекс proxy-корабля, либо если и тот пристыкован - итд
+   */
+  def thisOrActualProxyShipIndex:Int = dock_data.map(_.proxy_ship.thisOrActualProxyShipIndex).getOrElse(index)
+
+  def thisOrActualProxyShip:PolygonShip = dock_data.map(_.proxy_ship.thisOrActualProxyShip).getOrElse(this)
+
+  /**
+   * Если мы пристыкованы, то центр масс другой, и мб мы пристыкованы под углом, то есть все координаты, которые были относительно нашего центра
+   * масс при условии вертикальной ориентации надо пересчитать
+   */
+  def actualPosition(position:DVec):DVec = {
+    dock_data match {
+      case Some(dd) =>
+        val (our_coord_diff, our_rotation_diff) = dd.proxy_ship.coordAndRotationDiff(index)
+        position.rotateDeg(our_rotation_diff) + our_coord_diff
+      case None =>
+        position
+    }
+  }
+
   def isLanded: Boolean = {
-    orbitData.exists(_.is_landed)
+    _orbit_data.exists(_.is_landed)
   }
 
   def isLandedOnEarth: Boolean = {
-    orbitData.exists(_.is_landed_on_earth)
+    _orbit_data.exists(_.is_landed_on_earth)
   }
 
   def isLandedOnMoon: Boolean = {
-    orbitData.exists(_.is_landed_on_moon)
+    _orbit_data.exists(_.is_landed_on_moon)
   }
 
   def coord = if (isAlive) currentState.coord else main_ship_wreck.headOption.map(_.coord).getOrElse(currentState.coord)
@@ -223,11 +257,11 @@ abstract class PolygonShip(
   def linearVelocity = if (isAlive) currentState.vel else main_ship_wreck.headOption.map(_.linearVelocity).getOrElse(currentState.vel)
 
   def relativeLinearVelocity = {
-    linearVelocity - orbitData.map(_.planet_vel).getOrElse(DVec.zero)
+    linearVelocity - _orbit_data.map(_.planet_vel).getOrElse(DVec.zero)
   }
 
   def velocityStr: String = {
-    orbitData match {
+    _orbit_data match {
       case Some(or) =>
         or.planet match {
           case air_planet:PlanetWithAir =>
@@ -247,7 +281,11 @@ abstract class PolygonShip(
     }
   }
 
+  def thisOrActualProxyShipVelocityStr: String = dock_data.map(_.proxy_ship.thisOrActualProxyShipVelocityStr).getOrElse(velocityStr)
+
   def angularVelocity = if (isAlive) currentState.ang_vel else main_ship_wreck.headOption.map(_.angularVelocity).getOrElse(currentState.ang_vel)
+
+  def thisOrActualProxyShipAngularVelocity:Double = dock_data.map(_.proxy_ship.thisOrActualProxyShipAngularVelocity).getOrElse(angularVelocity)
 
   def rotation = if (isAlive) currentState.ang else main_ship_wreck.headOption.map(_.rotation).getOrElse(currentState.ang)
 
@@ -263,6 +301,23 @@ abstract class PolygonShip(
     }
   }
 
+  def currentMass(time: Long): Double = {
+    mass - engines.filter(e => e.active).foldLeft(0.0) {
+      case (sum, e) =>
+        sum + e.fuelConsumptionPerTact * (math.min(time, e.stopMomentTacts) - (e.stopMomentTacts - e.workTimeTacts))
+    }
+  }
+
+  def thisOrActualProxyShipCurrentMass(time:Long): Double = {
+    dock_data.map(_.proxy_ship.thisOrActualProxyShipCurrentMass(time)).getOrElse(currentMass(time))
+  }
+
+  def currentTorque(time: Long, coord_diff:DVec = DVec.zero): Double = {
+    engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0.0) {
+      case (sum, e) => sum + (-e.force */ (e.position + coord_diff))
+    }
+  }
+
   def fuelConsumptionPerTact: Double = {
     engines.filter(e => e.active).foldLeft(0.0) {
       case (sum, e) => sum + e.fuelConsumptionPerTact
@@ -275,38 +330,6 @@ abstract class PolygonShip(
 
   def fuelMassWhenEnginesOffWithoutEngine(ee: Engine): Double = {
     fuelMass - engines.filter(e => e.active && e != ee).map(e => e.workTimeTacts * e.fuelConsumptionPerTact).sum
-  }
-
-  def currentMass(time: Long, bs: BodyState): Double = {
-    mass - engines.filter(e => e.active).foldLeft(0.0) {
-      case (sum, e) =>
-        sum + e.fuelConsumptionPerTact * (math.min(time, e.stopMomentTacts) - (e.stopMomentTacts - e.workTimeTacts))
-    }
-  }
-
-  def currentMass(time: Long): Double = {
-    mass - engines.filter(e => e.active).foldLeft(0.0) {
-      case (sum, e) =>
-        sum + e.fuelConsumptionPerTact * (math.min(time, e.stopMomentTacts) - (e.stopMomentTacts - e.workTimeTacts))
-    }
-  }
-
-  def currentTorque(time: Long, bs: BodyState): Double = {
-    engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0.0) {
-      case (sum, e) => sum + e.torque
-    }
-  }
-
-  def currentTorque(time: Long, bs: MutableBodyState): Double = {
-    engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0.0) {
-      case (sum, e) => sum + e.torque
-    }
-  }
-
-  def currentTorque(time: Long): Double = {
-    engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0.0) {
-      case (sum, e) => sum + e.torque
-    }
   }
 
   def deactivateAllEngines(): Unit = {
@@ -335,16 +358,31 @@ abstract class PolygonShip(
     max_size * e.power / e.max_power
   }
 
-  protected def drawEngine(e: Engine) {
+  // TODO: учитывать поворот корабля в proxy ship - обновлять force_dir!
+  def drawEngine(e: Engine, coord_diff:DVec = DVec.zero, rotation_diff:Double = 0) {
     if (!dock_data.exists(_.our_dp.disabled_engine.exists(_ == e.index))) {
-      val is_vertical = e.force_dir.x == 0
-      val (center, width, height) = e.force_dir match {
-        case DVec(0, -1) => (e.position + DVec(0, 0.25) * engine_size, 1 * engine_size, 0.5 * engine_size)
-        case DVec(0, 1) => (e.position + DVec(0, -0.25) * engine_size, 1 * engine_size, 0.5 * engine_size)
-        case DVec(-1, 0) => (e.position + DVec(0.25, 0) * engine_size, 0.5 * engine_size, 1 * engine_size)
-        case DVec(1, 0) => (e.position + DVec(-0.25, 0) * engine_size, 0.5 * engine_size, 1 * engine_size)
-        case _ => throw new Exception("engine force dir other than vertical or horizontal is not supported")
+      val force_dir = {
+        if(rotation_diff.plusMinusOneEqual(-90)) -e.force_dir.perpendicular
+        else if(rotation_diff.plusMinusOneEqual(90)) e.force_dir.perpendicular
+        else if(rotation_diff.plusMinusOneEqual(180)) e.force_dir*(-1)
+        else if(rotation_diff.plusMinusOneEqual(-180)) e.force_dir*(-1)
+        else e.force_dir
       }
+      val is_vertical = force_dir.x == 0
+      val (center, width, height) = force_dir match {
+        case DVec(0, -1) =>
+          ((e.position.rotateDeg(rotation_diff) + DVec(0, 0.25) * engine_size) + coord_diff, 1 * engine_size, 0.5 * engine_size)
+        case DVec(0, 1) =>
+          ((e.position.rotateDeg(rotation_diff) + DVec(0, -0.25) * engine_size) + coord_diff, 1 * engine_size, 0.5 * engine_size)
+        case DVec(-1, 0) =>
+          ((e.position.rotateDeg(rotation_diff) + DVec(0.25, 0) * engine_size) + coord_diff, 0.5 * engine_size, 1 * engine_size)
+        case DVec(1, 0) =>
+          ((e.position.rotateDeg(rotation_diff) + DVec(-0.25, 0) * engine_size) + coord_diff, 0.5 * engine_size, 1 * engine_size)
+        case _ =>
+          println(s"${e.ship.name} ${e.index} ${e.force_dir} $rotation_diff $force_dir")
+          throw new Exception("engine force dir other than vertical or horizontal is not supported")
+      }
+      print(e.index, (e.position.rotateDeg(rotation_diff) + coord_diff).toVec, (max_font_size/globalScale).toFloat, WHITE)
 
       val in_shadow = {
         // ниже код вычисляет, в тени находится двигатель или нет
@@ -362,6 +400,7 @@ abstract class PolygonShip(
       }
 
       drawRectCentered(center, width, height, color = engineColor(e, in_shadow))
+      drawArrow(center, center + force_dir*radius/6, WHITE)
       if (isSelectedEngine(e)) drawRectCentered(center, width * 1.5, height * 1.5, color = engineColor(e, in_shadow))
       if (e.active && e.power > 0) {
         if (is_vertical) {
@@ -382,8 +421,9 @@ abstract class PolygonShip(
     }
   }
 
+  // TODO: зарефакторить этот метод: вынести его отдельные элементы в отдельные методы и оверрайдить их в потомках при необходимости.
   protected def drawShip(): Unit = {
-    if (!drawMapMode && coord.dist2(player_ship.coord) < 100000 * 100000) {
+    if (dock_data.isEmpty && !drawMapMode && coord.dist2(player_ship.coord) < 100000 * 100000) {
       if (isAlive) {
         openglLocalTransform {
           openglMove(coord - base)
@@ -406,13 +446,15 @@ abstract class PolygonShip(
 
           if (OrbitalKiller.globalScale >= 0.8) {
             if (isDocked) {
-              dockData.foreach(d => {
+              dock_data.foreach(d => {
                 drawFilledCircle(d.our_dp.p1, 0.3, colorIfPlayerAliveOrRed(GREEN))
                 drawFilledCircle(d.our_dp.p2, 0.3, colorIfPlayerAliveOrRed(GREEN))
               })
-            } else if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
-              docking_points.foreach(dp => {
-                val (p1_on_the_right_way, p2_on_the_right_way) = OrbitalKiller.player_ship.docking_points.headOption.map(_.pointsOnTheRightWay(dp)).getOrElse((false, false))
+            } else if (InterfaceHolder.dockingSwitcher.dockingEnabled && ship_interface.exists(!_.isMinimized)) {
+              shipCloser1Km.foreach(s => nearestDockingPoints(s.coord).foreach(dp => {
+                val (p1_on_the_right_way, p2_on_the_right_way) = {
+                  shipCloser1Km.flatMap(_.nearestDockingPoints(coord).map(_.pointsOnTheRightWay(dp))).getOrElse((false, false))
+                }
 
                 val c1 = if (p1_on_the_right_way) GREEN else RED
                 val c2 = if (p2_on_the_right_way) GREEN else RED
@@ -427,7 +469,26 @@ abstract class PolygonShip(
                 drawCircle(dp.p1, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
                 drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
                 drawCircle(dp.p2, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
-              })
+              }))
+              /*docking_points.foreach(dp => {
+                val (p1_on_the_right_way, p2_on_the_right_way) = {
+                  shipCloser1Km.flatMap(_.nearestDockingPoints(coord).map(_.pointsOnTheRightWay(dp))).getOrElse((false, false))
+                }
+
+                val c1 = if (p1_on_the_right_way) GREEN else RED
+                val c2 = if (p2_on_the_right_way) GREEN else RED
+
+                val v1 = (dp.p1 - dp.p2).n
+                val v2 = v1.perpendicular
+
+                drawDashedLine(dp.p1, dp.p1 + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c1))
+                drawDashedLine(dp.p2, dp.p2 + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c2))
+
+                drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
+                drawCircle(dp.p1, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
+                drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
+                drawCircle(dp.p2, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
+              })*/
             }
           }
 
@@ -522,9 +583,7 @@ abstract class PolygonShip(
   }
 
   private var flight_mode: FlightMode = FreeFlightMode
-
   def flightMode: FlightMode = flight_mode
-
   def flightMode_=(new_flight_mode: FlightMode) {
     val prev_flight_mode = flight_mode
     flight_mode = new_flight_mode
@@ -537,7 +596,7 @@ abstract class PolygonShip(
         engines.foreach(e => e.power = {
           if (InterfaceHolder.gSwitcher.maxGSet) {
             math.min(
-              (mass + dockData.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
+              thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
                 earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5).norma
               },
               e.max_power * 0.5)
@@ -568,7 +627,7 @@ abstract class PolygonShip(
         vertical_speed_msec = 0
         horizontal_speed_msec = 0
       }
-      if (prev_flight_mode == Maneuvering && flight_mode != Maneuvering && flight_mode != Killrot) {
+      if (prev_flight_mode == Maneuvering && flight_mode != FreeFlightMode && flight_mode != Killrot) {
         engines.foreach(e => e.workTimeTacts = 0)
       }
     }
@@ -582,7 +641,7 @@ abstract class PolygonShip(
 
   def horizontal_speed_msec_=(x: Int) {}
 
-  def flightModeStr: String = flight_mode match {
+  def flightModeStr: String = flightMode match {
     case NearestPlanetVelocity => s"уравнять скорость с ближайшей планетой: ${msecOrKmsec(vertical_speed_msec)}, ${msecOrKmsec(horizontal_speed_msec)}"
     case x => x.rusStr
   }
@@ -591,14 +650,25 @@ abstract class PolygonShip(
    * Все другие корабли, отсортированные по расстоянию по убыванию (первый - ближайший).
    * @return
    */
-  def shipsNear: Seq[PolygonShip] = ShipsHolder.ships.filter(s => s.index != index && s.isAlive).sortBy(s => coord.dist2(s.coord))
+  def shipsNear: Seq[PolygonShip] = ShipsHolder.ships.filter(s => {
+    s.currentState.active &&
+    s.index != index &&
+    !dock_data.exists(dd => s.index == dd.dock_to_ship.index || s.index == dd.proxy_ship.index) &&
+    s.isAlive
+  }).sortBy(s => coord.dist2(s.coord))
 
   /**
    * Корабли ближе x км от нас. Метод используется для вычисления автоматического наведения ракет.
    * @param x - расстояние в километрах
    * @return
    */
-  def shipsCloserXKm(x: Long): Seq[PolygonShip] = ShipsHolder.ships.filter(s => s.index != index && s.isAlive && s.coord.dist2(coord) < x * 1000l * x * 1000l).sortBy(s => coord.dist2(s.coord))
+  def shipsCloserXKm(x: Long): Seq[PolygonShip] = ShipsHolder.ships.filter(s => {
+    s.currentState.active &&
+    s.index != index &&
+      !dock_data.exists(dd => s.index == dd.dock_to_ship.index || s.index == dd.proxy_ship.index) &&
+    s.isAlive &&
+    s.coord.dist2(coord) < x * 1000l * x * 1000l
+  }).sortBy(s => coord.dist2(s.coord))
 
   /**
    * Корабль ближе x км от нас. Если таких несколько, то ближайший
@@ -620,12 +690,21 @@ abstract class PolygonShip(
    * @return
    */
   def shipCloser500KmNonMinimized: Option[PolygonShip] = {
-    ShipsHolder.ships.filter(s => {
+    def _check(s:PolygonShip):Boolean = {
+      /*println(s"${s.name} s.currentState.active = ${s.currentState.active}")
+      println(s"${s.name} s.index != index = ${s.index != index}")
+      println(s"${s.name} !dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index) = ${!dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index)}")
+      println(s"${s.name} s.isAlive = ${s.isAlive}")
+      println(s"${s.name} s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l = ${s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l}")
+      println(s"${s.name} s.shipInterface.exists(!_.isMinimized) = ${s.shipInterface.exists(!_.isMinimized)}")*/
+      s.currentState.active &&
       s.index != index &&
+      !dock_data.exists(dd => s.index == dd.dock_to_ship.index || s.index == dd.proxy_ship.index) &&
       s.isAlive &&
       s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l &&
       s.shipInterface.exists(!_.isMinimized)
-    }).sortBy(s => coord.dist2(s.coord)).headOption
+    }
+    ShipsHolder.ships.filter(s => _check(s)).sortBy(s => coord.dist2(s.coord)).headOption
   }
 
   /**
@@ -639,6 +718,9 @@ abstract class PolygonShip(
       })
     })
   }
+
+  def tryDock:Boolean = false
+  def tryUndock:Boolean = false
 
   def possibleDockPointsWithNearestShip: List[(DockingPoints, PolygonShip, DockingPoints)] = {
     for {
@@ -826,7 +908,8 @@ abstract class PolygonShip(
     }
   }
 
-  def massStr = f"Масса корабля: ${gOrKg(mass)}. Остаток топлива: ${gOrKg(fuelMass)}"
+  def massStr = s"Масса корабля: ${gOrKg(mass)}"
+  def fuelMassStr = s"Остаток топлива: ${gOrKg(fuelMass)}"
 
   def shadowSideStr = {
     inShadowOfPlanet(coord) match {
@@ -879,7 +962,7 @@ abstract class PolygonShip(
     is_static = false)
 
   lazy val currentState: MutableBodyState = initState.toMutableBodyState
-  private var ship_interface:Option[OtherShipInfo] = None
+  protected var ship_interface:Option[OtherShipInfo] = None
   def shipInterface:Option[OtherShipInfo] = ship_interface
   if(!ship_designer) {
     ShipsHolder.addShip(this)
@@ -888,7 +971,19 @@ abstract class PolygonShip(
     }
   }
 
-  var orbitData: Option[OrbitData] = None
+  private var _orbit_data: Option[OrbitData] = None
+  def orbitData = _orbit_data
+  def thisOrActualProxyShipOrbitData:Option[OrbitData] = dock_data.map(_.proxy_ship.thisOrActualProxyShipOrbitData).getOrElse(_orbit_data)
+  def updateOrbitData(update_count:Long, hyperbola_color:ScageColor, ellipse_color:ScageColor, some_system_state: mutable.Map[Int, MutableBodyState]): Unit = {
+    dock_data match {
+      case Some(dd) =>
+        dd.proxy_ship.updateOrbitData(update_count, hyperbola_color, ellipse_color, some_system_state)
+      case None =>
+        if(_orbit_data.isEmpty || _orbit_data.exists(_.update_count != update_count)) {
+          _orbit_data = OrbitalKiller.updateOrbitData(update_count, index, radius, hyperbola_color, ellipse_color, some_system_state, planet_indices)
+        }
+    }
+  }
 
   def beforeStep(): Unit = {
     if(currentState.active) {
@@ -912,80 +1007,85 @@ abstract class PolygonShip(
 
   protected var deactivate_moment_sec:Long = 0l
   protected var deactivate_point_relative:DVec = DVec.zero
-
-  private def _afterStep(time_msec:Long): Unit = {
-    // сила от реактивных двигателей и сила сопротивления воздуха
-    val air_resistance = earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5)
-    val reactive_force = currentReactiveForce(0, currentState) + air_resistance
-    if (!ship_is_crashed) {
-      val dvel = currentState.dvel.norma
-      if (dvel > 10) {
-        // crash tolerance = 10 m/s
-        val crash_g = dvel / OrbitalKiller.base_dt / earth.g
-        kill(f"Корабль уничтожен в результате столкновения ($crash_g%.2fg)", crash = true)
-        return
-      } else {
-        // ниже мы рассчитаем отдельно вертикальную и горизонтальную перегрузки и потом сложим их. Так надо считать, потому что к вертикальной перегрузке прибавляется центробежная сила, а к горизонтальной нет.
-        val v_vert = pilot_position.rotateDeg(rotation).n // единичный вектор спина-грудь пилота
-        val v_hor = -v_vert.perpendicular // единичный вектор левая рука - права рука пилота
-        // центробежная сила от вращения корабля
-        val centrifugial_force = if (angularVelocity == 0) 0.0 else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.norma
-        // reactive_force берем с минусом, потому что пилота вжимает под действием этой силы в противоположную сторону. Аналогично ускорение от коллизий
-        val pilot_acc_vert = -reactive_force / mass * v_vert + centrifugial_force / pilot_mass - currentState.dacc * v_vert
-        val pilot_acc_hor = -reactive_force / mass * v_hor - currentState.dacc * v_hor
-        val pilot_acc = pilot_acc_vert * DVec(0, 1) + pilot_acc_hor * DVec(1, 0) // тут мы умножаем на единичные векторы в системе координат: начало в центре масс, вертикальный вектор - от центра масс к пилоту
-        pilot_accs += ((pilot_acc, time_msec))
-        if (time_msec - pilot_accs.head._2 >= 1000) {
-          pilot_average_g = (pilot_accs.map(_._1).sum / pilot_accs.length).norma / earth.g
-          pilot_accs.clear()
-        }
-      }
-      // если провалились сквозь землю
-      currentPlanetStates.find {
-        case (planet, planet_state) => planet.coord.dist(currentState.coord) < planet.radius
-      }.foreach {
-        case (planet, planet_state) =>
-          currentState.coord = currentState.coord + (currentState.coord - planet.coord).n * (planet.radius + radius - planet.coord.dist(currentState.coord))
-          currentState.vel = planet.linearVelocity
-          kill("Корабль врезался в планету", crash = true)
-          return
-      }
-      // если подлетаем к поверхности Солнца ближе, чем 30 миллионов километров, то бууум!)
-      if (coord.dist(sun.coord) - sun.radius < 30000000000l) {
-        kill("Корабль слишком приблизился к Солнцу и сгорел", crash = true)
-        return
-      }
+  
+  def checkCriticalCollision(): Unit = {
+    val dvel = currentState.dvel.norma
+    if (dvel > 10) {
+      // crash tolerance = 10 m/s
+      val crash_g = dvel / OrbitalKiller.base_dt / earth.g
+      kill(f"Корабль уничтожен в результате столкновения ($crash_g%.2fg)", crash = true)
     }
-    if (!is_dead) {
-      // пилот может испытывать перегрузку больше 4g только ограниченный период времени, потом наступает смерть
-      // для беспилотной системы это значение примем 40g (условный показатель)
-      if (pilot_average_g > {
-        if (is_manned) 4 else 40
-      }) {
-        // беспилотный корабль может выдерживать 10-кратно большие перегрузки по сравнению с пилотируемым
-        val rate = deatchCounterChangeRate({
-          if (is_manned) pilot_average_g else pilot_average_g / 10
-        })
-        before_death_counter -= rate
-        if (before_death_counter <= 0) {
-          if (is_manned) {
-            kill(f"Пилот умер от сильной перегрузки ($pilot_average_g%.2fg)", crash = false)
-          } else {
-            kill(f"Корабль разрушился от сильной перегрузки ($pilot_average_g%.2fg)", crash = true)
-          }
+  }
+  
+  private def updatePilotAverageG(reactive_force:DVec, time_msec:Long): Unit = {
+    // ниже мы рассчитаем отдельно вертикальную и горизонтальную перегрузки и потом сложим их. Так надо считать, потому что к вертикальной перегрузке прибавляется центробежная сила, а к горизонтальной нет.
+    val v_vert = pilot_position.rotateDeg(rotation).n // единичный вектор спина-грудь пилота
+    val v_hor = -v_vert.perpendicular // единичный вектор левая рука - права рука пилота
+    // центробежная сила от вращения корабля
+    val centrifugial_force = if (angularVelocity == 0) 0.0 else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.norma
+    // reactive_force берем с минусом, потому что пилота вжимает под действием этой силы в противоположную сторону. Аналогично ускорение от коллизий
+    val pilot_acc_vert = -reactive_force / mass * v_vert + centrifugial_force / pilot_mass - currentState.dacc * v_vert
+    val pilot_acc_hor = -reactive_force / mass * v_hor - currentState.dacc * v_hor
+    val pilot_acc = pilot_acc_vert * DVec(0, 1) + pilot_acc_hor * DVec(1, 0) // тут мы умножаем на единичные векторы в системе координат: начало в центре масс, вертикальный вектор - от центра масс к пилоту
+    pilot_accs += ((pilot_acc, time_msec))
+    if (time_msec - pilot_accs.head._2 >= 1000) {
+      pilot_average_g = (pilot_accs.map(_._1).sum / pilot_accs.length).norma / earth.g
+      pilot_accs.clear()
+    }
+  }
+  
+  private def checkPlanetCollision(): Unit = {
+    // если провалились сквозь землю
+    currentPlanetStates.find {
+      case (planet, planet_state) => planet.coord.dist(currentState.coord) < planet.radius
+    } match {
+      case Some((planet, planet_state)) =>
+        currentState.coord = currentState.coord + (currentState.coord - planet.coord).n * (planet.radius + radius - planet.coord.dist(currentState.coord))
+        currentState.vel = planet.linearVelocity
+        kill("Корабль врезался в планету", crash = true)
+      case None =>
+    }
+  }
+  
+  private lazy val sun_critical_dist2 = math.pow(sun.radius + 30000000000.0, 2)
+  private def checkSunDistance(): Unit = {
+    // если подлетаем к поверхности Солнца ближе, чем 30 миллионов километров, то бууум!)
+    if (coord.dist2(sun.coord) < sun_critical_dist2) {
+      kill("Корабль слишком приблизился к Солнцу и сгорел", crash = true)
+    }
+  }
+  
+  private def checkCriticalG(): Unit = {
+    // пилот может испытывать перегрузку больше 4g только ограниченный период времени, потом наступает смерть
+    // для беспилотной системы это значение примем 40g (условный показатель)
+    if (pilot_average_g > {
+      if (is_manned) 4 else 40
+    }) {
+      // беспилотный корабль может выдерживать 10-кратно большие перегрузки по сравнению с пилотируемым
+      val rate = deatchCounterChangeRate({
+        if (is_manned) pilot_average_g else pilot_average_g / 10
+      })
+      before_death_counter -= rate
+      if (before_death_counter <= 0) {
+        if (is_manned) {
+          kill(f"Пилот умер от сильной перегрузки ($pilot_average_g%.2fg)", crash = false)
         } else {
-          // автоматическое отключение двигателей, если до смерти от перегрузки осталась одна секунда
-          val time_before_death_msec = ((before_death_counter / rate) * base_dt * 1000).toLong
-          if (time_before_death_msec <= 1000) {
-            // 1 секунда до гибели от перегрузки
-            if (engines.exists(_.active)) {
-              // если работают какие-то двигатели
-              flightMode = FreeFlightMode // отключаем двигатели
-              engines.foreach(_.active = false)
-            }
+          kill(f"Корабль разрушился от сильной перегрузки ($pilot_average_g%.2fg)", crash = true)
+        }
+      } else {
+        // автоматическое отключение двигателей, если до смерти от перегрузки осталась одна секунда
+        val time_before_death_msec = ((before_death_counter / rate) * base_dt * 1000).toLong
+        if (time_before_death_msec <= 1000) {
+          // 1 секунда до гибели от перегрузки
+          if (engines.exists(_.active)) {
+            // если работают какие-то двигатели
+            flightMode = FreeFlightMode // отключаем двигатели
+            engines.foreach(_.active = false)
           }
         }
-      } else if (before_death_counter != 100) {
+      }
+    } else {
+      if (before_death_counter != 100) {
         if (pilot_average_g <= 1.09) {
           // пилот может восстанавливаться после перегрузки, только если текущая ускорение не выше 1.09g
           val rate = 100.0 / 60 * base_dt // восстановление после критической перегрузки за 60 секунд
@@ -995,31 +1095,79 @@ abstract class PolygonShip(
           }
         }
       }
-      // автоматическая регулировка мощности двигателей в соответствие с настройкой gSwitcher
-      if (InterfaceHolder.gSwitcher.maxGSet && pilot_average_g > InterfaceHolder.gSwitcher.maxG) {
-        val active_engines = engines.filter(e => e.active && 0 < e.stopMomentTacts)
-        if (active_engines.nonEmpty) {
-          val cur_force = reactive_force.norma
-          val allowed_force = (mass + dockData.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g
-          if(cur_force > allowed_force) {
-            val force_diff = cur_force - allowed_force
-            val force_diff_for_engine = force_diff / active_engines.length
-            active_engines.foreach(e => if (force_diff_for_engine < e.power) {
-              e.power -= force_diff_for_engine
-            })
-          }
+    }
+  }
+  
+  private def checkEnginesPower(reactive_force:DVec): Unit = {
+    // автоматическая регулировка мощности двигателей в соответствие с настройкой gSwitcher
+    if (InterfaceHolder.gSwitcher.maxGSet && pilot_average_g > InterfaceHolder.gSwitcher.maxG) {
+      val active_engines = engines.filter(e => e.active && 0 < e.stopMomentTacts)
+      if (active_engines.nonEmpty) {
+        val cur_force = reactive_force.norma
+        val allowed_force = thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g
+        if(cur_force > allowed_force) {
+          val force_diff = cur_force - allowed_force
+          val force_diff_for_engine = force_diff / active_engines.length
+          active_engines.foreach(e => if (force_diff_for_engine < e.power) {
+            e.power -= force_diff_for_engine
+          })
         }
       }
     }
+  }
+
+  def consumeFuel() {
     engines.foreach(e => {
       if (e.active) {
         if (e.workTimeTacts > 0) {
           e.workTimeTacts -= 1
-          //InterfaceHolder.enginesInfo.addWorkTime(base_dt*1000*e.power/e.max_power)
           fuelMass -= e.fuelConsumptionPerTact
         } else e.active = false
       }
     })
+  }
+
+  def checkDockingSituation(): Unit = {
+    if (tryDock) {
+      dock()
+    }
+    if (tryUndock) {
+      undock()
+    }
+  }
+
+  /**
+   * В этом методе мы:
+   * проверяем, не произошло ли столкновение со скоростью больше 10 м/сек, если да, разваливаемся на части
+   * вычисляем ускорение, которое испытывает пилот
+   * проверяем, не провалились ли сквозь поверхность планеты, если да, уничтожаемся
+   * проверяем, не подлетели ли к Солнцу ближе чем 30000000 км, если да, уничтожаемся
+   * проверяем, не является ли текущая перегрузка критической, и не пора ли нам умирать от перегрузки
+   * проверяем, не следует ли уменьшить тягу двигателей, чтобы уложиться по перегрузке в настройку gSwitcher
+   * у всех работающих двигателей уменьшаем оставшееся время работы на один такт и потребляем топливо
+   *
+   * @param time_msec - текущее время симуляции, миллисекунды
+   */
+  private def calculateShipState(time_msec:Long): Unit = {
+    // сила от реактивных двигателей и сила сопротивления воздуха
+    val air_resistance = earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5)
+    val reactive_force = currentReactiveForce(0, currentState) + air_resistance
+    if (!ship_is_crashed) {
+      checkCriticalCollision()
+      if(is_dead) return
+      updatePilotAverageG(reactive_force, time_msec)
+      checkPlanetCollision()
+      if(is_dead) return
+      checkSunDistance()
+      if(is_dead) return
+    }
+    if (!is_dead) {
+      checkCriticalG()
+      if(is_dead) return
+      checkEnginesPower(reactive_force)
+    }
+    consumeFuel()
+    checkDockingSituation()
   }
 
   def syncOtherEnginesPower(except_engine:Int): Unit = {
@@ -1030,7 +1178,7 @@ abstract class PolygonShip(
         val air_resistance = earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5)
         val reactive_force = currentReactiveForce(0, currentState) + air_resistance
         val cur_force = reactive_force.norma
-        val allowed_force = (mass + dockData.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g
+        val allowed_force = thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g
         if(cur_force > allowed_force) {
           val force_diff = cur_force - allowed_force
           val force_diff_for_engine = force_diff / active_engines_except.length
@@ -1043,61 +1191,54 @@ abstract class PolygonShip(
   }
 
   def afterStep(time_msec: Long): Unit = {
-    // условие сделать корабль неактивным и не обрабатывать его:
-    // если это не корабль игрока, расстояние от данного корабля до корабля игрока больше 1000 км,
-    // перигей орбиты выше верхней границы атмосферы (орбита стабильная) или мы стоим на земле,
-    // двигатели не включены,
-    // интерфейс данного корабля существует и свернут
-    val condition = index != player_ship.index &&
-      coord.dist2(OrbitalKiller.player_ship.coord) > 1000000l*1000000l &&
-      orbitData.exists(or => {
-        or.is_landed || or.ellipseOrbit.exists(e => e.r_p > or.planet.radius + or.planet.air_free_altitude)
-      }) &&
-      engines.forall(!_.active) &&
-      (ship_interface.isEmpty || ship_interface.exists(_.isMinimized))
-    if(currentState.active) {
-      _afterStep(time_msec)
-      if(condition) {
-        currentState.active = false
-        deactivate_moment_sec = time_msec/1000
-        deactivate_point_relative = coord - orbitData.map(_.planet.coord).getOrElse(DVec.zero)
+    if(dock_data.isEmpty) {
+      // условие сделать корабль неактивным и не обрабатывать его:
+      // если это не корабль игрока, расстояние от данного корабля до корабля игрока больше 1000 км,
+      // перигей орбиты выше верхней границы атмосферы (орбита стабильная) или мы стоим на земле,
+      // двигатели не включены,
+      // интерфейс данного корабля существует и свернут
+      val condition = index != player_ship.index &&
+        coord.dist2(OrbitalKiller.player_ship.coord) > 1000000l * 1000000l &&
+        _orbit_data.exists(or => {
+          or.is_landed || or.ellipseOrbit.exists(e => e.r_p > or.planet.radius + or.planet.air_free_altitude)
+        }) &&
+        engines.forall(!_.active) &&
+        (ship_interface.isEmpty || ship_interface.exists(_.isMinimized))
+      if (currentState.active) {
+        calculateShipState(time_msec)
+        if (condition) {
+          currentState.active = false
+          deactivate_moment_sec = time_msec / 1000
+          deactivate_point_relative = coord - _orbit_data.map(_.planet.coord).getOrElse(DVec.zero)
+        }
+      } else {
+        if (!condition) {
+          _orbit_data match {
+            case Some(or) =>
+              val time_sec = OrbitalKiller.timeMsec / 1000 - deactivate_moment_sec
+              if (!or.is_landed) {
+                or.ellipseOrbit match {
+                  case Some(e) =>
+                    val new_e = e.withNewFocusPosition(or.planet.coord)
+                    currentState.coord = new_e.orbitalPointAfterTime(deactivate_point_relative + or.planet.coord, time_sec, or.ccw)
+                    val (vt, vr) = new_e.orbitalVelocityInPoint(currentState.coord)
+                    val r = if (or.ccw) (currentState.coord - or.planet.coord).n else -(currentState.coord - or.planet.coord).n
+                    val t = r.perpendicular
+                    currentState.vel = vr * r + vt * t + or.planet.linearVelocity
+                  case None =>
+                }
+              } else {
+                val ang_diff = or.planet.currentState.ang_vel * time_sec
+                currentState.coord = deactivate_point_relative.rotateDeg(ang_diff) + or.planet.coord
+                currentState.vel = or.planet.linearVelocity + (currentState.coord - or.planet.coord).p * or.planet.groundSpeedMsec
+              }
+            case None =>
+          }
+          currentState.active = true
+        }
       }
     } else {
-      if(!condition) {
-        orbitData match {
-          case Some(or) =>
-            val time_sec = OrbitalKiller.timeMsec / 1000 - deactivate_moment_sec
-            if(!or.is_landed) {
-              or.ellipseOrbit match {
-                case Some(e) =>
-                  val new_e = e.withNewFocusPosition(or.planet.coord)
-                  currentState.coord = new_e.orbitalPointAfterTime(deactivate_point_relative + or.planet.coord, time_sec, or.ccw)
-                  val (vt, vr) = new_e.orbitalVelocityInPoint(currentState.coord)
-                  val r = if (or.ccw) (currentState.coord - or.planet.coord).n else -(currentState.coord - or.planet.coord).n
-                  val t = r.perpendicular
-                  currentState.vel = vr * r + vt * t + or.planet.linearVelocity
-                case None =>
-              }
-            } else {
-              val ang_diff = or.planet.currentState.ang_vel*time_sec
-              currentState.coord = deactivate_point_relative.rotateDeg(ang_diff) + or.planet.coord
-              currentState.vel = or.planet.linearVelocity + (currentState.coord - or.planet.coord).p*or.planet.groundSpeedMsec
-            }
-          case None =>
-        }
-        currentState.active = true
-      }
-    }
-  }
-
-  def onCollision(): Unit = {
-    if (!ship_is_crashed) {
-      val dvel = currentState.dvel.norma
-      if (dvel > 10) {
-        // crash tolerance = 10 m/s
-        val crash_g = dvel / base_dt / earth.g
-        kill(f"Корабль уничтожен в результате столкновения ($crash_g%.2fg)", crash = true)
-      }
+      dock_data.foreach(_.proxy_ship.updateShipState(index))
     }
   }
 }
