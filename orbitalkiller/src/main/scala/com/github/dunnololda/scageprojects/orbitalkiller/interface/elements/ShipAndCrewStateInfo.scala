@@ -25,10 +25,10 @@ class ShipAndCrewStateInfo extends InterfaceElement {
   override def data: Seq[String] = selectedStrings
 
   override protected def _update(): Unit = {
-    val ship = player_ship.dockData.map(_.proxy_ship).getOrElse(player_ship)
+    val ship = player_ship.thisOrActualProxyShip
     if (earth.altitude(ship.coord, earth.coord) < earth.air_free_altitude) {
       stringsWithAirPressure(0) = ship.pilotStateStr
-      stringsWithAirPressure(1) = ship.massStr
+      stringsWithAirPressure(1) = s"${ship.massStr}. ${player_ship.fuelMassStr}"  // масса топлива только игрока - потому что мы не можем управлять двигателями пристыкованного корабля, так что его топлива для нас просто мертвый груз
       stringsWithAirPressure(2) = ship.shadowSideStr
       stringsWithAirPressure(3) = {
         val air_res = earth.airResistance(ship.currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(ship.index), 28, 0.5).norma

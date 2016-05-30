@@ -154,6 +154,10 @@ abstract class PolygonShip(
 
   def mass: Double
 
+  def thisOrActualProxyShipMass:Double = dock_data.map(_.proxy_ship.thisOrActualProxyShipMass).getOrElse(mass)
+
+  def thisOrActualProxyShipI: Double = dock_data.map(_.proxy_ship.thisOrActualProxyShipI).getOrElse(currentState.I)
+
   def fuelMass: Double
 
   def fuelMass_=(m: Double): Unit
@@ -214,6 +218,27 @@ abstract class PolygonShip(
   def nearestDockingPoints(coord:DVec):Option[DockingPoints] = {
     docking_points.sortBy(_.curP1.dist(coord)).headOption
   }
+  
+  /**
+   * Возвращает либо индекс данного корабля, либо, если он пристыкован - индекс proxy-корабля, либо если и тот пристыкован - итд
+   */
+  def thisOrActualProxyShipIndex:Int = dock_data.map(_.proxy_ship.thisOrActualProxyShipIndex).getOrElse(index)
+
+  def thisOrActualProxyShip:PolygonShip = dock_data.map(_.proxy_ship.thisOrActualProxyShip).getOrElse(this)
+
+  /**
+   * Если мы пристыкованы, то центр масс другой, и мб мы пристыкованы под углом, то есть все координаты, которые были относительно нашего центра
+   * масс при условии вертикальной ориентации надо пересчитать
+   */
+  def actualPosition(position:DVec):DVec = {
+    dock_data match {
+      case Some(dd) =>
+        val (our_coord_diff, our_rotation_diff) = dd.proxy_ship.coordAndRotationDiff(index)
+        position.rotateDeg(our_rotation_diff) + our_coord_diff
+      case None =>
+        position
+    }
+  }
 
   def isLanded: Boolean = {
     _orbit_data.exists(_.is_landed)
@@ -256,7 +281,11 @@ abstract class PolygonShip(
     }
   }
 
+  def thisOrActualProxyShipVelocityStr: String = dock_data.map(_.proxy_ship.thisOrActualProxyShipVelocityStr).getOrElse(velocityStr)
+
   def angularVelocity = if (isAlive) currentState.ang_vel else main_ship_wreck.headOption.map(_.angularVelocity).getOrElse(currentState.ang_vel)
+
+  def thisOrActualProxyShipAngularVelocity:Double = dock_data.map(_.proxy_ship.thisOrActualProxyShipAngularVelocity).getOrElse(angularVelocity)
 
   def rotation = if (isAlive) currentState.ang else main_ship_wreck.headOption.map(_.rotation).getOrElse(currentState.ang)
 
@@ -272,18 +301,15 @@ abstract class PolygonShip(
     }
   }
 
-  def currentMass(time: Long, bs: BodyState): Double = {
+  def currentMass(time: Long): Double = {
     mass - engines.filter(e => e.active).foldLeft(0.0) {
       case (sum, e) =>
         sum + e.fuelConsumptionPerTact * (math.min(time, e.stopMomentTacts) - (e.stopMomentTacts - e.workTimeTacts))
     }
   }
 
-  def currentMass(time: Long): Double = {
-    mass - engines.filter(e => e.active).foldLeft(0.0) {
-      case (sum, e) =>
-        sum + e.fuelConsumptionPerTact * (math.min(time, e.stopMomentTacts) - (e.stopMomentTacts - e.workTimeTacts))
-    }
+  def thisOrActualProxyShipCurrentMass(time:Long): Double = {
+    dock_data.map(_.proxy_ship.thisOrActualProxyShipCurrentMass(time)).getOrElse(currentMass(time))
   }
 
   def currentTorque(time: Long, coord_diff:DVec = DVec.zero): Double = {
@@ -570,7 +596,7 @@ abstract class PolygonShip(
         engines.foreach(e => e.power = {
           if (InterfaceHolder.gSwitcher.maxGSet) {
             math.min(
-              (mass + dock_data.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
+              thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
                 earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5).norma
               },
               e.max_power * 0.5)
@@ -882,7 +908,8 @@ abstract class PolygonShip(
     }
   }
 
-  def massStr = f"Масса корабля: ${gOrKg(mass)}. Остаток топлива: ${gOrKg(fuelMass)}"
+  def massStr = s"Масса корабля: ${gOrKg(mass)}"
+  def fuelMassStr = s"Остаток топлива: ${gOrKg(fuelMass)}"
 
   def shadowSideStr = {
     inShadowOfPlanet(coord) match {
@@ -945,7 +972,8 @@ abstract class PolygonShip(
   }
 
   private var _orbit_data: Option[OrbitData] = None
-  def orbitData:Option[OrbitData] = dock_data.map(_.proxy_ship.orbitData).getOrElse(_orbit_data)
+  def orbitData = _orbit_data
+  def thisOrActualProxyShipOrbitData:Option[OrbitData] = dock_data.map(_.proxy_ship.thisOrActualProxyShipOrbitData).getOrElse(_orbit_data)
   def updateOrbitData(update_count:Long, hyperbola_color:ScageColor, ellipse_color:ScageColor, some_system_state: mutable.Map[Int, MutableBodyState]): Unit = {
     dock_data match {
       case Some(dd) =>
@@ -1076,7 +1104,7 @@ abstract class PolygonShip(
       val active_engines = engines.filter(e => e.active && 0 < e.stopMomentTacts)
       if (active_engines.nonEmpty) {
         val cur_force = reactive_force.norma
-        val allowed_force = (mass + dock_data.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g
+        val allowed_force = thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g
         if(cur_force > allowed_force) {
           val force_diff = cur_force - allowed_force
           val force_diff_for_engine = force_diff / active_engines.length
@@ -1150,7 +1178,7 @@ abstract class PolygonShip(
         val air_resistance = earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5)
         val reactive_force = currentReactiveForce(0, currentState) + air_resistance
         val cur_force = reactive_force.norma
-        val allowed_force = (mass + dock_data.map(_.dock_to_ship.mass).getOrElse(0.0)) * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g
+        val allowed_force = thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g
         if(cur_force > allowed_force) {
           val force_diff = cur_force - allowed_force
           val force_diff_for_engine = force_diff / active_engines_except.length

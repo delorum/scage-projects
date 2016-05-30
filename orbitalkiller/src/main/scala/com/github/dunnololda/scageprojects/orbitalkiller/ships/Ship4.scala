@@ -205,10 +205,10 @@ class Ship4(index: Int,
     if (difference > angular_velocity_error) {
       val (tacts, power) = maxPossiblePowerAndTactsForRotation(seven.max_power,
                                                                seven.force_dir,
-                                                               seven.position + dock_data.map(_.proxy_ship.coordDiff(index)).getOrElse(DVec.zero),
-                                                               dock_data.map(_.proxy_ship.currentState.I).getOrElse(currentState.I),
+                                                               actualPosition(seven.position),
+                                                               thisOrActualProxyShipI,
                                                                ang_vel_deg,
-                                                               dock_data.map(_.proxy_ship.currentState.ang_vel).getOrElse(currentState.ang_vel),
+                                                               thisOrActualProxyShipAngularVelocity,
                                                                angular_velocity_error)
       seven.power = power
       seven.workTimeTacts = tacts
@@ -217,10 +217,10 @@ class Ship4(index: Int,
     } else if (difference < -angular_velocity_error) {
       val (tacts, power) = maxPossiblePowerAndTactsForRotation(nine.max_power,
                                                                nine.force_dir,
-                                                               nine.position + dock_data.map(_.proxy_ship.coordDiff(index)).getOrElse(DVec.zero),
-                                                               dock_data.map(_.proxy_ship.currentState.I).getOrElse(currentState.I),
+                                                               actualPosition(nine.position),
+                                                               thisOrActualProxyShipI,
                                                                ang_vel_deg,
-                                                               dock_data.map(_.proxy_ship.currentState.ang_vel).getOrElse(currentState.ang_vel),
+                                                               thisOrActualProxyShipAngularVelocity,
                                                                angular_velocity_error)
       nine.power = power
       nine.workTimeTacts = tacts
@@ -249,7 +249,7 @@ class Ship4(index: Int,
     if (ship_velocity_n - need_vel_n > n_diff) {
       val (tacts, power) = maxPossiblePowerForLinearMovement(eight.max_power,
                                                              eight.force_dir.y,
-                                                             dock_data.map(_.proxy_ship.mass).getOrElse(mass),
+                                                             thisOrActualProxyShipMass,
                                                              need_vel_n,
                                                              ship_velocity_n,
                                                              n_diff)
@@ -261,7 +261,7 @@ class Ship4(index: Int,
     } else if (ship_velocity_n - need_vel_n < -n_diff) {
       val (tacts, power) = maxPossiblePowerForLinearMovement(two.max_power,
                                                              two.force_dir.y,
-                                                             dock_data.map(_.proxy_ship.mass).getOrElse(mass),
+                                                             thisOrActualProxyShipMass,
                                                              need_vel_n,
                                                              ship_velocity_n,
                                                              n_diff)
@@ -275,7 +275,7 @@ class Ship4(index: Int,
     if (ship_velocity_p - need_vel_p > p_diff) {
       val (tacts, power) = maxPossiblePowerForLinearMovement(six.max_power,
                                                              six.force_dir.x,
-                                                             dock_data.map(_.proxy_ship.mass).getOrElse(mass),
+                                                             thisOrActualProxyShipMass,
                                                              need_vel_p,
                                                              ship_velocity_p,
                                                              p_diff)
@@ -287,7 +287,7 @@ class Ship4(index: Int,
     } else if (ship_velocity_p - need_vel_p < -p_diff) {
       val (tacts, power) = maxPossiblePowerForLinearMovement(four.max_power,
                                                              four.force_dir.x,
-                                                             dock_data.map(_.proxy_ship.mass).getOrElse(mass),
+                                                             thisOrActualProxyShipMass,
                                                              need_vel_p,
                                                              ship_velocity_p,
                                                              p_diff)
@@ -387,7 +387,7 @@ class Ship4(index: Int,
         case CirclularOrbit => // выход на орбиту
           if (allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(OrbitalKiller.tacts, correction_check_period)) {
             if (math.abs(angularVelocity) < angular_velocity_error) {
-              orbitData match {
+              thisOrActualProxyShipOrbitData match {
                 case Some(or) =>
                   val ss = satelliteSpeed(coord, linearVelocity, or.planet.coord, or.planet.linearVelocity, or.planet.mass, G)
                   if (linearVelocity.dist(ss) > linear_velocity_error) {
@@ -662,7 +662,7 @@ class Ship4(index: Int,
   ).map(_ * 0.1)
 
   override protected def drawShip(): Unit = {
-    if (dockData.isEmpty && !drawMapMode) {
+    if (dock_data.isEmpty && !drawMapMode) {
       if (isAlive) {
         openglLocalTransform {
           openglMove(coord - base)
@@ -766,7 +766,7 @@ class Ship4(index: Int,
 
           if (OrbitalKiller.globalScale >= 0.8) {
             if (isDocked) {
-              dockData.foreach(d => {
+              dock_data.foreach(d => {
                 drawFilledCircle(d.our_dp.p1, 0.3, colorIfPlayerAliveOrRed(GREEN))
                 drawFilledCircle(d.our_dp.p2, 0.3, colorIfPlayerAliveOrRed(GREEN))
               })

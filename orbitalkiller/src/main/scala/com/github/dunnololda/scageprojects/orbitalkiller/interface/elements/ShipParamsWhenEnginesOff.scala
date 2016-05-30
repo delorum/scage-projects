@@ -10,7 +10,7 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
       if (player_ship.engines.exists(_.active)) {
         val future_state = getFutureState(player_ship.engines.map(_.stopMomentTacts).max)
         val future_planet_states = planetStates(future_state)
-        future_state.get(player_ship.index) match {
+        future_state.get(player_ship.thisOrActualProxyShipIndex) match {
           case Some(bs) =>
             insideSphereOfInfluenceOfCelestialBody(bs.coord, bs.mass, future_planet_states) match {
               case Some((planet, planet_state)) =>
@@ -31,7 +31,7 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
     if (player_ship.flightMode != FreeFlightMode || anyEngineKeyPressed) "N/A" // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
       if (player_ship.engines.exists(_.active)) {
-        getFutureState(player_ship.engines.map(_.stopMomentTacts).max).get(player_ship.index) match {
+        getFutureState(player_ship.engines.map(_.stopMomentTacts).max).get(player_ship.thisOrActualProxyShipIndex) match {
           case Some(bs) =>
             val s = bs.ang_vel
             f" $s%.2f град/сек"
@@ -48,7 +48,7 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
     else {
       if (player_ship.engines.exists(_.active)) {
         val lbs = getFutureState(player_ship.engines.map(_.stopMomentTacts).max)
-        lbs.get(player_ship.index) match {
+        lbs.get(player_ship.thisOrActualProxyShipIndex) match {
           case Some(bs) =>
             val celestials = lbs.filter(kv => planet_indices.contains(kv._1)).flatMap(kv => {
               planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
@@ -57,7 +57,7 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
           case None => "N/A"
         }
       } else {
-        player_ship.orbitData.map(_.orbitStrDefinition).getOrElse("N/A")
+        player_ship.thisOrActualProxyShipOrbitData.map(_.orbitStrDefinition).getOrElse("N/A")
       }
     }
   }

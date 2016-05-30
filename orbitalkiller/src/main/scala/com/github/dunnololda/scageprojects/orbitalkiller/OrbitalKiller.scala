@@ -141,8 +141,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         val system_evolution_copy = system_evolution.copy
         val steps = tacts - system_evolution_copy.tacts
         (1l to steps).foreach(x => {
-          system_evolution_copy.bodyState(player_ship.dockData.map(_.proxy_ship.index).getOrElse(player_ship.index)).foreach(bs => {
-            bs.mass = player_ship.dockData.map(_.proxy_ship.currentMass(system_evolution_copy.tacts)).getOrElse(player_ship.currentMass(system_evolution_copy.tacts))
+          system_evolution_copy.bodyState(player_ship.thisOrActualProxyShipIndex).foreach(bs => {
+            bs.mass = player_ship.thisOrActualProxyShipCurrentMass(system_evolution_copy.tacts)
           })
           system_evolution_copy.step()
         })
@@ -1019,16 +1019,22 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                   (h.f + (h.f_minus_center_n * r).rotateRad(true_anomaly)) * scale
                 }).toList
                 if (body_index != player_ship.index) {
-                  Some(OrbitData(update_count, bs_coord, bs_vel, bs.ang, body_radius, bs_mass, planet_state_coord, planet_state_vel, planet, h, ccw, () => {
-                    drawSlidingLines(yy, hyperbola_color)
-                    if(InterfaceHolder.namesSwitcher.showNames) {
-                      openglLocalTransform {
-                        openglMove(h.orbitalPointByTrueAnomalyDeg(0) * scale)
-                        drawFilledRectCentered(DVec.zero, w, w, ellipse_color)
-                        print("P", Vec.zero, color = ellipse_color, size = (max_font_size / globalScale).toFloat)
+                  if(ShipsHolder.shipIndicies.contains(body_index)) {
+                    Some(OrbitData(update_count, bs_coord, bs_vel, bs.ang, body_radius, bs_mass, planet_state_coord, planet_state_vel, planet, h, ccw, () => {
+                      drawSlidingLines(yy, hyperbola_color)
+                      if(InterfaceHolder.namesSwitcher.showNames) {
+                        openglLocalTransform {
+                          openglMove(h.orbitalPointByTrueAnomalyDeg(0) * scale)
+                          drawFilledRectCentered(DVec.zero, w, w, ellipse_color)
+                          print("P", Vec.zero, color = ellipse_color, size = (max_font_size / globalScale).toFloat)
+                        }
                       }
-                    }
-                  }))
+                    }))
+                  } else {
+                    Some(OrbitData(update_count, bs_coord, bs_vel, bs.ang, body_radius, bs_mass, planet_state_coord, planet_state_vel, planet, h, ccw, () => {
+                      drawSlidingLines(yy, hyperbola_color)
+                    }))
+                  }
                 } else {
                   Some(OrbitData(update_count, bs_coord, bs_vel, bs.ang, body_radius, bs_mass, planet_state_coord, planet_state_vel, planet, h, ccw, () => {
                     drawSlidingLines(yy, hyperbola_color)
@@ -1086,7 +1092,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                             openglMove(orbital_point * scale)
                             print(s"  $flight_time : ${mOrKmOrMKm(h.distanceByTrueAnomalyRad(mouse_teta_rad2Pi) - planet.radius)} : ${msecOrKmsec(vnorm)}", Vec.zero, size = (max_font_size / globalScale).toFloat, ellipse_color)
                           }
-                          InterfaceHolder.shipInterfaces.filter(si => !si.isMinimized && !si.monitoring_ship.isCrashed).flatMap(_.monitoring_ship.orbitData).foreach(x => {
+                          InterfaceHolder.shipInterfaces.filter(si => !si.isMinimized && !si.monitoring_ship.isCrashed).flatMap(_.monitoring_ship.thisOrActualProxyShipOrbitData).foreach(x => {
                             x.ellipseOrbit.foreach(e => {
                               val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
                               drawCircle(position_after_time * scale, w, YELLOW)
@@ -1102,7 +1108,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                         }
                       }
                       if (InterfaceHolder.orbParams.calculationOn) {
-                        InterfaceHolder.shipInterfaces.filter(si => !si.isMinimized && !si.monitoring_ship.isCrashed).flatMap(_.monitoring_ship.orbitData).foreach(x => {
+                        InterfaceHolder.shipInterfaces.filter(si => !si.isMinimized && !si.monitoring_ship.isCrashed).flatMap(_.monitoring_ship.thisOrActualProxyShipOrbitData).foreach(x => {
                           x.ellipseOrbit.foreach(e => {
                             if (_stop_after_number_of_tacts > 0) {
                               val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
@@ -1127,25 +1133,35 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                 }
               case e: EllipseOrbit =>
                 if (body_index != player_ship.index) {
-                  Some(OrbitData(update_count, bs_coord, bs_vel, bs.ang, body_radius, bs_mass, planet_state_coord, planet_state_vel, planet, e, ccw, () => {
-                    openglLocalTransform {
-                      openglMove(e.center * scale)
-                      openglRotateDeg(Vec(-1, 0).signedDeg(e.f2 - e.f))
-                      drawEllipse(DVec.zero, e.a * scale, e.b * scale, ellipse_color)
-                    }
-                    if(InterfaceHolder.namesSwitcher.showNames) {
+                  if(ShipsHolder.shipIndicies.contains(body_index)) {
+                    Some(OrbitData(update_count, bs_coord, bs_vel, bs.ang, body_radius, bs_mass, planet_state_coord, planet_state_vel, planet, e, ccw, () => {
                       openglLocalTransform {
-                        openglMove(e.orbitalPointByTrueAnomalyDeg(0) * scale)
-                        drawFilledRectCentered(DVec.zero, w, w, ellipse_color)
-                        print("P", Vec.zero, color = ellipse_color, size = (max_font_size / globalScale).toFloat)
+                        openglMove(e.center * scale)
+                        openglRotateDeg(Vec(-1, 0).signedDeg(e.f2 - e.f))
+                        drawEllipse(DVec.zero, e.a * scale, e.b * scale, ellipse_color)
                       }
+                      if(InterfaceHolder.namesSwitcher.showNames) {
+                        openglLocalTransform {
+                          openglMove(e.orbitalPointByTrueAnomalyDeg(0) * scale)
+                          drawFilledRectCentered(DVec.zero, w, w, ellipse_color)
+                          print("P", Vec.zero, color = ellipse_color, size = (max_font_size / globalScale).toFloat)
+                        }
+                        openglLocalTransform {
+                          openglMove(e.orbitalPointByTrueAnomalyDeg(180) * scale)
+                          drawFilledRectCentered(DVec.zero, w, w, ellipse_color)
+                          print("A", Vec.zero, color = ellipse_color, size = (max_font_size / globalScale).toFloat)
+                        }
+                      }
+                    }))
+                  } else {
+                    Some(OrbitData(update_count, bs_coord, bs_vel, bs.ang, body_radius, bs_mass, planet_state_coord, planet_state_vel, planet, e, ccw, () => {
                       openglLocalTransform {
-                        openglMove(e.orbitalPointByTrueAnomalyDeg(180) * scale)
-                        drawFilledRectCentered(DVec.zero, w, w, ellipse_color)
-                        print("A", Vec.zero, color = ellipse_color, size = (max_font_size / globalScale).toFloat)
+                        openglMove(e.center * scale)
+                        openglRotateDeg(Vec(-1, 0).signedDeg(e.f2 - e.f))
+                        drawEllipse(DVec.zero, e.a * scale, e.b * scale, ellipse_color)
                       }
-                    }
-                  }))
+                    }))
+                  }
                 } else {
                   Some(OrbitData(update_count, bs_coord, bs_vel, bs.ang, body_radius, bs_mass, planet_state_coord, planet_state_vel, planet, e, ccw, () => {
                     openglLocalTransform {
@@ -1198,7 +1214,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                         openglMove(orbital_point * scale)
                         print(s"  $flight_time_str : ${mOrKmOrMKm(e.distanceByTrueAnomalyRad(true_anomaly_rad) - planet.radius)} : ${msecOrKmsec(vnorm)}", Vec.zero, size = (max_font_size / globalScale).toFloat, ellipse_color)
                       }
-                      InterfaceHolder.shipInterfaces.filter(si => !si.isMinimized && !si.monitoring_ship.isCrashed).flatMap(_.monitoring_ship.orbitData).foreach(x => {
+                      InterfaceHolder.shipInterfaces.filter(si => !si.isMinimized && !si.monitoring_ship.isCrashed).flatMap(_.monitoring_ship.thisOrActualProxyShipOrbitData).foreach(x => {
                         x.ellipseOrbit.foreach(e => {
                           val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
                           drawCircle(position_after_time * scale, w, YELLOW)
@@ -1250,7 +1266,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       moon.orbitRender = updateOrbitData(update_count, moon.index, moon.radius, player_ship.colorIfPlayerAliveOrRed(GREEN), player_ship.colorIfPlayerAliveOrRed(GREEN), system_evolution.allBodyStates, Set(earth.index, sun.index))
       earth.orbitRender = updateOrbitData(update_count, earth.index, earth.radius, player_ship.colorIfPlayerAliveOrRed(ORANGE), player_ship.colorIfPlayerAliveOrRed(ORANGE), system_evolution.allBodyStates, Set(sun.index))
     } else {
-      // в эту секцию мы попадаем, если мы не в режиме маневрирования, не на паузе, и двигатели работают
+      // в эту секцию мы попадаем, если мы не в режиме маневрирования, на паузе, и двигатели работают
       val system_state_when_engines_off = getFutureState(player_ship.engines.map(_.stopMomentTacts).max)
       player_ship.updateOrbitData(update_count, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), system_state_when_engines_off)
       InterfaceHolder.orbitInfo.markUpdateNeeded()
@@ -1412,7 +1428,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           render()
       }
 
-      player_ship.orbitData.foreach {
+      player_ship.thisOrActualProxyShipOrbitData.foreach {
         case or@OrbitData(_, bs_coord, _, bs_ang, _, _, planet_coord, _, _, _, _, render) =>
           drawFilledCircle(bs_coord * scale, earth.radius * scale / 2f / globalScale, WHITE)
           if (InterfaceHolder.namesSwitcher.showNames) {
@@ -1426,7 +1442,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
       InterfaceHolder.shipInterfaces.foreach(si => {
         if (!si.isMinimized) {
-          si.monitoring_ship.orbitData.foreach {
+          si.monitoring_ship.thisOrActualProxyShipOrbitData.foreach {
             case or@OrbitData(_, bs_coord, _, bs_ang, _, _, planet_coord, _, _, _, _, render) =>
               val color = if (player_ship.isDead || si.monitoring_ship.isDead) RED else MAGENTA
               drawFilledCircle(bs_coord * scale, earth.radius * scale / 2f / globalScale, color)

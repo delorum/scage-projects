@@ -10,9 +10,8 @@ class AngularVelocityInfo extends InterfaceElement {
   override protected def _update(): Unit = {
     // это сила, приложенная непосредственно к пилоту, так что она не оч информативна, в частности, сила двигателей должна быть гораздо больше, чтобы парировать это
     //val centrifugial_force = if (OrbitalKiller.ship.angularVelocity == 0) 0.0 else OrbitalKiller.ship.pilot_mass * math.pow(OrbitalKiller.ship.angularVelocity.toRad, 2) * OrbitalKiller.ship.pilot_position.norma
-    val ship = player_ship.dockData.map(_.proxy_ship).getOrElse(player_ship)
-    if (ship.angularVelocity.abs >= OrbitalKiller.angular_velocity_error) {
-      str = f"Угловая скорость: ${ship.angularVelocity}%.2f град/сек"
+    if (player_ship.thisOrActualProxyShipAngularVelocity.abs >= OrbitalKiller.angular_velocity_error) {
+      str = f"Угловая скорость: ${player_ship.thisOrActualProxyShipAngularVelocity}%.2f град/сек"
     } else {
       str = f"Угловая скорость: 0.00 град/сек"
     }

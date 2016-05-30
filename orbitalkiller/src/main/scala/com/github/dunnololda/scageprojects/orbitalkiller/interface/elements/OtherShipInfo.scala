@@ -22,12 +22,12 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
           strings(0) = s"${monitoring_ship.name}: docked"
         } else {
           val /*(_, */ need_orbit_period_str /*)*/ = (for {
-            OrbitData(_, _, _, _, _, _, _, _, our_orbit_planet, our_orbit_kepler, our_ccw, _) <- player_ship.orbitData
-            OrbitData(_, _, _, _, _, _, _, _, os_orbit_planet, os_orbit_kepler, os_ccw, _) <- monitoring_ship.orbitData
+            OrbitData(_, _, _, _, _, _, _, _, our_orbit_planet, our_orbit_kepler, our_ccw, _) <- player_ship.thisOrActualProxyShipOrbitData
+            OrbitData(_, _, _, _, _, _, _, _, os_orbit_planet, os_orbit_kepler, os_ccw, _) <- monitoring_ship.thisOrActualProxyShipOrbitData
             if our_orbit_planet.index == os_orbit_planet.index
             if our_ccw == os_ccw
-            our_orbit_ellipse <- player_ship.orbitData.flatMap(_.ellipseOrbit)
-            os_orbit_ellipse <- monitoring_ship.orbitData.flatMap(_.ellipseOrbit)
+            our_orbit_ellipse <- player_ship.thisOrActualProxyShipOrbitData.flatMap(_.ellipseOrbit)
+            os_orbit_ellipse <- monitoring_ship.thisOrActualProxyShipOrbitData.flatMap(_.ellipseOrbit)
             our_orbit_period_sec = our_orbit_ellipse.t
             os_orbit_period_sec = os_orbit_ellipse.t
           } yield {

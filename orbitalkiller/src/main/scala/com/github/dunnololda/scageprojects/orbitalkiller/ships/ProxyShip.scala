@@ -30,17 +30,24 @@ class ProxyShip(ship1:PolygonShip,
   lazy val ship2_coord_diff = (ship2_init_coord - init_coord).rotateDeg(-init_rotation)
   lazy val ship2_draw_points = ship2.draw_points.map(_.rotateDeg(ship2_rotation_diff))
 
-  def coordDiff(ship_index:Int):DVec = {
+  def coordAndRotationDiff(ship_index:Int):(DVec, Double) = {
+    val (our_coord_diff, our_rotation_diff) = dock_data match {
+      case Some(dd) =>
+        dd.proxy_ship.coordAndRotationDiff(index)
+      case None =>
+        (DVec.zero, 0.0)
+    }
     ship_index match {
-      case ship1.index => ship1_coord_diff
-      case ship2.index => ship2_coord_diff
-      case _ => DVec.zero
+      case ship1.index => (our_coord_diff + ship1_coord_diff, our_rotation_diff)
+      case ship2.index => (our_coord_diff + ship2_coord_diff, our_rotation_diff + ship2_rotation_diff)
+      case _ => (our_coord_diff, our_rotation_diff)
     }
   }
 
   val is_player = ship1.index == player_ship.index || ship2.index == player_ship.index
   
   def updateShipState(ship_index:Int): Unit = {
+    dock_data.foreach(_.proxy_ship.updateShipState(index))
     if(ship_index == ship1.index) {
       ship1.currentState.coord = currentState.coord + ship1_coord_diff.rotateDeg(rotation)
       ship1.currentState.vel = currentState.vel
@@ -196,6 +203,11 @@ class ProxyShip(ship1:PolygonShip,
     ship2.engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0.0) {
       case (sum, e) => sum + (-(e.force_dir.rotateDeg(ship2_rotation_diff)*e.power) */ (e.position + coord_diff + ship2_coord_diff))
     }
+  }
+
+  override def currentMass(time: Long): Double = {
+    ship1.currentMass(time) +
+    ship2.currentMass(time)
   }
 
   override def kill(reason: String, crash: Boolean): Unit = {
