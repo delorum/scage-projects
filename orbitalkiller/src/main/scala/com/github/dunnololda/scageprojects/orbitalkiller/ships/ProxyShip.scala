@@ -2,7 +2,6 @@ package com.github.dunnololda.scageprojects.orbitalkiller.ships
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.{DVec, ScageId}
-import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 
 class ProxyShip(ship1:PolygonShip,
@@ -44,7 +43,7 @@ class ProxyShip(ship1:PolygonShip,
     }
   }
 
-  val is_player = ship1.index == player_ship.index || ship2.index == player_ship.index
+  override lazy val is_player:Boolean = ship1.is_player || ship2.is_player
   
   def updateShipState(ship_index:Int): Unit = {
     dock_data.foreach(_.proxy_ship.updateShipState(index))
@@ -186,23 +185,17 @@ class ProxyShip(ship1:PolygonShip,
 
   override def currentReactiveForce(time: Long, bs: BodyState): DVec = {
     ship1.currentReactiveForce(time, bs) +
-    ship2.engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(DVec.dzero) {
-      case (sum, e) => sum + (e.force_dir.rotateDeg(ship2_rotation_diff)*e.power).rotateDeg(bs.ang)
-    }
+    ship2.currentReactiveForce(time, bs)
   }
 
   override def currentReactiveForce(tacts: Long, bs: MutableBodyState): DVec = {
     ship1.currentReactiveForce(tacts, bs) +
-    ship2.engines.filter(e => e.active && tacts < e.stopMomentTacts).foldLeft(DVec.dzero) {
-      case (sum, e) => sum + (e.force_dir.rotateDeg(ship2_rotation_diff)*e.power).rotateDeg(bs.ang)
-    }
+    ship2.currentReactiveForce(tacts, bs)
   }
 
-  override def currentTorque(time: Long, coord_diff:DVec = DVec.zero): Double = {
-    ship1.currentTorque(time, coord_diff + ship1_coord_diff) +
-    ship2.engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0.0) {
-      case (sum, e) => sum + (-(e.force_dir.rotateDeg(ship2_rotation_diff)*e.power) */ (e.position + coord_diff + ship2_coord_diff))
-    }
+  override def currentTorque(time: Long): Double = {
+    ship1.currentTorque(time) +
+    ship2.currentTorque(time)
   }
 
   override def currentMass(time: Long): Double = {
@@ -215,100 +208,13 @@ class ProxyShip(ship1:PolygonShip,
     ship2.kill(reason, crash)
   }
 
-  override def drawShip(): Unit = {
-    if (dockData.isEmpty && !drawMapMode && (is_player || coord.dist2(player_ship.coord) < 100000 * 100000)) {
-      if (isAlive) {
-        openglLocalTransform {
-          openglMove(coord - base)
-          drawFilledCircle(DVec.zero, 0.3, colorIfPlayerAliveOrRed(GREEN)) // mass center
-
-          if (OrbitalKiller.globalScale >= 0.8) {
-            if (is_player) {
-              if (!InterfaceHolder.linearVelocityInfo.isMinimized) {
-                // current velocity
-                drawArrow(DVec.zero, linearVelocity.n * radius, colorIfPlayerAliveOrRed(BLUE))
-                drawArrow(DVec.zero, relativeLinearVelocity.n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
-              }
-              if (!InterfaceHolder.sunRelativeInfo.isMinimized) {
-                // direction to earth
-                drawArrow(Vec.zero, (sun.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.sunRelativeInfo.color))
-              }
-              if (!InterfaceHolder.earthRelativeInfo.isMinimized) {
-                // direction to earth
-                drawArrow(Vec.zero, (earth.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.earthRelativeInfo.color))
-              }
-              if (!InterfaceHolder.moonRelativeInfo.isMinimized) {
-                // direction to moon
-                drawArrow(Vec.zero, (moon.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.moonRelativeInfo.color))
-              }
-              InterfaceHolder.shipInterfaces.foreach(si => {
-                if (!si.isMinimized && si.monitoring_ship.isAlive) {
-                  drawArrow(Vec.zero, (si.monitoring_ship.coord - coord).n * radius, colorIfPlayerAliveOrRed(si.color))
-                }
-              })
-            }
-          }
-
-          openglLocalTransform {
-            openglRotateDeg(rotation)
-            //drawSlidingLines(draw_points, GREEN)
-            convex_parts.foreach(p => drawSlidingLines(p.points ::: List(p.points.head), GREEN))
-            //wreck_parts.foreach(p => drawSlidingLines(p.points ::: List(p.points.head), GREEN))
-            ship1.engines.foreach {
-              case e => ship1.drawEngine(e, ship1_coord_diff)
-            }
-            ship2.engines.foreach {
-              case e => ship2.drawEngine(e, ship2_coord_diff, ship2_rotation_diff)
-            }
-
-            if (OrbitalKiller.globalScale >= 0.8) {
-              if(is_player) {
-                if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
-                  shipCloser1Km.foreach(s => nearestDockingPoints(s.coord).foreach(dp => {
-                    drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
-                    drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
-                  }))
-                }
-              } else {
-                if (InterfaceHolder.dockingSwitcher.dockingEnabled && ship_interface.exists(!_.isMinimized)) {
-                  shipCloser1Km.foreach(s => nearestDockingPoints(s.coord).foreach(dp => {
-                    val (p1_on_the_right_way, p2_on_the_right_way) = {
-                      shipCloser1Km.flatMap(_.nearestDockingPoints(coord).map(_.pointsOnTheRightWay(dp))).getOrElse((false, false))
-                    }
-
-                    val c1 = if (p1_on_the_right_way) GREEN else RED
-                    val c2 = if (p2_on_the_right_way) GREEN else RED
-
-                    val v1 = (dp.p1 - dp.p2).n
-                    val v2 = v1.perpendicular
-
-                    drawDashedLine(dp.p1, dp.p1 + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c1))
-                    drawDashedLine(dp.p2, dp.p2 + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c2))
-
-                    drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
-                    drawCircle(dp.p1, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
-                    drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
-                    drawCircle(dp.p2, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
-                  }))
-                }
-              }
-            }
-
-            openglMove(ship1_coord_diff)
-            drawSlidingLines(ship1.draw_points, WHITE)
-            if (OrbitalKiller.globalScale >= 0.8) {
-              drawFilledCircle(ship1_dp.p1, 0.3, colorIfPlayerAliveOrRed(GREEN))
-              drawFilledCircle(ship1_dp.p2, 0.3, colorIfPlayerAliveOrRed(GREEN))
-            }
-          }
-
-          openglLocalTransform {
-            openglRotateDeg(rotation)
-            openglMove(ship2_coord_diff)
-            drawSlidingLines(ship2_draw_points, WHITE)
-          }
-        }
-      }
-    }
+  override def drawIfAliveBeforeRotation(): Unit = {
+    if(!isDocked) drawFilledCircle(DVec.zero, 0.3, colorIfPlayerAliveOrRed(GREEN)) // mass center
+    ship1.drawIfAliveBeforeRotation()
+    ship2.drawIfAliveBeforeRotation()
+  }
+  override def drawIfAliveAfterRotation(): Unit = {
+    ship1.drawIfAliveAfterRotation()
+    ship2.drawIfAliveAfterRotation()
   }
 }

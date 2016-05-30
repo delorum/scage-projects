@@ -205,7 +205,7 @@ class Ship4(index: Int,
     if (difference > angular_velocity_error) {
       val (tacts, power) = maxPossiblePowerAndTactsForRotation(seven.max_power,
                                                                seven.force_dir,
-                                                               actualPosition(seven.position),
+                                                               seven.position.actualPos,
                                                                thisOrActualProxyShipI,
                                                                ang_vel_deg,
                                                                thisOrActualProxyShipAngularVelocity,
@@ -217,7 +217,7 @@ class Ship4(index: Int,
     } else if (difference < -angular_velocity_error) {
       val (tacts, power) = maxPossiblePowerAndTactsForRotation(nine.max_power,
                                                                nine.force_dir,
-                                                               actualPosition(nine.position),
+                                                               nine.position.actualPos,
                                                                thisOrActualProxyShipI,
                                                                ang_vel_deg,
                                                                thisOrActualProxyShipAngularVelocity,
@@ -661,138 +661,125 @@ class Ship4(index: Int,
     DVec(1.0, -20.0)
   ).map(_ * 0.1)
 
-  override protected def drawShip(): Unit = {
-    if (dock_data.isEmpty && !drawMapMode) {
-      if (isAlive) {
-        openglLocalTransform {
-          openglMove(coord - base)
-          drawFilledCircle(DVec.zero, 0.3, colorIfPlayerAliveOrRed(GREEN)) // mass center
+  override def drawIfAliveBeforeRotation(): Unit = {
+    if(!isDocked) drawFilledCircle(DVec.zero.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN)) // mass center
 
-          if (OrbitalKiller.globalScale >= 0.8) {
-            if (!InterfaceHolder.rocketsInfo.isMinimized) {
-              left_rocket.foreach(r => {
-                if (r.isAlive) {
-                  drawArrow(DVec.zero, (r.coord - coord).n * radius, RED)
-                }
-              })
-              right_rocket.foreach(r => {
-                if (r.isAlive) {
-                  drawArrow(DVec.zero, (r.coord - coord).n * radius, RED)
-                }
-              })
-            }
-
-            if (!InterfaceHolder.linearVelocityInfo.isMinimized) {
-              // current velocity
-              drawArrow(DVec.zero, linearVelocity.n * radius, colorIfPlayerAliveOrRed(BLUE))
-              drawArrow(DVec.zero, relativeLinearVelocity.n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
-            }
-            if (!InterfaceHolder.sunRelativeInfo.isMinimized) {
-              // direction to earth
-              drawArrow(Vec.zero, (sun.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.sunRelativeInfo.color))
-            }
-            if (!InterfaceHolder.earthRelativeInfo.isMinimized) {
-              // direction to earth
-              drawArrow(Vec.zero, (earth.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.earthRelativeInfo.color))
-            }
-            if (!InterfaceHolder.moonRelativeInfo.isMinimized) {
-              // direction to moon
-              drawArrow(Vec.zero, (moon.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.moonRelativeInfo.color))
-            }
-            InterfaceHolder.shipInterfaces.foreach(si => {
-              if (!si.isMinimized && si.monitoring_ship.isAlive) {
-                drawArrow(Vec.zero, (si.monitoring_ship.coord - coord).n * radius, colorIfPlayerAliveOrRed(si.color))
-              }
-            })
+    if (OrbitalKiller.globalScale >= 0.8) {
+      if (!InterfaceHolder.rocketsInfo.isMinimized) {
+        left_rocket.foreach(r => {
+          if (r.isAlive) {
+            drawArrow(DVec.zero.actualPos, DVec.zero.actualPos + (r.coord - coord).n * radius, RED)
           }
-
-          /*val pa = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*70000
-          val pb = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*(-70000)
-          drawLine(pa, pb, WHITE)*/
-
-          // ниже рисуем aabb и кружочки вокруг формы корабля и отдельных частей формы
-          /*val x = currentState.shape.asInstanceOf[PolygonShape]
-          drawCircle(DVec.zero, x.radius, WHITE)
-          drawRectCentered(DVec.zero, x.radius*2, x.radius*2, WHITE)
-          x.convex_parts.foreach(y => {
-            drawCircle(y.points_center.rotateDeg(rotation), y.points_radius, WHITE)
-            drawRectCentered(y.points_center.rotateDeg(rotation), y.points_radius*2, y.points_radius*2, WHITE)
-          })*/
-
-          openglRotateDeg(rotation)
-
-          if (OrbitalKiller.globalScale >= 0.8) {
-            if (rockets_enabled) {
-              if (left_rocket.isEmpty) {
-                openglLocalTransform {
-                  openglMove(DVec(-3, 3.5))
-                  drawSlidingLines(rocket_draw_points, WHITE)
-                }
-              }
-              if (right_rocket.isEmpty) {
-                openglLocalTransform {
-                  openglMove(DVec(3, 3.5))
-                  drawSlidingLines(rocket_draw_points, WHITE)
-                }
-              }
-            }
+        })
+        right_rocket.foreach(r => {
+          if (r.isAlive) {
+            drawArrow(DVec.zero.actualPos, DVec.zero.actualPos + (r.coord - coord).n * radius, RED)
           }
+        })
+      }
 
-          // ниже алгоритм рисует линии корпуса корабля темносерым или белым в зависимости, в тени эта линия или нет
-          /*val cur_draw_lines =  curDrawLines
-          val cur_sun_coord = sun.coord
-          draw_points.zipWithIndex.sliding(2).foreach {
-            case List((p1, p1idx), (p2, p2idx)) =>
-              val curP1 = coord + p1.rotateDeg(rotation)
-              val curP1InShadow = inShadowOfPlanet(curP1).nonEmpty || cur_draw_lines.filterNot(x => x(0)._1 == curP1 || x(1)._1 == curP1).exists(x => {
-                val res = areLinesIntersect(curP1, cur_sun_coord, x(0)._1, x(1)._1)
-                res
-              })
-              val curP2 = coord + p2.rotateDeg(rotation)
-              val curP2InShadow = inShadowOfPlanet(curP1).nonEmpty || cur_draw_lines.filterNot(x => x(0)._1 == curP2 || x(1)._1 == curP2).exists(x => {
-                areLinesIntersect(curP2, cur_sun_coord, x(0)._1, x(1)._1)
-              })
-              if(!curP1InShadow && !curP2InShadow) {
-                drawLine(p1, p2, colorIfAliveOrRed(WHITE))
-              } else {
-                drawLine(p1, p2, colorIfAliveOrRed(DARK_GRAY))
-              }
-              /*print(s"$p1idx", p1.toVec, color = WHITE, size = (max_font_size / globalScale).toFloat)
-              print(s"$p2idx", p2.toVec, color = WHITE, size = (max_font_size / globalScale).toFloat)*/
-          }*/
+      if (!InterfaceHolder.linearVelocityInfo.isMinimized) {
+        // current velocity
+        drawArrow(DVec.zero.actualPosBeforeRotation, DVec.zero.actualPosBeforeRotation + linearVelocity.n * radius, colorIfPlayerAliveOrRed(BLUE))
+        drawArrow(DVec.zero.actualPosBeforeRotation, DVec.zero.actualPosBeforeRotation + relativeLinearVelocity.n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
+      }
+      if (!InterfaceHolder.sunRelativeInfo.isMinimized) {
+        // direction to earth
+        drawArrow(DVec.zero.actualPosBeforeRotation, DVec.zero.actualPosBeforeRotation + (sun.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.sunRelativeInfo.color))
+      }
+      if (!InterfaceHolder.earthRelativeInfo.isMinimized) {
+        // direction to earth
+        drawArrow(DVec.zero.actualPosBeforeRotation, DVec.zero.actualPosBeforeRotation + (earth.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.earthRelativeInfo.color))
+      }
+      if (!InterfaceHolder.moonRelativeInfo.isMinimized) {
+        // direction to moon
+        drawArrow(DVec.zero.actualPosBeforeRotation, DVec.zero.actualPosBeforeRotation + (moon.coord - coord).n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.moonRelativeInfo.color))
+      }
+      InterfaceHolder.shipInterfaces.foreach(si => {
+        if (!si.isMinimized && si.monitoring_ship.isAlive) {
+          drawArrow(DVec.zero.actualPosBeforeRotation, DVec.zero.actualPosBeforeRotation + (si.monitoring_ship.coord - coord).n * radius, colorIfPlayerAliveOrRed(si.color))
+        }
+      })
+    }
 
-          drawSlidingLines(draw_points, colorIfPlayerAliveOrRed(WHITE))
-          //convex_parts.foreach(c => drawSlidingLines(c.points ::: List(c.points.head), colorIfPlayerAliveOrRed(WHITE)))
+    /*val pa = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*70000
+    val pb = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*(-70000)
+    drawLine(pa, pb, WHITE)*/
 
-          if (OrbitalKiller.globalScale >= 0.8) {
-            if (isDocked) {
-              dock_data.foreach(d => {
-                drawFilledCircle(d.our_dp.p1, 0.3, colorIfPlayerAliveOrRed(GREEN))
-                drawFilledCircle(d.our_dp.p2, 0.3, colorIfPlayerAliveOrRed(GREEN))
-              })
-            } else if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
-              shipCloser500KmNonMinimized.foreach(s => nearestDockingPoints(s.coord).foreach(dp => {
-                drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
-                drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
-              }))
-              /*docking_points.foreach(dp => {
-                drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
-                drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
-              })*/
-            }
-          }
+    // ниже рисуем aabb и кружочки вокруг формы корабля и отдельных частей формы
+    /*val x = currentState.shape.asInstanceOf[PolygonShape]
+    drawCircle(DVec.zero, x.radius, WHITE)
+    drawRectCentered(DVec.zero, x.radius*2, x.radius*2, WHITE)
+    x.convex_parts.foreach(y => {
+      drawCircle(y.points_center.rotateDeg(rotation), y.points_radius, WHITE)
+      drawRectCentered(y.points_center.rotateDeg(rotation), y.points_radius*2, y.points_radius*2, WHITE)
+    })*/
+  }
 
-          engines.foreach {
-            case e => drawEngine(e)
+  override def drawIfAliveAfterRotation(): Unit = {
+    if (OrbitalKiller.globalScale >= 0.8) {
+      if (rockets_enabled) {
+        if (left_rocket.isEmpty) {
+          openglLocalTransform {
+            openglMove(DVec(-3, 3.5).actualPos)
+            drawSlidingLines(rocket_draw_points, WHITE)  // TODO: поправить координаты точек
           }
         }
-      } else {
-        openglLocalTransform {
-          openglMove(coord - base)
-          openglRotateDeg(rotation)
-          drawSlidingLines(draw_points, colorIfPlayerAliveOrRed(WHITE))
+        if (right_rocket.isEmpty) {
+          openglLocalTransform {
+            openglMove(DVec(3, 3.5).actualPos)
+            drawSlidingLines(rocket_draw_points, WHITE)
+          }
         }
       }
+    }
+
+    // ниже алгоритм рисует линии корпуса корабля темносерым или белым в зависимости, в тени эта линия или нет
+    /*val cur_draw_lines =  curDrawLines
+    val cur_sun_coord = sun.coord
+    draw_points.zipWithIndex.sliding(2).foreach {
+      case List((p1, p1idx), (p2, p2idx)) =>
+        val curP1 = coord + p1.rotateDeg(rotation)
+        val curP1InShadow = inShadowOfPlanet(curP1).nonEmpty || cur_draw_lines.filterNot(x => x(0)._1 == curP1 || x(1)._1 == curP1).exists(x => {
+          val res = areLinesIntersect(curP1, cur_sun_coord, x(0)._1, x(1)._1)
+          res
+        })
+        val curP2 = coord + p2.rotateDeg(rotation)
+        val curP2InShadow = inShadowOfPlanet(curP1).nonEmpty || cur_draw_lines.filterNot(x => x(0)._1 == curP2 || x(1)._1 == curP2).exists(x => {
+          areLinesIntersect(curP2, cur_sun_coord, x(0)._1, x(1)._1)
+        })
+        if(!curP1InShadow && !curP2InShadow) {
+          drawLine(p1, p2, colorIfAliveOrRed(WHITE))
+        } else {
+          drawLine(p1, p2, colorIfAliveOrRed(DARK_GRAY))
+        }
+        /*print(s"$p1idx", p1.toVec, color = WHITE, size = (max_font_size / globalScale).toFloat)
+        print(s"$p2idx", p2.toVec, color = WHITE, size = (max_font_size / globalScale).toFloat)*/
+    }*/
+
+    drawSlidingLines(actualDrawPoints, colorIfPlayerAliveOrRed(WHITE))
+    //convex_parts.foreach(c => drawSlidingLines(c.points ::: List(c.points.head), colorIfPlayerAliveOrRed(WHITE)))
+
+    if (OrbitalKiller.globalScale >= 0.8) {
+      if (isDocked) {
+        dock_data.foreach(d => {
+          drawFilledCircle(d.our_dp.p1.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
+          drawFilledCircle(d.our_dp.p2.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
+        })
+      } else if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
+        shipCloser500KmNonMinimized.foreach(s => nearestDockingPoints(s.coord).foreach(dp => {
+          drawFilledCircle(dp.p1.actualPos, 0.3, colorIfPlayerAliveOrRed(RED))
+          drawFilledCircle(dp.p2.actualPos, 0.3, colorIfPlayerAliveOrRed(RED))
+        }))
+        /*docking_points.foreach(dp => {
+          drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
+          drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
+        })*/
+      }
+    }
+
+    engines.foreach {
+      case e => drawEngine(e)
     }
   }
 }

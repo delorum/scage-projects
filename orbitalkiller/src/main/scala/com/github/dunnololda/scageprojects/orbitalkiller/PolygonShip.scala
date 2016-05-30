@@ -226,17 +226,71 @@ abstract class PolygonShip(
 
   def thisOrActualProxyShip:PolygonShip = dock_data.map(_.proxy_ship.thisOrActualProxyShip).getOrElse(this)
 
-  /**
-   * Если мы пристыкованы, то центр масс другой, и мб мы пристыкованы под углом, то есть все координаты, которые были относительно нашего центра
-   * масс при условии вертикальной ориентации надо пересчитать
-   */
-  def actualPosition(position:DVec):DVec = {
+  
+  implicit class DockCorrection(v:DVec) {
+    def actualPosBeforeRotation:DVec = {
+      dock_data match {
+        case Some(dd) =>
+          val (our_coord_diff, our_rotation_diff) = dd.proxy_ship.coordAndRotationDiff(index)
+          if(our_rotation_diff != 0) {
+            val proxy_ship_rotation = dd.proxy_ship.thisOrActualProxyShipRotation
+            if(proxy_ship_rotation != 0) {
+              (v.rotateDeg(our_rotation_diff) + our_coord_diff).rotateDeg(dd.proxy_ship.thisOrActualProxyShipRotation)
+            } else {
+              v.rotateDeg(our_rotation_diff) + our_coord_diff
+            }
+          } else {
+            val proxy_ship_rotation = dd.proxy_ship.thisOrActualProxyShipRotation
+            if(proxy_ship_rotation != 0) {
+              (v + our_coord_diff).rotateDeg(dd.proxy_ship.thisOrActualProxyShipRotation)
+            } else {
+              v + our_coord_diff
+            }
+          }
+        case None =>
+          v
+      }
+    }
+
+    /**
+     * Если мы пристыкованы, то центр масс другой, и мб мы пристыкованы под углом, то есть все координаты, которые были относительно
+     * нашего центра масс при условии вертикальной ориентации надо пересчитать
+     */
+    def actualPos:DVec = {
+      dock_data match {
+        case Some(dd) =>
+          val (our_coord_diff, our_rotation_diff) = dd.proxy_ship.coordAndRotationDiff(index)
+          if(our_rotation_diff != 0) {
+            v.rotateDeg(our_rotation_diff) + our_coord_diff
+          } else {
+            v + our_coord_diff
+          }
+        case None =>
+          v
+      }
+    }
+
+    def actualDir:DVec = {
+      dock_data match {
+        case Some(dd) =>
+          val (_, our_rotation_diff) = dd.proxy_ship.coordAndRotationDiff(index)
+          if(our_rotation_diff != 0) {
+            v.rotateDeg(our_rotation_diff)
+          } else {
+            v
+          }
+        case None =>
+          v
+      }
+    }
+  }
+  
+  def ourCoordAndRotationDiff:(DVec, Double) = {
     dock_data match {
       case Some(dd) =>
-        val (our_coord_diff, our_rotation_diff) = dd.proxy_ship.coordAndRotationDiff(index)
-        position.rotateDeg(our_rotation_diff) + our_coord_diff
+        dd.proxy_ship.coordAndRotationDiff(index)
       case None =>
-        position
+        (DVec.zero, 0.0)
     }
   }
 
@@ -289,15 +343,17 @@ abstract class PolygonShip(
 
   def rotation = if (isAlive) currentState.ang else main_ship_wreck.headOption.map(_.rotation).getOrElse(currentState.ang)
 
+  def thisOrActualProxyShipRotation:Double = dock_data.map(_.proxy_ship.thisOrActualProxyShipRotation).getOrElse(rotation)
+
   def currentReactiveForce(time: Long, bs: BodyState): DVec = {
     engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(DVec.dzero) {
-      case (sum, e) => sum + e.force.rotateDeg(bs.ang)
+      case (sum, e) => sum + (e.force_dir.actualDir*e.power).rotateDeg(bs.ang)
     }
   }
 
   def currentReactiveForce(tacts: Long, bs: MutableBodyState): DVec = {
     engines.filter(e => e.active && tacts < e.stopMomentTacts).foldLeft(DVec.dzero) {
-      case (sum, e) => sum + e.force.rotateDeg(bs.ang)
+      case (sum, e) => sum + (e.force_dir.actualDir*e.power).rotateDeg(bs.ang)
     }
   }
 
@@ -312,9 +368,9 @@ abstract class PolygonShip(
     dock_data.map(_.proxy_ship.thisOrActualProxyShipCurrentMass(time)).getOrElse(currentMass(time))
   }
 
-  def currentTorque(time: Long, coord_diff:DVec = DVec.zero): Double = {
+  def currentTorque(time: Long): Double = {
     engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0.0) {
-      case (sum, e) => sum + (-e.force */ (e.position + coord_diff))
+      case (sum, e) => sum + (-(e.force_dir.actualDir*e.power) */ e.position.actualPos)
     }
   }
 
@@ -358,9 +414,9 @@ abstract class PolygonShip(
     max_size * e.power / e.max_power
   }
 
-  // TODO: учитывать поворот корабля в proxy ship - обновлять force_dir!
-  def drawEngine(e: Engine, coord_diff:DVec = DVec.zero, rotation_diff:Double = 0) {
+  def drawEngine(e: Engine) {
     if (!dock_data.exists(_.our_dp.disabled_engine.exists(_ == e.index))) {
+      val (coord_diff, rotation_diff) = ourCoordAndRotationDiff
       val force_dir = {
         if(rotation_diff.plusMinusOneEqual(-90)) -e.force_dir.perpendicular
         else if(rotation_diff.plusMinusOneEqual(90)) e.force_dir.perpendicular
@@ -382,7 +438,7 @@ abstract class PolygonShip(
           println(s"${e.ship.name} ${e.index} ${e.force_dir} $rotation_diff $force_dir")
           throw new Exception("engine force dir other than vertical or horizontal is not supported")
       }
-      print(e.index, (e.position.rotateDeg(rotation_diff) + coord_diff).toVec, (max_font_size/globalScale).toFloat, WHITE)
+      print(e.index, e.position.actualPos.toVec, (max_font_size/globalScale).toFloat, WHITE)
 
       val in_shadow = {
         // ниже код вычисляет, в тени находится двигатель или нет
@@ -420,94 +476,104 @@ abstract class PolygonShip(
       case dash_from => drawLine(from + normal * dash_from, from + normal * (dash_from + dash_len), color)
     }
   }
-
-  // TODO: зарефакторить этот метод: вынести его отдельные элементы в отдельные методы и оверрайдить их в потомках при необходимости.
-  protected def drawShip(): Unit = {
-    if (dock_data.isEmpty && !drawMapMode && coord.dist2(player_ship.coord) < 100000 * 100000) {
-      if (isAlive) {
-        openglLocalTransform {
-          openglMove(coord - base)
-          /*drawFilledCircle(DVec.zero, 2, GREEN) // mass center
+  
+  def drawIfAliveBeforeRotation(): Unit = {
+    /*drawFilledCircle(DVec.zero, 2, GREEN) // mass center
           if (OrbitalKiller.globalScale >= 0.8) {
             drawArrow(DVec.zero, relativeLinearVelocity.n * radius, CYAN) // current velocity
           }*/
 
-          // ниже рисуем aabb и кружочки вокруг формы корабля и отдельных частей формы
-          /*val x = currentState.shape.asInstanceOf[PolygonShape]
-          drawCircle(DVec.zero, x.radius, WHITE)
-          drawRectCentered(DVec.zero, x.radius*2, x.radius*2, WHITE)
-          x.convex_parts.foreach(y => {
-            drawCircle(y.points_center.rotateDeg(rotation), y.points_radius, WHITE)
-            drawRectCentered(y.points_center.rotateDeg(rotation), y.points_radius*2, y.points_radius*2, WHITE)
-          })*/
+    // ниже рисуем aabb и кружочки вокруг формы корабля и отдельных частей формы
+    /*val x = currentState.shape.asInstanceOf[PolygonShape]
+    drawCircle(DVec.zero, x.radius, WHITE)
+    drawRectCentered(DVec.zero, x.radius*2, x.radius*2, WHITE)
+    x.convex_parts.foreach(y => {
+      drawCircle(y.points_center.rotateDeg(rotation), y.points_radius, WHITE)
+      drawRectCentered(y.points_center.rotateDeg(rotation), y.points_radius*2, y.points_radius*2, WHITE)
+    })*/
+  }
 
+  def drawIfAliveAfterRotation(): Unit = {
+    drawSlidingLines(actualDrawPoints, WHITE)
+    if (OrbitalKiller.globalScale >= 0.8) {
+      if (isDocked) {
+        dock_data.foreach(d => {
+          drawFilledCircle(d.our_dp.p1.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
+          drawFilledCircle(d.our_dp.p2.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
+        })
+      } else if (InterfaceHolder.dockingSwitcher.dockingEnabled && ship_interface.exists(!_.isMinimized)) {
+        shipCloser1Km.foreach(s => nearestDockingPoints(s.coord).foreach(dp => {
+          val (p1_on_the_right_way, p2_on_the_right_way) = {
+            shipCloser1Km.flatMap(_.nearestDockingPoints(coord).map(_.pointsOnTheRightWay(dp))).getOrElse((false, false))
+          }
+
+          val c1 = if (p1_on_the_right_way) GREEN else RED
+          val c2 = if (p2_on_the_right_way) GREEN else RED
+
+          val v1 = (dp.p1 - dp.p2).n
+          val v2 = v1.perpendicular
+
+          drawDashedLine(dp.p1.actualPos, dp.p1.actualPos + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c1))
+          drawDashedLine(dp.p2.actualPos, dp.p2.actualPos + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c2))
+
+          drawFilledCircle(dp.p1.actualPos, 0.3, colorIfPlayerAliveOrRed(RED))
+          drawCircle(dp.p1.actualPos, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
+          drawFilledCircle(dp.p2.actualPos, 0.3, colorIfPlayerAliveOrRed(RED))
+          drawCircle(dp.p2.actualPos, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
+        }))
+        /*docking_points.foreach(dp => {
+          val (p1_on_the_right_way, p2_on_the_right_way) = {
+            shipCloser1Km.flatMap(_.nearestDockingPoints(coord).map(_.pointsOnTheRightWay(dp))).getOrElse((false, false))
+          }
+
+          val c1 = if (p1_on_the_right_way) GREEN else RED
+          val c2 = if (p2_on_the_right_way) GREEN else RED
+
+          val v1 = (dp.p1 - dp.p2).n
+          val v2 = v1.perpendicular
+
+          drawDashedLine(dp.p1, dp.p1 + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c1))
+          drawDashedLine(dp.p2, dp.p2 + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c2))
+
+          drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
+          drawCircle(dp.p1, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
+          drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
+          drawCircle(dp.p2, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
+        })*/
+      }
+    }
+
+    engines.foreach {
+      case e => drawEngine(e)
+    }
+  }
+  
+  lazy val is_player:Boolean = index == player_ship.index
+
+  // TODO: зарефакторить этот метод: вынести его отдельные элементы в отдельные методы и оверрайдить их в потомках при необходимости.
+  private def drawShip(): Unit = {
+    if (!drawMapMode && (is_player || coord.dist2(player_ship.coord) < 100000 * 100000)) {
+      if (isAlive) {
+        openglLocalTransform {
+          openglMove(coord - base)
+          drawIfAliveBeforeRotation()
           openglRotateDeg(rotation)
-          drawSlidingLines(draw_points, WHITE)
-
-          if (OrbitalKiller.globalScale >= 0.8) {
-            if (isDocked) {
-              dock_data.foreach(d => {
-                drawFilledCircle(d.our_dp.p1, 0.3, colorIfPlayerAliveOrRed(GREEN))
-                drawFilledCircle(d.our_dp.p2, 0.3, colorIfPlayerAliveOrRed(GREEN))
-              })
-            } else if (InterfaceHolder.dockingSwitcher.dockingEnabled && ship_interface.exists(!_.isMinimized)) {
-              shipCloser1Km.foreach(s => nearestDockingPoints(s.coord).foreach(dp => {
-                val (p1_on_the_right_way, p2_on_the_right_way) = {
-                  shipCloser1Km.flatMap(_.nearestDockingPoints(coord).map(_.pointsOnTheRightWay(dp))).getOrElse((false, false))
-                }
-
-                val c1 = if (p1_on_the_right_way) GREEN else RED
-                val c2 = if (p2_on_the_right_way) GREEN else RED
-
-                val v1 = (dp.p1 - dp.p2).n
-                val v2 = v1.perpendicular
-
-                drawDashedLine(dp.p1, dp.p1 + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c1))
-                drawDashedLine(dp.p2, dp.p2 + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c2))
-
-                drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
-                drawCircle(dp.p1, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
-                drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
-                drawCircle(dp.p2, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
-              }))
-              /*docking_points.foreach(dp => {
-                val (p1_on_the_right_way, p2_on_the_right_way) = {
-                  shipCloser1Km.flatMap(_.nearestDockingPoints(coord).map(_.pointsOnTheRightWay(dp))).getOrElse((false, false))
-                }
-
-                val c1 = if (p1_on_the_right_way) GREEN else RED
-                val c2 = if (p2_on_the_right_way) GREEN else RED
-
-                val v1 = (dp.p1 - dp.p2).n
-                val v2 = v1.perpendicular
-
-                drawDashedLine(dp.p1, dp.p1 + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c1))
-                drawDashedLine(dp.p2, dp.p2 + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c2))
-
-                drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
-                drawCircle(dp.p1, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
-                drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
-                drawCircle(dp.p2, dp.dock_dist, colorIfPlayerAliveOrRed(RED))
-              })*/
-            }
-          }
-
-          engines.foreach {
-            case e => drawEngine(e)
-          }
+          drawIfAliveAfterRotation()
         }
       } else {
         openglLocalTransform {
           openglMove(coord - base)
           openglRotateDeg(rotation)
-          drawSlidingLines(draw_points, colorIfPlayerAliveOrRed(WHITE))
+          drawSlidingLines(actualDrawPoints, colorIfPlayerAliveOrRed(WHITE))
         }
       }
     }
   }
 
   private val render_id = render {
-    drawShip()
+    if(currentState.active) {
+      drawShip()
+    }
   }
 
   def preserveAngularVelocity(ang_vel_deg: Double)
@@ -933,6 +999,17 @@ abstract class PolygonShip(
   def points: List[DVec]
 
   lazy val draw_points = points :+ points.head
+  
+  def actualDrawPoints = {
+    val (coord_diff, rotation_diff) = ourCoordAndRotationDiff
+    draw_points.map(p => {
+      if(rotation_diff != 0) {
+        p.rotateDeg(rotation_diff) + coord_diff
+      } else {
+        p + coord_diff
+      }
+    })
+  }
 
   /**
    * Точки, обозначающие корпус корабля, группируются по два, получаются отрезки. Для каждой точки вычисляется фактическая текущая координата.
