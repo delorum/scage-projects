@@ -179,7 +179,7 @@ abstract class PolygonShip(
 
   def isDocked: Boolean = dock_data.nonEmpty
 
-  def isDockedToShip(other_ship: PolygonShip): Boolean = dock_data.exists(_.dock_to_ship.index == other_ship.index)
+  def isDockedToShip(other_ship: PolygonShip): Boolean = thisOrActualProxyShipIndex == other_ship.thisOrActualProxyShipIndex
 
   def notDocked: Boolean = dock_data.isEmpty
 
@@ -438,7 +438,10 @@ abstract class PolygonShip(
           println(s"${e.ship.name} ${e.index} ${e.force_dir} $rotation_diff $force_dir")
           throw new Exception("engine force dir other than vertical or horizontal is not supported")
       }
-      print(e.index, e.position.actualPos.toVec, (max_font_size/globalScale).toFloat, WHITE)
+      if(globalScale >= 20 && InterfaceHolder.namesSwitcher.showNames) {
+        print(e.index, e.position.actualPos.toVec, (max_font_size / globalScale).toFloat, WHITE)
+        drawArrow(center, center + force_dir*radius/6, WHITE)
+      }
 
       val in_shadow = {
         // ниже код вычисляет, в тени находится двигатель или нет
@@ -456,7 +459,6 @@ abstract class PolygonShip(
       }
 
       drawRectCentered(center, width, height, color = engineColor(e, in_shadow))
-      drawArrow(center, center + force_dir*radius/6, WHITE)
       if (isSelectedEngine(e)) drawRectCentered(center, width * 1.5, height * 1.5, color = engineColor(e, in_shadow))
       if (e.active && e.power > 0) {
         if (is_vertical) {
@@ -466,14 +468,6 @@ abstract class PolygonShip(
         }
       }
       //print(s"${e.index}", e.position.toVec, color = WHITE, size = (max_font_size / globalScale).toFloat)
-    }
-  }
-
-  protected def drawDashedLine(from: DVec, to: DVec, dash_len: Double, color: ScageColor): Unit = {
-    val line_len = (to - from).norma
-    val normal = (to - from).n
-    (0.0 to line_len - dash_len by dash_len * 2).foreach {
-      case dash_from => drawLine(from + normal * dash_from, from + normal * (dash_from + dash_len), color)
     }
   }
   
@@ -693,7 +687,7 @@ abstract class PolygonShip(
         vertical_speed_msec = 0
         horizontal_speed_msec = 0
       }
-      if (prev_flight_mode == Maneuvering && flight_mode != FreeFlightMode && flight_mode != Killrot) {
+      if (prev_flight_mode == Maneuvering && flight_mode == FreeFlightMode) {
         engines.foreach(e => e.workTimeTacts = 0)
       }
     }

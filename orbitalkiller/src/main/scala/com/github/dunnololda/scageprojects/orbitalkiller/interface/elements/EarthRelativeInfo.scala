@@ -13,7 +13,8 @@ class EarthRelativeInfo extends InterfaceElement {
     val ship_earth_position = if (InterfaceHolder.degOrKm.selectedVariant == 0) {
       f"${correctAngle(DVec(0, 1).deg360(player_ship.coord - earth.coord) - earth.currentState.ang)}%.3f град."
     } else {
-      f"${(correctAngle(DVec(0, 1).deg360(player_ship.coord - earth.coord) - earth.currentState.ang) / 360.0 * earth.length) / 1000}%.2f км"
+      val km = (correctAngle(DVec(0, 1).deg360(player_ship.coord - earth.coord) - earth.currentState.ang) / 360.0 * earth.length) / 1000
+      f"$km%.2f/${earth.length/1000}%.2f км"
     }
     if (player_ship.isLandedOnEarth) {
       strings(0) = s"Земля: landed, pos=$ship_earth_position"

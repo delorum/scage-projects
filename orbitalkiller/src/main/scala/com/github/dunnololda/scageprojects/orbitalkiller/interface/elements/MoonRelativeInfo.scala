@@ -13,7 +13,8 @@ class MoonRelativeInfo extends InterfaceElement {
     val ship_moon_position = if (InterfaceHolder.degOrKm.selectedVariant == 0) {
       f"${correctAngle(DVec(0, 1).deg360(player_ship.coord - moon.coord) - moon.currentState.ang)}%.3f град."
     } else {
-      f"${(correctAngle(DVec(0, 1).deg360(player_ship.coord - moon.coord) - moon.currentState.ang) / 360.0 * moon.length) / 1000}%.2f км"
+      val km = (correctAngle(DVec(0, 1).deg360(player_ship.coord - moon.coord) - moon.currentState.ang) / 360.0 * moon.length) / 1000
+      f"$km%.2f/${moon.length/1000}%.2f км"
     }
     if (player_ship.isLandedOnMoon) {
       strings(0) = s"Луна: landed, pos=$ship_moon_position"

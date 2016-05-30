@@ -37,7 +37,7 @@ class ShipAndCrewStateInfo extends InterfaceElement {
       selectedStrings = stringsWithAirPressure
     } else {
       stringsWithoutAirPressure(0) = ship.pilotStateStr
-      stringsWithoutAirPressure(1) = ship.massStr
+      stringsWithoutAirPressure(1) = s"${ship.massStr}. ${player_ship.fuelMassStr}"
       stringsWithoutAirPressure(2) = ship.shadowSideStr
       selectedStrings = stringsWithoutAirPressure
     }

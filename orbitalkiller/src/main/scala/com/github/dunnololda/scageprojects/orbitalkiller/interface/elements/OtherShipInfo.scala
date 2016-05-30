@@ -14,7 +14,7 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
   }
 
   override protected def _update(): Unit = {
-    if(_update_needed) {
+    if(_update_needed || player_ship.coord.dist2(monitoring_ship.coord) < 100l*1000*100*1000) {
       if (monitoring_ship.isDead) {
         strings(0) = s"${monitoring_ship.name}: ${monitoring_ship.deathReason}"
       } else {
