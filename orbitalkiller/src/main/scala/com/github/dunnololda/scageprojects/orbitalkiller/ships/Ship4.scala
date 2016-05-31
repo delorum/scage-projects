@@ -310,7 +310,7 @@ class Ship4(index: Int,
   }
 
   override def tryDock:Boolean = {
-    InterfaceHolder.dockingSwitcher.dockingEnabled && canDockWithNearestShip && notDocked &&
+    InterfaceHolder.dockingSwitcher.dockingEnabled && canDockWithNearestShip &&
     (InterfaceHolder.dockingSwitcher.dockingAuto || (InterfaceHolder.dockingSwitcher.dockingManual && InterfaceHolder.dockUndock.needDock))
   }
 
@@ -778,20 +778,15 @@ class Ship4(index: Int,
     //convex_parts.foreach(c => drawSlidingLines(c.points ::: List(c.points.head), colorIfPlayerAliveOrRed(WHITE)))
 
     if (OrbitalKiller.globalScale >= 0.8) {
-      if (isDocked) {
-        dock_data.foreach(d => {
-          drawFilledCircle(d.our_dp.p1.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
-          drawFilledCircle(d.our_dp.p2.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
-        })
-      } else if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
-        shipCloser500KmNonMinimized.foreach(s => nearestDockingPoints(s.coord).foreach(dp => {
+      dock_data.foreach(d => {
+        drawFilledCircle(d.our_dp.p1.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
+        drawFilledCircle(d.our_dp.p2.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
+      })
+      if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
+        shipCloser500KmNonMinimized.foreach(s => nearestFreeDockingPoints(s.coord).foreach(dp => {
           drawFilledCircle(dp.p1.actualPos, 0.3, colorIfPlayerAliveOrRed(RED))
           drawFilledCircle(dp.p2.actualPos, 0.3, colorIfPlayerAliveOrRed(RED))
         }))
-        /*docking_points.foreach(dp => {
-          drawFilledCircle(dp.p1, 0.3, colorIfPlayerAliveOrRed(RED))
-          drawFilledCircle(dp.p2, 0.3, colorIfPlayerAliveOrRed(RED))
-        })*/
       }
     }
 

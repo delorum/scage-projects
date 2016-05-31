@@ -104,7 +104,7 @@ class Engine(val index: Int,
   def active_=(bool: Boolean) {
     if (is_active != bool) {
       if (bool) {
-        if (!ship.dockData.exists(d => d.our_dp.disabled_engine.exists(_ == index)) && ship.fuelMass > fuelConsumptionPerTact) {
+        if (!ship.engineDisabled(index) && ship.fuelMass > fuelConsumptionPerTact) {
           is_active = true
           if (power == 0) {
             powerPercent = default_power_percent

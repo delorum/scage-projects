@@ -247,8 +247,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def planetByIndex(index: Int): Option[CelestialBody] = planets.get(index)
 
   // стоим на поверхности Земли
-  //val ship_start_position = earth.coord + DVec(485, earth.radius + 10.5)
-  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  val ship_start_position = earth.coord + DVec(495, earth.radius + 3.5)
+  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   // суборбитальная траектория
   //val ship_start_position = earth.coord + DVec(500, earth.radius + 100000)
@@ -258,8 +258,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   //val ship_start_position = earth.coord + DVec(-100, earth.radius + 199000)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
 
-  val ship_start_position = earth.coord + DVec(-100, earth.radius + 199015)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
+  //val ship_start_position = earth.coord + DVec(-100, earth.radius + 199015)
+  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
 
   // стоим на поверхности Луны
   //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
@@ -274,11 +274,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   val player_ship = new Ship4(ScageId.nextId,
     init_coord = ship_start_position,
     init_velocity = ship_init_velocity,
-    init_rotation = 45
+    init_rotation = 0
   )
 
   // на круговой орбите в 200 км от поверхности Земли
-  val station_start_position = earth.coord + DVec(0, earth.radius + 200000)
+  val station_start_position = earth.coord + DVec(-110, earth.radius + 199160)
   val station_init_velocity = satelliteSpeed(station_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
 
   // суборбитальная траектория
@@ -288,7 +288,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   val station = new SpaceStation2(ScageId.nextId,
     init_coord = station_start_position,
     init_velocity = station_init_velocity,
-    init_rotation = 180
+    init_rotation = 90
   )
 
   // случайная орбита с перигеем от 200 до 1000 км, и апогеем от 0 до 3000 км выше перигея
@@ -318,17 +318,17 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   )
 
   // стоим на поверхности Земли
-  //val cargo1_start_position = earth.coord + DVec(485, earth.radius + 2)
-  //val cargo1_init_velocity = earth.linearVelocity + (cargo1_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  val cargo1_start_position = earth.coord + DVec(485, earth.radius + 2)
+  val cargo1_init_velocity = earth.linearVelocity + (cargo1_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   // на круговой орбите в 200 км от поверхности Земли
-  val cargo1_start_position = earth.coord + DVec(-100, earth.radius + 199000)
-  val cargo1_init_velocity = satelliteSpeed(cargo1_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
+  //val cargo1_start_position = earth.coord + DVec(-100, earth.radius + 199000)
+  //val cargo1_init_velocity = satelliteSpeed(cargo1_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
 
   val cargo1 = new Cargo1(ScageId.nextId,
     init_coord = cargo1_start_position,
     init_velocity = cargo1_init_velocity,
-    init_rotation = 45)
+    init_rotation = 0)
 
   def nameByIndex(index: Int): Option[String] = {
     planets.get(index) match {

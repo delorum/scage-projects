@@ -1,6 +1,5 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
-import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
 import scala.collection.mutable.ArrayBuffer
@@ -37,6 +36,7 @@ object ShipsHolder {
 
   def removeShipByIndex(ship_index: Int): Unit = {
     _shipsMap.remove(ship_index).foreach(ship => {
+      println(s"removed ship ${ship.name}")
       update_list = true
       system_evolution.removeBodyByIndex(ship_index)
     })

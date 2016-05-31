@@ -187,13 +187,14 @@ abstract class PolygonShip(
     possibleDockPointsWithNearestShip.headOption.foreach {
       case (dp, os, osdp) =>
         val correction = osdp.curP1 - dp.curP1
-        currentState.coord += correction
-        val proxy_ship = new ProxyShip(this, coord, rotation, dp, os, os.coord, os.rotation, osdp)
-        currentState.active = false
+        val ship = thisOrActualProxyShip
+        ship.currentState.coord += correction
+        val proxy_ship = new ProxyShip(ship, ship.coord, ship.rotation, dp, os, os.coord, os.rotation, osdp)
+        ship.currentState.active = false
         os.currentState.active = false
-        setDocked(Some(DockData(os, dp, osdp, proxy_ship)))
-        os.setDocked(Some(DockData(this, osdp, dp, proxy_ship)))
-        ship_interface.foreach(_.forceUpdate())
+        ship.setDocked(Some(DockData(os, dp, osdp, proxy_ship)))
+        os.setDocked(Some(DockData(ship, osdp, dp, proxy_ship)))
+        ship.ship_interface.foreach(_.forceUpdate())
         os.ship_interface.foreach(_.forceUpdate())
     }
   }
@@ -215,8 +216,8 @@ abstract class PolygonShip(
     dock_data = d
   }
 
-  def nearestDockingPoints(coord:DVec):Option[DockingPoints] = {
-    docking_points.sortBy(_.curP1.dist(coord)).headOption
+  def nearestFreeDockingPoints(coord:DVec):Option[DockingPoints] = {
+    docking_points.filter(dp => !dock_data.exists(_.our_dp.index == dp.index)).sortBy(_.curP1.dist(coord)).headOption
   }
   
   /**
@@ -414,12 +415,23 @@ abstract class PolygonShip(
     max_size * e.power / e.max_power
   }
 
+  def engineDisabled(engine_index:Int):Boolean = {
+    dock_data match {
+      case Some(dd) =>
+        dd.our_dp.disabled_engine.exists(_ == engine_index) || dd.proxy_ship.engineDisabled(engine_index)
+      case None =>
+        false
+    }
+  }
+
   def drawEngine(e: Engine) {
-    if (!dock_data.exists(_.our_dp.disabled_engine.exists(_ == e.index))) {
+    if (!engineDisabled(e.index)) {
       val (coord_diff, rotation_diff) = ourCoordAndRotationDiff
       val force_dir = {
         if(rotation_diff.plusMinusOneEqual(-90)) -e.force_dir.perpendicular
+        if(rotation_diff.plusMinusOneEqual(270)) -e.force_dir.perpendicular
         else if(rotation_diff.plusMinusOneEqual(90)) e.force_dir.perpendicular
+        else if(rotation_diff.plusMinusOneEqual(-270)) e.force_dir.perpendicular
         else if(rotation_diff.plusMinusOneEqual(180)) e.force_dir*(-1)
         else if(rotation_diff.plusMinusOneEqual(-180)) e.force_dir*(-1)
         else e.force_dir
@@ -490,15 +502,14 @@ abstract class PolygonShip(
   def drawIfAliveAfterRotation(): Unit = {
     drawSlidingLines(actualDrawPoints, WHITE)
     if (OrbitalKiller.globalScale >= 0.8) {
-      if (isDocked) {
-        dock_data.foreach(d => {
-          drawFilledCircle(d.our_dp.p1.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
-          drawFilledCircle(d.our_dp.p2.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
-        })
-      } else if (InterfaceHolder.dockingSwitcher.dockingEnabled && ship_interface.exists(!_.isMinimized)) {
-        shipCloser1Km.foreach(s => nearestDockingPoints(s.coord).foreach(dp => {
+      dock_data.foreach(d => {
+        drawFilledCircle(d.our_dp.p1.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
+        drawFilledCircle(d.our_dp.p2.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
+      })
+      if (InterfaceHolder.dockingSwitcher.dockingEnabled && ship_interface.exists(!_.isMinimized)) {
+        shipCloser1Km.foreach(s => nearestFreeDockingPoints(s.coord).foreach(dp => {
           val (p1_on_the_right_way, p2_on_the_right_way) = {
-            shipCloser1Km.flatMap(_.nearestDockingPoints(coord).map(_.pointsOnTheRightWay(dp))).getOrElse((false, false))
+            shipCloser1Km.flatMap(_.nearestFreeDockingPoints(coord).map(_.pointsOnTheRightWay(dp))).getOrElse((false, false))
           }
 
           val c1 = if (p1_on_the_right_way) GREEN else RED

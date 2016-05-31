@@ -67,7 +67,6 @@ class ProxyShip(ship1:PolygonShip,
     ship2.convex_parts.map(p => p.copy(points = p.points.map(p => p.rotateDeg(ship2_rotation_diff) + ship2_coord_diff)))
   }
 
-  override def tryDock:Boolean = ship1.tryDock || ship2.tryDock
   override def tryUndock:Boolean = ship1.tryUndock || ship2.tryUndock
 
   /**
@@ -93,25 +92,6 @@ class ProxyShip(ship1:PolygonShip,
 
   override val is_manned: Boolean = ship1.is_manned || ship2.is_manned
 
-  override val docking_points: List[DockingPoints] = {
-    ship1.docking_points.filterNot(dp => dp.index == ship1_dp.index).map(dp => {
-      new DockingPoints(
-        dp.p1 + ship1_coord_diff,
-        dp.p2 + ship1_coord_diff,
-        this,
-        dp.disabled_engine,
-        dp.ordered_hull.map(_ + ship1_coord_diff))
-    }) :::
-    ship2.docking_points.filterNot(dp => dp.index == ship2_dp.index).map(dp => {
-      new DockingPoints(
-        dp.p1.rotateDeg(ship2_rotation_diff) + ship2_coord_diff,
-        dp.p2.rotateDeg(ship2_rotation_diff) + ship2_coord_diff,
-        this,
-        dp.disabled_engine,
-        dp.ordered_hull.map(p => p.rotateDeg(ship2_rotation_diff) + ship2_coord_diff))
-    })
-  }
-
   override val engines_by_keycodes: Map[Int, Engine] = Map()
 
   override def consumeFuel() {
@@ -119,16 +99,22 @@ class ProxyShip(ship1:PolygonShip,
     ship2.consumeFuel()
   }
 
-  override def checkDockingSituation(): Unit = {
-    if(tryDock) {
-      dock()
+  def nonProxyShips:List[PolygonShip] = {
+    val x1 = ship1 match {
+      case ps:ProxyShip => ps.nonProxyShips
+      case s => List(s)
     }
+    val x2 = ship2 match {
+      case ps:ProxyShip => ps.nonProxyShips
+      case s => List(s)
+    }
+    x1 ::: x2
+  }
+
+  override def checkDockingSituation(): Unit = {
+    nonProxyShips.foreach(s => if(s.tryDock) s.dock())
     if(tryUndock) {
-      if(dock_data.nonEmpty) {
-        undock()
-      } else {
-        ship1.undock()
-      }
+      ship1.undock()
     }
   }
 
@@ -168,4 +154,6 @@ class ProxyShip(ship1:PolygonShip,
     ship1.drawIfAliveAfterRotation()
     ship2.drawIfAliveAfterRotation()
   }
+
+  override val docking_points: List[DockingPoints] = Nil
 }
