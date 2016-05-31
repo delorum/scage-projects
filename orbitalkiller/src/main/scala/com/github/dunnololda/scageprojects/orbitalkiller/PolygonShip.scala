@@ -712,8 +712,7 @@ abstract class PolygonShip(
    */
   def shipsNear: Seq[PolygonShip] = ShipsHolder.ships.filter(s => {
     s.currentState.active &&
-    s.index != index &&
-    !dock_data.exists(dd => s.index == dd.dock_to_ship.index || s.index == dd.proxy_ship.index) &&
+    s.thisOrActualProxyShipIndex != thisOrActualProxyShipIndex &&
     s.isAlive
   }).sortBy(s => coord.dist2(s.coord))
 
@@ -724,8 +723,7 @@ abstract class PolygonShip(
    */
   def shipsCloserXKm(x: Long): Seq[PolygonShip] = ShipsHolder.ships.filter(s => {
     s.currentState.active &&
-    s.index != index &&
-      !dock_data.exists(dd => s.index == dd.dock_to_ship.index || s.index == dd.proxy_ship.index) &&
+    s.thisOrActualProxyShipIndex != thisOrActualProxyShipIndex &&
     s.isAlive &&
     s.coord.dist2(coord) < x * 1000l * x * 1000l
   }).sortBy(s => coord.dist2(s.coord))
@@ -758,8 +756,7 @@ abstract class PolygonShip(
       println(s"${s.name} s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l = ${s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l}")
       println(s"${s.name} s.shipInterface.exists(!_.isMinimized) = ${s.shipInterface.exists(!_.isMinimized)}")*/
       s.currentState.active &&
-      s.index != index &&
-      !dock_data.exists(dd => s.index == dd.dock_to_ship.index || s.index == dd.proxy_ship.index) &&
+      s.thisOrActualProxyShipIndex != thisOrActualProxyShipIndex &&
       s.isAlive &&
       s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l &&
       s.shipInterface.exists(!_.isMinimized)

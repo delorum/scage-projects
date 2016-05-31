@@ -337,7 +337,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }
 
-  var _increase_stop_time:Boolean = false
+  var _set_stop_time:Boolean = false
   var _stop_after_number_of_tacts: Long = 0
   var _stop_in_orbit_true_anomaly: Double = 0
 
@@ -778,9 +778,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   }, onKeyUp = if (player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selectedEngine.exists(_.active)) {
     updateFutureTrajectory("KEY_DOWN")
   })
-  keyIgnorePause(KEY_T, onKeyDown = _increase_stop_time = !_increase_stop_time)
+  keyIgnorePause(KEY_T, onKeyDown = _set_stop_time = !_set_stop_time)
   keyIgnorePause(KEY_RIGHT, repeatTime(KEY_RIGHT), onKeyDown = {
-    if(_increase_stop_time) {
+    if(_set_stop_time) {
       _stop_after_number_of_tacts += InterfaceHolder.timeStepSwitcher.timeStep
     } else {
       if (player_ship.isAlive) {
@@ -794,11 +794,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         }
       }
     }
-  }, onKeyUp = if (!_increase_stop_time && player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selectedEngine.exists(_.active)) {
+  }, onKeyUp = if (!_set_stop_time && player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selectedEngine.exists(_.active)) {
     updateFutureTrajectory("KEY_RIGHT")
   })
   keyIgnorePause(KEY_LEFT, repeatTime(KEY_LEFT), onKeyDown = {
-    if(_increase_stop_time) {
+    if(_set_stop_time) {
       _stop_after_number_of_tacts -= InterfaceHolder.timeStepSwitcher.timeStep
     } else {
       if (player_ship.isAlive) {
@@ -815,7 +815,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       }
     }
   }, onKeyUp = {
-    if (!_increase_stop_time && player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selectedEngine.exists(_.active)) {
+    if (!_set_stop_time && player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selectedEngine.exists(_.active)) {
       updateFutureTrajectory("KEY_LEFT")
     }
   })

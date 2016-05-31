@@ -1,5 +1,7 @@
 package com.github.dunnololda.scageprojects
 
+import java.math.{RoundingMode, MathContext}
+
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.{Body => Phys2dBody, BodyList => Phys2dBodyList, Collider => Phys2dCollider, DynamicShape => Phys2dShape, StaticBody => Phys2dStaticBody, _}
 
@@ -1916,5 +1918,9 @@ package object orbitalkiller {
 
   implicit class MyDouble(d:Double) {
     def plusMinusOneEqual(x:Double):Boolean = math.abs(d - x) < 1
+    def round2Digits:Double = {
+      val bd = new java.math.BigDecimal(d)
+      bd.setScale(2, java.math.RoundingMode.HALF_UP).doubleValue()
+    }
   }
 }

@@ -24,18 +24,12 @@ class ProxyShip(ship1:PolygonShip,
   println(s"ship2_rotation_diff=$ship2_rotation_diff")
   println(s"init_coord=$init_coord")
 
-  lazy val ship1_coord_diff = (ship1_init_coord - init_coord).rotateDeg(-init_rotation)
-  lazy val ship2_rotation_diff = ship2_init_rotation - ship1_init_rotation
-  lazy val ship2_coord_diff = (ship2_init_coord - init_coord).rotateDeg(-init_rotation)
-  lazy val ship2_draw_points = ship2.draw_points.map(_.rotateDeg(ship2_rotation_diff))
+  lazy val ship1_coord_diff = (ship1_init_coord - init_coord).rotateDeg(-init_rotation).map(v => DVec(v.x.round2Digits, v.y.round2Digits))
+  lazy val ship2_rotation_diff = (ship2_init_rotation - ship1_init_rotation).round
+  lazy val ship2_coord_diff = (ship2_init_coord - init_coord).rotateDeg(-init_rotation).map(v => DVec(v.x.round2Digits, v.y.round2Digits))
 
   def coordAndRotationDiff(ship_index:Int):(DVec, Double) = {
-    val (our_coord_diff, our_rotation_diff) = dock_data match {
-      case Some(dd) =>
-        dd.proxy_ship.coordAndRotationDiff(index)
-      case None =>
-        (DVec.zero, 0.0)
-    }
+    val (our_coord_diff, our_rotation_diff) = ourCoordAndRotationDiff
     ship_index match {
       case ship1.index => (our_coord_diff + ship1_coord_diff, our_rotation_diff)
       case ship2.index => (our_coord_diff + ship2_coord_diff, our_rotation_diff + ship2_rotation_diff)
@@ -71,49 +65,6 @@ class ProxyShip(ship1:PolygonShip,
   override lazy val convex_parts: List[PolygonShape] = {
     ship1.convex_parts.map(p => p.copy(points = p.points.map(_ + ship1_coord_diff))) :::
     ship2.convex_parts.map(p => p.copy(points = p.points.map(p => p.rotateDeg(ship2_rotation_diff) + ship2_coord_diff)))
-  }
-
-  /**
-   * Все другие корабли, отсортированные по расстоянию по убыванию (первый - ближайший).
-   * @return
-   */
-  override def shipsNear: Seq[PolygonShip] = ShipsHolder.ships.filter(s => {
-    s.currentState.active &&
-    s.index != index &&
-    s.index != ship1.index && s.index != ship2.index &&
-    !dock_data.exists(dd => s.index == dd.dock_to_ship.index || s.index == dd.proxy_ship.index) &&
-    s.isAlive
-  }).sortBy(s => coord.dist2(s.coord))
-
-  /**
-   * Корабли ближе x км от нас. Метод используется для вычисления автоматического наведения ракет.
-   * @param x - расстояние в километрах
-   * @return
-   */
-  override def shipsCloserXKm(x: Long): Seq[PolygonShip] = ShipsHolder.ships.filter(s => {
-    s.currentState.active &&
-    s.index != index &&
-    s.index != ship1.index && s.index != ship2.index &&
-    !dock_data.exists(dd => s.index == dd.dock_to_ship.index || s.index == dd.proxy_ship.index) &&
-    s.isAlive &&
-    s.coord.dist2(coord) < x * 1000l * x * 1000l
-  }).sortBy(s => coord.dist2(s.coord))
-
-  /**
-   * Корабль ближе 500 км от нас, интерфейс которого не свернут. Если таких несколько, то ближайший.
-   * Метод используется в алогритмах автоматического уравнивания скорости, поддержания направления, стыковки
-   * @return
-   */
-  override def shipCloser500KmNonMinimized: Option[PolygonShip] = {
-    ShipsHolder.ships.filter(s => {
-      s.currentState.active &&
-      s.index != index &&
-      s.index != ship1.index && s.index != ship2.index &&
-      !dock_data.exists(dd => s.index == dd.dock_to_ship.index || s.index == dd.proxy_ship.index) &&
-      s.isAlive &&
-      s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l &&
-      s.shipInterface.exists(!_.isMinimized)
-    }).sortBy(s => coord.dist2(s.coord)).headOption
   }
 
   override def tryDock:Boolean = ship1.tryDock || ship2.tryDock
@@ -153,11 +104,11 @@ class ProxyShip(ship1:PolygonShip,
     }) :::
     ship2.docking_points.filterNot(dp => dp.index == ship2_dp.index).map(dp => {
       new DockingPoints(
-        dp.p1 + ship2_coord_diff,
-        dp.p2 + ship2_coord_diff,
+        dp.p1.rotateDeg(ship2_rotation_diff) + ship2_coord_diff,
+        dp.p2.rotateDeg(ship2_rotation_diff) + ship2_coord_diff,
         this,
-        dp.disabled_engine.map(_ + 10),
-        dp.ordered_hull.map(_ + ship2_coord_diff))
+        dp.disabled_engine,
+        dp.ordered_hull.map(p => p.rotateDeg(ship2_rotation_diff) + ship2_coord_diff))
     })
   }
 
