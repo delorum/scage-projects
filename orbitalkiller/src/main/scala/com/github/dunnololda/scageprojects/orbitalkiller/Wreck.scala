@@ -67,7 +67,7 @@ class Wreck(mass: Double, init_coord: DVec, init_velocity: DVec, init_rotation: 
 
   if (!is_main) {
     actionStaticPeriod(1000) {
-      if (timeMultiplier > 10 || coord.dist2(player_ship.coord) > 100000l * 100000l) {
+      if (timeMultiplier > 10 || coord.dist2(player_ship.coord) > 100000l * 100000l || planets.exists(p => p._2.coord.dist2(coord) < p._2.radius2)) {
         system_evolution.removeBodyByIndex(index)
         delOperation(render_id)
         deleteSelf()

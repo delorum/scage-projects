@@ -69,6 +69,10 @@ class ProxyShip(ship1:PolygonShip,
 
   override def tryUndock:Boolean = ship1.tryUndock || ship2.tryUndock
 
+  override def nearestFreeDockingPoints(coord:DVec):Option[DockingPoints] = {
+    nonProxyShips.flatMap(s => s.docking_points.filter(dp => !s.dockData.exists(dd => dd.our_dp.index == dp.index))).sortBy(_.curP1.dist(coord)).headOption
+  }
+
   /**
    * Точки, обозначающие корпус корабля. Задаются координатами относительно центра масс. Фактическую координату точки в данный момент времени
    * можно получить, повернув на текущий угол и прибавив координату ц.м.

@@ -17,6 +17,7 @@ trait CelestialBody {
   def mass: Double
 
   def radius: Double
+  lazy val radius2:Double = radius*radius
 
   def initState: BodyState
 

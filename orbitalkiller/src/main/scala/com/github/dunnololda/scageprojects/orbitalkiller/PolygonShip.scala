@@ -509,7 +509,7 @@ abstract class PolygonShip(
       if (InterfaceHolder.dockingSwitcher.dockingEnabled && ship_interface.exists(!_.isMinimized)) {
         shipCloser1Km.foreach(s => nearestFreeDockingPoints(s.coord).foreach(dp => {
           val (p1_on_the_right_way, p2_on_the_right_way) = {
-            shipCloser1Km.flatMap(_.nearestFreeDockingPoints(coord).map(_.pointsOnTheRightWay(dp))).getOrElse((false, false))
+            shipCloser1Km.flatMap(s => s.nearestFreeDockingPoints(coord).map(_.pointsOnTheRightWay(dp))).getOrElse((false, false))
           }
 
           val c1 = if (p1_on_the_right_way) GREEN else RED
