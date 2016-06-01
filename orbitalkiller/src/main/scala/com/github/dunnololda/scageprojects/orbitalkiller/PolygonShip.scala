@@ -507,15 +507,15 @@ abstract class PolygonShip(
         drawFilledCircle(d.our_dp.p2.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
       })
       if (InterfaceHolder.dockingSwitcher.dockingEnabled && ship_interface.exists(!_.isMinimized)) {
-        shipCloser1Km.foreach(s => nearestFreeDockingPoints(s.coord).foreach(dp => {
+        shipCloser2Km.foreach(s => nearestFreeDockingPoints(s.coord).foreach(dp => {
           val (p1_on_the_right_way, p2_on_the_right_way) = {
-            shipCloser1Km.flatMap(s => s.nearestFreeDockingPoints(coord).map(_.pointsOnTheRightWay(dp))).getOrElse((false, false))
+            shipCloser2Km.flatMap(s => s.nearestFreeDockingPoints(coord).map(_.pointsOnTheRightWay(dp))).getOrElse((false, false))
           }
 
           val c1 = if (p1_on_the_right_way) GREEN else RED
           val c2 = if (p2_on_the_right_way) GREEN else RED
 
-          val v1 = (dp.p1 - dp.p2).n
+          val v1 = (dp.p1.actualPos - dp.p2.actualPos).n
           val v2 = v1.perpendicular
 
           drawDashedLine(dp.p1.actualPos, dp.p1.actualPos + v2 * 100, 2.5, colorIfPlayerAliveOrRed(c1))
@@ -555,7 +555,6 @@ abstract class PolygonShip(
   
   lazy val is_player:Boolean = index == player_ship.index
 
-  // TODO: зарефакторить этот метод: вынести его отдельные элементы в отдельные методы и оверрайдить их в потомках при необходимости.
   private def drawShip(): Unit = {
     if (!drawMapMode && (is_player || coord.dist2(player_ship.coord) < 100000 * 100000)) {
       if (isAlive) {
@@ -721,7 +720,7 @@ abstract class PolygonShip(
    * Все другие корабли, отсортированные по расстоянию по убыванию (первый - ближайший).
    * @return
    */
-  def shipsNear: Seq[PolygonShip] = ShipsHolder.ships.filter(s => {
+  protected def shipsNear: Seq[PolygonShip] = ShipsHolder.ships.filter(s => {
     s.currentState.active &&
     s.thisOrActualProxyShipIndex != thisOrActualProxyShipIndex &&
     s.isAlive
@@ -732,7 +731,7 @@ abstract class PolygonShip(
    * @param x - расстояние в километрах
    * @return
    */
-  def shipsCloserXKm(x: Long): Seq[PolygonShip] = ShipsHolder.ships.filter(s => {
+  protected def shipsCloserXKm(x: Long): Seq[PolygonShip] = ShipsHolder.ships.filter(s => {
     s.currentState.active &&
     s.thisOrActualProxyShipIndex != thisOrActualProxyShipIndex &&
     s.isAlive &&
@@ -744,48 +743,16 @@ abstract class PolygonShip(
    * @param x - дистанция в километрах
    * @return
    */
-  def shipCloserXKm(x: Long): Option[PolygonShip] = shipsCloserXKm(11).headOption
+  protected def shipCloserXKm(x: Long): Option[PolygonShip] = shipsCloserXKm(11).headOption
+
+  protected def shipsCloser2Km: Seq[PolygonShip] = shipsCloserXKm(2)
 
   /**
    * Корабль ближе 1 км от нас. Если таких несколько, то ближайший.
    * Метод используется для реализации автоматической стыковки.
    * @return
    */
-  def shipCloser1Km: Option[PolygonShip] = shipCloserXKm(1)
-
-  /**
-   * Корабль ближе 500 км от нас, интерфейс которого не свернут. Если таких несколько, то ближайший.
-   * Метод используется в алогритмах автоматического уравнивания скорости, поддержания направления, стыковки
-   * @return
-   */
-  def shipCloser500KmNonMinimized: Option[PolygonShip] = {
-    def _check(s:PolygonShip):Boolean = {
-      /*println(s"${s.name} s.currentState.active = ${s.currentState.active}")
-      println(s"${s.name} s.index != index = ${s.index != index}")
-      println(s"${s.name} !dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index) = ${!dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index)}")
-      println(s"${s.name} s.isAlive = ${s.isAlive}")
-      println(s"${s.name} s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l = ${s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l}")
-      println(s"${s.name} s.shipInterface.exists(!_.isMinimized) = ${s.shipInterface.exists(!_.isMinimized)}")*/
-      s.currentState.active &&
-      s.thisOrActualProxyShipIndex != thisOrActualProxyShipIndex &&
-      s.isAlive &&
-      s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l &&
-      s.shipInterface.exists(!_.isMinimized)
-    }
-    ShipsHolder.ships.filter(s => _check(s)).sortBy(s => coord.dist2(s.coord)).headOption
-  }
-
-  /**
-   * Можем ли состыковаться с ближайшим кораблем
-   * @return
-   */
-  def canDockWithNearestShip: Boolean = {
-    shipCloser1Km.exists(os => {
-      docking_points.exists(dp => {
-        os.docking_points.exists(osdp => dp.pointsMatch(osdp))
-      })
-    })
-  }
+  protected def shipCloser2Km: Option[PolygonShip] = shipCloserXKm(2)
 
   def tryDock:Boolean = false
   def tryUndock:Boolean = false
@@ -793,17 +760,10 @@ abstract class PolygonShip(
   def possibleDockPointsWithNearestShip: List[(DockingPoints, PolygonShip, DockingPoints)] = {
     for {
       dp <- docking_points
-      os <- shipCloser1Km.toList
+      os <- shipsCloser2Km
       osdp <- os.docking_points
       if dp.pointsMatch(osdp)
     } yield (dp, os, osdp)
-  }
-
-  def canDockWithNearestShipUsingDockPoints(dp: DockingPoints): Boolean = {
-    shipCloser1Km match {
-      case Some(os) => os.docking_points.exists(osdp => dp.pointsMatch(osdp))
-      case None => false
-    }
   }
 
   val pilot_mass = 75

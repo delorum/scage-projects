@@ -309,6 +309,18 @@ class Ship4(index: Int,
     if (x > 180) 360 - x else x
   }
 
+  /**
+   * Можем ли состыковаться с ближайшим кораблем
+   * @return
+   */
+  def canDockWithNearestShip: Boolean = {
+    shipCloser2KmNonMinimized.exists(os => {
+      docking_points.exists(dp => {
+        os.docking_points.exists(osdp => dp.pointsMatch(osdp))
+      })
+    })
+  }
+
   override def tryDock:Boolean = {
     InterfaceHolder.dockingSwitcher.dockingEnabled && canDockWithNearestShip &&
     (InterfaceHolder.dockingSwitcher.dockingAuto || (InterfaceHolder.dockingSwitcher.dockingManual && InterfaceHolder.dockUndock.needDock))
@@ -343,6 +355,39 @@ class Ship4(index: Int,
     else if (dist_abs > 10) speeds._6
     else speeds._7
     if (dist >= 0) ans else -ans
+  }
+
+  /**
+   * Корабль ближе 500 км от нас, интерфейс которого не свернут. Если таких несколько, то ближайший.
+   * Метод используется в алогритмах автоматического уравнивания скорости, поддержания направления, стыковки
+   * @return
+   */
+  private def shipCloser500KmNonMinimized: Option[PolygonShip] = {
+    def _check(s:PolygonShip):Boolean = {
+      /*println(s"${s.name} s.currentState.active = ${s.currentState.active}")
+      println(s"${s.name} s.index != index = ${s.index != index}")
+      println(s"${s.name} !dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index) = ${!dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index)}")
+      println(s"${s.name} s.isAlive = ${s.isAlive}")
+      println(s"${s.name} s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l = ${s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l}")
+      println(s"${s.name} s.shipInterface.exists(!_.isMinimized) = ${s.shipInterface.exists(!_.isMinimized)}")*/
+      s.currentState.active &&
+      s.thisOrActualProxyShipIndex != thisOrActualProxyShipIndex &&
+      s.isAlive &&
+      s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l &&
+      s.shipInterface.exists(!_.isMinimized)
+    }
+    ShipsHolder.ships.filter(s => _check(s)).sortBy(s => coord.dist2(s.coord)).headOption
+  }
+
+  private def shipCloser2KmNonMinimized: Option[PolygonShip] = {
+    def _check(s:PolygonShip):Boolean = {
+      s.currentState.active &&
+      s.thisOrActualProxyShipIndex != thisOrActualProxyShipIndex &&
+      s.isAlive &&
+      s.coord.dist2(coord) < 2 * 1000l * 2 * 1000l &&
+      s.shipInterface.exists(!_.isMinimized)
+    }
+    ShipsHolder.ships.filter(s => _check(s)).sortBy(s => coord.dist2(s.coord)).headOption
   }
 
   action {
@@ -447,69 +492,64 @@ class Ship4(index: Int,
             if (isDocked) {
               flightMode = FreeFlightMode
             } else {
-              shipCloser500KmNonMinimized match {
+              shipCloser2KmNonMinimized match {
                 case Some(os) =>
                   InterfaceHolder.dockingSwitcher.setDockingAuto()
                   val dp = docking_points.sortBy(_.curP1.dist2(os.coord)).head
                   val ship_docking_point = dp.curP1 + 0.5 * (dp.curP2 - dp.curP1)
                   os.docking_points.sortBy(osdp => osdp.curP1.dist2(ship_docking_point)).headOption match {
                     case Some(osdp) =>
-                      if (osdp.curP1.dist(ship_docking_point) > 2000) {
-                        // система стыковки начинает работать с расстояния двух километров
-                        flightMode = FreeFlightMode
-                      } else {
-                        val vv1 = (osdp.curP1 - osdp.curP2).n
-                        val docking_point = osdp.curP1 + 0.5 * (osdp.curP2 - osdp.curP1)
-                        val docking_dir = -vv1.perpendicular
-                        val angle = dp.dock_dir.deg360(docking_dir)
-                        if (angleMinDiff(rotation, angle) < angle_error) {
-                          if (math.abs(angularVelocity) < angular_velocity_error) {
-                            val A = ship_docking_point.x
-                            val B = ship_docking_point.y
-                            val C = docking_point.x
-                            val D = docking_point.y
-                            val a1 = vv1.x
-                            val a2 = vv1.y
-                            val b1 = docking_dir.x
-                            val b2 = docking_dir.y
-                            // координаты точки стыковки корабля в системе координат с началом в docking_point и базисными векторами (vv1, docking_dir)
-                            val x = (b2 * (A - C) - b1 * (B - D)) / (a1 * b2 - a2 * b1)
-                            val y = (a2 * (A - C) - a1 * (B - D)) / (a2 * b1 - a1 * b2)
-                            if (y > 0) {
-                              // если мы выше точки стыковки
-                              // летим вниз пока не окажемся на 20 метров ниже линии стыковки
-                              preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y - (-20)))
+                      val vv1 = (osdp.curP1 - osdp.curP2).n
+                      val docking_point = osdp.curP1 + 0.5 * (osdp.curP2 - osdp.curP1)
+                      val docking_dir = -vv1.perpendicular
+                      val angle = dp.dock_dir.deg360(docking_dir)
+                      if (angleMinDiff(rotation, angle) < angle_error) {
+                        if (math.abs(angularVelocity) < angular_velocity_error) {
+                          val A = ship_docking_point.x
+                          val B = ship_docking_point.y
+                          val C = docking_point.x
+                          val D = docking_point.y
+                          val a1 = vv1.x
+                          val a2 = vv1.y
+                          val b1 = docking_dir.x
+                          val b2 = docking_dir.y
+                          // координаты точки стыковки корабля в системе координат с началом в docking_point и базисными векторами (vv1, docking_dir)
+                          val x = (b2 * (A - C) - b1 * (B - D)) / (a1 * b2 - a2 * b1)
+                          val y = (a2 * (A - C) - a1 * (B - D)) / (a2 * b1 - a1 * b2)
+                          if (y > 0) {
+                            // если мы выше точки стыковки
+                            // летим вниз пока не окажемся на 20 метров ниже линии стыковки
+                            preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y - (-20)))
+                          } else {
+                            if (math.abs(x) <= 0.2) {
+                              // если мы ниже точки стыковки и на линии стыковки
+                              // летим стыковаться
+                              preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y))
+                            } else if (math.abs(x) <= 1) {
+                              // если мы ниже точки стыковки и не очень далеко в стороне от линии стыковки
+                              // движемся в сторону линии стыковки и в сторону точки стыковки (продолжаем стыковаться)
+                              preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y) - vv1 * decideSpeedValue(x))
                             } else {
-                              if (math.abs(x) <= 0.2) {
-                                // если мы ниже точки стыковки и на линии стыковки
-                                // летим стыковаться
-                                preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y))
-                              } else if (math.abs(x) <= 1) {
-                                // если мы ниже точки стыковки и не очень далеко в стороне от линии стыковки
-                                // движемся в сторону линии стыковки и в сторону точки стыковки (продолжаем стыковаться)
-                                preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y) - vv1 * decideSpeedValue(x))
+                              // если мы ниже точки стыковки и далеко от линии стыковки
+                              if (y < -20) {
+                                // если мы больше, чем на 20 метров ниже точки стыковки
+                                // летим пока не окажемся на 20 метров ниже линии стыковки и одновременно движемся в сторону линии стыковки
+                                preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y - (-20)) - vv1 * decideSpeedValue(x))
                               } else {
-                                // если мы ниже точки стыковки и далеко от линии стыковки
-                                if (y < -20) {
-                                  // если мы больше, чем на 20 метров ниже точки стыковки
-                                  // летим пока не окажемся на 20 метров ниже линии стыковки и одновременно движемся в сторону линии стыковки
-                                  preserveVelocity(os.linearVelocity - docking_dir * decideSpeedValue(y - (-20)) - vv1 * decideSpeedValue(x))
-                                } else {
-                                  // если мы ниже линии стыковки, но ближе 20 метров
-                                  // движемся в сторону линии стыковки, по вертикали свою позицию не меняем
-                                  preserveVelocity(os.linearVelocity - vv1 * decideSpeedValue(x))
-                                }
+                                // если мы ниже линии стыковки, но ближе 20 метров
+                                // движемся в сторону линии стыковки, по вертикали свою позицию не меняем
+                                preserveVelocity(os.linearVelocity - vv1 * decideSpeedValue(x))
                               }
                             }
-                          } else {
-                            preserveAngularVelocity(0)
                           }
                         } else {
-                          if (linearVelocity.dist(os.linearVelocity) > linear_velocity_error) {
-                            preserveVelocity(os.linearVelocity)
-                          } else {
-                            preserveAngle(angle)
-                          }
+                          preserveAngularVelocity(0)
+                        }
+                      } else {
+                        if (linearVelocity.dist(os.linearVelocity) > linear_velocity_error) {
+                          preserveVelocity(os.linearVelocity)
+                        } else {
+                          preserveAngle(angle)
                         }
                       }
                     case None =>
@@ -783,7 +823,7 @@ class Ship4(index: Int,
         drawFilledCircle(d.our_dp.p2.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
       })
       if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
-        shipCloser500KmNonMinimized.foreach(s => nearestFreeDockingPoints(s.coord).foreach(dp => {
+        shipCloser2KmNonMinimized.foreach(s => nearestFreeDockingPoints(s.coord).foreach(dp => {
           drawFilledCircle(dp.p1.actualPos, 0.3, colorIfPlayerAliveOrRed(RED))
           drawFilledCircle(dp.p2.actualPos, 0.3, colorIfPlayerAliveOrRed(RED))
         }))
