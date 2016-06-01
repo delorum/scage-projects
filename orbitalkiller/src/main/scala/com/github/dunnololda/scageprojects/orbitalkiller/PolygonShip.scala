@@ -556,7 +556,7 @@ abstract class PolygonShip(
   lazy val is_player:Boolean = index == player_ship.index
 
   private def drawShip(): Unit = {
-    if (!drawMapMode && (is_player || coord.dist2(player_ship.coord) < 100000 * 100000)) {
+    if (!drawMapMode && (is_player || coord.dist2(player_ship.coord) < 100l*1000l * 100l*1000l)) {
       if (isAlive) {
         openglLocalTransform {
           openglMove(coord - base)
@@ -1263,11 +1263,11 @@ abstract class PolygonShip(
   def afterStep(time_msec: Long): Unit = {
     if(dock_data.isEmpty) {
       // условие сделать корабль неактивным и не обрабатывать его:
-      // если это не корабль игрока, расстояние от данного корабля до корабля игрока больше 1000 км,
+      // если это не корабль игрока, расстояние от данного корабля до корабля игрока больше 500 км,
       // перигей орбиты выше верхней границы атмосферы (орбита стабильная) или мы стоим на земле,
       // двигатели не включены
       val deactivate_condition = thisOrActualProxyShipIndex != player_ship.thisOrActualProxyShipIndex &&
-        coord.dist2(OrbitalKiller.player_ship.coord) > 1000000l * 1000000l &&
+        coord.dist2(OrbitalKiller.player_ship.coord) > 500l*1000l * 500l*1000l &&
         _orbit_data.exists(or => {
           or.is_landed || or.ellipseOrbit.exists(e => e.r_p > or.planet.radius + or.planet.air_free_altitude)
         }) &&
