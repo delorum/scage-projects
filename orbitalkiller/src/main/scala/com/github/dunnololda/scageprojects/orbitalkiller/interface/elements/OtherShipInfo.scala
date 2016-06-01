@@ -86,7 +86,8 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
             }).getOrElse(/*"N/A", */ "N/A")
           val dist = mOrKmOrMKm(player_ship.coord.dist(monitoring_ship.coord))
           val vel = msecOrKmsec((player_ship.linearVelocity - monitoring_ship.linearVelocity) * (player_ship.coord - monitoring_ship.coord).n)
-          strings(0) = s"${monitoring_ship.name}: dist=$dist, vel=$vel, $need_orbit_period_str"
+          val activeStr = if(monitoring_ship.currentState.active) "" else "!"
+          strings(0) = s"$activeStr${monitoring_ship.name}: dist=$dist, vel=$vel, $need_orbit_period_str"
         }
       }
       _update_needed = false
@@ -96,6 +97,7 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
   override def data: Seq[String] = strings
 
   override val color = ScageColor.MAGENTA
+  //override def color = if(monitoring_ship.currentState.active) ScageColor.MAGENTA else ScageColor.DARK_MAGENTA
 
   override val shortDescr: String = "OS"
 }

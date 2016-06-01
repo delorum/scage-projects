@@ -10,7 +10,7 @@ class TimeInfo extends InterfaceElement {
   override protected def _update(): Unit = {
     val time_acceleration = f"x${(OrbitalKiller.timeMultiplier * OrbitalKiller.k).toInt} (${1f * OrbitalKiller.timeMultiplier / 63 * OrbitalKiller.ticks}%.2f)"
     if (OrbitalKiller._stop_after_number_of_tacts > 0 || OrbitalKiller._set_stop_time) {
-      strings_with_stop_moment(0) = s"Время: $time_acceleration ${timeStr((OrbitalKiller.tacts * OrbitalKiller.base_dt * 1000).toLong)}"
+      strings_with_stop_moment(0) = s"Время: $time_acceleration ${timeStr(OrbitalKiller.timeMsec)}"
       if (OrbitalKiller.timeMultiplier != OrbitalKiller.realtime) {
         if(OrbitalKiller._set_stop_time) {
           strings_with_stop_moment(1) = s"[gОстановка через ${timeStr((OrbitalKiller._stop_after_number_of_tacts * OrbitalKiller.base_dt * 1000).toLong)} (${timeStr((OrbitalKiller._stop_after_number_of_tacts * OrbitalKiller.base_dt * 1000 / (1f * OrbitalKiller.timeMultiplier / 63 * OrbitalKiller.ticks)).toLong)})]"
@@ -26,7 +26,7 @@ class TimeInfo extends InterfaceElement {
       }
       strings = strings_with_stop_moment
     } else {
-      strings_without_stop_moment(0) = s"Время: $time_acceleration ${timeStr((OrbitalKiller.tacts * OrbitalKiller.base_dt * 1000).toLong)}"
+      strings_without_stop_moment(0) = s"Время: $time_acceleration ${timeStr(OrbitalKiller.timeMsec)}"
       strings = strings_without_stop_moment
     }
   }
