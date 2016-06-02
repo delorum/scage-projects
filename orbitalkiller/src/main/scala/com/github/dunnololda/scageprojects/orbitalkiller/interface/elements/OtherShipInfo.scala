@@ -24,7 +24,7 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
         } else {
           val /*(_, */ need_orbit_period_str /*)*/ = (for {
             OrbitData(_, _, _, _, _, _, _, _, our_orbit_planet, our_orbit_kepler, our_ccw, _) <- player_ship.thisOrActualProxyShipOrbitData
-            OrbitData(_, _, _, _, _, _, _, _, os_orbit_planet, os_orbit_kepler, os_ccw, _) <- monitoring_ship.thisOrActualProxyShipOrbitData
+            os_or @ OrbitData(_, _, _, _, _, _, _, _, os_orbit_planet, os_orbit_kepler, os_ccw, _) <- monitoring_ship.thisOrActualProxyShipOrbitData
             if our_orbit_planet.index == os_orbit_planet.index
             if our_ccw == os_ccw
             our_orbit_ellipse <- player_ship.thisOrActualProxyShipOrbitData.flatMap(_.ellipseOrbit)
@@ -56,6 +56,8 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
                   case None =>
                     /*("N/A", */ "N/A" /*)*/
                 }
+              } else if(os_or.is_landed) {
+                "landed"
               } else {
                 val os_travel_time_to_our_point1_msec = os_orbit_ellipse.travelTimeOnOrbitMsec(monitoring_ship.coord, os_orbit_ellipse.orbitalPointInPoint(player_ship.coord), os_ccw)
                 val os_travel_time_to_our_point2_msec = (os_orbit_period_sec * 1000 - os_travel_time_to_our_point1_msec).toLong

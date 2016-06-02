@@ -1185,9 +1185,20 @@ package object orbitalkiller {
 
     def center: DVec
 
+    protected def calcFallPos(fall_point:DVec, planet_ang:Double, planet_radius:Double):String = {
+      if (InterfaceHolder.degOrKm.selectedVariant == 0) {
+        f"${correctAngle(DVec(0, 1).deg360(fall_point - f) - planet_ang)}%.3f град."
+      } else {
+        val planet_length = 2*math.Pi*planet_radius
+        val km = (correctAngle(DVec(0, 1).deg360(fall_point - f) - planet_ang) / 360.0 * planet_length) / 1000
+        f"$km%.2f/${planet_length/1000}%.2f км"
+      }
+    }
+
     def strDefinition(prefix: String,
                       planet_radius: Double,
                       planet_velocity: DVec,
+                      planet_ang: Double,
                       planet_groundSpeedMsec: Double,
                       planet_g: Double,
                       ship_coord: DVec,
@@ -1212,6 +1223,7 @@ package object orbitalkiller {
     def strDefinition(prefix: String,
                       planet_radius: Double,
                       planet_velocity: DVec,
+                      planet_ang: Double,
                       planet_groundSpeedMsec: Double,
                       planet_g: Double,
                       ship_coord: DVec,
@@ -1245,20 +1257,28 @@ package object orbitalkiller {
 
         /*val ship_planet_vertical_speed = (ship_velocity - planet_velocity) * (ship_coord - f).n
         val ship_planet_tangent_speed = ((ship_velocity - planet_velocity) * (ship_coord - f).p) / ship_coord.dist(f) * planet_radius - planet_groundSpeedMsec*/
-        val fall_time_msec = if ((ship_coord.dist(f) - planet_radius) < ship_radius /* &&
+        val (fall_time_msec, fall_position) = if ((ship_coord.dist(f) - planet_radius) < ship_radius /* &&
                                 ship_planet_vertical_speed.abs < 0.5 &&
                                 ship_planet_tangent_speed.abs < 0.5*/ ) {
-          0
+          val fall_pos = calcFallPos(ship_coord, planet_ang, planet_radius)
+          (0l, fall_pos)
         } else if (ccw) {
           val fall_teta_rad = -math.acos((p / (planet_radius + 3) - 1) / e) + 2 * math.Pi
-          travelTimeOnOrbitMsecCCW(ship_coord, orbitalPointByTrueAnomalyRad(fall_teta_rad))
+          val fall_point = orbitalPointByTrueAnomalyRad(fall_teta_rad)
+          val fall_pos = calcFallPos(fall_point, planet_ang, planet_radius)
+          val fall_time = travelTimeOnOrbitMsecCCW(ship_coord, fall_point)
+          (fall_time, fall_pos)
         } else {
           val fall_teta_rad = math.acos((p / (planet_radius + 3) - 1) / e)
-          travelTimeOnOrbitMsecCW(ship_coord, orbitalPointByTrueAnomalyRad(fall_teta_rad))
+          val fall_point = orbitalPointByTrueAnomalyRad(fall_teta_rad)
+          val fall_pos = calcFallPos(fall_point, planet_ang, planet_radius)
+          val fall_time = travelTimeOnOrbitMsecCW(ship_coord, fall_point)
+          (fall_time, fall_pos)
         }
 
-        val time_to_stop_at_full_power = math.abs(v0y / (1000000 / OrbitalKiller.player_ship.mass - planet_g))
-        val fall_time_str = if (fall_time_msec < 500) "" else if (fall_time_msec < 30000) s"[r Поверхность через ${timeStr(fall_time_msec)} (${timeStr((time_to_stop_at_full_power * 1000l).toLong)})]" else s"Поверхность через ${timeStr(fall_time_msec)}"
+        val allowed_acc = if (InterfaceHolder.gSwitcher.maxGSet) InterfaceHolder.gSwitcher.maxG * planet_g else 1000000 / OrbitalKiller.player_ship.mass
+        val time_to_stop_at_full_power = math.abs(v0y / (allowed_acc - planet_g))
+        val fall_time_str = if (fall_time_msec < 500) "" else if (fall_time_msec < 30000) s"[r Поверхность через ${timeStr(fall_time_msec)}, $fall_position (${timeStr((time_to_stop_at_full_power * 1000l).toLong)})]" else s"Поверхность через ${timeStr(fall_time_msec)}, $fall_position"
 
         f"$prefix, суборбитальная, $dir, e = $e%.2f, r_p = ${mOrKmOrMKm(r_p - planet_radius)}, r_a = ${mOrKmOrMKm(r_a - planet_radius)}. $fall_time_str"
       } else {
@@ -1523,6 +1543,7 @@ package object orbitalkiller {
     def strDefinition(prefix: String,
                       planet_radius: Double,
                       planet_velocity: DVec,
+                      planet_ang: Double,
                       planet_groundSpeedMsec: Double,
                       planet_g: Double,
                       ship_coord: DVec,
@@ -1538,20 +1559,26 @@ package object orbitalkiller {
 
         /*val ship_earth_vertical_speed = (ship_velocity - planet_velocity) * (ship_coord - f).n
         val ship_earth_tangent_speed = ((ship_velocity - planet_velocity) * (ship_coord - f).p) / ship_coord.dist(f) * planet_radius - planet_groundSpeedMsec*/
-        val fall_time_msec = if ((ship_coord.dist(f) - planet_radius) < ship_radius /* &&
+        val (fall_time_msec, fall_position) = if ((ship_coord.dist(f) - planet_radius) < ship_radius /* &&
                                 ship_earth_vertical_speed.abs < 0.5 &&
                                 ship_earth_tangent_speed.abs < 0.5*/ ) {
-          0
+          val fall_pos = calcFallPos(ship_coord, planet_ang, planet_radius)
+          (0l, fall_pos)
         } else if (ccw) {
           val fall_teta_rad = -math.acos((p / (planet_radius + 3) - 1) / e) + 2 * math.Pi
-          travelTimeOnOrbitMsecCCW(ship_coord, orbitalPointByTrueAnomalyRad(fall_teta_rad))
+          val fall_point = orbitalPointByTrueAnomalyRad(fall_teta_rad)
+          val fall_pos = calcFallPos(fall_point, planet_ang, planet_radius)
+          (travelTimeOnOrbitMsecCCW(ship_coord, fall_point), fall_pos)
         } else {
           val fall_teta_rad = math.acos((p / (planet_radius + 3) - 1) / e)
-          travelTimeOnOrbitMsecCW(ship_coord, orbitalPointByTrueAnomalyRad(fall_teta_rad))
+          val fall_point = orbitalPointByTrueAnomalyRad(fall_teta_rad)
+          val fall_pos = calcFallPos(fall_point, planet_ang, planet_radius)
+          (travelTimeOnOrbitMsecCW(ship_coord, fall_point), fall_pos)
         }
 
-        val time_to_stop_at_full_power = math.abs(v0y / (1000000 / OrbitalKiller.player_ship.mass - planet_g))
-        val fall_time_str = if (fall_time_msec < 500) "" else if (fall_time_msec < 30000) s"[r Поверхность через ${timeStr(fall_time_msec)} (${timeStr((time_to_stop_at_full_power * 1000l).toLong)})]" else s"Поверхность через ${timeStr(fall_time_msec)}"
+        val allowed_acc = if (InterfaceHolder.gSwitcher.maxGSet) InterfaceHolder.gSwitcher.maxG * planet_g else 1000000 / OrbitalKiller.player_ship.mass
+        val time_to_stop_at_full_power = math.abs(v0y / (allowed_acc - planet_g))
+        val fall_time_str = if (fall_time_msec < 500) "" else if (fall_time_msec < 30000) s"[r Поверхность через ${timeStr(fall_time_msec)}, $fall_position (${timeStr((time_to_stop_at_full_power * 1000l).toLong)})]" else s"Поверхность через ${timeStr(fall_time_msec)}, $fall_position"
         f"$prefix, незамкнутая, суборбитальная $dir, $r_p_approach_str, e = $e%.2f, r_p = ${mOrKmOrMKm(r_p - planet_radius)}, $fall_time_str"
       } else {
         f"$prefix, незамкнутая, $dir, $r_p_approach_str, e = $e%.2f, r_p = ${mOrKmOrMKm(r_p - planet_radius)}"

@@ -1262,6 +1262,21 @@ abstract class PolygonShip(
     }
   }
 
+  private val conditions:List[() => Boolean] = List(
+    () => thisOrActualProxyShipIndex != player_ship.thisOrActualProxyShipIndex,
+    () => coord.dist2(OrbitalKiller.player_ship.coord) > 500l*1000l * 500l*1000l,
+    () => _orbit_data.exists(or => {
+      or.is_landed || or.ellipseOrbit.exists(e => e.r_p > or.planet.radius + or.planet.air_free_altitude)
+    }),
+    () => engines.forall(!_.active)
+  )
+  private def deactivateCondition:(Boolean, Int) = {
+    conditions.zipWithIndex.find(c => !c._1()).map(x => {
+      if(name == "Приятель")println(s"${mOrKmOrMKm(coord.dist(OrbitalKiller.player_ship.coord))}")
+      (false, x._2)
+    }).getOrElse((true, -1))
+  }
+
   def afterStep(time_msec: Long): Unit = {
     if(dock_data.isEmpty) {
       // условие сделать корабль неактивным и не обрабатывать его:
