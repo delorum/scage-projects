@@ -1,7 +1,5 @@
 package com.github.dunnololda.scageprojects
 
-import java.math.{RoundingMode, MathContext}
-
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.{Body => Phys2dBody, BodyList => Phys2dBodyList, Collider => Phys2dCollider, DynamicShape => Phys2dShape, StaticBody => Phys2dStaticBody, _}
 

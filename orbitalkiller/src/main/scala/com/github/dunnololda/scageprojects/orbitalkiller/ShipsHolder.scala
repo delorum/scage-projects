@@ -2,8 +2,8 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.{Set, mutable}
 
 object ShipsHolder {
   def addShip(ship: PolygonShip): Unit = {
@@ -61,7 +61,7 @@ object ShipsHolder {
 
   private var _shipIndicies: mutable.HashSet[Int] = mutable.HashSet[Int]()
 
-  def shipIndicies: Set[Int] = _shipIndicies
+  def shipIndicies: mutable.Set[Int] = _shipIndicies
 
   def currentShipStatesExceptShip(ship_index: Int): Seq[MutableBodyState] = _ships.withFilter(x => x.currentState.active && x.index != ship_index).map(_.currentState)
 }

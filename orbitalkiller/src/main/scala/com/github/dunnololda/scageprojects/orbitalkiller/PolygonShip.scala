@@ -371,7 +371,9 @@ abstract class PolygonShip(
 
   def currentTorque(time: Long): Double = {
     engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(0.0) {
-      case (sum, e) => sum + (-(e.force_dir.actualDir*e.power) */ e.position.actualPos)
+      case (sum, e) =>
+        val e_torque = -(e.force_dir.actualDir*e.power) */ e.position.actualPos
+        sum + e_torque
     }
   }
 

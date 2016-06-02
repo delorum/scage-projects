@@ -184,6 +184,10 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
     mutable_system.filter(kv => kv._2.body.active && indicies.contains(kv._1)).map(kv => (kv._1, kv._2.body))
   }
 
+  def bodyStates(indicies: mutable.Set[Int]): mutable.Map[Int, MutableBodyState] = {
+    mutable_system.filter(kv => kv._2.body.active && indicies.contains(kv._1)).map(kv => (kv._1, kv._2.body))
+  }
+
   def bodyState(index: Int): Option[MutableBodyState] = mutable_system.get(index).map(_.body)
 
   private val already_checked = mutable.HashMap[Int, mutable.HashSet[Int]]()

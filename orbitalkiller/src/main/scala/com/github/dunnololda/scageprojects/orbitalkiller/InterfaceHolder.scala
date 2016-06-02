@@ -27,6 +27,7 @@ object InterfaceHolder {
   val gSwitcher = new GSwitcher
   val degOrKm = new DegOrKm
   val timeStepSwitcher = new TimeStepSwitcher
+  val proxyHullSwitcher = new ProxyHullSwitcher
 
   val timeInfo = new TimeInfo
 
@@ -81,7 +82,8 @@ object InterfaceHolder {
     dockUndock,
     gSwitcher,
     degOrKm,
-    timeStepSwitcher)
+    timeStepSwitcher,
+    proxyHullSwitcher)
 
   private def activeSwitchers = switchers.filter(_.active)
 
