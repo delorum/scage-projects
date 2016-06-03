@@ -142,6 +142,10 @@ package object orbitalkiller {
       } yield p_n_plus_1.*/(p_n)).sum
       numerator / denominator / 6.0
     }
+
+    lazy val area = math.abs(0.5*points.sliding(2).map {
+      case List(p, p1) => p.x*p1.y - p1.x*p.y
+    }.sum)
   }
 
   class Space(val bodies: Seq[MutableBodyState], val center: DVec, val width: Double, val height: Double) {

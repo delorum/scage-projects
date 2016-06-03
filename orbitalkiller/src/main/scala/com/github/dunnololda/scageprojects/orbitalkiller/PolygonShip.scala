@@ -865,7 +865,8 @@ abstract class PolygonShip(
         val part_points = wreck_part.points.map(p => currentState.coord + p - part_center)
         val maybe_obstacle = currentState.contacts.headOption.map(c => if (c.a.index != index) c.a else c.b)
         val random_wreck_vel_func = wreckRandomVelocity(maybe_obstacle)
-        new Wreck(mass / wreck_parts.length,
+        val wreck_mass = mass*wreck_part.area/shape.area
+        new Wreck(wreck_mass,
           part_center,
           random_wreck_vel_func(),
           rotation,
@@ -967,6 +968,8 @@ abstract class PolygonShip(
    */
   def points: List[DVec]
 
+  lazy val shape = PolygonShape(points, convex_parts)
+
   lazy val draw_points = points :+ points.head
   
   def actualDrawPoints = {
@@ -1004,7 +1007,7 @@ abstract class PolygonShip(
     ang_acc = 0,
     ang_vel = 0,
     ang = init_rotation,
-    shape = PolygonShape(points, convex_parts),
+    shape,
     is_static = false)
 
   lazy val currentState: MutableBodyState = initState.toMutableBodyState
