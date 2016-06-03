@@ -183,11 +183,16 @@ abstract class PolygonShip(
 
   def notDocked: Boolean = dock_data.isEmpty
 
+  private val standard_angles = List(0, 90,-90, 180, -180, 270, -270, 360, -360)
   def dock(): Unit = {
     possibleDockPointsWithNearestShip.headOption.foreach {
       case (dp, os, osdp) =>
-        val correction = osdp.curP1 - dp.curP1
         val ship = thisOrActualProxyShip
+        val rotation_diff = rotation - os.rotation
+        standard_angles.find(angle => rotation_diff.equalPlusMinusTen(angle)).foreach(angle => {
+          ship.currentState.ang = os.rotation + angle
+        })
+        val correction = osdp.curP1 - dp.curP1
         ship.currentState.coord += correction
         val proxy_ship = new ProxyShip(ship, ship.coord, ship.rotation, dp, os, os.coord, os.rotation, osdp)
         ship.currentState.active = false
@@ -430,12 +435,12 @@ abstract class PolygonShip(
     if (!engineDisabled(e.index)) {
       val (coord_diff, rotation_diff) = ourCoordAndRotationDiff
       val force_dir = {
-        if(rotation_diff.plusMinusOneEqual(-90)) -e.force_dir.perpendicular
-        if(rotation_diff.plusMinusOneEqual(270)) -e.force_dir.perpendicular
-        else if(rotation_diff.plusMinusOneEqual(90)) e.force_dir.perpendicular
-        else if(rotation_diff.plusMinusOneEqual(-270)) e.force_dir.perpendicular
-        else if(rotation_diff.plusMinusOneEqual(180)) e.force_dir*(-1)
-        else if(rotation_diff.plusMinusOneEqual(-180)) e.force_dir*(-1)
+        if(rotation_diff.equalPlusMinusOne(-90)) -e.force_dir.perpendicular
+        if(rotation_diff.equalPlusMinusOne(270)) -e.force_dir.perpendicular
+        else if(rotation_diff.equalPlusMinusOne(90)) e.force_dir.perpendicular
+        else if(rotation_diff.equalPlusMinusOne(-270)) e.force_dir.perpendicular
+        else if(rotation_diff.equalPlusMinusOne(180)) e.force_dir*(-1)
+        else if(rotation_diff.equalPlusMinusOne(-180)) e.force_dir*(-1)
         else e.force_dir
       }
       val is_vertical = force_dir.x == 0

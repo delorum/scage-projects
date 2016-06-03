@@ -1942,7 +1942,8 @@ package object orbitalkiller {
   }
 
   implicit class MyDouble(d:Double) {
-    def plusMinusOneEqual(x:Double):Boolean = math.abs(d - x) < 1
+    def equalPlusMinusOne(x:Double):Boolean = math.abs(d - x) < 1
+    def equalPlusMinusTen(x:Double):Boolean = math.abs(d - x) < 10
     def round2Digits:Double = {
       val bd = new java.math.BigDecimal(d)
       bd.setScale(2, java.math.RoundingMode.HALF_UP).doubleValue()
