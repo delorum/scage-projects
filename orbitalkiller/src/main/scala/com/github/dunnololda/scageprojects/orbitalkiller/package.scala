@@ -143,8 +143,8 @@ package object orbitalkiller {
       numerator / denominator / 6.0
     }
 
-    lazy val area = math.abs(0.5*points.sliding(2).map {
-      case List(p, p1) => p.x*p1.y - p1.x*p.y
+    lazy val area = math.abs(0.5*(points ::: List(points.head)).sliding(2).map {
+      case List(p, p1) => (p.x + p1.x)*(p.y - p1.y)
     }.sum)
   }
 

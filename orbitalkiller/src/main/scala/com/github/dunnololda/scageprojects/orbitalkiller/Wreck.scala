@@ -10,7 +10,7 @@ class Wreck(mass: Double, init_coord: DVec, init_velocity: DVec, init_rotation: 
 
   def colorIfPlayerAliveOrRed(color: => ScageColor) = if (OrbitalKiller.player_ship.isDead) RED else color
 
-  val currentState = new MutableBodyState(BodyState(
+  val currentState:MutableBodyState = new MutableBodyState(BodyState(
     index = index,
     mass = mass,
     vel = init_velocity,

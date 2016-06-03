@@ -14,7 +14,7 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
   }
 
   override protected def _update(): Unit = {
-    val near_player = player_ship.coord.dist2(monitoring_ship.coord) < 10l*1000*10*1000
+    val near_player = player_ship.coord.dist2(monitoring_ship.coord) < 20l*1000l*20l*1000l
     if(_update_needed || near_player) {
       if (monitoring_ship.isDead) {
         strings(0) = s"${monitoring_ship.name}: ${monitoring_ship.deathReason}"
@@ -23,12 +23,12 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
           strings(0) = s"${monitoring_ship.name}: docked"
         } else {
           val /*(_, */ need_orbit_period_str /*)*/ = (for {
-            OrbitData(_, _, _, _, _, _, _, _, our_orbit_planet, our_orbit_kepler, our_ccw, _) <- player_ship.thisOrActualProxyShipOrbitData
-            os_or @ OrbitData(_, _, _, _, _, _, _, _, os_orbit_planet, os_orbit_kepler, os_ccw, _) <- monitoring_ship.thisOrActualProxyShipOrbitData
+            OrbitData(_, _, _, _, _, _, _, _, our_orbit_planet, our_orbit_kepler, our_ccw, _) <- player_ship.thisOrActualProxyShipCurrentOrbitData
+            os_or @ OrbitData(_, _, _, _, _, _, _, _, os_orbit_planet, os_orbit_kepler, os_ccw, _) <- monitoring_ship.thisOrActualProxyShipCurrentOrbitData
             if our_orbit_planet.index == os_orbit_planet.index
             if our_ccw == os_ccw
-            our_orbit_ellipse <- player_ship.thisOrActualProxyShipOrbitData.flatMap(_.ellipseOrbit)
-            os_orbit_ellipse <- monitoring_ship.thisOrActualProxyShipOrbitData.flatMap(_.ellipseOrbit)
+            our_orbit_ellipse <- player_ship.thisOrActualProxyShipCurrentOrbitData.flatMap(_.ellipseOrbit)
+            os_orbit_ellipse <- monitoring_ship.thisOrActualProxyShipCurrentOrbitData.flatMap(_.ellipseOrbit)
             our_orbit_period_sec = our_orbit_ellipse.t
             os_orbit_period_sec = os_orbit_ellipse.t
           } yield {

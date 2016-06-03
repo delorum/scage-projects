@@ -860,12 +860,16 @@ abstract class PolygonShip(
     if (crash) {
       ShipsHolder.removeShip(this)
       delOperation(render_id)
+      /*println(s"wreck_parts.map(_.area).sum == shape.area = ${wreck_parts.map(_.area).sum == shape.area}")
+      println(s"wreck_parts.map(_.area).sum = ${wreck_parts.map(_.area).sum}")
+      println(s"shape.area = ${shape.area}")*/
       val wrecks = wreck_parts.zipWithIndex.map { case (wreck_part, idx) =>
         val part_center = currentState.coord + wreck_part.points.sum / wreck_part.points.length
         val part_points = wreck_part.points.map(p => currentState.coord + p - part_center)
         val maybe_obstacle = currentState.contacts.headOption.map(c => if (c.a.index != index) c.a else c.b)
         val random_wreck_vel_func = wreckRandomVelocity(maybe_obstacle)
-        val wreck_mass = mass*wreck_part.area/shape.area
+        //val wreck_mass = mass*wreck_part.area/shape.area
+        val wreck_mass = mass/wreck_parts.length
         new Wreck(wreck_mass,
           part_center,
           random_wreck_vel_func(),
@@ -1007,7 +1011,7 @@ abstract class PolygonShip(
     ang_acc = 0,
     ang_vel = 0,
     ang = init_rotation,
-    shape,
+    shape = shape,
     is_static = false)
 
   lazy val currentState: MutableBodyState = initState.toMutableBodyState
@@ -1034,6 +1038,11 @@ abstract class PolygonShip(
           } else {
             updateStateSinceDeactivation(time_msec, some_system_state)
             _orbit_data = OrbitalKiller.updateOrbitData(update_count, currentState, radius, hyperbola_color, ellipse_color, some_system_state, planet_indices)
+          }
+          if(time_msec == timeMsec) {
+            _current_orbit_data = _orbit_data
+          } else {
+            updateCurrentOrbitData(update_count, hyperbola_color, ellipse_color)
           }
         }
     }
@@ -1062,6 +1071,18 @@ abstract class PolygonShip(
           currentState.vel = planet_vel + (currentState.coord - planet_coord).p * or.planet.groundSpeedMsec
         }
       case None =>
+    }
+  }
+
+  private var _current_orbit_data: Option[OrbitData] = None
+  def currentOrbitData = _current_orbit_data
+  def thisOrActualProxyShipCurrentOrbitData:Option[OrbitData] = dock_data.map(_.proxy_ship.thisOrActualProxyShipOrbitData).getOrElse(_current_orbit_data)
+  private def updateCurrentOrbitData(update_count:Long, hyperbola_color:ScageColor, ellipse_color:ScageColor): Unit = {
+    if(currentState.active) {
+      _current_orbit_data = OrbitalKiller.updateOrbitData(update_count, index, radius, hyperbola_color, ellipse_color, system_evolution.allBodyStates, planet_indices)
+    } else {
+      updateStateSinceDeactivation(timeMsec, system_evolution.allBodyStates)
+      _current_orbit_data = OrbitalKiller.updateOrbitData(update_count, currentState, radius, hyperbola_color, ellipse_color, system_evolution.allBodyStates, planet_indices)
     }
   }
 

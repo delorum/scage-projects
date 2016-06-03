@@ -175,7 +175,7 @@ object ShipDesigner extends ScageScreenApp("Ship Designer", property("screen.wid
           val mapping = engines_mapping.getOrElse(idx, 0)
           val (_, val_name, key_name) = engineMappingStr(mapping)
           s"  $key_name -> $val_name"
-      }.mkString("val engines_mapping = Map(\n", ",\n", "\n)"))
+      }.mkString("val engines_by_keycodes = Map(\n", ",\n", "\n)"))
       println()
       println("def preserveVelocity(vel:DVec) {}")
       println("def preserveAngularVelocity(ang_vel_deg: Double) {}")

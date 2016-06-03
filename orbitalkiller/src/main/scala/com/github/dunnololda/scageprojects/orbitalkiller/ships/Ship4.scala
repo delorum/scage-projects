@@ -750,7 +750,7 @@ class Ship4(index: Int,
                   val position_when_stop_moment = e.orbitalPointAfterTime(coord, time_to_stop_sec, or.ccw)
                   val r = if (or.ccw) (position_when_stop_moment - or.planet.coord).n else -(position_when_stop_moment - or.planet.coord).n
                   val t = r.perpendicular
-                  drawDashedArrow(DVec.zero.actualPosBeforeRotation, DVec.zero.actualPosBeforeRotation + t*radius, 1, colorIfPlayerAliveOrRed(GREEN))
+                  drawDashedArrow(DVec.zero.actualPosBeforeRotation, DVec.zero.actualPosBeforeRotation + t*radius, 1, colorIfPlayerAliveOrRed(CYAN))
                 case None =>
               }
             }
