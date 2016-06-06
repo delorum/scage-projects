@@ -113,6 +113,9 @@ case class Orbit2(
     val (l1, l2, variant) = if (t1 == 0) {
       if (t2 < 180) (xl1, xl2, "None")
       else (2 * math.Pi - xl1, -xl2, "F & A")
+    } else if(t2 == 0) {
+      if(t1 > 180) (xl1, xl2, "None")
+      else (2 * math.Pi - xl1, -xl2, "F & A")
     } else {
       if (areLinesIntersect(f2 + (f2 - f1).n * r_p, f2, orbital_point1, orbital_point2)) {
         if (t2 > t1) (xl1, xl2, "None")
@@ -166,17 +169,17 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640
 
   private var _m: DVec = DVec.zero
 
-  //private var mr1:Option[DVec] = Some(o.f1 + (o.f1 - o.f2).n.rotateDeg(45)*ro(o.f1 + (o.f1 - o.f2).n.rotateDeg(45)))
-  //private var mr1:Option[DVec] = Some(o.f1 + (o.f1 - o.f2).n*o.r_p)
-  private var mr1: Option[DVec] = Some(o.f2 + (o.f2 - o.f1).n * o.r_p)
-  private var mr2: Option[DVec] = None
-  //private var flight_time:Option[List[String]] = None
-  private var flight_time: Option[String] = None
-
-
   val G: Double = 6.6742867E-11
   val earth_mass = 5.9746E24
   val mu = G * earth_mass
+
+  //private var mr1:Option[DVec] = Some(o.f1 + (o.f1 - o.f2).n.rotateDeg(45)*ro(o.f1 + (o.f1 - o.f2).n.rotateDeg(45)))
+  //private var mr1:Option[DVec] = Some(o.f1 + (o.f1 - o.f2).n*o.r_p)
+  private var mr1: Option[DVec] = Some(o.f1 + (o.f1 - o.f2).p * o.r_p)
+  private var mr2: Option[DVec] = Some(o.f1 + (o.f1 - o.f2).n * o.r_p)
+  //private var flight_time:Option[List[String]] = None
+  val (time, variant) = o.travelTimeOnOrbitMsecCCW(mr1.get, mr2.get, mu)
+  private var flight_time: Option[String] = Some(s"${timeStr(time)}, $variant")
 
   def msecOrKmsec(msec: Number): String = {
     if (math.abs(msec.doubleValue()) < 1000) f"${msec.doubleValue()}%.2f м/сек" else f"${msec.doubleValue() / 1000}%.2f км/сек"
@@ -225,7 +228,7 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640
     }*/
   })
 
-  mouseMotion(onMotion = m => {
+  /*mouseMotion(onMotion = m => {
     _m = absCoord(m)
     val mm = _m / scale
     mr2 = Some(o.f1 + (mm - o.f1).n * ro(mm))
@@ -233,7 +236,7 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640
     flight_time = Some(s"${timeStr(time)}, $variant")
     //println(ro(_m/scale))
   })
-
+*/
   /*action(100) {
     _a = (_a + 1) % 360
   }*/

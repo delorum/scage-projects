@@ -1096,11 +1096,15 @@ package object orbitalkiller {
    * @param G - гравитационная постоянная
    * @return двумерный вектор скорости
    */
-  def speedToHaveOrbitWithParams(perigee_coord: DVec, apogee_diff: Double, planet_coord: DVec, planet_velocity: DVec, planet_mass: Double, G: Double): DVec = {
+  def speedToHaveOrbitWithParams(perigee_coord: DVec, apogee_diff: Double, planet_coord: DVec, planet_velocity: DVec, planet_mass: Double, G: Double, ccw: Boolean = true): DVec = {
     val r_p = perigee_coord.dist(planet_coord)
     val r_a = r_p + apogee_diff
     val mu = planet_mass * G
-    planet_velocity + math.sqrt(-2 * mu / (r_p + r_a) + 2 * mu / r_p) * (perigee_coord - planet_coord).p
+    if(ccw) {
+      planet_velocity + math.sqrt(-2 * mu / (r_p + r_a) + 2 * mu / r_p) * (perigee_coord - planet_coord).p
+    } else {
+      planet_velocity - math.sqrt(-2 * mu / (r_p + r_a) + 2 * mu / r_p) * (perigee_coord - planet_coord).p
+    }
   }
 
   def timeStr(time_msec: Long, add_plus_sign: Boolean = false): String = {
@@ -1290,7 +1294,8 @@ package object orbitalkiller {
       }
     }
 
-    val f_minus_f2 = f - f2
+    lazy val f_minus_f2 = f - f2
+    lazy val f_minus_f2_n = f_minus_f2.n
     val inv_n = a * math.sqrt(a / mu) // это 1/n
 
     def tetaDeg360ByDir(dir: DVec) = f_minus_f2.deg360(dir)
@@ -1365,22 +1370,28 @@ package object orbitalkiller {
       val xl2 = math.acos(1 - (r1 + r2 - s) / (2 * a))
       // Балк М.Б. Элементы динамики космического полета, Формула Ламберта, стр 128-129: выбор чисел l1, l2 среди корней уравнения
       // для эллиптической орбиты, анализ проведен английским математиком А. Кэли
-      val (l1, l2, /*variant*/ _) = if (t1 == 0) {
+      val (l1, l2, _) = if (t1 == 0) {
         if (t2 < 180) (xl1, xl2, "None")
         else (2 * math.Pi - xl1, -xl2, "F & A")
+      } else if(t2 == 0) {
+        if(t1 > 180) (xl1, xl2, "None")
+        else (2 * math.Pi - xl1, -xl2, "F & A")
       } else {
-        if (areLinesIntersect(f2 + (f2 - f).n * r_p, f2, orbital_point1, orbital_point2)) {
+        if (areLinesIntersect(f2 - f_minus_f2_n * r_p, f2, orbital_point1, orbital_point2)) {
           if (t2 > t1) (xl1, xl2, "None")
           else (2 * math.Pi - xl1, -xl2, "F & A")
-        } else if (areLinesIntersect(f, f + (f - f2).n * r_p, orbital_point1, orbital_point2)) {
+        } else if (areLinesIntersect(f, f + f_minus_f2_n * r_p, orbital_point1, orbital_point2)) {
           if (t1 > t2) (xl1, xl2, "None")
           else (2 * math.Pi - xl1, -xl2, "F & A")
         } else if (areLinesIntersect(f2, f, orbital_point1, orbital_point2)) {
           if (t2 > t1) (2 * math.Pi - xl1, xl2, "F")
           else (xl1, -xl2, "A")
         } else {
-          if (t2 > t1) (xl1, xl2, "None")
-          else (2 * math.Pi - xl1, -xl2, "F & A")
+          if (t2 > t1) {
+            (xl1, xl2, "None")
+          } else {
+            (2 * math.Pi - xl1, -xl2, "F & A")
+          }
         }
       }
       /*if(print_variant) {
@@ -1489,8 +1500,8 @@ package object orbitalkiller {
 
     def orbitalPointAfterTimeCW(point1: DVec, time_sec: Long, num_iterations: Int = default_num_iterations): DVec = {
       val t1 = tetaDeg360InPoint(point1)
-      val time_from_r_p = travelTimeOnOrbitMsecCW(0, t1 /*, print_variant = true*/)
-      val all_time = t.toLong - (time_from_r_p / 1000 + time_sec)
+      val time_from_r_p_msec = travelTimeOnOrbitMsecCW(0, t1 /*, print_variant = true*/)
+      val all_time = t.toLong - (time_from_r_p_msec / 1000 + time_sec)
       val M = 1 / inv_n * all_time
       val E7 = (1 to num_iterations).foldLeft(M) {
         case (res, i) => _iteration(res, M)

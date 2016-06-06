@@ -264,8 +264,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   //val ship_start_position = earth.coord + DVec(-100, earth.radius + 199000)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
 
-  val ship_start_position = earth.coord + DVec(-100, earth.radius + 199015)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
+  //val ship_start_position = earth.coord + DVec(-100, earth.radius + 198000)
+  //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, 900000, earth.coord, earth.linearVelocity, earth.mass, G, ccw = false)
+
+  //val ship_start_position = earth.coord + DVec(-100, earth.radius + 199015)
+  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
 
   // стоим на поверхности Луны
   //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
@@ -273,8 +276,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
 
   // на орбите в 1000 км от поверхности Луны
-  //val ship_start_position = moon.coord + DVec(0, moon.radius + 1000000)
-  //val ship_init_velocity = satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = true)
+  val ship_start_position = moon.coord + DVec(0, moon.radius + 100000)
+  val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, 900000, moon.coord, moon.linearVelocity, moon.mass, G, ccw = false)//satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = false)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
 
   val player_ship = new Ship4(ScageId.nextId,
@@ -1126,7 +1129,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                   if (mouse_point_further_on_the_way) {
                     val orbital_point = h.orbitalPointInPoint(mouse_point)
                     drawFilledCircle(orbital_point * scale, 3 / globalScale, ellipse_color)
-                    val flight_time_msec = h.travelTimeOnOrbitMsec(bs_coord, orbital_point, ccw)
+                    lazy val flight_time_msec = h.travelTimeOnOrbitMsec(bs_coord, orbital_point, ccw)
 
                     if (set_stop_moment) {
                       _stop_after_number_of_tacts = (flight_time_msec / 1000 / base_dt).toLong
@@ -1151,13 +1154,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                         !si.isMinimized && !si.monitoring_ship.isCrashed && !player_ship.isDockedToShip(si.monitoring_ship)
                       }).flatMap(_.monitoring_ship.thisOrActualProxyShipOrbitData).foreach(x => {
                         x.ellipseOrbit.foreach(e => {
-                          val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
+                          val position_after_time = e.orbitalPointAfterTime(x.bs_coord, flight_time_msec / 1000, x.ccw)
                           drawCircle(position_after_time * scale, w/globalScale, YELLOW)
                         })
                       })
                       moon.orbitRender.foreach(x => {
                         x.ellipseOrbit.foreach(e => {
-                          val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
+                          val position_after_time = e.orbitalPointAfterTime(x.bs_coord, flight_time_msec / 1000, x.ccw)
                           drawCircle(position_after_time * scale, moon.radius * scale, YELLOW)
                           drawCircle(position_after_time * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
                         })
@@ -1171,7 +1174,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                       x.ellipseOrbit.foreach(e => {
                         if (_stop_after_number_of_tacts > 0) {
                           val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
-                          val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
+                          val position_when_stop_moment = e.orbitalPointAfterTime(x.bs_coord, time_to_stop_sec, x.ccw)
                           drawCircle(position_when_stop_moment * scale, w/globalScale, GREEN)
                         }
                       })
@@ -1180,7 +1183,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                       x.ellipseOrbit.foreach(e => {
                         if (_stop_after_number_of_tacts > 0) {
                           val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
-                          val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
+                          val position_when_stop_moment = e.orbitalPointAfterTime(x.bs_coord, time_to_stop_sec, x.ccw)
                           drawCircle(position_when_stop_moment * scale, moon.radius * scale, GREEN)
                           drawCircle(position_when_stop_moment * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
                         }
@@ -1252,7 +1255,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                 }
                 val true_anomaly_rad = e.tetaRad2PiInPoint(mouse_point)
 
-                val flight_time_msec = e.travelTimeOnOrbitMsec(bs_coord, orbital_point, ccw)
+                lazy val flight_time_msec = e.travelTimeOnOrbitMsec(bs_coord, orbital_point, ccw)
 
                 if (set_stop_moment) {
                   _stop_after_number_of_tacts = (flight_time_msec / 1000 / base_dt).toLong
@@ -1277,11 +1280,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                     !si.isMinimized && !si.monitoring_ship.isCrashed && !player_ship.isDockedToShip(si.monitoring_ship)
                   }).flatMap(_.monitoring_ship.thisOrActualProxyShipOrbitData).foreach(x => {
                     x.ellipseOrbit.foreach(e => {
-                      val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
+                      val position_after_time = e.orbitalPointAfterTime(x.bs_coord, flight_time_msec / 1000, x.ccw)
                       drawCircle(position_after_time * scale, w/globalScale, YELLOW)
                       if (_stop_after_number_of_tacts > 0) {
                         val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
-                        val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
+                        val position_when_stop_moment = e.orbitalPointAfterTime(x.bs_coord, time_to_stop_sec, x.ccw)
                         drawCircle(position_when_stop_moment * scale, w/globalScale, GREEN)
                       }
                     })
@@ -1314,6 +1317,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     //println("updateOrbits")
     if (player_ship.flightMode == Maneuvering || !onPause || !player_ship.engines.exists(_.active)) {
       // если в режиме маневрирования, или не в режиме маневрирования, но не на паузе, или на паузе, но двигатели не работают - рисуем текущее состояние
+      moon.orbitRender = updateOrbitData(update_count, moon.index, moon.radius, player_ship.colorIfPlayerAliveOrRed(GREEN), player_ship.colorIfPlayerAliveOrRed(GREEN), system_evolution.allBodyStates, Set(earth.index, sun.index))
+      earth.orbitRender = updateOrbitData(update_count, earth.index, earth.radius, player_ship.colorIfPlayerAliveOrRed(ORANGE), player_ship.colorIfPlayerAliveOrRed(ORANGE), system_evolution.allBodyStates, Set(sun.index))
       player_ship.updateOrbitData(update_count, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), timeMsec, system_evolution.allBodyStates)
       InterfaceHolder.orbitInfo.markUpdateNeeded()
       InterfaceHolder.shipInterfaces.foreach(si => {
@@ -1322,13 +1327,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           si.markUpdateNeeded()
         }
       })
-      moon.orbitRender = updateOrbitData(update_count, moon.index, moon.radius, player_ship.colorIfPlayerAliveOrRed(GREEN), player_ship.colorIfPlayerAliveOrRed(GREEN), system_evolution.allBodyStates, Set(earth.index, sun.index))
-      earth.orbitRender = updateOrbitData(update_count, earth.index, earth.radius, player_ship.colorIfPlayerAliveOrRed(ORANGE), player_ship.colorIfPlayerAliveOrRed(ORANGE), system_evolution.allBodyStates, Set(sun.index))
     } else {
       // в эту секцию мы попадаем, если мы не в режиме маневрирования, на паузе, и двигатели работают
-      val stop_moment = player_ship.engines.map(_.stopMomentTacts).max
-      val system_state_when_engines_off = getFutureState(stop_moment)
-      val stop_moment_msec = (stop_moment*base_dt*1000).toLong
+      val stop_moment_tacts = player_ship.engines.map(_.stopMomentTacts).max
+      val system_state_when_engines_off = getFutureState(stop_moment_tacts)
+      moon.orbitRender = updateOrbitData(update_count, moon.index, moon.radius, player_ship.colorIfPlayerAliveOrRed(GREEN), player_ship.colorIfPlayerAliveOrRed(GREEN), system_state_when_engines_off, Set(earth.index, sun.index))
+      earth.orbitRender = updateOrbitData(update_count, earth.index, earth.radius, player_ship.colorIfPlayerAliveOrRed(ORANGE), player_ship.colorIfPlayerAliveOrRed(ORANGE), system_state_when_engines_off, Set(sun.index))
+      val stop_moment_msec = (stop_moment_tacts*base_dt*1000).toLong
       player_ship.updateOrbitData(update_count, player_ship.colorIfPlayerAliveOrRed(YELLOW), player_ship.colorIfPlayerAliveOrRed(YELLOW), stop_moment_msec, system_state_when_engines_off)
       InterfaceHolder.orbitInfo.markUpdateNeeded()
       InterfaceHolder.shipInterfaces.foreach(si => {
@@ -1337,8 +1342,6 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           si.markUpdateNeeded()
         }
       })
-      moon.orbitRender = updateOrbitData(update_count, moon.index, moon.radius, player_ship.colorIfPlayerAliveOrRed(GREEN), player_ship.colorIfPlayerAliveOrRed(GREEN), system_state_when_engines_off, Set(earth.index, sun.index))
-      earth.orbitRender = updateOrbitData(update_count, earth.index, earth.radius, player_ship.colorIfPlayerAliveOrRed(ORANGE), player_ship.colorIfPlayerAliveOrRed(ORANGE), system_state_when_engines_off, Set(sun.index))
     }
     update_count += 1
     _update_orbits = false
