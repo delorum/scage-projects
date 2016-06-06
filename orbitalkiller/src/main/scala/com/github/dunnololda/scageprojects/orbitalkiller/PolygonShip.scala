@@ -495,7 +495,7 @@ abstract class PolygonShip(
       val (coord_diff, rotation_diff) = ourCoordAndRotationDiff
       val force_dir = {
         if(rotation_diff.equalPlusMinusOne(-90)) -e.force_dir.perpendicular
-        if(rotation_diff.equalPlusMinusOne(270)) -e.force_dir.perpendicular
+        else if(rotation_diff.equalPlusMinusOne(270)) -e.force_dir.perpendicular
         else if(rotation_diff.equalPlusMinusOne(90)) e.force_dir.perpendicular
         else if(rotation_diff.equalPlusMinusOne(-270)) e.force_dir.perpendicular
         else if(rotation_diff.equalPlusMinusOne(180)) e.force_dir*(-1)
