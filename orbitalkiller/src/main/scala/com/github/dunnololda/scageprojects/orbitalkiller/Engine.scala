@@ -1,15 +1,17 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scage.support.ScageId
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
-class Engine(val index: Int,
+class Engine(val name: Int,
              val position: DVec, // позиция относительно центра массы корабля (ц.м. в точке (0,0))
              val force_dir: DVec, // вектор направления приложения силы
              val max_power: Double, // в ньютонах
              val default_power_percent: Int, // при выборе данного двигателя какая мощность выставляется по умолчанию
              val fuel_consumption_per_sec_at_full_power: Double, // Расход топлива в килограммах в секунду на полной мощности
              val ship: PolygonShip) {
+  val index: Int = ScageId.nextId
   private var worktime_tacts = 0l
   private var stop_moment_tacts = 0l
 

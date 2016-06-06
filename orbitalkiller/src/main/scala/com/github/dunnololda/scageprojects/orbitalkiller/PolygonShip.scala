@@ -66,12 +66,12 @@ case object Maneuvering extends FlightMode {
   override def rusStr: String = "маневрирование"
 }
 
-// 0
+case class DisabledEngine(e:Int, instead_engines:List[Int] = Nil)
 
 class DockingPoints(val p1: DVec,
                     val p2: DVec,
                     ship: PolygonShip,
-                    val disabled_engine: Option[Int],
+                    val disabled_engine: Option[DisabledEngine],
                     val ordered_hull:List[DVec]) {
   val index = ScageId.nextId
   val joint_point = p1 + (p2 - p1) * 0.5
@@ -126,12 +126,27 @@ abstract class PolygonShip(
                             create_interface:Boolean) {
   println(s"$name -> $index")
   protected var selected_engine: Option[Engine] = None
-  def selectedEngine:Option[Engine] = selected_engine
+  def selectedEngine:List[Engine] = selected_engine match {
+    case Some(e) =>
+      if(!engineDisabled(e.index)) {
+        List(e)
+      } else {
+        insteadDisabledEngine(e.index).flatMap(ide => engines.find(_.index == ide))
+      }
+    case None =>
+      Nil
+  }
   def clearEngineSelection(): Unit = {
     selected_engine = None
   }
   def isSelectedEngine(e: Engine): Boolean = {
-    selected_engine.exists(x => x == e)
+    selected_engine.exists(x => {
+      if(!engineDisabled(x.index)) {
+        e.index == x.index
+      } else {
+        insteadDisabledEngine(x.index).contains(e.index)
+      }
+    })
   }
   
   def engines: List[Engine]
@@ -144,10 +159,36 @@ abstract class PolygonShip(
 
   def selectOrSwitchEngineActive(key_code: Int) {
     engines_by_keycodes.get(key_code).foreach(e => {
-      if (selected_engine.exists(_ == e)) {
-        e.switchActive()
-      } else {
-        selected_engine = Some(e)
+      selected_engine match {
+        case Some(se) =>
+          if(e.index == se.index) {
+            val selected = selectedEngine
+            if(selected.length == 1) {
+              selected.head.switchActive()
+            } else {
+              selected.head.switchActive()
+              selected.tail.foreach(x => {
+                x.active = selected.head.active
+                x.powerPercent = selected.head.powerPercent
+              })
+            }
+          } else {
+            selected_engine = Some(e)
+            val selected = selectedEngine
+            if(selected.length > 1) {
+              selected.tail.foreach(x => {
+                x.powerPercent = selected.head.powerPercent
+              })
+            }
+          }
+        case None =>
+          selected_engine = Some(e)
+          val selected = selectedEngine
+          if(selected.length > 1) {
+            selected.tail.foreach(x => {
+              x.powerPercent = selected.head.powerPercent
+            })
+          }
       }
     })
   }
@@ -425,9 +466,27 @@ abstract class PolygonShip(
   def engineDisabled(engine_index:Int):Boolean = {
     dock_data match {
       case Some(dd) =>
-        dd.our_dp.disabled_engine.exists(_ == engine_index) || dd.proxy_ship.engineDisabled(engine_index)
+        dd.our_dp.disabled_engine.exists(_.e == engine_index) || dd.proxy_ship.engineDisabled(engine_index)
       case None =>
         false
+    }
+  }
+
+  def insteadDisabledEngine(engine_index:Int):List[Int] = {
+    dock_data match {
+      case Some(dd) =>
+        dd.our_dp.disabled_engine match {
+          case Some(de) =>
+            if(de.e == engine_index) {
+              de.instead_engines
+            } else {
+              dd.proxy_ship.insteadDisabledEngine(engine_index)
+            }
+          case None =>
+            dd.proxy_ship.insteadDisabledEngine(engine_index)
+        }
+      case None =>
+        Nil
     }
   }
 
@@ -454,11 +513,11 @@ abstract class PolygonShip(
         case DVec(1, 0) =>
           ((e.position.rotateDeg(rotation_diff) + DVec(-0.25, 0) * engine_size) + coord_diff, 0.5 * engine_size, 1 * engine_size)
         case _ =>
-          println(s"${e.ship.name} ${e.index} ${e.force_dir} $rotation_diff $force_dir")
+          println(s"${e.ship.name} ${e.name} ${e.force_dir} $rotation_diff $force_dir")
           throw new Exception("engine force dir other than vertical or horizontal is not supported")
       }
       if(globalScale >= 20 && InterfaceHolder.namesSwitcher.showNames) {
-        print(e.index, e.position.actualPos.toVec, (max_font_size / globalScale).toFloat, WHITE)
+        print(e.name, e.position.actualPos.toVec, (max_font_size / globalScale).toFloat, WHITE)
         drawArrow(center, center + force_dir*radius/6, WHITE)
       }
 
@@ -1271,10 +1330,10 @@ abstract class PolygonShip(
     checkDockingSituation()
   }
 
-  def syncOtherEnginesPower(except_engine:Int): Unit = {
-    println(s"syncOtherEnginesPower(except_engine=$except_engine)")
+  def syncOtherEnginesPower(except_engine_index:Int): Unit = {
+    println(s"syncOtherEnginesPower(except_engine=$except_engine_index)")
     if (InterfaceHolder.gSwitcher.maxGSet) {
-      val active_engines_except = engines.filter(e => e.active && 0 < e.stopMomentTacts && e.index != except_engine)
+      val active_engines_except = engines.filter(e => e.active && 0 < e.stopMomentTacts && e.index != except_engine_index)
       if (active_engines_except.nonEmpty) {
         val air_resistance = earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5)
         val reactive_force = currentReactiveForce(0, currentState) + air_resistance
@@ -1291,7 +1350,7 @@ abstract class PolygonShip(
     }
   }
 
-  private val conditions:List[() => Boolean] = List(
+  /*private val conditions:List[() => Boolean] = List(
     () => thisOrActualProxyShipIndex != player_ship.thisOrActualProxyShipIndex,
     () => coord.dist2(OrbitalKiller.player_ship.coord) > 500l*1000l * 500l*1000l,
     () => _orbit_data.exists(or => {
@@ -1304,7 +1363,7 @@ abstract class PolygonShip(
       if(name == "Приятель")println(s"${mOrKmOrMKm(coord.dist(OrbitalKiller.player_ship.coord))}")
       (false, x._2)
     }).getOrElse((true, -1))
-  }
+  }*/
 
   def afterStep(time_msec: Long): Unit = {
     if(dock_data.isEmpty) {

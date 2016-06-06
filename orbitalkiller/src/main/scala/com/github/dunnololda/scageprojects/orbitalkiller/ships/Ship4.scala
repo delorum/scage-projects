@@ -71,12 +71,6 @@ class Ship4(index: Int,
     PolygonShape(List(DVec(0.5, -5.5), DVec(2.5, -5.5), DVec(3.5, -4.5), DVec(3.5, -3.5)), List()),
     PolygonShape(List(DVec(3.5, -4.5), DVec(4.5, -4.5), DVec(4.5, -2.5), DVec(3.5, -3.5)), List())
   )
-
-  val docking_points = List(
-    new DockingPoints(DVec(-1.5, 9.5), DVec(1.5, 9.5), this, Some(8), createOrderedHull(List(7 -> 16, 1 -> 6))),
-    new DockingPoints(DVec(1.5, -5.5), DVec(-1.5, -5.5), this, Some(2), createOrderedHull(List(15 -> 16, 1 -> 14)))
-  )
-
   // миллион ньютонов тяги при расходе 4 килограмма в секунду - это соответствует скорости истечения газов 250 км/сек
   // что в 50 раз выше наивысшего полученного на практике значения для химического топлива: литий/водород/фтор - 5000 м/сек
   val four  = new Engine(4, DVec(-3.5, 0.0),  DVec(1.0, 0.0),  1000000, 1, 4, this)
@@ -100,6 +94,12 @@ class Ship4(index: Int,
     KEY_NUMPAD1 -> one,
     KEY_NUMPAD3 -> three
   )
+
+  val docking_points = List(
+    new DockingPoints(DVec(-1.5, 9.5), DVec(1.5, 9.5), this, Some(DisabledEngine(eight.index)), createOrderedHull(List(7 -> 16, 1 -> 6))),
+    new DockingPoints(DVec(1.5, -5.5), DVec(-1.5, -5.5), this, Some(DisabledEngine(two.index, List(one.index, three.index))), createOrderedHull(List(15 -> 16, 1 -> 14)))
+  )
+
 
   /**
    * Сколько тактов работы двигателя потребуется, чтобы достичь скорости to, при условии, что текущая скорость равна from,

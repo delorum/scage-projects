@@ -22,22 +22,22 @@ class EnginesInfo extends InterfaceElement {
           if (player_ship.isSelectedEngine(e)) {
             if (e.active) {
               engines_active = true
-              f"[r${e.index}: ${e.power / 1000}%.1f кН (${e.workTimeStr})]"
+              f"[r${e.name}: ${e.power / 1000}%.1f кН (${e.workTimeStr})]"
             } else {
-              f"[g${e.index}: ${e.power / 1000}%.1f кН (${e.workTimeStr})]"
+              f"[g${e.name}: ${e.power / 1000}%.1f кН (${e.workTimeStr})]"
             }
           } else {
             if (e.active) {
               engines_active = true
-              f"[o${e.index}: ${e.power / 1000}%.1f кН (${e.workTimeStr})]"
+              f"[o${e.name}: ${e.power / 1000}%.1f кН (${e.workTimeStr})]"
             } else {
-              f"${e.index}: ${e.power / 1000}%.1f кН (${e.workTimeStr})"
+              f"${e.name}: ${e.power / 1000}%.1f кН (${e.workTimeStr})"
             }
           }
         }).mkString(", ")
       } else {
         player_ship.engines.map(e => {
-          f"${e.index}: ${e.power / 1000}%.1f кН (${e.workTimeStr})"
+          f"${e.name}: ${e.power / 1000}%.1f кН (${e.workTimeStr})"
         }).mkString(", ")
       }
     }${val x = player_ship.engines.filter(e => e.active).map(e => e.fuelConsumptionPerSec).sum; if (x != 0) f" (${gOrKg(x)} в сек)" else ""}"

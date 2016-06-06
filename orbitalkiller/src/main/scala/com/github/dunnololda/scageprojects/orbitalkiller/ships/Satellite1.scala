@@ -79,10 +79,6 @@ class Satellite1(index: Int,
     PolygonShape(List(DVec(-20.0, -4.0), DVec(-16.0, -4.0), DVec(-16.0, 8.0)), Nil)
   )
 
-  val docking_points: List[DockingPoints] = List(
-    new DockingPoints(DVec(-1.5, -16), DVec(1.5, -16), this, Some(2), createOrderedHull(List(1 -> 20)) ::: List(points.head))
-  )
-
   val two = new Engine(2, position = DVec(0.0, -16.0), force_dir = DVec(0.0, 1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
   val eight = new Engine(8, position = DVec(0.0, 4.0), force_dir = DVec(0.0, -1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
   val one = new Engine(1, position = DVec(-38.0, -4.0), force_dir = DVec(0.0, 1.0), max_power = 10, default_power_percent = 1, fuel_consumption_per_sec_at_full_power = 4, this)
@@ -99,6 +95,10 @@ class Satellite1(index: Int,
     KEY_NUMPAD3 -> three,
     KEY_NUMPAD4 -> four,
     KEY_NUMPAD6 -> six
+  )
+
+  val docking_points: List[DockingPoints] = List(
+    new DockingPoints(DVec(-1.5, -16), DVec(1.5, -16), this, Some(DisabledEngine(two.index)), createOrderedHull(List(1 -> 20)) ::: List(points.head))
   )
 
   def preserveVelocity(vel: DVec) {}
