@@ -1158,37 +1158,54 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                           drawCircle(position_after_time * scale, w/globalScale, YELLOW)
                         })
                       })
-                      moon.orbitRender.foreach(x => {
-                        x.ellipseOrbit.foreach(e => {
-                          val position_after_time = e.orbitalPointAfterTime(x.bs_coord, flight_time_msec / 1000, x.ccw)
-                          drawCircle(position_after_time * scale, moon.radius * scale, YELLOW)
-                          drawCircle(position_after_time * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
+                      if(player_ship.thisOrActualProxyShipCurrentOrbitData.exists(or => or.planet.index == earth.index)) {
+                        moon.orbitRender.foreach(x => {
+                          x.ellipseOrbit.foreach(e => {
+                            val position_after_time = e.orbitalPointAfterTime(x.bs_coord, flight_time_msec / 1000, x.ccw)
+                            drawCircle(position_after_time * scale, moon.radius * scale, YELLOW)
+                            drawCircle(position_after_time * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
+                          })
                         })
-                      })
+                      } else if(player_ship.thisOrActualProxyShipCurrentOrbitData.exists(or => or.planet.index == sun.index)) {
+                        earth.orbitRender.foreach(x => {
+                          x.ellipseOrbit.foreach(e => {
+                            val position_after_time = e.orbitalPointAfterTime(x.bs_coord, flight_time_msec / 1000, x.ccw)
+                            drawCircle(position_after_time * scale, earth.radius * scale, YELLOW)
+                            drawCircle(position_after_time * scale, earth.half_hill_radius * scale, color = DARK_GRAY)
+                          })
+                        })
+                      }
                     }
                   }
-                  if (InterfaceHolder.orbParams.calculationOn) {
+                  if (InterfaceHolder.orbParams.calculationOn && _stop_after_number_of_tacts > 0) {
                     InterfaceHolder.shipInterfaces.filter(si => {
                       !si.isMinimized && !si.monitoring_ship.isCrashed && !player_ship.isDockedToShip(si.monitoring_ship)
                     }).flatMap(_.monitoring_ship.thisOrActualProxyShipOrbitData).foreach(x => {
                       x.ellipseOrbit.foreach(e => {
-                        if (_stop_after_number_of_tacts > 0) {
-                          val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
-                          val position_when_stop_moment = e.orbitalPointAfterTime(x.bs_coord, time_to_stop_sec, x.ccw)
-                          drawCircle(position_when_stop_moment * scale, w/globalScale, GREEN)
-                        }
+                        val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
+                        val position_when_stop_moment = e.orbitalPointAfterTime(x.bs_coord, time_to_stop_sec, x.ccw)
+                        drawCircle(position_when_stop_moment * scale, w/globalScale, GREEN)
                       })
                     })
-                    moon.orbitRender.foreach(x => {
-                      x.ellipseOrbit.foreach(e => {
-                        if (_stop_after_number_of_tacts > 0) {
+                    if(player_ship.thisOrActualProxyShipCurrentOrbitData.exists(or => or.planet.index == earth.index)) {
+                      moon.orbitRender.foreach(x => {
+                        x.ellipseOrbit.foreach(e => {
                           val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
                           val position_when_stop_moment = e.orbitalPointAfterTime(x.bs_coord, time_to_stop_sec, x.ccw)
                           drawCircle(position_when_stop_moment * scale, moon.radius * scale, GREEN)
                           drawCircle(position_when_stop_moment * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
-                        }
+                        })
                       })
-                    })
+                    } else if(player_ship.thisOrActualProxyShipCurrentOrbitData.exists(or => or.planet.index == sun.index)) {
+                      earth.orbitRender.foreach(x => {
+                        x.ellipseOrbit.foreach(e => {
+                          val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
+                          val position_when_stop_moment = e.orbitalPointAfterTime(x.bs_coord, time_to_stop_sec, x.ccw)
+                          drawCircle(position_when_stop_moment * scale, earth.radius * scale, GREEN)
+                          drawCircle(position_when_stop_moment * scale, earth.half_hill_radius * scale, color = DARK_GRAY)
+                        })
+                      })
+                    }
                   }
                 }
               }))
@@ -1289,19 +1306,35 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                       }
                     })
                   })
-                  moon.orbitRender.foreach(x => {
-                    x.ellipseOrbit.foreach(e => {
-                      val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
-                      drawCircle(position_after_time * scale, moon.radius * scale, YELLOW)
-                      drawCircle(position_after_time * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
-                      if (_stop_after_number_of_tacts > 0) {
-                        val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
-                        val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
-                        drawCircle(position_when_stop_moment * scale, moon.radius * scale, GREEN)
-                        drawCircle(position_when_stop_moment * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
-                      }
+                  if(player_ship.thisOrActualProxyShipCurrentOrbitData.exists(or => or.planet.index == earth.index)) {
+                    moon.orbitRender.foreach(x => {
+                      x.ellipseOrbit.foreach(e => {
+                        val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
+                        drawCircle(position_after_time * scale, moon.radius * scale, YELLOW)
+                        drawCircle(position_after_time * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
+                        if (_stop_after_number_of_tacts > 0) {
+                          val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
+                          val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
+                          drawCircle(position_when_stop_moment * scale, moon.radius * scale, GREEN)
+                          drawCircle(position_when_stop_moment * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
+                        }
+                      })
                     })
-                  })
+                  } else if(player_ship.thisOrActualProxyShipCurrentOrbitData.exists(or => or.planet.index == sun.index)) {
+                    earth.orbitRender.foreach(x => {
+                      x.ellipseOrbit.foreach(e => {
+                        val position_after_time = e.orbitalPointAfterTimeCCW(x.bs_coord, flight_time_msec / 1000)
+                        drawCircle(position_after_time * scale, earth.radius * scale, YELLOW)
+                        drawCircle(position_after_time * scale, earth.half_hill_radius * scale, color = DARK_GRAY)
+                        if (_stop_after_number_of_tacts > 0) {
+                          val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
+                          val position_when_stop_moment = e.orbitalPointAfterTimeCCW(x.bs_coord, time_to_stop_sec)
+                          drawCircle(position_when_stop_moment * scale, earth.radius * scale, GREEN)
+                          drawCircle(position_when_stop_moment * scale, earth.half_hill_radius * scale, color = DARK_GRAY)
+                        }
+                      })
+                    })
+                  }
                 }
               }))
             }
