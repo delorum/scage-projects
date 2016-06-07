@@ -47,7 +47,7 @@ class Wreck(mass: Double, init_coord: DVec, init_velocity: DVec, init_rotation: 
   def rotation = currentState.ang
 
   val render_id = render {
-    if (!drawMapMode && coord.dist2(player_ship.coord) < 100000 * 100000) {
+    if (!drawMapMode && coord.dist2(player_ship.coord) < 100000 * 100000 && !planets.exists(p => p._2.coord.dist2(coord) < p._2.radius2)) {
       openglLocalTransform {
         openglMove(currentState.coord - base)
         /*mbs.contacts.foreach(x => {
