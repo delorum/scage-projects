@@ -1476,12 +1476,6 @@ package object orbitalkiller {
       orbitalVelocityByTrueAnomalyRad(tetaRad2PiInPoint(point))
     }
 
-    private def _iteration(Ex: Double, M: Double): Double = {
-      M + e * math.sin(Ex)
-    }
-
-    private val default_num_iterations = 30
-
     // Балк М.Б. Элементы динамики космического полета. Гл. III, параграф 3 "Решение уравнения Кеплера", стр. 111
     // http://pskgu.ru/ebooks/astro3/astro3_03_03.pdf
     // https://en.wikipedia.org/wiki/Kepler%27s_equation
@@ -1491,10 +1485,10 @@ package object orbitalkiller {
       val all_time = time_from_r_p / 1000 + time_sec
       val M = 1 / inv_n * all_time
       val E1 = M + e * math.sin(M)
-      def solver(prev_E:Double = E1, i:Int = 0):(Double, Int) = {
+      def solver(prev_E:Double = E1, i:Int = 0, max_i:Int = 100):(Double, Int) = {
         val diff = (prev_E - e*math.sin(prev_E) - M).abs
-        if(diff < 1E-15) (prev_E, i)
-        else solver(M + e*math.sin(prev_E), i+1)
+        if(diff < 1E-15 || i >= max_i) (prev_E, i)
+        else solver(M + e*math.sin(prev_E), i+1, max_i)
       }
       val (res_E, i) = solver()
       val tg_half_teta_res_rad = math.sqrt((1 + e) / (1 - e)) * math.tan(res_E / 2)
@@ -1509,10 +1503,10 @@ package object orbitalkiller {
       val all_time = t.toLong - (time_from_r_p_msec / 1000 + time_sec)
       val M = 1 / inv_n * all_time
       val E1 = M + e * math.sin(M)
-      def solver(prev_E:Double = E1, i:Int = 0):(Double, Int) = {
+      def solver(prev_E:Double = E1, i:Int = 0, max_i:Int = 100):(Double, Int) = {
         val diff = (prev_E - e*math.sin(prev_E) - M).abs
-        if(diff < 1E-15) (prev_E, i)
-        else solver(M + e*math.sin(prev_E), i+1)
+        if(diff < 1E-15 || i >= max_i) (prev_E, i)
+        else solver(M + e*math.sin(prev_E), i+1, max_i)
       }
       val (resE, iterations) = solver()
       val tg_half_teta_res_rad = math.sqrt((1 + e) / (1 - e)) * math.tan(resE / 2)
@@ -1734,10 +1728,10 @@ package object orbitalkiller {
     // https://ru.wikipedia.org/wiki/Уравнение_Кеплера
     def orbitalPointAfterTimeCCW(point1: DVec, time_sec: Long): DVec = {
       def _arsh(z: Double) = math.log(z + math.sqrt(z * z + 1))
-      def solver(prev_H:Double, M:Double, i:Int = 0):(Double, Int) = {
+      def solver(prev_H:Double, M:Double, i:Int = 0, max_i:Int = 100):(Double, Int) = {
         val diff = (e*math.sinh(prev_H) - prev_H - M).abs
-        if(diff < 1E-15) (prev_H, i)
-        else solver(_arsh((prev_H + M) / e), i+1)
+        if(diff < 1E-15 || i >= max_i) (prev_H, i)
+        else solver(_arsh((prev_H + M) / e), M, i+1, max_i)
       }
       val t1 = tetaDeg360InPoint(point1)
       val away_from_rp = teta_deg_min >= t1 && t1 >= 0
@@ -1774,10 +1768,10 @@ package object orbitalkiller {
 
     def orbitalPointAfterTimeCW(point1: DVec, time_sec: Long): DVec = {
       def _arsh(z: Double) = math.log(z + math.sqrt(z * z + 1))
-      def solver(prev_H:Double, M:Double, i:Int = 0):(Double, Int) = {
+      def solver(prev_H:Double, M:Double, i:Int = 0, max_i:Int = 100):(Double, Int) = {
         val diff = (e*math.sinh(prev_H) - prev_H - M).abs
-        if(diff < 1E-15) (prev_H, i)
-        else solver(_arsh((prev_H + M) / e), i+1)
+        if(diff < 1E-15 || i >= max_i) (prev_H, i)
+        else solver(_arsh((prev_H + M) / e), M, i+1, max_i)
       }
       val t1 = tetaDeg360InPoint(point1)
       val away_from_rp = 360 >= t1 && t1 >= teta_deg_max
