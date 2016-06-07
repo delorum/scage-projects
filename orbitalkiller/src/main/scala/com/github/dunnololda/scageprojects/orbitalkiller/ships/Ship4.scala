@@ -722,6 +722,20 @@ class Ship4(index: Int,
         // current velocity
         drawArrow(DVec.zero.actualPosBeforeRotation, DVec.zero.actualPosBeforeRotation + linearVelocity.n * radius, colorIfPlayerAliveOrRed(BLUE))
         drawArrow(DVec.zero.actualPosBeforeRotation, DVec.zero.actualPosBeforeRotation + relativeLinearVelocity.n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
+        // velocity direction at stop moment
+        if(_stop_after_number_of_tacts > 0 && InterfaceHolder.orbParams.calculationOn) {
+          thisOrActualProxyShipOrbitData.filter(!_.is_landed).foreach(or => {
+            or.ellipseOrbit.foreach(e => {
+              val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
+              val position_at_stop_moment = e.orbitalPointAfterTime(coord, time_to_stop_sec, or.ccw)
+              val (vt, vr) = e.orbitalVelocityInPoint(position_at_stop_moment)
+              val r = if (or.ccw) (position_at_stop_moment - or.planet.coord).n else -(position_at_stop_moment - or.planet.coord).n
+              val t = r.perpendicular
+              val v = (vt*t + vr*r).n
+              drawDashedArrow(DVec.zero.actualPosBeforeRotation, DVec.zero.actualPosBeforeRotation + v*radius, 1, colorIfPlayerAliveOrRed(CYAN))
+            })
+          })
+        }
       }
       if (!InterfaceHolder.sunRelativeInfo.isMinimized) {
         // direction to earth
@@ -740,23 +754,6 @@ class Ship4(index: Int,
           drawArrow(DVec.zero.actualPosBeforeRotation, DVec.zero.actualPosBeforeRotation + (si.monitoring_ship.coord - coord).n * radius, colorIfPlayerAliveOrRed(si.color))
         }
       })
-      if(_stop_after_number_of_tacts > 0 && InterfaceHolder.orbParams.calculationOn) {
-        thisOrActualProxyShipOrbitData match {
-          case Some(or) =>
-            if (!or.is_landed) {
-              or.ellipseOrbit match {
-                case Some(e) =>
-                  val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
-                  val position_when_stop_moment = e.orbitalPointAfterTime(coord, time_to_stop_sec, or.ccw)
-                  val r = if (or.ccw) (position_when_stop_moment - or.planet.coord).n else -(position_when_stop_moment - or.planet.coord).n
-                  val t = r.perpendicular
-                  drawDashedArrow(DVec.zero.actualPosBeforeRotation, DVec.zero.actualPosBeforeRotation + t*radius, 1, colorIfPlayerAliveOrRed(CYAN))
-                case None =>
-              }
-            }
-          case None =>
-        }
-      }
     }
 
     /*val pa = (earth.coord - coord).n*(coord.dist(earth.coord) - earth.radius) + (earth.coord - coord).p*70000

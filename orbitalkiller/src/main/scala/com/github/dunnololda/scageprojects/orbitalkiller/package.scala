@@ -1477,22 +1477,27 @@ package object orbitalkiller {
     }
 
     private def _iteration(Ex: Double, M: Double): Double = {
-      e * math.sin(Ex) + M
+      M + e * math.sin(Ex)
     }
 
     private val default_num_iterations = 30
 
     // Балк М.Б. Элементы динамики космического полета. Гл. III, параграф 3 "Решение уравнения Кеплера", стр. 111
     // http://pskgu.ru/ebooks/astro3/astro3_03_03.pdf
+    // https://en.wikipedia.org/wiki/Kepler%27s_equation
     def orbitalPointAfterTimeCCW(point1: DVec, time_sec: Long, num_iterations: Int = default_num_iterations): DVec = {
       val t1 = tetaDeg360InPoint(point1)
       val time_from_r_p = travelTimeOnOrbitMsecCCW(0, t1 /*, print_variant = true*/)
       val all_time = time_from_r_p / 1000 + time_sec
       val M = 1 / inv_n * all_time
-      val E7 = (1 to num_iterations).foldLeft(M) {
-        case (res, i) => _iteration(res, M)
+      val E1 = M + e * math.sin(M)
+      def solver(prev_E:Double = E1, i:Int = 0):(Double, Int) = {
+        val diff = (prev_E - e*math.sin(prev_E) - M).abs
+        if(diff < 1E-15) (prev_E, i)
+        else solver(M + e*math.sin(prev_E), i+1)
       }
-      val tg_half_teta_res_rad = math.sqrt((1 + e) / (1 - e)) * math.tan(E7 / 2)
+      val (res_E, i) = solver()
+      val tg_half_teta_res_rad = math.sqrt((1 + e) / (1 - e)) * math.tan(res_E / 2)
       val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
       val teta_res_deg = teta_res_rad / math.Pi * 180
       orbitalPointByTrueAnomalyDeg(teta_res_deg)
@@ -1503,10 +1508,14 @@ package object orbitalkiller {
       val time_from_r_p_msec = travelTimeOnOrbitMsecCW(0, t1 /*, print_variant = true*/)
       val all_time = t.toLong - (time_from_r_p_msec / 1000 + time_sec)
       val M = 1 / inv_n * all_time
-      val E7 = (1 to num_iterations).foldLeft(M) {
-        case (res, i) => _iteration(res, M)
+      val E1 = M + e * math.sin(M)
+      def solver(prev_E:Double = E1, i:Int = 0):(Double, Int) = {
+        val diff = (prev_E - e*math.sin(prev_E) - M).abs
+        if(diff < 1E-15) (prev_E, i)
+        else solver(M + e*math.sin(prev_E), i+1)
       }
-      val tg_half_teta_res_rad = math.sqrt((1 + e) / (1 - e)) * math.tan(E7 / 2)
+      val (resE, iterations) = solver()
+      val tg_half_teta_res_rad = math.sqrt((1 + e) / (1 - e)) * math.tan(resE / 2)
       val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
       val teta_res_deg = teta_res_rad / math.Pi * 180
       orbitalPointByTrueAnomalyDeg(teta_res_deg)
