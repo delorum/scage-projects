@@ -1719,8 +1719,11 @@ package object orbitalkiller {
       orbitalVelocityByTrueAnomalyRad(tetaRad2PiByDir(dir))
     }
 
-    def orbitalVelocityInPoint(point: DVec) = {
-      orbitalVelocityByTrueAnomalyRad(tetaRad2PiInPoint(point))
+    def orbitalVelocityInPoint(point: DVec):DVec = {
+      val v = orbitalVelocityByTrueAnomalyRad(tetaRad2PiInPoint(point))
+      val r = point.dist(f)
+      val phi = 3*math.Pi/2 + math.acos(math.sqrt(a*a*(e*e - 1)/(r*(2*a + r)))) // угол между вектором скорости и радиус-вектором
+      (point - f).rotateRad(-phi).n*v
     }
 
     // Балк М.Б. Элементы динамики космического полета. Гл. III, параграф 3 "Решение уравнения Кеплера", стр. 111

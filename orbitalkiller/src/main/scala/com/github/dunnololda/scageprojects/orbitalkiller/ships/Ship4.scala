@@ -732,7 +732,13 @@ class Ship4(index: Int,
               val r = if (or.ccw) (position_at_stop_moment - or.planet.coord).n else -(position_at_stop_moment - or.planet.coord).n
               val t = r.perpendicular
               val v = (vt*t + vr*r).n
-              drawDashedArrow(DVec.zero.actualPosBeforeRotation, DVec.zero.actualPosBeforeRotation + v*radius, 1, colorIfPlayerAliveOrRed(CYAN))
+              drawDashedArrow(DVec.zero.actualPosBeforeRotation - v*radius, DVec.zero.actualPosBeforeRotation + v*radius, 1, colorIfPlayerAliveOrRed(CYAN))
+            })
+            or.hyperbolaOrbit.foreach(e => {
+              val time_to_stop_sec = (_stop_after_number_of_tacts * base_dt).toLong
+              val position_at_stop_moment = e.orbitalPointAfterTime(coord, time_to_stop_sec, or.ccw)
+              val v = e.orbitalVelocityInPoint(position_at_stop_moment).n
+              drawDashedArrow(DVec.zero.actualPosBeforeRotation - v*radius, DVec.zero.actualPosBeforeRotation + v*radius, 1, colorIfPlayerAliveOrRed(CYAN))
             })
           })
         }
