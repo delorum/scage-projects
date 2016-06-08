@@ -1072,7 +1072,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         val ccw = (bs_coord - orbit.f).perpendicular * (bs_vel - planet_state_vel) >= 0 // летим против часовой?
         orbit match {
           case h: HyperbolaOrbit =>
-            val yy = (-math.acos(-1.0 / h.e) + 0.1 to math.acos(-1.0 / h.e) - 0.1 by 0.1).map(true_anomaly => {
+            val yy = (-(-1.0 / h.e).myacos + 0.1 to (-1.0 / h.e).myacos - 0.1 by 0.1).map(true_anomaly => {
               val r = h.a * (h.e * h.e - 1) / (1 + h.e * math.cos(true_anomaly))
               (h.f + (h.f_minus_center_n * r).rotateRad(true_anomaly)) * scale
             }).toList

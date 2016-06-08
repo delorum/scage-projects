@@ -1271,13 +1271,13 @@ package object orbitalkiller {
           val fall_pos = calcFallPos(ship_coord, planet_ang, planet_radius)
           (0l, fall_pos)
         } else if (ccw) {
-          val fall_teta_rad = -math.acos((p / (planet_radius + 3) - 1) / e) + 2 * math.Pi
+          val fall_teta_rad = -((p / (planet_radius + 3) - 1) / e).myacos + 2 * math.Pi
           val fall_point = orbitalPointByTrueAnomalyRad(fall_teta_rad)
           val fall_pos = calcFallPos(fall_point, planet_ang, planet_radius)
           val fall_time = travelTimeOnOrbitMsecCCW(ship_coord, fall_point)
           (fall_time, fall_pos)
         } else {
-          val fall_teta_rad = math.acos((p / (planet_radius + 3) - 1) / e)
+          val fall_teta_rad = ((p / (planet_radius + 3) - 1) / e).myacos
           val fall_point = orbitalPointByTrueAnomalyRad(fall_teta_rad)
           val fall_pos = calcFallPos(fall_point, planet_ang, planet_radius)
           val fall_time = travelTimeOnOrbitMsecCW(ship_coord, fall_point)
@@ -1315,7 +1315,7 @@ package object orbitalkiller {
     def tetaSignedRadInPoint(p: DVec) = tetaSignedRadByDir(p - f)
 
     def tetaRadByDistance(r: Double): Double = {
-      math.acos((p / r - 1) / e)
+      ((p / r - 1) / e).myacos
     }
 
     def tetaDegByDistance(r: Double): Double = {
@@ -1366,8 +1366,8 @@ package object orbitalkiller {
       val r1 = (orbital_point1 - f).norma
       val r2 = (orbital_point2 - f).norma
       val s = orbital_point1.dist(orbital_point2)
-      val xl1 = math.acos(1 - (r1 + r2 + s) / (2 * a))
-      val xl2 = math.acos(1 - (r1 + r2 - s) / (2 * a))
+      val xl1 = (1 - (r1 + r2 + s) / (2 * a)).myacos
+      val xl2 = (1 - (r1 + r2 - s) / (2 * a)).myacos
       // Балк М.Б. Элементы динамики космического полета, Формула Ламберта, стр 128-129: выбор чисел l1, l2 среди корней уравнения
       // для эллиптической орбиты, анализ проведен английским математиком А. Кэли
       val (l1, l2, _) = if (t1 == 0) {
@@ -1538,11 +1538,11 @@ package object orbitalkiller {
     // перигей
     val p = a * (e * e - 1) // фокальный параметр (половина длины хорды, проходящей через фокус и перпендикулярной к фокальной оси)
 
-    val teta_deg_min = 180 - math.acos(1 / e) / math.Pi * 180
+    val teta_deg_min = 180 - (1 / e).myacos / math.Pi * 180
     // разрешенные углы: от 0 до этого угла
     val teta_rad_min = teta_deg_min / 180.0 * math.Pi
 
-    val teta_deg_max = -180 + math.acos(1 / e) / math.Pi * 180 + 360
+    val teta_deg_max = -180 + (1 / e).myacos / math.Pi * 180 + 360
     // разрешенные углы: от этого угла до 360
     val teta_rad_max = teta_deg_max / 180.0 * math.Pi
 
@@ -1583,12 +1583,12 @@ package object orbitalkiller {
           val fall_pos = calcFallPos(ship_coord, planet_ang, planet_radius)
           (0l, fall_pos)
         } else if (ccw) {
-          val fall_teta_rad = -math.acos((p / (planet_radius + 3) - 1) / e) + 2 * math.Pi
+          val fall_teta_rad = -((p / (planet_radius + 3) - 1) / e).myacos + 2 * math.Pi
           val fall_point = orbitalPointByTrueAnomalyRad(fall_teta_rad)
           val fall_pos = calcFallPos(fall_point, planet_ang, planet_radius)
           (travelTimeOnOrbitMsecCCW(ship_coord, fall_point), fall_pos)
         } else {
-          val fall_teta_rad = math.acos((p / (planet_radius + 3) - 1) / e)
+          val fall_teta_rad = ((p / (planet_radius + 3) - 1) / e).myacos
           val fall_point = orbitalPointByTrueAnomalyRad(fall_teta_rad)
           val fall_pos = calcFallPos(fall_point, planet_ang, planet_radius)
           (travelTimeOnOrbitMsecCW(ship_coord, fall_point), fall_pos)
@@ -1722,7 +1722,7 @@ package object orbitalkiller {
     def orbitalVelocityInPoint(point: DVec):DVec = {
       val v = orbitalVelocityByTrueAnomalyRad(tetaRad2PiInPoint(point))
       val r = point.dist(f)
-      val phi = 3*math.Pi/2 + math.acos(math.sqrt(a*a*(e*e - 1)/(r*(2*a + r)))) // угол между вектором скорости и радиус-вектором
+      val phi = 3*math.Pi/2 + math.sqrt(a * a * (e * e - 1) / (r * (2 * a + r))).myacos // угол между вектором скорости и радиус-вектором
       (point - f).rotateRad(-phi).n*v
     }
 
@@ -1868,7 +1868,7 @@ package object orbitalkiller {
       // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
       val e = math.sqrt(math.abs(1 + (b * b) / (a * a)))
 
-      val true_anomaly = math.abs(math.acos((a * (e * e - 1) - body_relative_coord.norma) / (body_relative_coord.norma * e)))
+      val true_anomaly = math.abs(((a * (e * e - 1) - body_relative_coord.norma) / (body_relative_coord.norma * e)).myacos)
 
       val counterclockwise = body_relative_coord.signedDeg(body_relative_velocity) > 0
       val moving_away = body_relative_velocity * body_relative_coord.n > 0
@@ -1962,5 +1962,7 @@ package object orbitalkiller {
       val bd = new java.math.BigDecimal(d)
       bd.setScale(2, java.math.RoundingMode.HALF_UP).doubleValue()
     }
+
+    def myacos:Double = math.acos(math.max(-1, math.min(1, d)))
   }
 }
