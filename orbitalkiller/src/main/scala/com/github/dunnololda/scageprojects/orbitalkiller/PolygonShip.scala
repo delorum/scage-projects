@@ -1074,6 +1074,9 @@ abstract class PolygonShip(
     is_static = false)
 
   lazy val currentState: MutableBodyState = initState.toMutableBodyState
+
+  def thisOrActualProxyShipCurrentState:MutableBodyState = dock_data.map(_.proxy_ship.thisOrActualProxyShipCurrentState).getOrElse(currentState)
+
   protected var ship_interface:Option[OtherShipInfo] = None
   def shipInterface:Option[OtherShipInfo] = ship_interface
   if(!ship_designer) {
@@ -1177,15 +1180,15 @@ abstract class PolygonShip(
     }
   }
   
-  private def updatePilotAverageG(reactive_force:DVec, time_msec:Long): Unit = {
+  def updatePilotAverageG(reactive_force:DVec, time_msec:Long): Unit = {
     // ниже мы рассчитаем отдельно вертикальную и горизонтальную перегрузки и потом сложим их. Так надо считать, потому что к вертикальной перегрузке прибавляется центробежная сила, а к горизонтальной нет.
-    val v_vert = pilot_position.rotateDeg(rotation).n // единичный вектор спина-грудь пилота
+    val v_vert = pilot_position.actualPos.rotateDeg(thisOrActualProxyShipRotation).n // единичный вектор спина-грудь пилота
     val v_hor = -v_vert.perpendicular // единичный вектор левая рука - права рука пилота
     // центробежная сила от вращения корабля
-    val centrifugial_force = if (angularVelocity == 0) 0.0 else pilot_mass * math.pow(angularVelocity.toRad, 2) * pilot_position.norma
+    val centrifugial_force = if (thisOrActualProxyShipAngularVelocity == 0) 0.0 else pilot_mass * math.pow(thisOrActualProxyShipAngularVelocity.toRad, 2) * pilot_position.actualPos.norma
     // reactive_force берем с минусом, потому что пилота вжимает под действием этой силы в противоположную сторону. Аналогично ускорение от коллизий
-    val pilot_acc_vert = -reactive_force / mass * v_vert + centrifugial_force / pilot_mass - currentState.dacc * v_vert
-    val pilot_acc_hor = -reactive_force / mass * v_hor - currentState.dacc * v_hor
+    val pilot_acc_vert = -reactive_force / mass * v_vert + centrifugial_force / pilot_mass - thisOrActualProxyShipCurrentState.dacc * v_vert
+    val pilot_acc_hor = -reactive_force / mass * v_hor - thisOrActualProxyShipCurrentState.dacc * v_hor
     val pilot_acc = pilot_acc_vert * DVec(0, 1) + pilot_acc_hor * DVec(1, 0) // тут мы умножаем на единичные векторы в системе координат: начало в центре масс, вертикальный вектор - от центра масс к пилоту
     pilot_accs += ((pilot_acc, time_msec))
     if (time_msec - pilot_accs.head._2 >= 1000) {
@@ -1215,7 +1218,7 @@ abstract class PolygonShip(
     }
   }
   
-  private def checkCriticalG(): Unit = {
+  def checkCriticalG(): Unit = {
     // пилот может испытывать перегрузку больше 4g только ограниченный период времени, потом наступает смерть
     // для беспилотной системы это значение примем 40g (условный показатель)
     if (pilot_average_g > {
@@ -1258,7 +1261,7 @@ abstract class PolygonShip(
     }
   }
   
-  private def checkEnginesPower(reactive_force:DVec): Unit = {
+  def checkEnginesPower(reactive_force:DVec): Unit = {
     // автоматическая регулировка мощности двигателей в соответствие с настройкой gSwitcher
     if (InterfaceHolder.gSwitcher.maxGSet && pilot_average_g > InterfaceHolder.gSwitcher.maxG) {
       val active_engines = engines.filter(e => e.active && 0 < e.stopMomentTacts)

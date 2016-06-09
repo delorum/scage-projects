@@ -122,8 +122,6 @@ class ProxyShip(ship1:PolygonShip,
     }
   }
 
-  // TODO: направления двигателей ship2 могут меняться - зависят от ship2_rotation_diff. Но пока нет логики управления этими двигателями, не важно
-
   override def currentReactiveForce(time: Long, bs: BodyState): DVec = {
     ship1.currentReactiveForce(time, bs) +
     ship2.currentReactiveForce(time, bs)
@@ -147,6 +145,21 @@ class ProxyShip(ship1:PolygonShip,
   override def kill(reason: String, crash: Boolean): Unit = {
     ship1.kill(reason, crash)
     ship2.kill(reason, crash)
+  }
+
+  override def updatePilotAverageG(reactive_force:DVec, time_msec:Long): Unit = {
+    ship1.updatePilotAverageG(reactive_force, time_msec)
+    ship2.updatePilotAverageG(reactive_force, time_msec)
+  }
+
+  override def checkCriticalG(): Unit = {
+    ship1.checkCriticalG()
+    ship2.checkCriticalG()
+  }
+
+  override def checkEnginesPower(reactive_force:DVec): Unit = {
+    ship1.checkEnginesPower(reactive_force)
+    ship2.checkEnginesPower(reactive_force)
   }
 
   override def drawIfAliveBeforeRotation(): Unit = {
