@@ -358,7 +358,7 @@ abstract class PolygonShip(
   def linearVelocity = if (isAlive) currentState.vel else main_ship_wreck.headOption.map(_.linearVelocity).getOrElse(currentState.vel)
 
   def relativeLinearVelocity = {
-    linearVelocity - _orbit_data.map(_.planet_vel).getOrElse(DVec.zero)
+    linearVelocity - _orbit_data.map(_.planet_state.vel).getOrElse(DVec.zero)
   }
 
   def velocityStr: String = {
@@ -367,15 +367,15 @@ abstract class PolygonShip(
         or.planet match {
           case air_planet:PlanetWithAir =>
             if(air_planet.altitude(coord, air_planet.coord) < air_planet.air_free_altitude) {
-              val vel1 = (linearVelocity - or.planet_vel).norma
+              val vel1 = (linearVelocity - or.planet_state.vel).norma
               val vel2 = air_planet.velocityRelativeToAir(coord, linearVelocity, air_planet.coord, air_planet.linearVelocity, air_planet.init_ang_vel).norma
               val atmo_efficiency = air_planet.terminalVelocity(mass, coord, air_planet.coord, 28, 0.5).map(tvel => vel2/tvel*100).getOrElse(100.0)
               f"${msecOrKmsec(vel1)} $atmo_efficiency%.2f%% (${or.planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
             } else {
-              s"${msecOrKmsec((linearVelocity - or.planet_vel).norma)} (${or.planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
+              s"${msecOrKmsec((linearVelocity - or.planet_state.vel).norma)} (${or.planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
             }
           case _ =>
-            s"${msecOrKmsec((linearVelocity - or.planet_vel).norma)} (${or.planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
+            s"${msecOrKmsec((linearVelocity - or.planet_state.vel).norma)} (${or.planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
         }
       case None =>
         s"${msecOrKmsec(linearVelocity.norma)} (абсолютная)"

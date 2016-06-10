@@ -817,7 +817,7 @@ class Ship4(index: Int,
         print(s"$p2idx", p2.toVec, color = WHITE, size = (max_font_size / globalScale).toFloat)*/
     }*/
 
-    drawFilledCircle(pilot_position.actualPos, 0.3, WHITE)
+    //drawFilledCircle(pilot_position.actualPos, 0.3, WHITE)
 
     drawSlidingLines(actualDrawPoints, colorIfPlayerAliveOrRed(WHITE))
     //convex_parts.foreach(c => drawSlidingLines(c.points ::: List(c.points.head), colorIfPlayerAliveOrRed(WHITE)))

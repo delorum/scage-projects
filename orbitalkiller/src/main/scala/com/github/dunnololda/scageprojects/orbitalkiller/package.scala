@@ -1534,6 +1534,11 @@ package object orbitalkiller {
                         val f: DVec, // координаты первого фокуса (координаты небесного тела, вокруг которого вращаемся)
                         val center: DVec, // координаты центра
                         val mu: Double) extends KeplerOrbit {
+    def withNewFocusPosition(new_f:DVec):HyperbolaOrbit = {
+      val new_center = center - f + new_f
+      new HyperbolaOrbit(a, b, e, new_f, new_center, mu)
+    }
+
     val r_p = a * (e - 1)
     // перигей
     val p = a * (e * e - 1) // фокальный параметр (половина длины хорды, проходящей через фокус и перпендикулярной к фокальной оси)
