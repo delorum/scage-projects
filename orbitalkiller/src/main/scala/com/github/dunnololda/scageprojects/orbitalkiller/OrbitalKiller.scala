@@ -1112,13 +1112,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
                 if (_stop_after_number_of_tacts > 0) {
                   //drawFilledCircle(h.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly) * scale, 3 / globalScale, RED)
-                  drawFilledCircle(new_h.orbitalPointAfterTime(bs_coord, (_stop_after_number_of_tacts * base_dt).toLong, ccw) * scale, 3 / globalScale, GREEN)
+                  drawFilledCircle(new_h.orbitalPointAfterTime(bs.coord, (_stop_after_number_of_tacts * base_dt).toLong, ccw) * scale, 3 / globalScale, GREEN)
                 }
 
                 val mouse_teta_rad2Pi = new_h.tetaRad2PiInPoint(mouse_point)
-                val ship_teta_rad2Pi = new_h.tetaRad2PiInPoint(bs_coord)
+                val ship_teta_rad2Pi = new_h.tetaRad2PiInPoint(bs.coord)
                 if (new_h.tetaRad2PiValid(mouse_teta_rad2Pi)) {
-                  val away_from_rp = (bs_coord - new_h.f) * (bs_vel - planet_state_vel) >= 0 // приближаемся к перигею или удаляемся от него?
+                  val away_from_rp = (bs.coord - new_h.f) * (bs_vel - planet_state_vel) >= 0 // приближаемся к перигею или удаляемся от него?
 
                   val mouse_point_further_on_the_way = {
                     if (ccw) {
@@ -1133,7 +1133,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
                   if (mouse_point_further_on_the_way) {
                     val orbital_point = new_h.orbitalPointInPoint(mouse_point)
                     drawFilledCircle(orbital_point * scale, 3 / globalScale, ellipse_color)
-                    lazy val flight_time_msec = new_h.travelTimeOnOrbitMsec(bs_coord, orbital_point, ccw)
+                    lazy val flight_time_msec = new_h.travelTimeOnOrbitMsec(bs.coord, orbital_point, ccw)
 
                     if (set_stop_moment) {
                       _stop_after_number_of_tacts = (flight_time_msec / 1000 / base_dt).toLong
@@ -1142,7 +1142,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
                       /*val p1 = h.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)
                       println((50 to 300 by 50).map(num_iterations => {
-                        val px = h.orbitalPointAfterTime(bs_coord, (_stop_after_number_of_tacts*base_dt).toLong, ccw, num_iterations)
+                        val px = h.orbitalPointAfterTime(bs.coord, (_stop_after_number_of_tacts*base_dt).toLong, ccw, num_iterations)
                         mOrKmOrMKm(p1.dist(px))
                       }).mkString(" : "))*/
                     }
@@ -1275,11 +1275,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
                 if (_stop_after_number_of_tacts > 0) {
                   //drawFilledCircle(new_e.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly) * scale, 3 / globalScale, RED)
-                  drawFilledCircle(new_e.orbitalPointAfterTime(bs_coord, (_stop_after_number_of_tacts * base_dt).toLong, ccw) * scale, 3 / globalScale, GREEN)
+                  drawFilledCircle(new_e.orbitalPointAfterTime(bs.coord, (_stop_after_number_of_tacts * base_dt).toLong, ccw) * scale, 3 / globalScale, GREEN)
                 }
                 val true_anomaly_rad = new_e.tetaRad2PiInPoint(mouse_point)
 
-                lazy val flight_time_msec = new_e.travelTimeOnOrbitMsec(bs_coord, orbital_point, ccw)
+                lazy val flight_time_msec = new_e.travelTimeOnOrbitMsec(bs.coord, orbital_point, ccw)
 
                 if (set_stop_moment) {
                   _stop_after_number_of_tacts = (flight_time_msec / 1000 / base_dt).toLong
@@ -1288,7 +1288,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
                   /*val p1 = new_e.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)
                   println((50 to 300 by 50).map(num_iterations => {
-                    val px = new_e.orbitalPointAfterTime(bs_coord, (_stop_after_number_of_tacts*base_dt).toLong, ccw, num_iterations)
+                    val px = new_e.orbitalPointAfterTime(bs.coord, (_stop_after_number_of_tacts*base_dt).toLong, ccw, num_iterations)
                     mOrKmOrMKm(p1.dist(px))
                   }).mkString(" : "))*/
                 }
