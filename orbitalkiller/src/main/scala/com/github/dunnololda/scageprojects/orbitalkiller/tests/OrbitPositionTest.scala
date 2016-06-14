@@ -175,8 +175,8 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640
 
   //private var mr1:Option[DVec] = Some(o.f1 + (o.f1 - o.f2).n.rotateDeg(45)*ro(o.f1 + (o.f1 - o.f2).n.rotateDeg(45)))
   //private var mr1:Option[DVec] = Some(o.f1 + (o.f1 - o.f2).n*o.r_p)
-  private var mr1: Option[DVec] = Some(o.f1 + (o.f1 - o.f2).p * o.r_p)
-  private var mr2: Option[DVec] = Some(o.f1 + (o.f1 - o.f2).n * o.r_p)
+  private var mr1: Option[DVec] = Some(o.f1 + (o.f1 - o.f2).n * o.r_p)
+  private var mr2: Option[DVec] = Some(o.f1 + (o.f1 - o.f2).p * o.r_p)
   //private var flight_time:Option[List[String]] = None
   val (time, variant) = o.travelTimeOnOrbitMsecCCW(mr1.get, mr2.get, mu)
   private var flight_time: Option[String] = Some(s"${timeStr(time)}, $variant")

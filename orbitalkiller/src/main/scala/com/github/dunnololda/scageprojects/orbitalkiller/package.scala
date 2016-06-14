@@ -642,23 +642,23 @@ package object orbitalkiller {
 
     var acc: DVec = DVec.zero
     
-    private var _vel: DVec = body.vel
-    def vel = _vel
+    var vel: DVec = body.vel
+    /*def vel = _vel
     def vel_=(new_vel:DVec): Unit = {
       if(new_vel.x.abs > 300000000l || new_vel.y.abs > 300000000l) {
         throw new Exception("vel is set to infinity!")
       }
       _vel = new_vel
-    }
+    }*/
     
-    private var _coord: DVec = body.coord
-    def coord = _coord
+    var coord: DVec = body.coord
+    /*def coord = _coord
     def coord_=(new_coord:DVec): Unit = {
       if(new_coord.x.isNaN || new_coord.y.isNaN) {
         throw new Exception("coord is set to infinity!")
       }
       _coord = new_coord
-    }
+    }*/
     
     var ang_acc: Double = 0.0
     var ang_vel: Double = body.ang_vel
@@ -1310,17 +1310,16 @@ package object orbitalkiller {
       }
     }
 
-    lazy val f_minus_f2 = f - f2
-    lazy val f_minus_f2_n = f_minus_f2.n
+    lazy val f_minus_f2_n = Option((f - f2).n).filterNot(_.isZero).getOrElse(DVec(0,1))
     val inv_n = a * math.sqrt(a / mu) // это 1/n
 
-    def tetaDeg360ByDir(dir: DVec) = f_minus_f2.deg360(dir)
+    def tetaDeg360ByDir(dir: DVec) = f_minus_f2_n.deg360(dir)
 
-    def tetaSignedDegByDir(dir: DVec) = f_minus_f2.signedDeg(dir)
+    def tetaSignedDegByDir(dir: DVec) = f_minus_f2_n.signedDeg(dir)
 
-    def tetaRad2PiByDir(dir: DVec) = f_minus_f2.rad2Pi(dir)
+    def tetaRad2PiByDir(dir: DVec) = f_minus_f2_n.rad2Pi(dir)
 
-    def tetaSignedRadByDir(dir: DVec) = f_minus_f2.signedRad(dir)
+    def tetaSignedRadByDir(dir: DVec) = f_minus_f2_n.signedRad(dir)
 
     def tetaDeg360InPoint(p: DVec) = tetaDeg360ByDir(p - f)
 
@@ -1362,11 +1361,11 @@ package object orbitalkiller {
     }
 
     def orbitalPointByTrueAnomalyRad(teta_rad: Double) = {
-      f + f_minus_f2.rotateRad(teta_rad).n * distanceByTrueAnomalyRad(teta_rad)
+      f + f_minus_f2_n.rotateRad(teta_rad) * distanceByTrueAnomalyRad(teta_rad)
     }
 
     def orbitalPointByTrueAnomalyDeg(teta_deg: Double) = {
-      f + f_minus_f2.rotateDeg(teta_deg).n * distanceByTrueAnomalyDeg(teta_deg)
+      f + f_minus_f2_n.rotateDeg(teta_deg) * distanceByTrueAnomalyDeg(teta_deg)
     }
 
     def orbitalPointByDir(dir: DVec) = {
@@ -1417,7 +1416,7 @@ package object orbitalkiller {
         }*/
       }*/
       // Балк М.Б. Элементы динамики космического полета, Формула Ламберта
-      (inv_n * ((l1 - math.sin(l1)) - (l2 - math.sin(l2)))).toLong * 1000
+      ((inv_n * ((l1 - math.sin(l1)) - (l2 - math.sin(l2)))) * 1000).toLong
     }
 
     /**
@@ -1495,11 +1494,11 @@ package object orbitalkiller {
     // Балк М.Б. Элементы динамики космического полета. Гл. III, параграф 3 "Решение уравнения Кеплера", стр. 111
     // http://pskgu.ru/ebooks/astro3/astro3_03_03.pdf
     // https://en.wikipedia.org/wiki/Kepler%27s_equation
-    def orbitalPointAfterTimeCCW(point1: DVec, time_sec: Long): DVec = {
+    def orbitalPointAfterTimeCCW(point1: DVec, time_msec: Long): DVec = {
       val t1 = tetaDeg360InPoint(point1)
-      val time_from_r_p = travelTimeOnOrbitMsecCCW(0, t1 /*, print_variant = true*/)
-      val all_time = time_from_r_p / 1000 + time_sec
-      val M = 1 / inv_n * all_time
+      val time_from_r_p_msec = travelTimeOnOrbitMsecCCW(0, t1 /*, print_variant = true*/)
+      val all_time_msec = time_from_r_p_msec + time_msec
+      val M = 1 / inv_n * (0.001*all_time_msec)
       val E1 = M + e * math.sin(M)
       def solver(prev_E:Double = E1, i:Int = 0, max_i:Int = 100):(Double, Int) = {
         val diff = (prev_E - e*math.sin(prev_E) - M).abs
@@ -1513,11 +1512,11 @@ package object orbitalkiller {
       orbitalPointByTrueAnomalyDeg(teta_res_deg)
     }
 
-    def orbitalPointAfterTimeCW(point1: DVec, time_sec: Long): DVec = {
+    def orbitalPointAfterTimeCW(point1: DVec, time_msec: Long): DVec = {
       val t1 = tetaDeg360InPoint(point1)
       val time_from_r_p_msec = travelTimeOnOrbitMsecCW(0, t1 /*, print_variant = true*/)
-      val all_time = t.toLong - (time_from_r_p_msec / 1000 + time_sec)
-      val M = 1 / inv_n * all_time
+      val all_time_msec = t*1000 - (time_from_r_p_msec + time_msec)
+      val M = 1 / inv_n * (0.001*all_time_msec)
       val E1 = M + e * math.sin(M)
       def solver(prev_E:Double = E1, i:Int = 0, max_i:Int = 100):(Double, Int) = {
         val diff = (prev_E - e*math.sin(prev_E) - M).abs
@@ -1531,13 +1530,13 @@ package object orbitalkiller {
       orbitalPointByTrueAnomalyDeg(teta_res_deg)
     }
 
-    def orbitalPointAfterTime(point1: DVec, time_sec: Long, ccw: Boolean): DVec = {
-      if (ccw) orbitalPointAfterTimeCCW(point1, time_sec)
-      else orbitalPointAfterTimeCW(point1, time_sec)
+    def orbitalPointAfterTime(point1: DVec, time_msec: Long, ccw: Boolean): DVec = {
+      if (ccw) orbitalPointAfterTimeCCW(point1, time_msec)
+      else orbitalPointAfterTimeCW(point1, time_msec)
     }
 
     def withNewFocusPosition(new_f:DVec):EllipseOrbit = {
-      val new_f2 = new_f - f_minus_f2
+      val new_f2 = new_f - (f - f2)
       val new_center = (new_f2 - new_f).n * c + new_f
       new EllipseOrbit(a, b, e, c, p, r_p, r_a, t, new_f, new_f2, new_center, mu)
     }
@@ -1683,7 +1682,7 @@ package object orbitalkiller {
 
       val l1 = math.log(chl1 + math.sqrt(chl1 * chl1 - 1))
       val l2 = math.log(chl2 + math.sqrt(chl2 * chl2 - 1))
-      (inv_n * ((math.sinh(l1) - l1) - (math.sinh(l2) - l2))).toLong * 1000
+      ((inv_n * ((math.sinh(l1) - l1) - (math.sinh(l2) - l2))) * 1000).toLong
     }
 
     def travelTimeOnOrbitMsecCCW(point1: DVec, point2: DVec, recalculate_points: Boolean = false): Long = {
@@ -1750,7 +1749,7 @@ package object orbitalkiller {
     // Балк М.Б. Элементы динамики космического полета. Гл. III, параграф 3 "Решение уравнения Кеплера", стр. 111
     // http://pskgu.ru/ebooks/astro3/astro3_03_03.pdf
     // https://ru.wikipedia.org/wiki/Уравнение_Кеплера
-    def orbitalPointAfterTimeCCW(point1: DVec, time_sec: Long): DVec = {
+    def orbitalPointAfterTimeCCW(point1: DVec, time_msec: Long): DVec = {
       def _arsh(z: Double) = math.log(z + math.sqrt(z * z + 1))
       def solver(prev_H:Double, M:Double, i:Int = 0, max_i:Int = 100):(Double, Int) = {
         val diff = (e*math.sinh(prev_H) - prev_H - M).abs
@@ -1760,27 +1759,27 @@ package object orbitalkiller {
       val t1 = tetaDeg360InPoint(point1)
       val away_from_rp = teta_deg_min >= t1 && t1 >= 0
       if (away_from_rp) {
-        val time_from_r_p_to_cur_point = travelTimeOnOrbitMsecCCW(0, t1 /*, print_variant = true*/) / 1000
-        val time_from_r_p = time_from_r_p_to_cur_point + time_sec
-        val M = 1 / inv_n * time_from_r_p
+        val time_from_r_p_to_cur_point_msec = travelTimeOnOrbitMsecCCW(0, t1 /*, print_variant = true*/)
+        val time_from_r_p_msec = time_from_r_p_to_cur_point_msec + time_msec
+        val M = 1 / inv_n * (0.001*time_from_r_p_msec)
         val (resH, iterations) = solver(_arsh((M + M) / e), M)
         val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(resH / 2)
         val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
         val teta_res_deg = teta_res_rad / math.Pi * 180
         orbitalPointByTrueAnomalyDeg(teta_res_deg)
       } else {
-        val time_from_cur_point_to_r_p = travelTimeOnOrbitMsecCCW(t1, 360 /*, print_variant = true*/) / 1000
-        if (time_sec >= time_from_cur_point_to_r_p) {
-          val time_from_r_p = time_sec - time_from_cur_point_to_r_p
-          val M = 1 / inv_n * time_from_r_p
+        val time_from_cur_point_to_r_p_msec = travelTimeOnOrbitMsecCCW(t1, 360 /*, print_variant = true*/)
+        if (time_msec >= time_from_cur_point_to_r_p_msec) {
+          val time_from_r_p_msec = time_msec - time_from_cur_point_to_r_p_msec
+          val M = 1 / inv_n * (0.001*time_from_r_p_msec)
           val (resH, iterations) = solver(_arsh((M + M) / e), M)
           val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(resH / 2)
           val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
           val teta_res_deg = teta_res_rad / math.Pi * 180
           orbitalPointByTrueAnomalyDeg(teta_res_deg)
         } else {
-          val time_from_r_p = time_from_cur_point_to_r_p - time_sec
-          val M = 1 / inv_n * time_from_r_p
+          val time_from_r_p_msec = time_from_cur_point_to_r_p_msec - time_msec
+          val M = 1 / inv_n * (0.001*time_from_r_p_msec)
           val (resH, iterations) = solver(_arsh((M + M) / e), M)
           val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(resH / 2)
           val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
@@ -1790,7 +1789,7 @@ package object orbitalkiller {
       }
     }
 
-    def orbitalPointAfterTimeCW(point1: DVec, time_sec: Long): DVec = {
+    def orbitalPointAfterTimeCW(point1: DVec, time_msec: Long): DVec = {
       def _arsh(z: Double) = math.log(z + math.sqrt(z * z + 1))
       def solver(prev_H:Double, M:Double, i:Int = 0, max_i:Int = 100):(Double, Int) = {
         val diff = (e*math.sinh(prev_H) - prev_H - M).abs
@@ -1800,27 +1799,27 @@ package object orbitalkiller {
       val t1 = tetaDeg360InPoint(point1)
       val away_from_rp = 360 >= t1 && t1 >= teta_deg_max
       if (away_from_rp) {
-        val time_from_r_p_to_cur_point = travelTimeOnOrbitMsecCW(360, t1 /*, print_variant = true*/) / 1000
-        val time_from_r_p = time_from_r_p_to_cur_point + time_sec
-        val M = 1 / inv_n * time_from_r_p
+        val time_from_r_p_to_cur_point_msec = travelTimeOnOrbitMsecCW(360, t1 /*, print_variant = true*/)
+        val time_from_r_p_msec = time_from_r_p_to_cur_point_msec + time_msec
+        val M = 1 / inv_n * (0.001*time_from_r_p_msec)
         val (resH, iterations) = solver(_arsh((M + M) / e), M)
         val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(resH / 2)
         val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
         val teta_res_deg = 360 - teta_res_rad / math.Pi * 180
         orbitalPointByTrueAnomalyDeg(teta_res_deg)
       } else {
-        val time_from_cur_point_to_r_p = travelTimeOnOrbitMsecCW(t1, 0 /*, print_variant = true*/) / 1000
-        if (time_sec >= time_from_cur_point_to_r_p) {
-          val time_from_r_p = time_sec - time_from_cur_point_to_r_p
-          val M = 1 / inv_n * time_from_r_p
+        val time_from_cur_point_to_r_p_msec = travelTimeOnOrbitMsecCW(t1, 0 /*, print_variant = true*/)
+        if (time_msec >= time_from_cur_point_to_r_p_msec) {
+          val time_from_r_p_msec = time_msec - time_from_cur_point_to_r_p_msec
+          val M = 1 / inv_n * (0.001*time_from_r_p_msec)
           val (resH, iterations) = solver(_arsh((M + M) / e), M)
           val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(resH / 2)
           val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
           val teta_res_deg = 360 - teta_res_rad / math.Pi * 180
           orbitalPointByTrueAnomalyDeg(teta_res_deg)
         } else {
-          val time_from_r_p = time_from_cur_point_to_r_p - time_sec
-          val M = 1 / inv_n * time_from_r_p
+          val time_from_r_p_msec = time_from_cur_point_to_r_p_msec - time_msec
+          val M = 1 / inv_n * (0.001*time_from_r_p_msec)
           val (resH, iterations) = solver(_arsh((M + M) / e), M)
           val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(resH / 2)
           val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
@@ -1830,9 +1829,9 @@ package object orbitalkiller {
       }
     }
 
-    def orbitalPointAfterTime(point1: DVec, time_sec: Long, ccw: Boolean): DVec = {
-      if (ccw) orbitalPointAfterTimeCCW(point1, time_sec)
-      else orbitalPointAfterTimeCW(point1, time_sec)
+    def orbitalPointAfterTime(point1: DVec, time_msec: Long, ccw: Boolean): DVec = {
+      if (ccw) orbitalPointAfterTimeCCW(point1, time_msec)
+      else orbitalPointAfterTimeCW(point1, time_msec)
     }
   }
 
@@ -1883,6 +1882,14 @@ package object orbitalkiller {
       val f1 = planet_coord // координаты первого фокуса - координаты планеты (она в фокусе эллипса-орбиты)
       val f2 = body_relative_velocity.rotateDeg(alpha).n * d2 + body_relative_coord + planet_coord // координаты второго фокуса
       val center = (f2 - f1).n * c + f1 // координаты центра орбиты-эллипса
+
+      /*if(a == d1 || f2 == f1) {
+        println("orbit is round")
+      }
+
+      if(a == 0 || b == 0 || e.isNaN || c.isNaN || p == 0 || r_p.isNaN || r_a.isNaN || t == 0) {
+        throw new Exception("ellipse orbit calculation failed")
+      }*/
 
       new EllipseOrbit(a, b, e, c, p, r_p, r_a, t, f1, f2, center, G * (planet_mass + body_mass))
     } else {

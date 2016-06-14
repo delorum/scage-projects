@@ -1112,7 +1112,7 @@ abstract class PolygonShip(
   def updateStateSinceDeactivation(time_msec:Long, some_system_state: mutable.Map[Int, MutableBodyState]): Unit = {
     _orbit_data match {
       case Some(or) =>
-        val time_sec = (time_msec - deactivate_moment_msec) / 1000
+        val time_since_deactivation_msec = time_msec - deactivate_moment_msec
         val planet_coord = some_system_state.get(or.planet.index).map(_.coord).getOrElse(or.planet.coord)
         val planet_vel = some_system_state.get(or.planet.index).map(_.vel).getOrElse(or.planet.linearVelocity)
         val planet_ang_vel = some_system_state.get(or.planet.index).map(_.ang_vel).getOrElse(or.planet.currentState.ang_vel)
@@ -1120,9 +1120,9 @@ abstract class PolygonShip(
           or.orbit match {
             case e:EllipseOrbit =>
               val new_e = e.withNewFocusPosition(planet_coord)
-              val new_coord = new_e.orbitalPointAfterTime(deactivate_point_relative + planet_coord, time_sec, or.ccw)
-              if(new_coord.x.isNaN || new_coord.y.isNaN) {
-                val x = new_e.orbitalPointAfterTime(deactivate_point_relative + planet_coord, time_sec, or.ccw)
+              val new_coord = new_e.orbitalPointAfterTime(deactivate_point_relative + planet_coord, time_since_deactivation_msec, or.ccw)
+              if(new_coord.x.isNaN || new_coord.y.isNaN || new_coord == planet_coord) {
+                val x = new_e.orbitalPointAfterTime(deactivate_point_relative + planet_coord, time_since_deactivation_msec, or.ccw)
               }
               currentState.coord = new_coord
               val (vt, vr) = new_e.orbitalVelocityInPoint(currentState.coord)
