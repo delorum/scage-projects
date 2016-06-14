@@ -733,7 +733,7 @@ abstract class PolygonShip(
           if (InterfaceHolder.gSwitcher.maxGSet) {
             math.min(
               thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
-                earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5).norma
+                earth.airResistance(currentState, earth.currentState, /*ShipsHolder.currentShipStatesExceptShip(index), */28, 0.5).norma
               },
               e.max_power * 0.5)
           } else {
@@ -1112,7 +1112,7 @@ abstract class PolygonShip(
   def updateStateSinceDeactivation(time_msec:Long, some_system_state: mutable.Map[Int, MutableBodyState]): Unit = {
     _orbit_data match {
       case Some(or) =>
-        val time_sec = time_msec / 1000 - deactivate_moment_sec
+        val time_sec = (time_msec - deactivate_moment_msec) / 1000
         val planet_coord = some_system_state.get(or.planet.index).map(_.coord).getOrElse(or.planet.coord)
         val planet_vel = some_system_state.get(or.planet.index).map(_.vel).getOrElse(or.planet.linearVelocity)
         val planet_ang_vel = some_system_state.get(or.planet.index).map(_.ang_vel).getOrElse(or.planet.currentState.ang_vel)
@@ -1120,7 +1120,11 @@ abstract class PolygonShip(
           or.orbit match {
             case e:EllipseOrbit =>
               val new_e = e.withNewFocusPosition(planet_coord)
-              currentState.coord = new_e.orbitalPointAfterTime(deactivate_point_relative + planet_coord, time_sec, or.ccw)
+              val new_coord = new_e.orbitalPointAfterTime(deactivate_point_relative + planet_coord, time_sec, or.ccw)
+              if(new_coord.x.isNaN || new_coord.y.isNaN) {
+                val x = new_e.orbitalPointAfterTime(deactivate_point_relative + planet_coord, time_sec, or.ccw)
+              }
+              currentState.coord = new_coord
               val (vt, vr) = new_e.orbitalVelocityInPoint(currentState.coord)
               val r = if (or.ccw) (currentState.coord - planet_coord).n else -(currentState.coord - planet_coord).n
               val t = r.perpendicular
@@ -1128,7 +1132,7 @@ abstract class PolygonShip(
             case _ =>
           }
         } else {
-          val ang_diff = planet_ang_vel * time_sec
+          val ang_diff = planet_ang_vel/1000 * time_msec
           currentState.coord = deactivate_point_relative.rotateDeg(ang_diff) + planet_coord
           currentState.vel = planet_vel + (currentState.coord - planet_coord).p * or.planet.groundSpeedMsec
         }
@@ -1168,7 +1172,7 @@ abstract class PolygonShip(
     }
   }
 
-  protected var deactivate_moment_sec:Long = 0l
+  protected var deactivate_moment_msec:Long = 0l
   protected var deactivate_point_relative:DVec = DVec.zero
   
   def checkCriticalCollision(): Unit = {
@@ -1200,7 +1204,7 @@ abstract class PolygonShip(
   private def checkPlanetCollision(): Unit = {
     // если провалились сквозь землю
     currentPlanetStates.find {
-      case (planet, planet_state) => planet.coord.dist(currentState.coord) < planet.radius
+      case (planet, planet_state) => planet.coord.dist2(currentState.coord) < planet.radius2
     } match {
       case Some((planet, planet_state)) =>
         currentState.coord = currentState.coord + (currentState.coord - planet.coord).n * (planet.radius + radius - planet.coord.dist(currentState.coord))
@@ -1313,7 +1317,7 @@ abstract class PolygonShip(
    */
   private def calculateShipState(time_msec:Long): Unit = {
     // сила от реактивных двигателей и сила сопротивления воздуха
-    val air_resistance = earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5)
+    val air_resistance = earth.airResistance(currentState, earth.currentState, /*ShipsHolder.currentShipStatesExceptShip(index), */28, 0.5)
     val reactive_force = currentReactiveForce(0, currentState) + air_resistance
     if (!ship_is_crashed) {
       checkCriticalCollision()
@@ -1338,7 +1342,7 @@ abstract class PolygonShip(
     if (InterfaceHolder.gSwitcher.maxGSet) {
       val active_engines_except = engines.filter(e => e.active && 0 < e.stopMomentTacts && e.index != except_engine_index)
       if (active_engines_except.nonEmpty) {
-        val air_resistance = earth.airResistance(currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(index), 28, 0.5)
+        val air_resistance = earth.airResistance(currentState, earth.currentState, /*ShipsHolder.currentShipStatesExceptShip(index), */28, 0.5)
         val reactive_force = currentReactiveForce(0, currentState) + air_resistance
         val cur_force = reactive_force.norma
         val allowed_force = thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g
@@ -1353,7 +1357,7 @@ abstract class PolygonShip(
     }
   }
 
-  /*private val conditions:List[() => Boolean] = List(
+  private val conditions:List[() => Boolean] = List(
     () => thisOrActualProxyShipIndex != player_ship.thisOrActualProxyShipIndex,
     () => coord.dist2(OrbitalKiller.player_ship.coord) > 500l*1000l * 500l*1000l,
     () => _orbit_data.exists(or => {
@@ -1363,10 +1367,9 @@ abstract class PolygonShip(
   )
   private def deactivateCondition:(Boolean, Int) = {
     conditions.zipWithIndex.find(c => !c._1()).map(x => {
-      if(name == "Приятель")println(s"${mOrKmOrMKm(coord.dist(OrbitalKiller.player_ship.coord))}")
       (false, x._2)
     }).getOrElse((true, -1))
-  }*/
+  }
 
   def afterStep(time_msec: Long): Unit = {
     if(dock_data.isEmpty) {
@@ -1374,17 +1377,18 @@ abstract class PolygonShip(
       // если это не корабль игрока, расстояние от данного корабля до корабля игрока больше 500 км,
       // перигей орбиты выше верхней границы атмосферы (орбита стабильная) или мы стоим на земле,
       // двигатели не включены
-      val deactivate_condition = thisOrActualProxyShipIndex != player_ship.thisOrActualProxyShipIndex &&
+      /*val deactivate_condition = thisOrActualProxyShipIndex != player_ship.thisOrActualProxyShipIndex &&
         coord.dist2(OrbitalKiller.player_ship.coord) > 500l*1000l * 500l*1000l &&
         _orbit_data.exists(or => {
           or.is_landed || or.ellipseOrbit.exists(e => e.r_p > or.planet.radius + or.planet.air_free_altitude)
         }) &&
-        engines.forall(!_.active)
+        engines.forall(!_.active)*/
+      val (deactivate_condition, reason) = deactivateCondition
       if (currentState.active) {
         calculateShipState(time_msec)
         if (deactivate_condition) {
           currentState.active = false
-          deactivate_moment_sec = time_msec / 1000
+          deactivate_moment_msec = time_msec
           deactivate_point_relative = coord - _orbit_data.map(_.planet.coord).getOrElse(DVec.zero)
           println(s"deactivated $name")
         }
@@ -1392,7 +1396,7 @@ abstract class PolygonShip(
         if (!deactivate_condition) {
           updateStateSinceDeactivation(time_msec, system_evolution.allBodyStates)
           currentState.active = true
-          println(s"activated $name")
+          println(s"activated $name, reason: $reason")
         }
       }
     } else {

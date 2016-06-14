@@ -190,17 +190,17 @@ class PlanetWithAir(index: Int,
 
   // A - Reference area (of the front of the ship)
   // C - Drag coefficient
-  private def airResistance(v: DVec, h: Double, A: Double, C: Double, check_obscure_func: DVec => Boolean): DVec = {
+  private def airResistance(v: DVec, h: Double, A: Double, C: Double/*, check_obscure_func: DVec => Boolean*/): DVec = {
     val T = temperature(h)
     if (T <= 0) DVec.zero
     else {
-      if (check_obscure_func(v.n)) DVec.zero
-      else {
+      /*if (check_obscure_func(v.n)) DVec.zero
+      else {*/
         val P = airPressurePascale(h)
         val ro = P * M / (R * T) // density of air
         val F = 0.5 * ro * A * C * v.norma2
         -v.n * F
-      }
+      /*}*/
     }
   }
 
@@ -210,21 +210,21 @@ class PlanetWithAir(index: Int,
                             planet_velocity: DVec,
                             planet_ang_vel: Double,
                             A: Double,
-                            C: Double,
-                            check_obscure_func: DVec => Boolean): DVec = {
+                            C: Double/*,
+                            check_obscure_func: DVec => Boolean*/): DVec = {
     airResistance(velocityRelativeToAir(ship_coord, ship_velocity, planet_coord, planet_velocity, planet_ang_vel),
       altitude(ship_coord, planet_coord),
       A,
-      C,
-      check_obscure_func)
+      C/*,
+      check_obscure_func*/)
   }
 
   def airResistance(ship_state: MutableBodyState,
                     planet_state: MutableBodyState,
-                    other_ship_states: Seq[MutableBodyState],
+                    /*other_ship_states: Seq[MutableBodyState],*/
                     A: Double,
                     C: Double): DVec = {
-    def _checkIfObscuredByAnotherShip(ship_dir_relative_to_air: DVec, other_ship_states_left: Seq[MutableBodyState] = other_ship_states): Boolean = {
+    /*def _checkIfObscuredByAnotherShip(ship_dir_relative_to_air: DVec, other_ship_states_left: Seq[MutableBodyState] = other_ship_states): Boolean = {
       if (other_ship_states_left.isEmpty) false
       else {
         val other_ship_state = other_ship_states_left.head
@@ -250,9 +250,9 @@ class PlanetWithAir(index: Int,
           case _ => _checkIfObscuredByAnotherShip(ship_dir_relative_to_air, other_ship_states_left.tail)
         }
       }
-    }
-    val f = (ship_dir_relative_to_air: DVec) => _checkIfObscuredByAnotherShip(ship_dir_relative_to_air)
-    airResistance(ship_state.coord, ship_state.vel, planet_state.coord, planet_state.vel, planet_state.ang_vel, A, C, f)
+    }*/
+    //val f = (ship_dir_relative_to_air: DVec) => _checkIfObscuredByAnotherShip(ship_dir_relative_to_air)
+    airResistance(ship_state.coord, ship_state.vel, planet_state.coord, planet_state.vel, planet_state.ang_vel, A, C/*, f*/)
   }
 
   def airPressureMmHg(ship_coord: DVec, planet_coord: DVec): Double = {

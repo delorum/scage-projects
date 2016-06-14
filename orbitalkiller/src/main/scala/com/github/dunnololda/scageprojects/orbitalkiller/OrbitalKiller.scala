@@ -27,29 +27,35 @@ case class OrbitData(update_count:Long,
     case _ => None
   }
 
-  lazy val orbitStrDefinition:String = {
-    if(is_landed) "landed" else {
-      orbit.strDefinition(planet.name,
-        planet.radius,
-        planet.linearVelocity,
-        planet.currentState.ang,
-        planet.groundSpeedMsec,
-        planet.g,
-        body_state.coord,
-        body_state.vel,
-        bs_radius)
-    }
-  }
+  val init_bs_coord = body_state.coord
+  val init_bs_vel = body_state.vel
+  val init_planet_coord = planet_state.coord
+  val init_planet_vel = planet_state.vel
+  val init_planet_ang = planet_state.ang
 
   lazy val planet_radius_plus_body_radius_sq = (planet.radius + bs_radius)*(planet.radius + bs_radius)
   lazy val is_landed:Boolean = {
-    body_state.coord.dist2(planet_state.coord) < planet_radius_plus_body_radius_sq &&
-    ((body_state.vel - planet_state.vel)*(body_state.coord - planet_state.coord).n).abs < 0.5 &&
-    (((body_state.vel - planet_state.vel) * (body_state.coord - planet_state.coord).p) / body_state.coord.dist(planet_state.coord) * planet.radius - planet.groundSpeedMsec).abs < 0.5
+    init_bs_coord.dist2(init_planet_coord) <= planet_radius_plus_body_radius_sq &&
+    ((init_bs_vel - init_planet_vel)*(init_bs_coord - init_planet_coord).n).abs < 0.5 &&
+    (((init_bs_vel - init_planet_vel) * (init_bs_coord - init_planet_coord).p) / init_bs_coord.dist(init_planet_coord) * planet.radius - planet.groundSpeedMsec).abs < 0.5
   }
 
   lazy val is_landed_on_earth:Boolean = is_landed && planet.index == OrbitalKiller.earth.index
   lazy val is_landed_on_moon:Boolean = is_landed && planet.index == OrbitalKiller.moon.index
+
+  lazy val orbitStrDefinition:String = {
+    if(is_landed) "landed" else {
+      orbit.strDefinition(planet.name,
+        planet.radius,
+        init_planet_vel,
+        init_planet_ang,
+        planet.groundSpeedMsec,
+        planet.g,
+        init_bs_coord,
+        init_bs_vel,
+        bs_radius)
+    }
+  }
 }
 
 sealed trait ViewMode {

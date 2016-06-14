@@ -641,9 +641,25 @@ package object orbitalkiller {
     // ===========================================
 
     var acc: DVec = DVec.zero
-    var vel: DVec = body.vel
-    var coord: DVec = body.coord
-
+    
+    private var _vel: DVec = body.vel
+    def vel = _vel
+    def vel_=(new_vel:DVec): Unit = {
+      if(new_vel.x.abs > 300000000l || new_vel.y.abs > 300000000l) {
+        throw new Exception("vel is set to infinity!")
+      }
+      _vel = new_vel
+    }
+    
+    private var _coord: DVec = body.coord
+    def coord = _coord
+    def coord_=(new_coord:DVec): Unit = {
+      if(new_coord.x.isNaN || new_coord.y.isNaN) {
+        throw new Exception("coord is set to infinity!")
+      }
+      _coord = new_coord
+    }
+    
     var ang_acc: Double = 0.0
     var ang_vel: Double = body.ang_vel
     var ang: Double = body.ang

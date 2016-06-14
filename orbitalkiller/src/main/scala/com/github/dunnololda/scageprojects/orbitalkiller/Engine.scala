@@ -76,7 +76,7 @@ class Engine(val name: Int,
           math.min(
             max_power * new_power_percent / 100.0,
             ship.thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
-              earth.airResistance(ship.currentState, earth.currentState, ShipsHolder.currentShipStatesExceptShip(ship.index), 28, 0.5).norma
+              earth.airResistance(ship.currentState, earth.currentState, /*ShipsHolder.currentShipStatesExceptShip(ship.index), */28, 0.5).norma
             }
           )
         } else {

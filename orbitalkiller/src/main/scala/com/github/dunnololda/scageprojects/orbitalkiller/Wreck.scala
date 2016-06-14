@@ -29,8 +29,8 @@ class Wreck(mass: Double, init_coord: DVec, init_velocity: DVec, init_rotation: 
         helper.funcOfArrayOrDVecZero(Array(index, earth.index), l => {
           val bs = l(0)
           val e = l(1)
-          val other_ship_states = helper.bodyStates(ShipsHolder.shipIndicies.filterNot(_ == player_ship.index))
-          earth.airResistance(bs, e, other_ship_states, 28, 0.5)
+          //val other_ship_states = helper.bodyStates(ShipsHolder.shipIndicies.filterNot(_ == player_ship.index))
+          earth.airResistance(bs, e, /*other_ship_states, */28, 0.5)
         })
     },
     (tacts, helper) => 0.0

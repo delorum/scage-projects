@@ -20,8 +20,8 @@ object ShipsHolder {
           helper.funcOfArrayOrDVecZero(Array(ship.index, earth.index), l => {
             val bs = l(0)
             val e = l(1)
-            val other_ship_states = helper.bodyStates(ShipsHolder.shipIndicies.filterNot(_ == ship.index))
-            earth.airResistance(bs, e, other_ship_states, 28.0, 0.5)
+            //val other_ship_states = helper.bodyStates(ShipsHolder.shipIndicies.filterNot(_ == ship.index))
+            earth.airResistance(bs, e, /*other_ship_states, */28.0, 0.5)
           })
       },
       (tacts, helper) => {
