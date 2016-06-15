@@ -1230,6 +1230,9 @@ package object orbitalkiller {
                       ship_radius: Double): String
 
     def orbitalPointByTrueAnomalyDeg(angle_deg:Double):DVec
+    def tetaRad2PiInPoint(p:DVec):Double
+    def distanceByTrueAnomalyRad(angle_rad:Double):Double
+    def orbitalVelocityValueByTrueAnomalyRad(teta_rad: Double):Double
   }
 
   class EllipseOrbit(
@@ -1479,18 +1482,23 @@ package object orbitalkiller {
      *         vt - перпендикулярна радиальной компоненте
      *         math.sqrt(vr*vr + vt*vt) даст числовое выражение скорости
      */
-    def orbitalVelocityByTrueAnomalyRad(teta_rad: Double) = {
+    def orbitalVelocityByTrueAnomalyRad(teta_rad: Double):(Double, Double) = {
       val vr = math.sqrt(mu / p) * e * math.sin(teta_rad)
       val vt = math.sqrt(mu / p) * (1 + e * math.cos(teta_rad))
       (vt, vr)
     }
 
-    def orbitalVelocityByDir(dir: DVec) = {
+    def orbitalVelocityByDir(dir: DVec):(Double, Double) = {
       orbitalVelocityByTrueAnomalyRad(tetaRad2PiByDir(dir))
     }
 
-    def orbitalVelocityInPoint(point: DVec) = {
+    def orbitalVelocityInPoint(point: DVec):(Double, Double) = {
       orbitalVelocityByTrueAnomalyRad(tetaRad2PiInPoint(point))
+    }
+
+    def orbitalVelocityValueByTrueAnomalyRad(teta_rad: Double):Double = {
+      val (vt, vr) = orbitalVelocityByTrueAnomalyRad(teta_rad)
+      math.sqrt(vr * vr + vt * vt)
     }
 
     // Балк М.Б. Элементы динамики космического полета. Гл. III, параграф 3 "Решение уравнения Кеплера", стр. 111
@@ -1731,18 +1739,18 @@ package object orbitalkiller {
      *                 http://stu.alnam.ru/book_mor-60
      * @return
      */
-    def orbitalVelocityByTrueAnomalyRad(teta_rad: Double) = {
+    def orbitalVelocityValueByTrueAnomalyRad(teta_rad: Double):Double = {
       val orbital_point = orbitalPointByTrueAnomalyRad(teta_rad)
       val r = orbital_point.dist(f)
       math.sqrt(mu * (2 / r + 1 / a))
     }
 
-    def orbitalVelocityByDir(dir: DVec) = {
-      orbitalVelocityByTrueAnomalyRad(tetaRad2PiByDir(dir))
+    def orbitalVelocityByDir(dir: DVec):Double = {
+      orbitalVelocityValueByTrueAnomalyRad(tetaRad2PiByDir(dir))
     }
 
     def orbitalVelocityInPoint(point: DVec):DVec = {
-      val v = orbitalVelocityByTrueAnomalyRad(tetaRad2PiInPoint(point))
+      val v = orbitalVelocityValueByTrueAnomalyRad(tetaRad2PiInPoint(point))
       val r = point.dist(f)
       val phi = 3*math.Pi/2 + math.sqrt(a * a * (e * e - 1) / (r * (2 * a + r))).myacos // угол между вектором скорости и радиус-вектором
       (point - f).rotateRad(-phi).n*v
