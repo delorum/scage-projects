@@ -1550,6 +1550,10 @@ package object orbitalkiller {
       val new_center = (new_f2 - new_f).n * c + new_f
       new EllipseOrbit(a, b, e, c, p, r_p, r_a, t, new_f, new_f2, new_center, mu)
     }
+
+    def centerIfFocusPosition(new_f:DVec):DVec = {
+      (f2 - f).n * c + new_f
+    }
   }
 
   class HyperbolaOrbit(

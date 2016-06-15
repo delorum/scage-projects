@@ -85,7 +85,10 @@ object OrbitDataUpdater {
                                                  yy:List[DVec], 
                                                  orbit_color: ScageColor) = {
     OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
-      drawSlidingLines(yy.map(_ + planet_state.coord * scale), orbit_color)
+      openglLocalTransform {
+        openglMove(planet_state.coord * scale)
+        drawSlidingLines(yy, orbit_color)
+      }
       if(InterfaceHolder.namesSwitcher.showNames) {
         val new_o = o.withNewFocusPosition(planet_state.coord)
         drawStringInOrbitPoint("P", 0, new_o, orbit_color)
@@ -103,7 +106,10 @@ object OrbitDataUpdater {
                                       yy:List[DVec], 
                                       orbit_color: ScageColor) = {
     OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
-      drawSlidingLines(yy.map(_ + planet_state.coord * scale), orbit_color)
+      openglLocalTransform {
+        openglMove(planet_state.coord * scale)
+        drawSlidingLines(yy, orbit_color)
+      }
     })
   }
   
@@ -118,7 +124,10 @@ object OrbitDataUpdater {
                                           orbit_color: ScageColor) = {
     OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       val new_o = o.withNewFocusPosition(planet_state.coord)
-      drawSlidingLines(yy.map(_ + planet_state.coord * scale), orbit_color)
+      openglLocalTransform {
+        openglMove(planet_state.coord * scale)
+        drawSlidingLines(yy, orbit_color)
+      }
       if(InterfaceHolder.namesSwitcher.showNames) {
         drawStringInOrbitPoint("P", 0, new_o, orbit_color)
       }
@@ -174,13 +183,14 @@ object OrbitDataUpdater {
                                            ccw:Boolean,
                                            orbit_color: ScageColor) = {
     OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
-      val new_o = o.withNewFocusPosition(planet_state.coord)
+      val new_center = o.centerIfFocusPosition(planet_state.coord)
       openglLocalTransform {
-        openglMove(new_o.center * scale)
-        openglRotateDeg(Vec(-1, 0).signedDeg(new_o.f2 - new_o.f))
-        drawEllipse(DVec.zero, new_o.a * scale, new_o.b * scale, orbit_color)
+        openglMove(new_center * scale)
+        if(o.f2 != o.f) openglRotateDeg(Vec(1, 0).signedDeg(o.f_minus_f2_n))
+        drawEllipse(DVec.zero, o.a * scale, o.b * scale, orbit_color)
       }
       if(InterfaceHolder.namesSwitcher.showNames) {
+        val new_o = o.withNewFocusPosition(planet_state.coord)
         drawStringInOrbitPoint("P", 0, new_o, orbit_color)
         drawStringInOrbitPoint("A", 180, new_o, orbit_color)
       }
@@ -196,11 +206,11 @@ object OrbitDataUpdater {
                                         ccw:Boolean,
                                         orbit_color: ScageColor) = {
     OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
-      val new_o = o.withNewFocusPosition(planet_state.coord)
+      val new_center = o.centerIfFocusPosition(planet_state.coord)
       openglLocalTransform {
-        openglMove(new_o.center * scale)
-        openglRotateDeg(Vec(-1, 0).signedDeg(o.f2 - o.f))
-        drawEllipse(DVec.zero, new_o.a * scale, new_o.b * scale, orbit_color)
+        openglMove(new_center * scale)
+        if(o.f2 != o.f) openglRotateDeg(Vec(1, 0).signedDeg(o.f_minus_f2_n))
+        drawEllipse(DVec.zero, o.a * scale, o.b * scale, orbit_color)
       }
     })
   }
@@ -217,7 +227,7 @@ object OrbitDataUpdater {
       val new_o = o.withNewFocusPosition(planet_state.coord)
       openglLocalTransform {
         openglMove(new_o.center * scale)
-        openglRotateDeg(Vec(-1, 0).signedDeg(new_o.f2 - new_o.f))
+        if(new_o.f2 != new_o.f) openglRotateDeg(Vec(-1, 0).signedDeg(new_o.f2 - new_o.f))
         drawEllipse(DVec.zero, new_o.a * scale, new_o.b * scale, orbit_color)
       }
       if(InterfaceHolder.namesSwitcher.showNames) {
