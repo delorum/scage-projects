@@ -1233,6 +1233,11 @@ package object orbitalkiller {
     def tetaRad2PiInPoint(p:DVec):Double
     def distanceByTrueAnomalyRad(angle_rad:Double):Double
     def orbitalVelocityValueByTrueAnomalyRad(teta_rad: Double):Double
+    def orbitalPointAfterTime(point1: DVec, time_msec: Long, ccw: Boolean): DVec
+    def withNewFocusPosition(new_f:DVec):KeplerOrbit
+    def orbitalPointInPoint(p:DVec):DVec
+    def travelTimeOnOrbitMsec(from:DVec, to:DVec, ccw:Boolean, recalculate_orbital_points: Boolean = false):Long
+    def orbitalPointAfterTimeCCW(coord:DVec, flight_time_msec:Long):DVec
   }
 
   class EllipseOrbit(

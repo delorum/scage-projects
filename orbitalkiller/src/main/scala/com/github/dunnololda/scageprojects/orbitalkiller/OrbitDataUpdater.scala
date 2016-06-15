@@ -28,49 +28,46 @@ object OrbitDataUpdater {
     InterfaceHolder.shipInterfaces.filter(si => {
       !si.isMinimized && !si.monitoring_ship.isCrashed && !player_ship.isDockedToShip(si.monitoring_ship)
     }).flatMap(_.monitoring_ship.thisOrActualProxyShipOrbitData).foreach(x => {
-      x.ellipseOrbit.foreach(ship_orbit => {
-        maybe_flight_time_msec.foreach(flight_time_msec => {
-          val position_after_time = ship_orbit.orbitalPointAfterTime(x.body_state.coord, flight_time_msec, x.ccw)
-          drawCircle(position_after_time * scale, w/globalScale, YELLOW)
-        })
-        if (_stop_after_number_of_tacts > 0) {
-          val time_to_stop_msec = (_stop_after_number_of_tacts * base_dt * 1000).toLong
-          val position_when_stop_moment = ship_orbit.orbitalPointAfterTime(x.body_state.coord, time_to_stop_msec, x.ccw)
-          drawCircle(position_when_stop_moment * scale, w/globalScale, GREEN)
-        }
+      val ship_orbit = x.orbit.withNewFocusPosition(x.planet_state.coord)
+      maybe_flight_time_msec.foreach(flight_time_msec => {
+        val position_after_time = ship_orbit.orbitalPointAfterTime(x.body_state.coord, flight_time_msec, x.ccw)
+        drawCircle(position_after_time * scale, w/globalScale, YELLOW)
       })
+      if (_stop_after_number_of_tacts > 0) {
+        val time_to_stop_msec = (_stop_after_number_of_tacts * base_dt * 1000).toLong
+        val position_when_stop_moment = ship_orbit.orbitalPointAfterTime(x.body_state.coord, time_to_stop_msec, x.ccw)
+        drawCircle(position_when_stop_moment * scale, w/globalScale, GREEN)
+      }
     })
     if(player_ship.thisOrActualProxyShipCurrentOrbitData.exists(or => or.planet.index == earth.index)) {
       moon.orbitRender.foreach(x => {
-        x.ellipseOrbit.foreach(moon_orbit => {
-          maybe_flight_time_msec.foreach(flight_time_msec => {
-            val position_after_time = moon_orbit.orbitalPointAfterTimeCCW(x.body_state.coord, flight_time_msec)
-            drawCircle(position_after_time * scale, moon.radius * scale, YELLOW)
-            drawCircle(position_after_time * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
-          })
-          if (_stop_after_number_of_tacts > 0) {
-            val time_to_stop_msec = (_stop_after_number_of_tacts * base_dt * 1000).toLong
-            val position_when_stop_moment = moon_orbit.orbitalPointAfterTimeCCW(x.body_state.coord, time_to_stop_msec)
-            drawCircle(position_when_stop_moment * scale, moon.radius * scale, GREEN)
-            drawCircle(position_when_stop_moment * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
-          }
+        val moon_orbit = x.orbit.withNewFocusPosition(x.planet_state.coord)
+        maybe_flight_time_msec.foreach(flight_time_msec => {
+          val position_after_time = moon_orbit.orbitalPointAfterTimeCCW(x.body_state.coord, flight_time_msec)
+          drawCircle(position_after_time * scale, moon.radius * scale, YELLOW)
+          drawCircle(position_after_time * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
         })
+        if (_stop_after_number_of_tacts > 0) {
+          val time_to_stop_msec = (_stop_after_number_of_tacts * base_dt * 1000).toLong
+          val position_when_stop_moment = moon_orbit.orbitalPointAfterTimeCCW(x.body_state.coord, time_to_stop_msec)
+          drawCircle(position_when_stop_moment * scale, moon.radius * scale, GREEN)
+          drawCircle(position_when_stop_moment * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
+        }
       })
     } else if(player_ship.thisOrActualProxyShipCurrentOrbitData.exists(or => or.planet.index == sun.index)) {
       earth.orbitRender.foreach(x => {
-        x.ellipseOrbit.foreach(earth_orbit => {
-          maybe_flight_time_msec.foreach(flight_time_msec => {
-            val position_after_time = earth_orbit.orbitalPointAfterTimeCCW(x.body_state.coord, flight_time_msec)
-            drawCircle(position_after_time * scale, earth.radius * scale, YELLOW)
-            drawCircle(position_after_time * scale, earth.half_hill_radius * scale, color = DARK_GRAY)
-          })
-          if (_stop_after_number_of_tacts > 0) {
-            val time_to_stop_msec = (_stop_after_number_of_tacts * base_dt * 1000).toLong
-            val position_when_stop_moment = earth_orbit.orbitalPointAfterTimeCCW(x.body_state.coord, time_to_stop_msec)
-            drawCircle(position_when_stop_moment * scale, earth.radius * scale, GREEN)
-            drawCircle(position_when_stop_moment * scale, earth.half_hill_radius * scale, color = DARK_GRAY)
-          }
+        val earth_orbit = x.orbit.withNewFocusPosition(x.planet_state.coord)
+        maybe_flight_time_msec.foreach(flight_time_msec => {
+          val position_after_time = earth_orbit.orbitalPointAfterTimeCCW(x.body_state.coord, flight_time_msec)
+          drawCircle(position_after_time * scale, earth.radius * scale, YELLOW)
+          drawCircle(position_after_time * scale, earth.half_hill_radius * scale, color = DARK_GRAY)
         })
+        if (_stop_after_number_of_tacts > 0) {
+          val time_to_stop_msec = (_stop_after_number_of_tacts * base_dt * 1000).toLong
+          val position_when_stop_moment = earth_orbit.orbitalPointAfterTimeCCW(x.body_state.coord, time_to_stop_msec)
+          drawCircle(position_when_stop_moment * scale, earth.radius * scale, GREEN)
+          drawCircle(position_when_stop_moment * scale, earth.half_hill_radius * scale, color = DARK_GRAY)
+        }
       })
     }
   }
