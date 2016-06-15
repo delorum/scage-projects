@@ -1228,6 +1228,8 @@ package object orbitalkiller {
                       ship_coord: DVec,
                       ship_velocity: DVec,
                       ship_radius: Double): String
+
+    def orbitalPointByTrueAnomalyDeg(angle_deg:Double):DVec
   }
 
   class EllipseOrbit(
