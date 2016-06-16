@@ -1483,26 +1483,26 @@ package object orbitalkiller {
      *                 Если против часовой стрелки - положительный, от 0 до pi, иначе отрицательный, от 0 до -pi
      *                 https://en.wikipedia.org/wiki/Lambert%27s_problem
      *                 https://en.wikipedia.org/wiki/Kepler_orbit
-     * @return vr - радиальная компонента, направлена к притягивающему центру
-     *         vt - перпендикулярна радиальной компоненте
+     * @return vr - радиальная компонента, направлена к притягивающему центру. r = (position_on_orbit - planet.coord).n
+     *         vt - перпендикулярна радиальной компоненте. t = r.perpendicular
      *         math.sqrt(vr*vr + vt*vt) даст числовое выражение скорости
      */
-    def orbitalVelocityByTrueAnomalyRad(teta_rad: Double):(Double, Double) = {
+    def orbitalVelocityByTrueAnomalyRad(teta_rad: Double, ccw:Boolean):(Double, Double) = {
       val vr = math.sqrt(mu / p) * e * math.sin(teta_rad)
       val vt = math.sqrt(mu / p) * (1 + e * math.cos(teta_rad))
-      (vt, vr)
+      if(ccw) (vt, vr) else (-vt, -vr)
     }
 
-    def orbitalVelocityByDir(dir: DVec):(Double, Double) = {
-      orbitalVelocityByTrueAnomalyRad(tetaRad2PiByDir(dir))
+    def orbitalVelocityByDir(dir: DVec, ccw:Boolean):(Double, Double) = {
+      orbitalVelocityByTrueAnomalyRad(tetaRad2PiByDir(dir), ccw)
     }
 
-    def orbitalVelocityInPoint(point: DVec):(Double, Double) = {
-      orbitalVelocityByTrueAnomalyRad(tetaRad2PiInPoint(point))
+    def orbitalVelocityInPoint(point: DVec, ccw:Boolean):(Double, Double) = {
+      orbitalVelocityByTrueAnomalyRad(tetaRad2PiInPoint(point), ccw)
     }
 
     def orbitalVelocityValueByTrueAnomalyRad(teta_rad: Double):Double = {
-      val (vt, vr) = orbitalVelocityByTrueAnomalyRad(teta_rad)
+      val (vt, vr) = orbitalVelocityByTrueAnomalyRad(teta_rad, ccw = true)
       math.sqrt(vr * vr + vt * vt)
     }
 
@@ -1758,11 +1758,11 @@ package object orbitalkiller {
       orbitalVelocityValueByTrueAnomalyRad(tetaRad2PiByDir(dir))
     }
 
-    def orbitalVelocityInPoint(point: DVec):DVec = {
+    def orbitalVelocityInPoint(point: DVec, ccw:Boolean):DVec = {
       val v = orbitalVelocityValueByTrueAnomalyRad(tetaRad2PiInPoint(point))
       val r = point.dist(f)
       val phi = 3*math.Pi/2 + math.sqrt(a * a * (e * e - 1) / (r * (2 * a + r))).myacos // угол между вектором скорости и радиус-вектором
-      (point - f).rotateRad(-phi).n*v
+      if(ccw) (point - f).rotateRad(-phi).n*v else (point - f).rotateRad(phi).n*v
     }
 
     // Балк М.Б. Элементы динамики космического полета. Гл. III, параграф 3 "Решение уравнения Кеплера", стр. 111
@@ -1777,18 +1777,25 @@ package object orbitalkiller {
       }
       val t1 = tetaDeg360InPoint(point1)
       val away_from_rp = teta_deg_min >= t1 && t1 >= 0
+      val time_from_r_p_to_cur_point_msec = if (away_from_rp) {
+        travelTimeOnOrbitMsecCCW(0, t1)
+      } else {
+        travelTimeOnOrbitMsecCCW(t1, 360)
+      }
       val time_from_r_p_msec = if (away_from_rp) {
-        val time_from_r_p_to_cur_point_msec = travelTimeOnOrbitMsecCCW(0, t1 /*, print_variant = true*/)
         time_from_r_p_to_cur_point_msec + time_msec
       } else {
-        val time_from_cur_point_to_r_p_msec = travelTimeOnOrbitMsecCCW(t1, 360 /*, print_variant = true*/)
-        (time_msec - time_from_cur_point_to_r_p_msec).abs
+        (time_msec - time_from_r_p_to_cur_point_msec).abs
       }
       val M = 1 / inv_n * (0.001*time_from_r_p_msec)
       val (resH, iterations) = solver(_arsh((M + M) / e), M)
       val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(resH / 2)
       val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
-      val teta_res_deg = teta_res_rad / math.Pi * 180
+      val teta_res_deg = if(away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec) {
+        teta_res_rad / math.Pi * 180
+      } else {
+        360 - teta_res_rad / math.Pi * 180
+      }
       orbitalPointByTrueAnomalyDeg(teta_res_deg)
     }
 
@@ -1801,18 +1808,25 @@ package object orbitalkiller {
       }
       val t1 = tetaDeg360InPoint(point1)
       val away_from_rp = 360 >= t1 && t1 >= teta_deg_max
+      val time_from_r_p_to_cur_point_msec = if(away_from_rp) {
+        travelTimeOnOrbitMsecCW(360, t1)
+      } else {
+        travelTimeOnOrbitMsecCW(t1, 0)
+      }
       val time_from_r_p_msec = if(away_from_rp) {
-        val time_from_r_p_to_cur_point_msec = travelTimeOnOrbitMsecCW(360, t1 /*, print_variant = true*/)
         time_from_r_p_to_cur_point_msec + time_msec
       } else {
-        val time_from_cur_point_to_r_p_msec = travelTimeOnOrbitMsecCW(t1, 0 /*, print_variant = true*/)
-       (time_msec - time_from_cur_point_to_r_p_msec).abs
+       (time_msec - time_from_r_p_to_cur_point_msec).abs
       }
       val M = 1 / inv_n * (0.001*time_from_r_p_msec)
       val (resH, iterations) = solver(_arsh((M + M) / e), M)
       val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(resH / 2)
       val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
-      val teta_res_deg = 360 - teta_res_rad / math.Pi * 180
+      val teta_res_deg = if(away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec) {
+        360 - teta_res_rad / math.Pi * 180
+      } else {
+        teta_res_rad / math.Pi * 180
+      }
       orbitalPointByTrueAnomalyDeg(teta_res_deg)
     }
 

@@ -1125,8 +1125,8 @@ abstract class PolygonShip(
                 val x = new_e.orbitalPointAfterTime(deactivate_point_relative + planet_coord, time_since_deactivation_msec, or.ccw)
               }*/
               currentState.coord = new_e.orbitalPointAfterTime(deactivate_point_relative + planet_coord, time_since_deactivation_msec, or.ccw)
-              val (vt, vr) = new_e.orbitalVelocityInPoint(currentState.coord)
-              val r = if (or.ccw) (currentState.coord - planet_coord).n else -(currentState.coord - planet_coord).n
+              val (vt, vr) = new_e.orbitalVelocityInPoint(currentState.coord, or.ccw)
+              val r = (currentState.coord - planet_coord).n
               val t = r.perpendicular
               currentState.vel = vr * r + vt * t + planet_vel
             case _ =>
