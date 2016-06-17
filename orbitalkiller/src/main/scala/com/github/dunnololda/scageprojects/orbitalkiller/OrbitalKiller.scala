@@ -264,7 +264,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   // на круговой орбите в 200 км от поверхности Земли
   val ship_start_position = earth.coord + DVec(-100, earth.radius + 199000)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
+  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true).n*18760/** 1.15 */
 
   //val ship_start_position = earth.coord + DVec(-100, earth.radius + 198000)
   //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, 900000, earth.coord, earth.linearVelocity, earth.mass, G, ccw = false)
@@ -283,9 +283,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
 
   val player_ship = new Ship4(ScageId.nextId,
-    init_coord = ship_start_position,
-    init_velocity = ship_init_velocity,
-    init_rotation = 90
+    init_coord = DVec(9.594617648145294E7, -8.919468846308415E7)+earth.coord,//DVec(-6.2797933836710215E7, -1.2455588349688923E8)+earth.coord,//ship_start_position,
+    init_velocity = DVec(28167.17922375556,2692.468259455251),//DVec(30521.418357148767,2855.1265848825283),//ship_init_velocity,
+    init_rotation = 214.7977970092611//164.6850289440855//90
   )
 
   // на круговой орбите в 200 км от поверхности Земли
@@ -358,6 +358,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   var _set_stop_time:Boolean = false
   var _stop_after_number_of_tacts: Long = 0
+  var _stop_in_orbit_true_anomaly: Double = 0
 
   private def nextStep() {
     (1 to timeMultiplier).foreach(step => {
@@ -915,7 +916,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   keyIgnorePause(KEY_F4, onKeyDown = if (!drawMapMode) viewMode = Landing) // посадка на планету, если не в режиме карты
 
   // функционал толком не работает
-  //keyIgnorePause(KEY_F5, onKeyDown = saveGame())                          // сохранить текущее состояние системы
+  keyIgnorePause(KEY_F5, onKeyDown = saveGame())                          // сохранить текущее состояние системы
   //keyIgnorePause(KEY_F6, onKeyDown = loadGame())                          // загрузить из файла состояние системы
 
   keyIgnorePause(KEY_I, onKeyDown = {

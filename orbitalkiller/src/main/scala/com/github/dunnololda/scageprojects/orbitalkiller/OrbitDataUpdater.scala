@@ -125,6 +125,16 @@ object OrbitDataUpdater {
         openglMove(planet_state.coord * scale)
         drawSlidingLines(yy, orbit_color)
       }
+
+      drawLine(new_o.f*scale, new_o.center*scale, GRAY)
+      if(_stop_after_number_of_tacts > 0) {
+        val p = new_o.orbitalPointAfterTime(bs.coord, (_stop_after_number_of_tacts * base_dt * 1000).toLong, ccw)
+        drawLine(p*scale, (p + (new_o.center - new_o.f).perpendicular*math.signum(p*(new_o.center - new_o.f)))*scale, GRAY)
+        val p2 = new_o.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)
+        drawLine(p2*scale, (p2 + (new_o.center - new_o.f).perpendicular*math.signum(p*(new_o.center - new_o.f)))*scale, GRAY)
+      }
+
+
       if(InterfaceHolder.namesSwitcher.showNames) {
         drawStringInOrbitPoint("P", 0, new_o, orbit_color)
       }
@@ -132,6 +142,7 @@ object OrbitDataUpdater {
       drawLine(new_o.f * scale, mouse_point * scale, DARK_GRAY)
 
       if (_stop_after_number_of_tacts > 0) {
+        drawFilledCircle(new_o.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly) * scale, 3 / globalScale, RED)
         drawFilledCircle(new_o.orbitalPointAfterTime(bs.coord, (_stop_after_number_of_tacts * base_dt * 1000).toLong, ccw) * scale, 3 / globalScale, GREEN)
       }
 
@@ -157,6 +168,7 @@ object OrbitDataUpdater {
 
           if (set_stop_moment) {
             _stop_after_number_of_tacts = (flight_time_msec / 1000 / base_dt).toLong
+            _stop_in_orbit_true_anomaly = mouse_teta_rad2Pi
             set_stop_moment = false
           }
 
@@ -238,6 +250,7 @@ object OrbitDataUpdater {
       drawFilledCircle(orbital_point * scale, 3 / globalScale, orbit_color)
 
       if (_stop_after_number_of_tacts > 0) {
+        drawFilledCircle(new_o.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly) * scale, 3 / globalScale, RED)
         drawFilledCircle(new_o.orbitalPointAfterTime(bs.coord, (_stop_after_number_of_tacts * base_dt * 1000).toLong, ccw) * scale, 3 / globalScale, GREEN)
       }
       val mouse_teta_rad2Pi = new_o.tetaRad2PiInPoint(mouse_point)
@@ -246,6 +259,7 @@ object OrbitDataUpdater {
 
       if (set_stop_moment) {
         _stop_after_number_of_tacts = (flight_time_msec / 1000 / base_dt).toLong
+        _stop_in_orbit_true_anomaly = mouse_teta_rad2Pi
         set_stop_moment = false
       }
       if (InterfaceHolder.orbParams.calculationOn) {

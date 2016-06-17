@@ -1698,6 +1698,10 @@ package object orbitalkiller {
     }
 
     def _travelTimeOnOrbitMsecCCW(orbital_point1: DVec, orbital_point2: DVec): Long = {
+      val t1 = tetaDeg360InPoint(orbital_point1)
+      val t2 = tetaDeg360InPoint(orbital_point2)
+      val wll_pass_r_p = teta_deg_max < t1 && t1 < 360 && 0 < t2 && t2 < teta_deg_min
+
       val r1 = (orbital_point1 - f).norma
       val r2 = (orbital_point2 - f).norma
       val s = orbital_point1.dist(orbital_point2)
@@ -1706,13 +1710,11 @@ package object orbitalkiller {
       val chl2 = 1 + (r1 + r2 - s) / (2 * a)
 
       val l1 = math.log(chl1 + math.sqrt(chl1 * chl1 - 1))
-      val l2 = math.log(chl2 + math.sqrt(chl2 * chl2 - 1))
+      val l2 = math.log(chl2 + math.sqrt(chl2 * chl2 - 1))*(if(wll_pass_r_p) -1 else 1)
       ((inv_n * ((math.sinh(l1) - l1) - (math.sinh(l2) - l2))) * 1000).toLong
     }
 
     def travelTimeOnOrbitMsecCCW(point1: DVec, point2: DVec, recalculate_points: Boolean = false): Long = {
-      /*val t1 = tetaDeg360InPoint(point1)
-      val t2 = tetaDeg360InPoint(point2)*/
       if (recalculate_points) {
         val orbital_point1 = orbitalPointInPoint(point1)
         val orbital_point2 = orbitalPointInPoint(point2)
