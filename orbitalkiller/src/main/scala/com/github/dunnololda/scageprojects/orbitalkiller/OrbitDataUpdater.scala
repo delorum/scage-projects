@@ -9,7 +9,7 @@ object OrbitDataUpdater {
 
   private def drawStringInOrbitPoint(str:String, deg:Double, o:KeplerOrbit, orbit_color:ScageColor): Unit = {
     openglLocalTransform {
-      openglMove(o.orbitalPointByTrueAnomalyDeg(0) * scale)
+      openglMove(o.orbitalPointByTrueAnomalyDeg(deg) * scale)
       drawFilledRectCentered(DVec.zero, w/globalScale, w/globalScale, orbit_color)
       print(str, Vec.zero, color = orbit_color, size = (max_font_size / globalScale).toFloat)
     }

@@ -1117,20 +1117,14 @@ abstract class PolygonShip(
         val planet_vel = some_system_state.get(or.planet.index).map(_.vel).getOrElse(or.planet.linearVelocity)
         val planet_ang_vel = some_system_state.get(or.planet.index).map(_.ang_vel).getOrElse(or.planet.currentState.ang_vel)
         if (!or.is_landed) {
-          or.orbit match {
-            case e:EllipseOrbit =>
-              val new_e = e.withNewFocusPosition(planet_coord)
-              /*val new_coord = new_e.orbitalPointAfterTime(deactivate_point_relative + planet_coord, time_since_deactivation_msec, or.ccw)
-              if(new_coord.x.isNaN || new_coord.y.isNaN || new_coord == planet_coord) {
-                val x = new_e.orbitalPointAfterTime(deactivate_point_relative + planet_coord, time_since_deactivation_msec, or.ccw)
-              }*/
-              currentState.coord = new_e.orbitalPointAfterTime(deactivate_point_relative + planet_coord, time_since_deactivation_msec, or.ccw)
-              val (vt, vr) = new_e.orbitalVelocityInPoint(currentState.coord, or.ccw)
-              val r = (currentState.coord - planet_coord).n
-              val t = r.perpendicular
-              currentState.vel = vr * r + vt * t + planet_vel
-            case _ =>
-          }
+          val new_orbit = or.orbit.withNewFocusPosition(planet_coord)
+          /*val new_coord = new_e.orbitalPointAfterTime(deactivate_point_relative + planet_coord, time_since_deactivation_msec, or.ccw)
+          if(new_coord.x.isNaN || new_coord.y.isNaN || new_coord == planet_coord) {
+            val x = new_e.orbitalPointAfterTime(deactivate_point_relative + planet_coord, time_since_deactivation_msec, or.ccw)
+          }*/
+          currentState.coord = new_orbit.orbitalPointAfterTime(deactivate_point_relative + planet_coord, time_since_deactivation_msec, or.ccw)
+          val v = new_orbit.orbitalVelocityInPoint(currentState.coord, or.ccw)
+          currentState.vel = v + planet_vel
         } else {
           val ang_diff = planet_ang_vel/1000 * time_msec
           currentState.coord = deactivate_point_relative.rotateDeg(ang_diff) + planet_coord
@@ -1361,7 +1355,7 @@ abstract class PolygonShip(
     () => thisOrActualProxyShipIndex != player_ship.thisOrActualProxyShipIndex,
     () => coord.dist2(OrbitalKiller.player_ship.coord) > 500l*1000l * 500l*1000l,
     () => _orbit_data.exists(or => {
-      or.is_landed || or.ellipseOrbit.exists(e => e.r_p > or.planet.radius + or.planet.air_free_altitude)
+      or.is_landed || or.orbit.r_p > or.planet.radius + or.planet.air_free_altitude
     }),
     () => engines.forall(!_.active)
   )
@@ -1380,7 +1374,7 @@ abstract class PolygonShip(
       val deactivate_condition = thisOrActualProxyShipIndex != player_ship.thisOrActualProxyShipIndex &&
         coord.dist2(OrbitalKiller.player_ship.coord) > 500l*1000l * 500l*1000l &&
         _orbit_data.exists(or => {
-          or.is_landed || or.ellipseOrbit.exists(e => e.r_p > or.planet.radius + or.planet.air_free_altitude)
+          or.is_landed || or.orbit.r_p > or.planet.radius + or.planet.air_free_altitude
         }) &&
         engines.forall(!_.active)
       //val (deactivate_condition, reason) = deactivateCondition

@@ -147,10 +147,10 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           system_evolution_copy.allBodyStates.map(bs => (bs._2, ShipsHolder.shipByIndex(bs._2.index))).foreach(bs => {
             if (bs._1.ang_vel != 0 && math.abs(bs._1.ang_vel) < angular_velocity_error) {
               bs._1.ang_vel = 0
-              bs._2.foreach(s => {
-                bs._1.mass = s.thisOrActualProxyShipCurrentMass(system_evolution_copy.tacts)
-              })
             }
+            bs._2.foreach(s => {
+              bs._1.mass = s.thisOrActualProxyShipCurrentMass(system_evolution_copy.tacts)
+            })
           })
           system_evolution_copy.step()
         })
@@ -263,8 +263,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
 
   // на круговой орбите в 200 км от поверхности Земли
-  //val ship_start_position = earth.coord + DVec(-100, earth.radius + 199000)
-  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
+  val ship_start_position = earth.coord + DVec(-100, earth.radius + 199000)
+  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
 
   //val ship_start_position = earth.coord + DVec(-100, earth.radius + 198000)
   //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, 900000, earth.coord, earth.linearVelocity, earth.mass, G, ccw = false)
@@ -278,8 +278,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
 
   // на орбите в 1000 км от поверхности Луны
-  val ship_start_position = moon.coord + DVec(0, moon.radius + 100000)
-  val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, 900000, moon.coord, moon.linearVelocity, moon.mass, G, ccw = false)//satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = false)
+  //val ship_start_position = moon.coord + DVec(0, moon.radius + 100000)
+  //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, 900000, moon.coord, moon.linearVelocity, moon.mass, G, ccw = false)//satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = false)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
 
   val player_ship = new Ship4(ScageId.nextId,

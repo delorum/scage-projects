@@ -725,21 +725,11 @@ class Ship4(index: Int,
         // velocity direction at stop moment
         if(_stop_after_number_of_tacts > 0 && InterfaceHolder.orbParams.calculationOn) {
           thisOrActualProxyShipOrbitData.filter(!_.is_landed).foreach(or => {
-            or.ellipseOrbit.foreach(e => {
-              val time_to_stop_msec = (_stop_after_number_of_tacts * base_dt * 1000).toLong
-              val position_at_stop_moment = e.orbitalPointAfterTime(coord, time_to_stop_msec, or.ccw)
-              val (vt, vr) = e.orbitalVelocityInPoint(position_at_stop_moment, or.ccw)
-              val r = (position_at_stop_moment - or.planet.coord).n
-              val t = r.perpendicular
-              val v = (vt*t + vr*r).n
-              drawDashedArrow(DVec.zero.actualPosBeforeRotation - v*radius, DVec.zero.actualPosBeforeRotation + v*radius, 1, colorIfPlayerAliveOrRed(CYAN))
-            })
-            or.hyperbolaOrbit.foreach(e => {
-              val time_to_stop_msec = (_stop_after_number_of_tacts * base_dt * 1000).toLong
-              val position_at_stop_moment = e.orbitalPointAfterTime(coord, time_to_stop_msec, or.ccw)
-              val v = e.orbitalVelocityInPoint(position_at_stop_moment, or.ccw).n
-              drawDashedArrow(DVec.zero.actualPosBeforeRotation - v*radius, DVec.zero.actualPosBeforeRotation + v*radius, 1, colorIfPlayerAliveOrRed(CYAN))
-            })
+            val time_to_stop_msec = (_stop_after_number_of_tacts * base_dt * 1000).toLong
+            val new_orbit = or.orbit.withNewFocusPosition(or.planet_state.coord)
+            val position_at_stop_moment = new_orbit.orbitalPointAfterTime(coord, time_to_stop_msec, or.ccw)
+            val v = new_orbit.orbitalVelocityInPoint(position_at_stop_moment, or.ccw).n
+            drawDashedArrow(DVec.zero.actualPosBeforeRotation - v*radius, DVec.zero.actualPosBeforeRotation + v*radius, 1, colorIfPlayerAliveOrRed(CYAN))
           })
         }
       }

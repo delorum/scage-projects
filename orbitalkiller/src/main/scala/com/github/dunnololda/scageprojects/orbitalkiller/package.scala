@@ -1209,6 +1209,8 @@ package object orbitalkiller {
 
     def center: DVec
 
+    def r_p:Double
+
     protected def calcFallPos(fall_point:DVec, planet_ang:Double, planet_radius:Double):String = {
       if (InterfaceHolder.degOrKm.selectedVariant == 0) {
         f"${correctAngle(DVec(0, 1).deg360(fall_point - f) - planet_ang)}%.3f град."
@@ -1238,6 +1240,7 @@ package object orbitalkiller {
     def orbitalPointInPoint(p:DVec):DVec
     def travelTimeOnOrbitMsec(from:DVec, to:DVec, ccw:Boolean, recalculate_orbital_points: Boolean = false):Long
     def orbitalPointAfterTimeCCW(coord:DVec, flight_time_msec:Long):DVec
+    def orbitalVelocityInPoint(point: DVec, ccw:Boolean):DVec
   }
 
   class EllipseOrbit(
@@ -1487,23 +1490,24 @@ package object orbitalkiller {
      *         vt - перпендикулярна радиальной компоненте. t = r.perpendicular
      *         math.sqrt(vr*vr + vt*vt) даст числовое выражение скорости
      */
-    def orbitalVelocityByTrueAnomalyRad(teta_rad: Double, ccw:Boolean):(Double, Double) = {
+    def orbitalVelocityByTrueAnomalyRad(teta_rad: Double, ccw:Boolean):DVec = {
       val vr = math.sqrt(mu / p) * e * math.sin(teta_rad)
       val vt = math.sqrt(mu / p) * (1 + e * math.cos(teta_rad))
-      if(ccw) (vt, vr) else (-vt, -vr)
+      val r = f_minus_f2_n.rotateRad(teta_rad)
+      val t = r.perpendicular
+      if(ccw) vr*r + vt*t  else -vr*r - vt*t
     }
 
-    def orbitalVelocityByDir(dir: DVec, ccw:Boolean):(Double, Double) = {
+    def orbitalVelocityByDir(dir: DVec, ccw:Boolean):DVec = {
       orbitalVelocityByTrueAnomalyRad(tetaRad2PiByDir(dir), ccw)
     }
 
-    def orbitalVelocityInPoint(point: DVec, ccw:Boolean):(Double, Double) = {
+    def orbitalVelocityInPoint(point: DVec, ccw:Boolean):DVec = {
       orbitalVelocityByTrueAnomalyRad(tetaRad2PiInPoint(point), ccw)
     }
 
     def orbitalVelocityValueByTrueAnomalyRad(teta_rad: Double):Double = {
-      val (vt, vr) = orbitalVelocityByTrueAnomalyRad(teta_rad, ccw = true)
-      math.sqrt(vr * vr + vt * vt)
+      orbitalVelocityByTrueAnomalyRad(teta_rad, ccw = true).norma
     }
 
     // Балк М.Б. Элементы динамики космического полета. Гл. III, параграф 3 "Решение уравнения Кеплера", стр. 111
@@ -1521,6 +1525,7 @@ package object orbitalkiller {
         else solver(M + e*math.sin(prev_E), i+1, max_i)
       }
       val (res_E, i) = solver()
+      if(OrbitalKiller.tacts % 63 == 0) println(s"elliptic orbitalPointAfterTimeCCW i $i")
       val tg_half_teta_res_rad = math.sqrt((1 + e) / (1 - e)) * math.tan(res_E / 2)
       val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
       val teta_res_deg = teta_res_rad / math.Pi * 180
@@ -1539,6 +1544,7 @@ package object orbitalkiller {
         else solver(M + e*math.sin(prev_E), i+1, max_i)
       }
       val (resE, iterations) = solver()
+      if(OrbitalKiller.tacts % 63 == 0) println(s"elliptic orbitalPointAfterTimeCW i $iterations")
       val tg_half_teta_res_rad = math.sqrt((1 + e) / (1 - e)) * math.tan(resE / 2)
       val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
       val teta_res_deg = teta_res_rad / math.Pi * 180
@@ -1789,9 +1795,10 @@ package object orbitalkiller {
       }
       val M = 1 / inv_n * (0.001*time_from_r_p_msec)
       val (resH, iterations) = solver(_arsh((M + M) / e), M)
+      if(OrbitalKiller.tacts % 63 == 0) println(s"hyperbolic orbitalPointAfterTimeCCW away $away_from_rp after_r_p ${!away_from_rp && time_msec >= time_from_r_p_to_cur_point_msec} i $iterations")
       val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(resH / 2)
       val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
-      val teta_res_deg = if(away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec) {
+      val teta_res_deg = if(away_from_rp || time_msec < time_from_r_p_to_cur_point_msec) {
         teta_res_rad / math.Pi * 180
       } else {
         360 - teta_res_rad / math.Pi * 180
@@ -1820,6 +1827,7 @@ package object orbitalkiller {
       }
       val M = 1 / inv_n * (0.001*time_from_r_p_msec)
       val (resH, iterations) = solver(_arsh((M + M) / e), M)
+      if(OrbitalKiller.tacts % 63 == 0) println(s"hyperbolic orbitalPointAfterTimeCW away $away_from_rp after_r_p ${away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec} i $iterations")
       val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(resH / 2)
       val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
       val teta_res_deg = if(away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec) {
