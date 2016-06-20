@@ -1797,10 +1797,10 @@ package object orbitalkiller {
       }
       val M = 1 / inv_n * (0.001*time_from_r_p_msec)
       val (resH, iterations) = solver(_arsh((M + M) / e), M)
-      if(OrbitalKiller.tacts % 63 == 0) println(s"hyperbolic orbitalPointAfterTimeCCW away $away_from_rp after_r_p ${!away_from_rp && time_msec >= time_from_r_p_to_cur_point_msec} i $iterations")
+      if(OrbitalKiller.tacts % 63 == 0) println(s"hyperbolic orbitalPointAfterTimeCCW away $away_from_rp after_r_p ${away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec} i $iterations")
       val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(resH / 2)
       val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
-      val teta_res_deg = if(away_from_rp || time_msec < time_from_r_p_to_cur_point_msec) {
+      val teta_res_deg = if(away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec) {
         teta_res_rad / math.Pi * 180
       } else {
         360 - teta_res_rad / math.Pi * 180
