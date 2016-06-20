@@ -263,8 +263,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
 
   // на круговой орбите в 200 км от поверхности Земли
-  val ship_start_position = earth.coord + DVec(-100, earth.radius + 199000)
-  val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true).n*18760/** 1.15 */
+  //val ship_start_position = earth.coord + DVec(-100, earth.radius + 199000)
+  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true).n*18760/** 1.15 */
 
   //val ship_start_position = earth.coord + DVec(-100, earth.radius + 198000)
   //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, 900000, earth.coord, earth.linearVelocity, earth.mass, G, ccw = false)
@@ -278,14 +278,22 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
 
   // на орбите в 1000 км от поверхности Луны
-  //val ship_start_position = moon.coord + DVec(0, moon.radius + 100000)
-  //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, 900000, moon.coord, moon.linearVelocity, moon.mass, G, ccw = false)//satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = false)
+  val ship_start_position = moon.coord + DVec(0, moon.radius + 100000)
+  val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, 900000, moon.coord, moon.linearVelocity, moon.mass, G, ccw = true)//satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = false)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
 
+  // на гиперболической орбите Земли, приближаемся к перицентру, летим по часовой стрелке
+  //val ship_start_position = DVec(-6.2797933836710215E7, -1.2455588349688923E8) + earth.coord
+  //val ship_init_velocity = DVec(30521.418357148767,2855.1265848825283)
+
+  // на гиперболической орбите Земли, приближаемся к перицентру, летим против часовой стрелки
+  //val ship_start_position = DVec(9.594617648145294E7, -8.919468846308415E7) + earth.coord
+  //val ship_init_velocity = DVec(28167.17922375556,2692.468259455251)
+
   val player_ship = new Ship4(ScageId.nextId,
-    init_coord = DVec(9.594617648145294E7, -8.919468846308415E7)+earth.coord,//DVec(-6.2797933836710215E7, -1.2455588349688923E8)+earth.coord,//ship_start_position,
-    init_velocity = DVec(28167.17922375556,2692.468259455251),//DVec(30521.418357148767,2855.1265848825283),//ship_init_velocity,
-    init_rotation = 214.7977970092611//164.6850289440855//90
+    init_coord = ship_start_position,
+    init_velocity = ship_init_velocity,
+    init_rotation = 90
   )
 
   // на круговой орбите в 200 км от поверхности Земли

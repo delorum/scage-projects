@@ -126,13 +126,13 @@ object OrbitDataUpdater {
         drawSlidingLines(yy, orbit_color)
       }
 
-      drawLine(new_o.f*scale, new_o.center*scale, GRAY)
+      /*drawLine(new_o.f*scale, new_o.center*scale, GRAY)
       if(_stop_after_number_of_tacts > 0) {
         val p = new_o.orbitalPointAfterTime(bs.coord, (_stop_after_number_of_tacts * base_dt * 1000).toLong, ccw)
         drawLine(p*scale, (p + (new_o.center - new_o.f).perpendicular*math.signum(p*(new_o.center - new_o.f)))*scale, GRAY)
         val p2 = new_o.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)
         drawLine(p2*scale, (p2 + (new_o.center - new_o.f).perpendicular*math.signum(p*(new_o.center - new_o.f)))*scale, GRAY)
-      }
+      }*/
 
 
       if(InterfaceHolder.namesSwitcher.showNames) {
