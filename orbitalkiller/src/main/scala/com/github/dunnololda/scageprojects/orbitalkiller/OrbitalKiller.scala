@@ -211,7 +211,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   )
 
-  val moon_start_position = DVec(-269000000, 269000000)
+  val moon_start_position = earth.coord + DVec(0,1).rotateDeg(270)*380000000l
   val moon_init_velocity = satelliteSpeed(moon_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
   val moon = new Planet(
     ScageId.nextId, "Луна",
@@ -277,9 +277,9 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   //val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
   //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
 
-  // на орбите в 1000 км от поверхности Луны
-  val ship_start_position = moon.coord + DVec(0, moon.radius + 100000)
-  val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, 900000, moon.coord, moon.linearVelocity, moon.mass, G, ccw = true)//satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = false)
+  // на орбите в 100 км от поверхности Луны
+  val ship_start_position = moon.coord + DVec(0, 1).rotateDeg(90)*(moon.radius + 100000)
+  val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, 0, moon.coord, moon.linearVelocity, moon.mass, G, ccw = true)//satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = false)
   //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
 
   // на гиперболической орбите Земли, приближаемся к перицентру, летим по часовой стрелке
@@ -293,7 +293,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   val player_ship = new Ship4(ScageId.nextId,
     init_coord = ship_start_position,
     init_velocity = ship_init_velocity,
-    init_rotation = 90
+    init_rotation = 180
   )
 
   // на круговой орбите в 200 км от поверхности Земли

@@ -1235,6 +1235,7 @@ package object orbitalkiller {
     def tetaRad2PiInPoint(p:DVec):Double
     def distanceByTrueAnomalyRad(angle_rad:Double):Double
     def orbitalVelocityValueByTrueAnomalyRad(teta_rad: Double):Double
+    def orbitalVelocityByTrueAnomalyRad(teta_rad: Double, ccw:Boolean):DVec
     def orbitalPointAfterTime(point1: DVec, time_msec: Long, ccw: Boolean): DVec
     def withNewFocusPosition(new_f:DVec):KeplerOrbit
     def orbitalPointInPoint(p:DVec):DVec
@@ -1760,6 +1761,10 @@ package object orbitalkiller {
       val orbital_point = orbitalPointByTrueAnomalyRad(teta_rad)
       val r = orbital_point.dist(f)
       math.sqrt(mu * (2 / r + 1 / a))
+    }
+
+    def orbitalVelocityByTrueAnomalyRad(teta_rad: Double, ccw:Boolean):DVec = {
+      orbitalVelocityInPoint(orbitalPointByTrueAnomalyRad(teta_rad), ccw)
     }
 
     def orbitalVelocityByDir(dir: DVec):Double = {
