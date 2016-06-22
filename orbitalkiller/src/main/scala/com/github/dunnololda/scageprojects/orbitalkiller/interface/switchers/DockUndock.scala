@@ -3,7 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers
 import com.github.dunnololda.scageprojects.orbitalkiller.{InterfaceHolder, InterfaceSwitcher, OrbitalKiller}
 
 class DockUndock extends InterfaceSwitcher {
-  override def strVariants: Array[String] = Array("Dock", "Undock")
+  override val strVariants: Array[String] = Array("Dock", "Undock")
 
   def setDocked(): Unit = {
     selected_variant = 1

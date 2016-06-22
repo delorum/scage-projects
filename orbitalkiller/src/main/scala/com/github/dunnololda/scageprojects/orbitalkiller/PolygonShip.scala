@@ -1089,22 +1089,26 @@ abstract class PolygonShip(
   private var _orbit_data: Option[OrbitData] = None
   def orbitData = _orbit_data
   def thisOrActualProxyShipOrbitData:Option[OrbitData] = dock_data.map(_.proxy_ship.thisOrActualProxyShipOrbitData).getOrElse(_orbit_data)
-  def updateOrbitData(update_count:Long, orbit_color:ScageColor, time_msec:Long, some_system_state: mutable.Map[Int, MutableBodyState]): Unit = {
+  def updateOrbitData(update_count:Long,
+                      orbit_color:ScageColor,
+                      time_msec:Long,
+                      some_system_state: mutable.Map[Int, MutableBodyState],
+                      calculate_orbit_around:Option[Int] = None): Unit = {
     dock_data match {
       case Some(dd) =>
-        dd.proxy_ship.updateOrbitData(update_count, orbit_color, time_msec, some_system_state)
+        dd.proxy_ship.updateOrbitData(update_count, orbit_color, time_msec, some_system_state, calculate_orbit_around)
       case None =>
         if(_orbit_data.isEmpty || _orbit_data.exists(_.update_count != update_count)) {
           if(currentState.active) {
-            _orbit_data = OrbitDataUpdater.updateOrbitData(update_count, index, radius, orbit_color, some_system_state, planet_indices)
+            _orbit_data = OrbitDataUpdater.updateOrbitData(update_count, index, radius, orbit_color, some_system_state, planet_indices, calculate_orbit_around)
           } else {
             updateStateSinceDeactivation(time_msec, some_system_state)
-            _orbit_data = OrbitDataUpdater.updateOrbitData(update_count, currentState, radius, orbit_color, some_system_state, planet_indices)
+            _orbit_data = OrbitDataUpdater.updateOrbitData(update_count, currentState, radius, orbit_color, some_system_state, planet_indices, calculate_orbit_around)
           }
           if(time_msec == timeMsec) {
             _current_orbit_data = _orbit_data
           } else {
-            updateCurrentOrbitData(update_count, orbit_color)
+            updateCurrentOrbitData(update_count, orbit_color, calculate_orbit_around)
           }
         }
     }
@@ -1137,12 +1141,12 @@ abstract class PolygonShip(
   private var _current_orbit_data: Option[OrbitData] = None
   def currentOrbitData = _current_orbit_data
   def thisOrActualProxyShipCurrentOrbitData:Option[OrbitData] = dock_data.map(_.proxy_ship.thisOrActualProxyShipOrbitData).getOrElse(_current_orbit_data)
-  private def updateCurrentOrbitData(update_count:Long, orbit_color:ScageColor): Unit = {
+  private def updateCurrentOrbitData(update_count:Long, orbit_color:ScageColor, calculate_orbit_around:Option[Int]): Unit = {
     if(currentState.active) {
-      _current_orbit_data = OrbitDataUpdater.updateOrbitData(update_count, index, radius, orbit_color, system_evolution.allBodyStates, planet_indices)
+      _current_orbit_data = OrbitDataUpdater.updateOrbitData(update_count, index, radius, orbit_color, system_evolution.allBodyStates, planet_indices, calculate_orbit_around)
     } else {
       updateStateSinceDeactivation(timeMsec, system_evolution.allBodyStates)
-      _current_orbit_data = OrbitDataUpdater.updateOrbitData(update_count, currentState, radius, orbit_color, system_evolution.allBodyStates, planet_indices)
+      _current_orbit_data = OrbitDataUpdater.updateOrbitData(update_count, currentState, radius, orbit_color, system_evolution.allBodyStates, planet_indices, calculate_orbit_around)
     }
   }
 

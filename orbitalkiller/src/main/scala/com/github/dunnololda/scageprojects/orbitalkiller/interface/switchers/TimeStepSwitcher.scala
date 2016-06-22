@@ -3,7 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers
 import com.github.dunnololda.scageprojects.orbitalkiller.InterfaceSwitcher
 
 class TimeStepSwitcher extends InterfaceSwitcher {
-  override def strVariants: Array[String] = Array("15ms", "1s", "1m")
+  override val strVariants: Array[String] = Array("15ms", "1s", "1m")
 
   def timeStep: Int = selected_variant match {
     case 0 => 1

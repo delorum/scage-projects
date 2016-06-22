@@ -87,7 +87,8 @@ case class MutableSystemPart(body: MutableBodyState,
 
 class SystemEvolution(val base_dt: Double = 1.0 / 63,
                       system_center: DVec = DVec.zero,
-                      init_tacts: Long = 0) {
+                      init_tacts: Long = 0,
+                      collisions_enabled:Boolean = true) {
   private val mutable_system = mutable.HashMap[Int, MutableSystemPart]()
   private val all_bodies = ArrayBuffer[MutableBodyState]()
   private val mutable_system_helper = new EvolutionHelper(mutable_system)
@@ -218,7 +219,7 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
     (1 to substeps).foreach(_ => {
       all_bodies.foreach(_.init())
 
-      val collisions = {
+      val collisions = if(collisions_enabled) {
         /*already_checked.clear()
         val x = splitSpace(new Space(all_bodies, system_center), 5, 2)
         for {
@@ -239,7 +240,7 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
           if !excludeCollisionCheck(b1.index, b2.index)
           c <- maybeCollisions(b1, b2)
         } yield c
-      }
+      } else Nil
       //println("===============")
 
       // Integrate forces first part
@@ -257,7 +258,7 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
       }
 
       // Solve collisions
-      if (collisions.nonEmpty) {
+      if (collisions_enabled && collisions.nonEmpty) {
         collisions.foreach(c => c.solveCollision(dt))
       }
 
@@ -282,7 +283,7 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
       }
 
       // Correct positions
-      if (collisions.nonEmpty) {
+      if (collisions_enabled && collisions.nonEmpty) {
         collisions.foreach(c => {
           c.positionalCorrection(tacts)
           ShipsHolder.shipByIndex(c.a.index).foreach(s => s.checkCriticalCollision())
@@ -294,10 +295,10 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
     tacts += 1l
   }
 
-  def copy: SystemEvolution = {
-    val x = new SystemEvolution(base_dt, system_center, tacts)
+  def copy(dt:Double = base_dt, exclude:Set[Int] = Set.empty, collisions_enabled:Boolean = true): SystemEvolution = {
+    val x = new SystemEvolution(dt, system_center, tacts)
     mutable_system.foreach(p => {
-      if(p._2.body.active) {
+      if(p._2.body.active &&  !exclude.contains(p._1)) {
         x.addBody(p._2.copy(body = p._2.body.copy))
       }
     })

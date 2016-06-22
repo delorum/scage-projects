@@ -124,8 +124,10 @@ object OrbitDataUpdater {
       openglLocalTransform {
         openglMove(planet_state.coord * scale)
         drawSlidingLines(yy, orbit_color)
+        if(InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && RealTrajectory.realTrajectory.nonEmpty) {
+          drawSlidingLines(RealTrajectory.realTrajectory, orbit_color)
+        }
       }
-
       /*drawLine(new_o.f*scale, new_o.center*scale, GRAY)
       if(_stop_after_number_of_tacts > 0) {
         val p = new_o.orbitalPointAfterTime(bs.coord, (_stop_after_number_of_tacts * base_dt * 1000).toLong, ccw)
@@ -239,6 +241,12 @@ object OrbitDataUpdater {
         if(new_o.f2 != new_o.f) openglRotateDeg(Vec(-1, 0).signedDeg(new_o.f2 - new_o.f))
         drawEllipse(DVec.zero, new_o.a * scale, new_o.b * scale, orbit_color)
       }
+      if(InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && RealTrajectory.realTrajectory.nonEmpty) {
+        openglLocalTransform {
+          openglMove(planet_state.coord * scale)
+          drawSlidingLines(RealTrajectory.realTrajectory, orbit_color)
+        }
+      }
       if(InterfaceHolder.namesSwitcher.showNames) {
         drawStringInOrbitPoint("P", 0, new_o, orbit_color)
         drawStringInOrbitPoint("A", 180, new_o, orbit_color)
@@ -274,9 +282,10 @@ object OrbitDataUpdater {
                       body_radius:Double,
                       orbit_color: ScageColor,
                       some_system_state: mutable.Map[Int, MutableBodyState],
-                      need_planets: Set[Int]): Option[OrbitData] = {
+                      need_planets: Set[Int],
+                      calculate_orbit_around:Option[Int]): Option[OrbitData] = {
     some_system_state.get(body_index).flatMap(bs => {
-      updateOrbitData(update_count, bs, body_radius, orbit_color, some_system_state, need_planets)
+      updateOrbitData(update_count, bs, body_radius, orbit_color, some_system_state, need_planets, calculate_orbit_around)
     })
   }
 
@@ -285,7 +294,8 @@ object OrbitDataUpdater {
                       body_radius:Double,
                       orbit_color: ScageColor,
                       some_system_state: mutable.Map[Int, MutableBodyState],
-                      need_planets: Set[Int]): Option[OrbitData] = {
+                      need_planets: Set[Int],
+                      calculate_orbit_around:Option[Int]): Option[OrbitData] = {
     val celestials = some_system_state.filter(kv => need_planets.contains(kv._1)).flatMap(kv => {
       planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
     }).values.toSeq.sortBy(_._2.mass)
@@ -294,7 +304,7 @@ object OrbitDataUpdater {
     val bs_vel = bs.vel
     val bs_mass = bs.mass
     val bs_ang = bs.ang
-    insideSphereOfInfluenceOfCelestialBody(bs_coord, bs_mass, celestials) match {
+    calculate_orbit_around.map(idx => celestials.find(_._1.index == idx)).getOrElse(insideSphereOfInfluenceOfCelestialBody(bs_coord, bs_mass, celestials)) match {
       case Some((planet, planet_state)) =>
         val planet_state_coord = planet_state.coord
         val planet_state_vel = planet_state.vel

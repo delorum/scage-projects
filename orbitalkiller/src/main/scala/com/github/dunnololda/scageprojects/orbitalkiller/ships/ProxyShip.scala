@@ -168,7 +168,7 @@ class ProxyShip(ship1:PolygonShip,
     ship2.drawIfAliveBeforeRotation()
   }
   override def drawIfAliveAfterRotation(): Unit = {
-    InterfaceHolder.proxyHullSwitcher.selectedVariant match {
+    /*InterfaceHolder.proxyHullSwitcher.selectedVariant match {
       case 0 =>
         ship1.drawIfAliveAfterRotation()
         ship2.drawIfAliveAfterRotation()
@@ -182,10 +182,10 @@ class ProxyShip(ship1:PolygonShip,
         wreck_parts.foreach(p => {
           drawSlidingLines(p.points ::: List(p.points.head), GREEN)
         })
-      case _ =>
+      case _ =>*/
         ship1.drawIfAliveAfterRotation()
         ship2.drawIfAliveAfterRotation()
-    }
+    /*}*/
   }
 
   override val docking_points: List[DockingPoints] = Nil

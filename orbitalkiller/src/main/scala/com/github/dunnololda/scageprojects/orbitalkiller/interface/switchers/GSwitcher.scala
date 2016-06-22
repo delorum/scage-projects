@@ -6,7 +6,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.InterfaceSwitcher
  * Переключатель - с каким максимальным ускорением можно двигаться. Этой настройке будут следовать все автоматические системы корабля
  */
 class GSwitcher extends InterfaceSwitcher {
-  override def strVariants: Array[String] = Array("Goff", "1g", "4g", "8g", "10g")
+  override val strVariants: Array[String] = Array("Goff", "1g", "4g", "8g", "10g")
 
   selected_variant = 2
 

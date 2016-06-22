@@ -111,7 +111,7 @@ class Engine(val name: Int,
           if (power == 0) {
             powerPercent = default_power_percent
           }
-          timeMultiplier = realtime
+          //timeMultiplier = realtime
           if (workTimeTacts == 0) workTimeTacts = 10
           if((ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) && InterfaceHolder.gSwitcher.maxGSet) {
             ship.syncOtherEnginesPower(index)
@@ -122,7 +122,7 @@ class Engine(val name: Int,
       } else {
         is_active = false
       }
-      updateFutureTrajectory("engine active")
+      needToUpdateOrbits("engine active")
     }
   }
 
