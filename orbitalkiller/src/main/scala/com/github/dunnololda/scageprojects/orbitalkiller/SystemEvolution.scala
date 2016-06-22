@@ -85,7 +85,7 @@ case class MutableSystemPart(body: MutableBodyState,
                              force: (Long, EvolutionHelper) => DVec,
                              torque: (Long, EvolutionHelper) => Double)
 
-class SystemEvolution(val base_dt: Double = 1.0 / 63,
+class SystemEvolution(var base_dt: Double = 1.0 / 63,
                       system_center: DVec = DVec.zero,
                       init_tacts: Long = 0,
                       collisions_enabled:Boolean = true) {
@@ -296,7 +296,7 @@ class SystemEvolution(val base_dt: Double = 1.0 / 63,
   }
 
   def copy(dt:Double = base_dt, exclude:Set[Int] = Set.empty, collisions_enabled:Boolean = true): SystemEvolution = {
-    val x = new SystemEvolution(dt, system_center, tacts)
+    val x = new SystemEvolution(dt, system_center, tacts, collisions_enabled)
     mutable_system.foreach(p => {
       if(p._2.body.active &&  !exclude.contains(p._1)) {
         x.addBody(p._2.copy(body = p._2.body.copy))

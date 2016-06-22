@@ -126,6 +126,7 @@ object OrbitDataUpdater {
         drawSlidingLines(yy, orbit_color)
         if(InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && RealTrajectory.realTrajectory.nonEmpty) {
           drawSlidingLines(RealTrajectory.realTrajectory, orbit_color)
+          //drawSlidingLines(RealTrajectory2.realTrajectory, orbit_color)
         }
       }
       /*drawLine(new_o.f*scale, new_o.center*scale, GRAY)
@@ -245,6 +246,7 @@ object OrbitDataUpdater {
         openglLocalTransform {
           openglMove(planet_state.coord * scale)
           drawSlidingLines(RealTrajectory.realTrajectory, orbit_color)
+          //drawSlidingLines(RealTrajectory2.realTrajectory, orbit_color)
         }
       }
       if(InterfaceHolder.namesSwitcher.showNames) {

@@ -15,7 +15,7 @@ class RealTrajectorySwitcher extends InterfaceSwitcher {
 
   def showRealTrajectory:Boolean = selectedVariant != 0
 
-  var numPoints:Int = 3600
+  var numPoints:Long = 24*3600
 
   override def switchForward(): Unit = {
     super.switchForward()

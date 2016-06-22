@@ -164,11 +164,13 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       system_cache.clear()
       _update_orbits = true
       RealTrajectory.init()
+      //RealTrajectory2.init()
     }
   }
 
   actionDynamicPeriodIgnorePause(500 / timeMultiplier) {
     RealTrajectory.continue()
+    //RealTrajectory2.continue()
   }
 
   val sun = new Star(
@@ -952,7 +954,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   keyIgnorePause(KEY_N, 100, onKeyDown = {
     if (InterfaceHolder.realTrajectorySwitcher.showRealTrajectory) {
-      InterfaceHolder.realTrajectorySwitcher.numPoints += 3600
+      InterfaceHolder.realTrajectorySwitcher.numPoints += 24*3600
     }
   })
 
@@ -961,7 +963,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       if(RealTrajectory.curPoints < InterfaceHolder.realTrajectorySwitcher.numPoints) {
         InterfaceHolder.realTrajectorySwitcher.numPoints = RealTrajectory.curPoints
       } else {
-        InterfaceHolder.realTrajectorySwitcher.numPoints = 3600
+        InterfaceHolder.realTrajectorySwitcher.numPoints = 24*3600
       }
       needToUpdateOrbits("reset real trajectory num points")
     }
