@@ -7,9 +7,9 @@ import scala.collection.mutable.ArrayBuffer
 import OrbitalKiller._
 
 object RealTrajectory extends RealTrajectoryC
-/*object RealTrajectory2 extends RealTrajectoryC {
+object RealTrajectory2 extends RealTrajectoryC {
   override protected def chooseDt:Double = base_dt
-}*/
+}
 
 class RealTrajectoryC {
   private var real_trajectory:ArrayBuffer[DVec] = ArrayBuffer[DVec]()
@@ -55,15 +55,13 @@ class RealTrajectoryC {
       // выбираем так, чтобы в цикле было ровно 100 итераций.
       val seconds_in_this_iteration = math.min((6300*system_evolution_copy.base_dt).toInt, InterfaceHolder.realTrajectorySwitcher.numPoints - curPoints)
       val last_step = math.max(1, (seconds_in_this_iteration*(1/system_evolution_copy.base_dt)).toInt)
-      if(real_trajectory.length >= 3) {
-        val prev_line = real_trajectory(real_trajectory.length-2) - real_trajectory(real_trajectory.length-3)
-        val cur_line = real_trajectory(real_trajectory.length-1) - real_trajectory(real_trajectory.length-2)
-        if (cur_line.absDeg(prev_line) <= angle_diff) {
-          real_trajectory.remove(real_trajectory.length-1)
-          dropped += 1
-        }
-      }
       (1 to last_step).foreach(step => {
+        system_evolution_copy.bodyState(player_ship.index).foreach(bs => {
+          if (bs.ang_vel != 0 && math.abs(bs.ang_vel) < angular_velocity_error) {
+            bs.ang_vel = 0
+          }
+          bs.mass = player_ship.thisOrActualProxyShipCurrentMass(system_evolution_copy.tacts)
+        })
         system_evolution_copy.step()
         (InterfaceHolder.orbitSwitcher.calculateOrbitAround match {
           case Some(idx) =>
