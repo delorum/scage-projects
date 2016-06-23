@@ -217,7 +217,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   )
 
-  val moon_start_position = earth.coord + DVec(0,1).rotateDeg(270)*380000000l
+  val moon_start_position = earth.coord + DVec(0,1).rotateDeg(90)*380000000l
   val moon_init_velocity = satelliteSpeed(moon_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
   val moon = new Planet(
     ScageId.nextId, "Луна",

@@ -41,21 +41,31 @@ class RealTrajectoryC {
       base_dt
     } else {
       system_evolution_copy.bodyState(player_ship.thisOrActualProxyShipIndex).map(bs => {
-        val min_dist_to_any_surface = celestials.map(x => bs.coord.dist(x._2.coord) - x._1.radius).min
-        //0.005 * math.log(min_dist_to_any_surface / bs.vel.norma) / math.log(10 / 3) * 10 / 3
-        0.005 * min_dist_to_any_surface / bs.vel.norma
+        val (min_dist_to_any_surface, planet_mass) = celestials.map(x => (bs.coord.dist(x._2.coord) - x._1.radius, x._2.mass)).minBy(_._1)
+        if(min_dist_to_any_surface >= 10000000) {
+          math.max(base_dt, 0.005 * min_dist_to_any_surface / bs.vel.norma)
+        } else {
+          math.max(base_dt, 0.005 * min_dist_to_any_surface / bs.vel.norma * moon.mass / planet_mass)
+        }
       }).getOrElse(base_dt)
     }
   }
 
   def continue(): Unit = {
     if(InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && InterfaceHolder.realTrajectorySwitcher.numPoints > curPoints) {
-      val new_base_dt = chooseDt
-      system_evolution_copy.base_dt = new_base_dt
-      // выбираем так, чтобы в цикле было ровно 100 итераций.
-      val seconds_in_this_iteration = math.min((6300*system_evolution_copy.base_dt).toInt, InterfaceHolder.realTrajectorySwitcher.numPoints - curPoints)
-      val last_step = math.max(1, (seconds_in_this_iteration*(1/system_evolution_copy.base_dt)).toInt)
-      (1 to last_step).foreach(step => {
+      if(real_trajectory.length >= 3) {
+        val prev_line = real_trajectory(real_trajectory.length-2) - real_trajectory(real_trajectory.length-3)
+        val cur_line = real_trajectory(real_trajectory.length-1) - real_trajectory(real_trajectory.length-2)
+        if (cur_line.absDeg(prev_line) <= angle_diff) {
+          real_trajectory.remove(real_trajectory.length-1)
+          dropped += 1
+        }
+      }
+      // 6300 итераций - 100 секунд симуляции при базовом dt = 1/63 секунды
+      var i = 1
+      var seconds:Double = 0
+      while(i < 6301 && curPoints+seconds < InterfaceHolder.realTrajectorySwitcher.numPoints) {
+        system_evolution_copy.base_dt = chooseDt
         system_evolution_copy.bodyState(player_ship.index).foreach(bs => {
           if (bs.ang_vel != 0 && math.abs(bs.ang_vel) < angular_velocity_error) {
             bs.ang_vel = 0
@@ -80,7 +90,7 @@ class RealTrajectoryC {
             })
         }) match {
           case Some(next_point) =>
-            if(real_trajectory.length < 2 || step == last_step) {
+            if(real_trajectory.length < 2 || i == 6300) {
               real_trajectory += next_point
             } else {
               val prev_line = real_trajectory.last - real_trajectory.init.last
@@ -93,9 +103,14 @@ class RealTrajectoryC {
             }
           case None =>
         }
-      })
-      curPoints += seconds_in_this_iteration
-      println(f"real trajectory dt ${new_base_dt/base_dt}%.2f*base_dt curPoints/numPoints $curPoints/${InterfaceHolder.realTrajectorySwitcher.numPoints} dropped/length $dropped/${real_trajectory.length}")
+        seconds += system_evolution_copy.base_dt
+        i += 1
+      }
+      curPoints += seconds.toLong
+      if(curPoints > InterfaceHolder.realTrajectorySwitcher.numPoints) {
+        InterfaceHolder.realTrajectorySwitcher.numPoints = curPoints
+      }
+      println(f"real trajectory dt ${system_evolution_copy.base_dt/base_dt}%.2f*base_dt curPoints/numPoints $curPoints/${InterfaceHolder.realTrajectorySwitcher.numPoints} dropped/length $dropped/${real_trajectory.length}")
     }
   }
 
