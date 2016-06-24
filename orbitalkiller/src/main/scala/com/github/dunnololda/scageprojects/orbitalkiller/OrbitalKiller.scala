@@ -165,12 +165,14 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       _update_orbits = true
       RealTrajectory.init()
       RealTrajectory2.init()
+      //RealTrajectory3.init()
     }
   }
 
   actionDynamicPeriodIgnorePause(500 / timeMultiplier) {
     RealTrajectory.continue()
     RealTrajectory2.continue()
+    //RealTrajectory3.continue()
   }
 
   val sun = new Star(

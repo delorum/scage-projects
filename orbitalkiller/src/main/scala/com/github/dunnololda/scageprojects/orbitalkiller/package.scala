@@ -1863,8 +1863,8 @@ package object orbitalkiller {
    */
   def calculateOrbit(planet_mass: Double, planet_coord: DVec, body_mass: Double, body_relative_coord: DVec, body_relative_velocity: DVec, G: Double): KeplerOrbit = {
     //https://ru.wikipedia.org/wiki/Гравитационный_параметр
-    val mu = (planet_mass + body_mass) * G // гравитационный параметр
-    //val mu = planet_mass*G // гравитационный параметр
+    //val mu = (planet_mass + body_mass) * G // гравитационный параметр
+    val mu = planet_mass*G // гравитационный параметр
 
     //http://ru.wikipedia.org/wiki/Кеплеровы_элементы_орбиты
     //val a = body_relative_coord.norma*k/(2*k*k - body_relative_coord.norma*body_velocity.norma2)

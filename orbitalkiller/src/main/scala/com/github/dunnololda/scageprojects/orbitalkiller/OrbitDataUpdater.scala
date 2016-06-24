@@ -130,6 +130,7 @@ object OrbitDataUpdater {
             drawFilledCircle(p, 3 / globalScale, orbit_color)
           })*/
           drawSlidingLines(RealTrajectory2.realTrajectory, ORANGE)
+          drawSlidingLines(RealTrajectory3.realTrajectory, ORANGE_RED)
         }
       }
       /*drawLine(new_o.f*scale, new_o.center*scale, GRAY)
@@ -253,6 +254,7 @@ object OrbitDataUpdater {
             drawFilledCircle(p, 3 / globalScale, orbit_color)
           })*/
           drawSlidingLines(RealTrajectory2.realTrajectory, ORANGE)
+          drawSlidingLines(RealTrajectory3.realTrajectory, ORANGE_RED)
         }
       }
       if(InterfaceHolder.namesSwitcher.showNames) {
