@@ -17,6 +17,21 @@ class RealTrajectoryC(max_multiplier:Option[Double]) {
   private var system_evolution_copy:SystemEvolution = _
   private var celestials:Seq[(CelestialBody, MutableBodyState)] = _
   private val angle_diff = 1
+  private var prev_energy:/*Double*/Seq[(String, Double)] = /*0.0*/Seq.empty
+
+  def energy:/*Double*/Seq[(String, Double)] = {
+    val all_bodies = system_evolution_copy.allBodyStates.map(_._2).toSeq
+    val kinetic = all_bodies.map(b => (b.index.toString, 0.5*b.mass*b.vel.norma2 + b.I*b.ang_vel.toRad*b.ang_vel.toRad))
+    val potential = all_bodies.combinations(2).map {
+      case Seq(b1, b2) => (s"${b1.index}-${b2.index}", - 0.5*G*b1.mass*b2.mass/b1.coord.dist(b2.coord))
+    }.toSeq
+    kinetic ++ potential
+    /*val kinetic = all_bodies.map(b => 0.5*b.mass*b.vel.norma2 + b.I*b.ang_vel.toRad*b.ang_vel.toRad).sum
+    val potential = all_bodies.combinations(2).map {
+      case Seq(b1, b2) => - 0.5*G*b1.mass*b2.mass/b1.coord.dist(b2.coord)
+    }.sum
+    kinetic + potential*/
+  }
 
   def init(): Unit = {
     real_trajectory.clear()
@@ -29,6 +44,7 @@ class RealTrajectoryC(max_multiplier:Option[Double]) {
     celestials = system_evolution_copy.allBodyStates.filter(kv => planet_indices.contains(kv._1)).flatMap(kv => {
       planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
     }).values.toSeq
+    prev_energy = /*0.0*/Seq.empty
   }
 
   private var min_m:Double = Double.MaxValue
@@ -44,10 +60,13 @@ class RealTrajectoryC(max_multiplier:Option[Double]) {
       // Квадратный корень от softening length, деленного на ускорение в точке, умноженный на коэффициент.
       // Softening length посчитал как радиус системы (380к км) поделить на квадратный корень от количества взаимодействующих тел (то есть,
       // корень из трех - Земля, Луна, корабль). Коэффициент подобран так, чтобы минимальный шаг был base_dt.
-      val m = 1.0/543200*math.sqrt(2.2E8 / ps.acc.norma)/base_dt
-      if (m < min_m) min_m = m
-      if (m > max_m) max_m = m
-      m
+      val a = ps.acc.norma
+      if(a != 0) {
+        val m = 1.0 / 543200 * math.sqrt(2.2E8 / a) / base_dt
+        if (m < min_m) min_m = m
+        if (m > max_m) max_m = m
+        m
+      } else 1.0
     }).getOrElse(1.0)
     max_multiplier.map(x => {
       if(x == 1) () => 1.0
@@ -63,6 +82,7 @@ class RealTrajectoryC(max_multiplier:Option[Double]) {
     if(player_ship.engines.exists(_.stopMomentTacts >= system_evolution_copy.tacts)) {
       base_dt // пока работают двигатели, dt должен быть равен base_dt, иначе неверно работают формулы.
     } else {
+      if(prev_energy/* == 0 */.isEmpty) prev_energy = energy
       calc_multiplier()*base_dt
     }
   }
@@ -99,7 +119,7 @@ class RealTrajectoryC(max_multiplier:Option[Double]) {
             system_evolution_copy.bodyState(player_ship.thisOrActualProxyShipIndex).map(bs => {
               player_ship.orbitData match {
                 case Some(or) =>
-                  (bs.coord - or.planet_state.coord)*scale
+                  system_evolution_copy.bodyState(or.planet_state.index).map(p => (bs.coord - p.coord)*scale).getOrElse(bs.coord*scale)
                 case None =>
                   bs.coord*scale
               }
@@ -126,7 +146,24 @@ class RealTrajectoryC(max_multiplier:Option[Double]) {
       if(curPoints > InterfaceHolder.realTrajectorySwitcher.numPoints) {
         InterfaceHolder.realTrajectorySwitcher.numPoints = curPoints
       }
-      println(f"real trajectory dt ${system_evolution_copy.base_dt/base_dt}%.2f*base_dt, min_m = $min_m, max_m = $max_m, curPoints/numPoints $curPoints/${InterfaceHolder.realTrajectorySwitcher.numPoints} dropped/length $dropped/${real_trajectory.length}")
+      val e = energy
+      val x = e.map(_._2).sum - prev_energy.map(_._2).sum
+      if(max_multiplier.exists(_ == 1)) {
+        println(f"real trajectory dt ${system_evolution_copy.base_dt / base_dt}%.2f*base_dt, dE=${x/prev_energy.map(_._2).sum}%.10f, curPoints/numPoints $curPoints/${InterfaceHolder.realTrajectorySwitcher.numPoints} dropped/length $dropped/${real_trajectory.length}")
+      } else {
+        println(f"real trajectory dt ${system_evolution_copy.base_dt / base_dt}%.2f*base_dt, dE=${x/prev_energy.map(_._2).sum}%.10f, min_m = $min_m, max_m = $max_m, curPoints/numPoints $curPoints/${InterfaceHolder.realTrajectorySwitcher.numPoints} dropped/length $dropped/${real_trajectory.length}")
+      }
+      prev_energy = energy
+      /*println(e.zip(init_energy).map {
+        case ((s1, e1), (s2, e2)) =>
+          if(s1 == s2) {
+            if(e2 != 0) {
+              f"$s1 ${(e1 - e2) / x * 100}%.5f"
+            } else {
+              s"$s1 N/A"
+            }
+          } else s"$s1 != $s2"
+      }.mkString(f"${x/init_energy.map(_._2).sum}%.5f : ", " : ", ""))*/
     }
   }
 

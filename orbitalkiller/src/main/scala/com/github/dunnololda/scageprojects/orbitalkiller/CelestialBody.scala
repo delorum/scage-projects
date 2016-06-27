@@ -307,7 +307,7 @@ class Star(val index: Int,
     ang_vel = 0,
     ang = 0,
     shape = CircleShape(radius),
-    is_static = true)
+    is_static = false)
 
   def linearVelocity: DVec = DVec.dzero
 

@@ -164,14 +164,14 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       system_cache.clear()
       _update_orbits = true
       RealTrajectory.init()
-      RealTrajectory2.init()
+      //RealTrajectory2.init()
       //RealTrajectory3.init()
     }
   }
 
   actionDynamicPeriodIgnorePause(500 / timeMultiplier) {
     RealTrajectory.continue()
-    RealTrajectory2.continue()
+    //RealTrajectory2.continue()
     //RealTrajectory3.continue()
   }
 
@@ -185,7 +185,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   system_evolution.addBody(
     sun.currentState,
     (tacts, helper) => {
-      DVec.zero
+      helper.gravityForceFromTo(earth.index, sun.index) +
+      helper.gravityForceFromTo(moon.index, sun.index)
     },
     (tacts, helper) => {
       0.0
@@ -193,7 +194,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   )
 
   val earth_start_position = DVec.dzero
-  val earth_init_velocity = satelliteSpeed(earth_start_position, sun.coord, sun.linearVelocity, sun.mass, G, counterclockwise = true)
+  val earth_init_velocity = speedToHaveOrbitWithParams(earth_start_position, 0, sun.coord, sun.linearVelocity, sun.mass, G, ccw = true)
   val earth = new PlanetWithAir(
     index = ScageId.nextId, name = "Земля",
     mass = 5.9746E24,
@@ -212,7 +213,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   system_evolution.addBody(
     earth.currentState,
     (tacts, helper) => {
-      helper.gravityForceFromTo(sun.index, earth.index)
+      helper.gravityForceFromTo(sun.index, earth.index) +
+      helper.gravityForceFromTo(moon.index, earth.index)
     },
     (tacts, helper) => {
       0.0
@@ -220,7 +222,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   )
 
   val moon_start_position = earth.coord + DVec(0,1).rotateDeg(90)*380000000l
-  val moon_init_velocity = satelliteSpeed(moon_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
+  val moon_init_velocity = speedToHaveOrbitWithParams(moon_start_position, 0, earth.coord, earth.linearVelocity, earth.mass, G, ccw = true)
   val moon = new Planet(
     ScageId.nextId, "Луна",
     mass = 7.3477E22,
@@ -234,7 +236,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     moon.currentState,
     (tacts, helper) => {
       helper.gravityForceFromTo(sun.index, moon.index) +
-        helper.gravityForceFromTo(earth.index, moon.index)
+      helper.gravityForceFromTo(earth.index, moon.index)
     },
     (tacts, helper) => {
       0.0
@@ -966,8 +968,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         InterfaceHolder.realTrajectorySwitcher.numPoints = RealTrajectory.curPoints
       } else {
         InterfaceHolder.realTrajectorySwitcher.numPoints = 24*3600
+        needToUpdateOrbits("reset real trajectory num points")
       }
-      needToUpdateOrbits("reset real trajectory num points")
     }
   })
 
