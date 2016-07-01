@@ -974,7 +974,7 @@ abstract class PolygonShip(
           if (before_death_counter != 100) {
             val rate = 100.0 / 60 * base_dt // восстановление после критической перегрузки за 60 секунд
             val time_to_restore_msec = (((100 - before_death_counter) / rate) * base_dt * 1000).toLong
-            f"Пилот в состоянии невесомости. Восстанавливается после перегрузки (${timeStr(time_to_restore_msec)})"
+            f"Пилот в состоянии невесомости. Восстанавливается после перегрузки (${timeStrSec(time_to_restore_msec)})"
           } else {
             "Пилот в состоянии невесомости"
           }
@@ -982,7 +982,7 @@ abstract class PolygonShip(
           if (before_death_counter != 100) {
             val rate = 100.0 / 60 * base_dt // восстановление после критической перегрузки за 60 секунд
             val time_to_restore_msec = (((100 - before_death_counter) / rate) * base_dt * 1000).toLong
-            f"Пилот испытывает силу тяжести $pilot_average_g%.1fg. Восстанавливается после перегрузки (${timeStr(time_to_restore_msec)})"
+            f"Пилот испытывает силу тяжести $pilot_average_g%.1fg. Восстанавливается после перегрузки (${timeStrSec(time_to_restore_msec)})"
           } else {
             f"Пилот испытывает силу тяжести $pilot_average_g%.1fg"
           }
@@ -990,7 +990,7 @@ abstract class PolygonShip(
           if (pilot_average_g > 4) {
             val rate = deatchCounterChangeRate(pilot_average_g)
             val time_before_death_msec = ((before_death_counter / rate) * base_dt * 1000).toLong
-            f"[rПилот испытывает критическую перегрузку $pilot_average_g%.1fg. Смерть через ${timeStr(time_before_death_msec)}]"
+            f"[rПилот испытывает критическую перегрузку $pilot_average_g%.1fg. Смерть через ${timeStrSec(time_before_death_msec)}]"
           } else {
             if (before_death_counter != 100) {
               f"Пилот испытывает перегрузку $pilot_average_g%.1fg. [oТребуется отдых после критической перегрузки]"

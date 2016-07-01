@@ -5,9 +5,9 @@ import com.github.dunnololda.scageprojects.orbitalkiller.{InterfaceHolder, RealT
 
 class RealTrajectorySwitcher extends InterfaceSwitcher {
   private def enabledRealTrajectorySwitcher = if(InterfaceHolder.realTrajectorySwitcher.numPoints > RealTrajectory.curPoints) {
-    s"RT\\[${com.github.dunnololda.scageprojects.orbitalkiller.timeStr(RealTrajectory.curPoints*1000)}/${com.github.dunnololda.scageprojects.orbitalkiller.timeStr(numPoints*1000)}\\]"
+    s"RT\\[${com.github.dunnololda.scageprojects.orbitalkiller.timeStrSec(RealTrajectory.curPoints*1000)}/${com.github.dunnololda.scageprojects.orbitalkiller.timeStrSec(numPoints*1000)}\\]"
   } else {
-    s"RT\\[${com.github.dunnololda.scageprojects.orbitalkiller.timeStr(numPoints*1000)}\\]"
+    s"RT\\[${com.github.dunnololda.scageprojects.orbitalkiller.timeStrSec(numPoints*1000)}\\]"
   }
   override def strVariants: Array[String] = Array("RToff", enabledRealTrajectorySwitcher)
 

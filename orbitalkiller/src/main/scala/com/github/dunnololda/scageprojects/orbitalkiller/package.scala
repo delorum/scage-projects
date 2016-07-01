@@ -1123,7 +1123,31 @@ package object orbitalkiller {
     }
   }
 
-  def timeStr(time_msec: Long, add_plus_sign: Boolean = false): String = {
+  def timeStrSec(time_msec: Long, add_plus_sign: Boolean = false): String = {
+    val is_below_zero = time_msec < 0
+    val abs_time_msec = math.abs(time_msec)
+    val result = if (abs_time_msec < 1000) s"0 сек."
+    else {
+      val sec = 1000l
+      val min = sec * 60
+      val hour = min * 60
+      val day = hour * 24
+
+      List(
+        (abs_time_msec / day, "д."),
+        (abs_time_msec % day / hour, "ч."),
+        (abs_time_msec % hour / min, "мин."),
+        (abs_time_msec % min / sec, "сек.")
+      ).filter(_._1 > 0).map(e => e._1 + " " + e._2).mkString(" ")
+    }
+    if (is_below_zero) s"-$result"
+    else {
+      if (add_plus_sign) s"+$result"
+      else result
+    }
+  }
+
+  def timeStrMsec(time_msec: Long, add_plus_sign: Boolean = false): String = {
     val is_below_zero = time_msec < 0
     val abs_time_msec = math.abs(time_msec)
     val result = if (abs_time_msec < 1000) s"$abs_time_msec мсек."
@@ -1316,11 +1340,11 @@ package object orbitalkiller {
 
         val allowed_acc = if (InterfaceHolder.gSwitcher.maxGSet) InterfaceHolder.gSwitcher.maxG * planet_g else 1000000 / OrbitalKiller.player_ship.mass
         val time_to_stop_at_full_power = math.abs(v0y / (allowed_acc - planet_g))
-        val fall_time_str = if (fall_time_msec < 500) "" else if (fall_time_msec < 30000) s"[r Поверхность через ${timeStr(fall_time_msec)}, $fall_position (${timeStr((time_to_stop_at_full_power * 1000l).toLong)})]" else s"Поверхность через ${timeStr(fall_time_msec)}, $fall_position"
+        val fall_time_str = if (fall_time_msec < 500) "" else if (fall_time_msec < 30000) s"[r Поверхность через ${timeStrSec(fall_time_msec)}, $fall_position (${timeStrMsec((time_to_stop_at_full_power * 1000l).toLong)})]" else s"Поверхность через ${timeStrMsec(fall_time_msec)}, $fall_position"
 
         f"$prefix, суборбитальная, $dir, e = $e%.2f, r_p = ${mOrKmOrMKm(r_p - planet_radius)}, r_a = ${mOrKmOrMKm(r_a - planet_radius)}. $fall_time_str"
       } else {
-        f"$prefix, замкнутая, $dir, e = $e%.2f, r_p = ${mOrKmOrMKm(r_p - planet_radius)}, r_a = ${mOrKmOrMKm(r_a - planet_radius)}, t = ${timeStr((t * 1000l).toLong)}"
+        f"$prefix, замкнутая, $dir, e = $e%.2f, r_p = ${mOrKmOrMKm(r_p - planet_radius)}, r_a = ${mOrKmOrMKm(r_a - planet_radius)}, t = ${timeStrSec((t * 1000l).toLong)}"
       }
     }
 
@@ -1642,7 +1666,7 @@ package object orbitalkiller {
 
         val allowed_acc = if (InterfaceHolder.gSwitcher.maxGSet) InterfaceHolder.gSwitcher.maxG * planet_g else 1000000 / OrbitalKiller.player_ship.mass
         val time_to_stop_at_full_power = math.abs(v0y / (allowed_acc - planet_g))
-        val fall_time_str = if (fall_time_msec < 500) "" else if (fall_time_msec < 30000) s"[r Поверхность через ${timeStr(fall_time_msec)}, $fall_position (${timeStr((time_to_stop_at_full_power * 1000l).toLong)})]" else s"Поверхность через ${timeStr(fall_time_msec)}, $fall_position"
+        val fall_time_str = if (fall_time_msec < 500) "" else if (fall_time_msec < 30000) s"[r Поверхность через ${timeStrSec(fall_time_msec)}, $fall_position (${timeStrMsec((time_to_stop_at_full_power * 1000l).toLong)})]" else s"Поверхность через ${timeStrMsec(fall_time_msec)}, $fall_position"
         f"$prefix, незамкнутая, суборбитальная $dir, $r_p_approach_str, e = $e%.2f, r_p = ${mOrKmOrMKm(r_p - planet_radius)}, $fall_time_str"
       } else {
         f"$prefix, незамкнутая, $dir, $r_p_approach_str, e = $e%.2f, r_p = ${mOrKmOrMKm(r_p - planet_radius)}"

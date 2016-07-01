@@ -76,11 +76,11 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
                 }
                 val need_orbit_period_str = {
                   if(near_player) {
-                    s"${timeStr(need_orbit_period_msec)}"
+                    s"${timeStrSec(need_orbit_period_msec)}"
                   } else {
                     val cur_sep = os_orbit_ellipse.orbitalPointInPoint(player_ship.coord).dist(player_ship.coord)
                     val sep_str = s"cur sep = ${mOrKmOrMKm(cur_sep)}"
-                    s"${timeStr(need_orbit_period_msec)} ($sep_str)"
+                    s"${timeStrSec(need_orbit_period_msec)} ($sep_str)"
                   }
                 }
                 s"rendezvous data: $need_orbit_period_str"

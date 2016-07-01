@@ -16,7 +16,7 @@ object OrbitDataUpdater {
   }
 
   private def printCalculatedData(flight_time_msec:Long, orbital_point:DVec, mouse_teta_rad2Pi:Double, o:KeplerOrbit, planet_radius:Double, orbit_color:ScageColor): Unit = {
-    val flight_time_str = s"${timeStr(flight_time_msec)}"
+    val flight_time_str = s"${timeStrSec(flight_time_msec)}"
     openglLocalTransform {
       openglMove(orbital_point * scale)
       val vnorm = o.orbitalVelocityValueByTrueAnomalyRad(mouse_teta_rad2Pi)
@@ -72,6 +72,13 @@ object OrbitDataUpdater {
     }
   }
 
+  private def drawRealTrajectoryOfPlayerShip(planet_state:MutableBodyState, orbit_color: ScageColor): Unit = {
+    openglLocalTransform {
+      openglMove(planet_state.coord * scale)
+      drawSlidingLines(RealTrajectory.realTrajectory, orbit_color)
+    }
+  }
+
   private def hyperbolaOrbitDataForNonPlayerShip(update_count:Long, 
                                                  bs: MutableBodyState, 
                                                  body_radius:Double, 
@@ -120,71 +127,59 @@ object OrbitDataUpdater {
                                           yy:List[DVec], 
                                           orbit_color: ScageColor) = {
     OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
-      val new_o = o.withNewFocusPosition(planet_state.coord)
-      openglLocalTransform {
-        openglMove(planet_state.coord * scale)
-        drawSlidingLines(yy, orbit_color)
-        if(InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && RealTrajectory.realTrajectory.nonEmpty) {
-          drawSlidingLines(RealTrajectory.realTrajectory, orbit_color)
-          /*RealTrajectory.realTrajectory.foreach(p => {
-            drawFilledCircle(p, 3 / globalScale, orbit_color)
-          })*/
-          drawSlidingLines(RealTrajectory2.realTrajectory, ORANGE)
-          drawSlidingLines(RealTrajectory3.realTrajectory, ORANGE_RED)
+      val real_trajectory_enabled = InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && RealTrajectory.realTrajectory.nonEmpty
+      if(real_trajectory_enabled) {
+        drawRealTrajectoryOfPlayerShip(planet_state, orbit_color)
+      } else {
+        openglLocalTransform {
+          openglMove(planet_state.coord * scale)
+          drawSlidingLines(yy, orbit_color)
         }
-      }
-      /*drawLine(new_o.f*scale, new_o.center*scale, GRAY)
-      if(_stop_after_number_of_tacts > 0) {
-        val p = new_o.orbitalPointAfterTime(bs.coord, (_stop_after_number_of_tacts * base_dt * 1000).toLong, ccw)
-        drawLine(p*scale, (p + (new_o.center - new_o.f).perpendicular*math.signum(p*(new_o.center - new_o.f)))*scale, GRAY)
-        val p2 = new_o.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly)
-        drawLine(p2*scale, (p2 + (new_o.center - new_o.f).perpendicular*math.signum(p*(new_o.center - new_o.f)))*scale, GRAY)
-      }*/
+        val new_o = o.withNewFocusPosition(planet_state.coord)
+        if(InterfaceHolder.namesSwitcher.showNames) {
+          drawStringInOrbitPoint("P", 0, new_o, orbit_color)
+        }
+        val mouse_point = absCoord(mouseCoord) / scale
+        drawLine(new_o.f * scale, mouse_point * scale, DARK_GRAY)
 
-
-      if(InterfaceHolder.namesSwitcher.showNames) {
-        drawStringInOrbitPoint("P", 0, new_o, orbit_color)
-      }
-      val mouse_point = absCoord(mouseCoord) / scale
-      drawLine(new_o.f * scale, mouse_point * scale, DARK_GRAY)
-
-      if (_stop_after_number_of_tacts > 0) {
-        drawFilledCircle(new_o.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly) * scale, 3 / globalScale, RED)
-        drawFilledCircle(new_o.orbitalPointAfterTime(bs.coord, (_stop_after_number_of_tacts * base_dt * 1000).toLong, ccw) * scale, 3 / globalScale, GREEN)
-      }
-
-      val mouse_teta_rad2Pi = new_o.tetaRad2PiInPoint(mouse_point)
-      val ship_teta_rad2Pi = new_o.tetaRad2PiInPoint(bs.coord)
-      if (new_o.tetaRad2PiValid(mouse_teta_rad2Pi)) {
-        val away_from_rp = (bs.coord - new_o.f) * (bs.vel - planet_state.vel) >= 0 // приближаемся к перигею или удаляемся от него?
-
-        val mouse_point_further_on_the_way = {
-          if (ccw) {
-            (away_from_rp && ship_teta_rad2Pi <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= new_o.teta_rad_min) ||
-              (!away_from_rp && ((ship_teta_rad2Pi <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= 360) || (0 <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= new_o.teta_rad_min)))
-          } else {
-            (away_from_rp && ship_teta_rad2Pi >= mouse_teta_rad2Pi && mouse_teta_rad2Pi >= new_o.teta_rad_max) ||
-              (!away_from_rp && ((ship_teta_rad2Pi >= mouse_teta_rad2Pi && mouse_teta_rad2Pi >= 0) || (360 >= mouse_teta_rad2Pi && mouse_teta_rad2Pi >= new_o.teta_rad_max)))
-          }
+        if (_stop_after_number_of_tacts > 0) {
+          drawFilledCircle(new_o.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly) * scale, 3 / globalScale, RED)
+          drawFilledCircle(new_o.orbitalPointAfterTime(bs.coord, (_stop_after_number_of_tacts * base_dt * 1000).toLong, ccw) * scale, 3 / globalScale, GREEN)
         }
 
-        if (mouse_point_further_on_the_way) {
-          val orbital_point = new_o.orbitalPointInPoint(mouse_point)
-          drawFilledCircle(orbital_point * scale, 3 / globalScale, orbit_color)
-          lazy val flight_time_msec = new_o.travelTimeOnOrbitMsec(bs.coord, orbital_point, ccw)
+        val mouse_teta_rad2Pi = new_o.tetaRad2PiInPoint(mouse_point)
+        val ship_teta_rad2Pi = new_o.tetaRad2PiInPoint(bs.coord)
+        if (new_o.tetaRad2PiValid(mouse_teta_rad2Pi)) {
+          val away_from_rp = (bs.coord - new_o.f) * (bs.vel - planet_state.vel) >= 0 // приближаемся к перигею или удаляемся от него?
 
-          if (set_stop_moment) {
-            _stop_after_number_of_tacts = (flight_time_msec / 1000 / base_dt).toLong
-            _stop_in_orbit_true_anomaly = mouse_teta_rad2Pi
-            set_stop_moment = false
+          val mouse_point_further_on_the_way = {
+            if (ccw) {
+              (away_from_rp && ship_teta_rad2Pi <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= new_o.teta_rad_min) ||
+                (!away_from_rp && ((ship_teta_rad2Pi <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= 360) || (0 <= mouse_teta_rad2Pi && mouse_teta_rad2Pi <= new_o.teta_rad_min)))
+            } else {
+              (away_from_rp && ship_teta_rad2Pi >= mouse_teta_rad2Pi && mouse_teta_rad2Pi >= new_o.teta_rad_max) ||
+                (!away_from_rp && ((ship_teta_rad2Pi >= mouse_teta_rad2Pi && mouse_teta_rad2Pi >= 0) || (360 >= mouse_teta_rad2Pi && mouse_teta_rad2Pi >= new_o.teta_rad_max)))
+            }
           }
 
-          if (InterfaceHolder.orbParams.calculationOn) {
-            printCalculatedData(flight_time_msec, orbital_point, mouse_teta_rad2Pi, o, planet.radius, orbit_color:ScageColor)
-            drawFuturePositions(Some(flight_time_msec))
+          if (mouse_point_further_on_the_way) {
+            val orbital_point = new_o.orbitalPointInPoint(mouse_point)
+            drawFilledCircle(orbital_point * scale, 3 / globalScale, orbit_color)
+            lazy val flight_time_msec = new_o.travelTimeOnOrbitMsec(bs.coord, orbital_point, ccw)
+
+            if (set_stop_moment) {
+              _stop_after_number_of_tacts = (flight_time_msec / 1000 / base_dt).toLong
+              _stop_in_orbit_true_anomaly = mouse_teta_rad2Pi
+              set_stop_moment = false
+            }
+
+            if (InterfaceHolder.orbParams.calculationOn) {
+              printCalculatedData(flight_time_msec, orbital_point, mouse_teta_rad2Pi, o, planet.radius, orbit_color:ScageColor)
+              drawFuturePositions(Some(flight_time_msec))
+            }
+          } else if (InterfaceHolder.orbParams.calculationOn && _stop_after_number_of_tacts > 0) {
+            drawFuturePositions(None)
           }
-        } else if (InterfaceHolder.orbParams.calculationOn && _stop_after_number_of_tacts > 0) {
-          drawFuturePositions(None)
         }
       }
     })
@@ -240,49 +235,42 @@ object OrbitDataUpdater {
                                             ccw:Boolean,
                                             orbit_color: ScageColor) = {
     OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
-      val new_o = o.withNewFocusPosition(planet_state.coord)
-      openglLocalTransform {
-        openglMove(new_o.center * scale)
-        if(new_o.f2 != new_o.f) openglRotateDeg(Vec(-1, 0).signedDeg(new_o.f2 - new_o.f))
-        drawEllipse(DVec.zero, new_o.a * scale, new_o.b * scale, orbit_color)
-      }
       if(InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && RealTrajectory.realTrajectory.nonEmpty) {
+        drawRealTrajectoryOfPlayerShip(planet_state, orbit_color)
+      } else {
+        val new_o = o.withNewFocusPosition(planet_state.coord)
         openglLocalTransform {
-          openglMove(planet_state.coord * scale)
-          drawSlidingLines(RealTrajectory.realTrajectory, orbit_color)
-          /*RealTrajectory.realTrajectory.foreach(p => {
-            drawFilledCircle(p, 3 / globalScale, orbit_color)
-          })*/
-          drawSlidingLines(RealTrajectory2.realTrajectory, ORANGE)
-          drawSlidingLines(RealTrajectory3.realTrajectory, ORANGE_RED)
+          openglMove(new_o.center * scale)
+          if(new_o.f2 != new_o.f) openglRotateDeg(Vec(-1, 0).signedDeg(new_o.f2 - new_o.f))
+          drawEllipse(DVec.zero, new_o.a * scale, new_o.b * scale, orbit_color)
         }
-      }
-      if(InterfaceHolder.namesSwitcher.showNames) {
-        drawStringInOrbitPoint("P", 0, new_o, orbit_color)
-        drawStringInOrbitPoint("A", 180, new_o, orbit_color)
-      }
-      val mouse_point = absCoord(mouseCoord) / scale
-      drawLine(new_o.f * scale, mouse_point * scale, DARK_GRAY)
+        if(InterfaceHolder.namesSwitcher.showNames) {
+          drawStringInOrbitPoint("P", 0, new_o, orbit_color)
+          drawStringInOrbitPoint("A", 180, new_o, orbit_color)
+        }
+        val mouse_point = absCoord(mouseCoord) / scale
+        drawLine(new_o.f * scale, mouse_point * scale, DARK_GRAY)
 
-      val orbital_point = new_o.orbitalPointInPoint(mouse_point)
-      drawFilledCircle(orbital_point * scale, 3 / globalScale, orbit_color)
+        val orbital_point = new_o.orbitalPointInPoint(mouse_point)
+        drawFilledCircle(orbital_point * scale, 3 / globalScale, orbit_color)
 
-      if (_stop_after_number_of_tacts > 0) {
-        drawFilledCircle(new_o.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly) * scale, 3 / globalScale, RED)
-        drawFilledCircle(new_o.orbitalPointAfterTime(bs.coord, (_stop_after_number_of_tacts * base_dt * 1000).toLong, ccw) * scale, 3 / globalScale, GREEN)
-      }
-      val mouse_teta_rad2Pi = new_o.tetaRad2PiInPoint(mouse_point)
+        if (_stop_after_number_of_tacts > 0) {
+          drawFilledCircle(new_o.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly) * scale, 3 / globalScale, RED)
+          drawFilledCircle(new_o.orbitalPointAfterTime(bs.coord, (_stop_after_number_of_tacts * base_dt * 1000).toLong, ccw) * scale, 3 / globalScale, GREEN)
+        }
+        val mouse_teta_rad2Pi = new_o.tetaRad2PiInPoint(mouse_point)
 
-      lazy val flight_time_msec = new_o.travelTimeOnOrbitMsec(bs.coord, orbital_point, ccw)
+        lazy val flight_time_msec = new_o.travelTimeOnOrbitMsec(bs.coord, orbital_point, ccw)
 
-      if (set_stop_moment) {
-        _stop_after_number_of_tacts = (flight_time_msec / 1000 / base_dt).toLong
-        _stop_in_orbit_true_anomaly = mouse_teta_rad2Pi
-        set_stop_moment = false
-      }
-      if (InterfaceHolder.orbParams.calculationOn) {
-        printCalculatedData(flight_time_msec, orbital_point, mouse_teta_rad2Pi, o, planet.radius, orbit_color:ScageColor)
-        drawFuturePositions(Some(flight_time_msec))
+        if (set_stop_moment) {
+          _stop_after_number_of_tacts = (flight_time_msec / 1000 / base_dt).toLong
+          _stop_in_orbit_true_anomaly = mouse_teta_rad2Pi
+          set_stop_moment = false
+        }
+        if (InterfaceHolder.orbParams.calculationOn) {
+          printCalculatedData(flight_time_msec, orbital_point, mouse_teta_rad2Pi, o, planet.radius, orbit_color:ScageColor)
+          drawFuturePositions(Some(flight_time_msec))
+        }
       }
     })
   }

@@ -17,7 +17,7 @@ class Engine(val name: Int,
 
   def workTimeMsec = (worktime_tacts * base_dt * 1000).toLong
 
-  def workTimeStr = timeStr((worktime_tacts * base_dt * 1000).toLong)
+  def workTimeStr = timeStrMsec((worktime_tacts * base_dt * 1000).toLong)
 
   def workTimeTacts = worktime_tacts
 

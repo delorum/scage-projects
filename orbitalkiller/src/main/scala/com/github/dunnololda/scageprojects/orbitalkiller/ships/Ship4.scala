@@ -764,6 +764,10 @@ class Ship4(index: Int,
       drawCircle(y.points_center.rotateDeg(rotation), y.points_radius, WHITE)
       drawRectCentered(y.points_center.rotateDeg(rotation), y.points_radius*2, y.points_radius*2, WHITE)
     })*/
+
+    if(InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && RealTrajectory.realTrajectory.nonEmpty) {
+      drawSlidingLines(RealTrajectory.realTrajectory.map(p => p/scale + orbitData.get.planet.coord - coord), YELLOW)
+    }
   }
 
   override def drawIfAliveAfterRotation(): Unit = {
