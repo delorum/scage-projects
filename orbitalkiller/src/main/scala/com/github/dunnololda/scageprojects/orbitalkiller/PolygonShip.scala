@@ -549,7 +549,7 @@ abstract class PolygonShip(
     }
   }
   
-  def drawIfAliveBeforeRotation(): Unit = {
+  protected def drawIfAliveBeforeRotation(): Unit = {
     /*drawFilledCircle(DVec.zero, 2, GREEN) // mass center
           if (OrbitalKiller.globalScale >= 0.8) {
             drawArrow(DVec.zero, relativeLinearVelocity.n * radius, CYAN) // current velocity
@@ -565,7 +565,7 @@ abstract class PolygonShip(
     })*/
   }
 
-  def drawIfAliveAfterRotation(): Unit = {
+  protected def drawIfAliveAfterRotation(): Unit = {
     drawSlidingLines(actualDrawPoints, WHITE)
     if (OrbitalKiller.globalScale >= 0.8) {
       dock_data.foreach(d => {
