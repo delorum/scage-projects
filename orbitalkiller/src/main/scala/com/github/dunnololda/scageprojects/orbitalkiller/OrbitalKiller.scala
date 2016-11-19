@@ -221,7 +221,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   )
 
-  val moon_start_position = earth.coord + DVec(0,1).rotateDeg(90)*380000000l
+  val moon_start_position = earth.coord + DVec(0,1).rotateDeg(280)*380000000l
   val moon_init_velocity = speedToHaveOrbitWithParams(moon_start_position, 0, earth.coord, earth.linearVelocity, earth.mass, G, ccw = true)
   val moon = new Planet(
     ScageId.nextId, "Луна",
@@ -265,16 +265,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def planetByIndex(index: Int): Option[CelestialBody] = planets.get(index)
 
   // стоим на поверхности Земли
-  val ship_start_position = earth.coord + DVec(495, earth.radius + 3.5)
-  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
+  //val ship_start_position = earth.coord + DVec(495, earth.radius + 3.5)
+  //val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   // суборбитальная траектория
   //val ship_start_position = earth.coord + DVec(500, earth.radius + 100000)
   //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
 
   // на круговой орбите в 200 км от поверхности Земли
-  //val ship_start_position = earth.coord + DVec(0, 1).rotateDeg(170)*(earth.radius + 200000)
-  //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, 0, earth.coord, earth.linearVelocity, earth.mass, G, ccw = true)
+  val ship_start_position = earth.coord + DVec(0, 1).rotateDeg(170)*(earth.radius + 200000)
+  val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, 0, earth.coord, earth.linearVelocity, earth.mass, G, ccw = true)
 
   //val ship_start_position = earth.coord + DVec(-100, earth.radius + 198000)
   //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, 900000, earth.coord, earth.linearVelocity, earth.mass, G, ccw = false)
