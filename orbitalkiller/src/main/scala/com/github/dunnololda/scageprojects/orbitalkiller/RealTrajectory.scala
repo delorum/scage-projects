@@ -1,7 +1,8 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
+import com.github.dunnololda.scageprojects.orbitalkiller.components.OrbitalComponents
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.{MutableBodyState, SystemEvolution}
 import com.github.dunnololda.scageprojects.orbitalkiller.planets.CelestialBody
@@ -9,13 +10,11 @@ import com.github.dunnololda.scageprojects.orbitalkiller.planets.CelestialBody
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
 
-object RealTrajectory extends RealTrajectoryC(None)
+class RealTrajectory(components: OrbitalComponents,
+                     max_multiplier: Option[Double]) {
 
-object RealTrajectory2 extends RealTrajectoryC(Some(1))
+  import components._
 
-object RealTrajectory3 extends RealTrajectoryC(Some(100))
-
-class RealTrajectoryC(max_multiplier: Option[Double]) {
   private var real_trajectory: ArrayBuffer[DVec] = ArrayBuffer[DVec]()
   var curPoints: Long = 0
   private var dropped = 0
@@ -153,7 +152,7 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
       }
       val e = energy
       val x = e.map(_._2).sum - prev_energy.map(_._2).sum
-      if (max_multiplier.exists(_ == 1)) {
+      if (max_multiplier.contains(1)) {
         println(f"real trajectory dt ${system_evolution_copy.base_dt / base_dt}%.2f*base_dt, dE=${x / prev_energy.map(_._2).sum}%.10f, curPoints/numPoints $curPoints/${InterfaceHolder.realTrajectorySwitcher.numPoints} dropped/length $dropped/${real_trajectory.length}")
       } else {
         println(f"real trajectory dt ${system_evolution_copy.base_dt / base_dt}%.2f*base_dt, dE=${x / prev_energy.map(_._2).sum}%.10f, min_m = $min_m, max_m = $max_m, curPoints/numPoints $curPoints/${InterfaceHolder.realTrajectorySwitcher.numPoints} dropped/length $dropped/${real_trajectory.length}")

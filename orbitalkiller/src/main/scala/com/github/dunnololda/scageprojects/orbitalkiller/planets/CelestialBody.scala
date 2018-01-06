@@ -1,8 +1,9 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.planets
 
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scageprojects.orbitalkiller.OrbitData
+import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.{BodyState, MutableBodyState}
-import com.github.dunnololda.scageprojects.orbitalkiller.{OrbitData, _}
 
 trait CelestialBody {
   def index: Int

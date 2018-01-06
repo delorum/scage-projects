@@ -1,12 +1,14 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.ships
 
-import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller.components.OrbitalComponents
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.MutableBodyState
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-object ShipsHolder {
+class ShipsHolder(components: OrbitalComponents) {
+  import components._
+
   def addShip(ship: PolygonShip): Unit = {
     _ships += ship
     _shipsMap += (ship.index -> ship)
