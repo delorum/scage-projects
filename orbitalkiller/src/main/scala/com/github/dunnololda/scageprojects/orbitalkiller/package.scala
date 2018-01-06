@@ -2,6 +2,7 @@ package com.github.dunnololda.scageprojects
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.{Body => Phys2dBody, BodyList => Phys2dBodyList, Collider => Phys2dCollider, DynamicShape => Phys2dShape, StaticBody => Phys2dStaticBody, _}
+import com.github.dunnololda.scageprojects.orbitalkiller.interfaces.InterfaceHolder
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer

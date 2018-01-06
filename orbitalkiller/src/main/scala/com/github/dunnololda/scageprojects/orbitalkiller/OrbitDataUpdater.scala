@@ -2,6 +2,9 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller.interfaces.InterfaceHolder
+import com.github.dunnololda.scageprojects.orbitalkiller.ships.ShipsHolder
+
 import scala.collection.{Set, mutable}
 
 object OrbitDataUpdater {

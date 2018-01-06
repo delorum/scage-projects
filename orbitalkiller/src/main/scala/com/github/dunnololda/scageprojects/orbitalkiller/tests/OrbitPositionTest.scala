@@ -303,7 +303,7 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640
     }
   }
 
-  /*interface {
+  /*interfaces {
     //print("Test", 20, 40, YELLOW)
     val c = new ScageColor("Orange",x, y, z)
     print(s"Message $x $y $z", 20, 40, c)
