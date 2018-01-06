@@ -5,14 +5,16 @@ import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
-
+import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils.MyVec
+import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.PhysicsUtils._
+import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import scala.collection.mutable.ArrayBuffer
 
 class Ship4(index: Int,
             init_coord: DVec,
             init_velocity: DVec = DVec.dzero,
             init_rotation: Double = 0.0,
-            ship_designer:Boolean = false) extends PolygonShip(index, "Снежинка", init_coord, init_velocity, init_rotation, ship_designer, false) {
+            ship_designer: Boolean = false) extends PolygonShip(index, "Снежинка", init_coord, init_velocity, init_rotation, ship_designer, false) {
   private var _payload: Double = 5 * 1000
   private var _fuel_mass: Double = 1000
 
@@ -74,14 +76,14 @@ class Ship4(index: Int,
   )
   // миллион ньютонов тяги при расходе 4 килограмма в секунду - это соответствует скорости истечения газов 250 км/сек
   // что в 50 раз выше наивысшего полученного на практике значения для химического топлива: литий/водород/фтор - 5000 м/сек
-  val four  = new Engine(4, DVec(-3.5, 0.0),  DVec(1.0, 0.0),  1000000, 1, 4, this)
-  val six   = new Engine(6, DVec(3.5, 0.0),   DVec(-1.0, 0.0), 1000000, 1, 4, this)
-  val seven = new Engine(7, DVec(-1.5, 8.0),  DVec(1.0, 0.0),  10000,   100, 0.04, this)
-  val nine  = new Engine(9, DVec(1.5, 8.0),   DVec(-1.0, 0.0), 10000,   100, 0.04, this)
-  val eight = new Engine(8, DVec(0.0, 9.5),   DVec(0.0, -1.0), 1000000, 1, 4, this)
-  val one   = new Engine(1, DVec(-4.0, -4.5), DVec(0.0, 1.0),  500000,  1, 4, this)
-  val three = new Engine(3, DVec(4.0, -4.5),  DVec(0.0, 1.0),  500000,  1, 4, this)
-  val two   = new Engine(2, DVec(0.0, -5.5),  DVec(0.0, 1.0),  1000000, 1, 4, this)
+  val four = new Engine(4, DVec(-3.5, 0.0), DVec(1.0, 0.0), 1000000, 1, 4, this)
+  val six = new Engine(6, DVec(3.5, 0.0), DVec(-1.0, 0.0), 1000000, 1, 4, this)
+  val seven = new Engine(7, DVec(-1.5, 8.0), DVec(1.0, 0.0), 10000, 100, 0.04, this)
+  val nine = new Engine(9, DVec(1.5, 8.0), DVec(-1.0, 0.0), 10000, 100, 0.04, this)
+  val eight = new Engine(8, DVec(0.0, 9.5), DVec(0.0, -1.0), 1000000, 1, 4, this)
+  val one = new Engine(1, DVec(-4.0, -4.5), DVec(0.0, 1.0), 500000, 1, 4, this)
+  val three = new Engine(3, DVec(4.0, -4.5), DVec(0.0, 1.0), 500000, 1, 4, this)
+  val two = new Engine(2, DVec(0.0, -5.5), DVec(0.0, 1.0), 1000000, 1, 4, this)
 
   val engines = List(four, six, seven, nine, eight, two, one, three)
 
@@ -103,15 +105,15 @@ class Ship4(index: Int,
 
 
   /**
-   * Сколько тактов работы двигателя потребуется, чтобы достичь скорости to, при условии, что текущая скорость равна from,
-   * ускорение равно a, один такт равен dt секунд
-   *
-   * @param to - скорость, которой хотим достичь
-   * @param from - текущая скорость
-   * @param a - ускорение
-   * @param dt - сколько секунд в одном такте
-   * @return два значения: сколько тактов потребуется, какой значения скорости фактически достигнем
-   */
+    * Сколько тактов работы двигателя потребуется, чтобы достичь скорости to, при условии, что текущая скорость равна from,
+    * ускорение равно a, один такт равен dt секунд
+    *
+    * @param to   - скорость, которой хотим достичь
+    * @param from - текущая скорость
+    * @param a    - ускорение
+    * @param dt   - сколько секунд в одном такте
+    * @return два значения: сколько тактов потребуется, какой значения скорости фактически достигнем
+    */
   private def howManyTacts(to: Double, from: Double, a: Double, dt: Double): (Int, Double) = {
     val tacts = ((to - from) / (a * dt)).toInt + 1
     val result_to = from + tacts * a * dt
@@ -121,17 +123,17 @@ class Ship4(index: Int,
   private val default_percent_seq = ((99.0 to 1.0 by -1.0) ++ (0.9 to 0.1 by -0.1)).view
 
   /**
-   * Рассчитывает значение тяги двигателя, которую можно развить, чтобы за минимально возможное количество тактов работы этого двигателя
-   * достичь требуемой скорости
-   *
-   * @param max_power - максимальная сила, которую можем приложить (максимальная тяга двигателя)
-   * @param force_dir - фактически, 1 или -1
-   * @param mass - наша масса
-   * @param to - скорость, которой хотим достичь
-   * @param from - наша текущая скорость
-   * @param max_diff - максимальная допустимая разница между скоростью, которой достигнем, и желаемой скоростью
-   * @return
-   */
+    * Рассчитывает значение тяги двигателя, которую можно развить, чтобы за минимально возможное количество тактов работы этого двигателя
+    * достичь требуемой скорости
+    *
+    * @param max_power - максимальная сила, которую можем приложить (максимальная тяга двигателя)
+    * @param force_dir - фактически, 1 или -1
+    * @param mass      - наша масса
+    * @param to        - скорость, которой хотим достичь
+    * @param from      - наша текущая скорость
+    * @param max_diff  - максимальная допустимая разница между скоростью, которой достигнем, и желаемой скоростью
+    * @return
+    */
   private def maxPossiblePowerForLinearMovement(max_power: Double,
                                                 force_dir: Double,
                                                 mass: Double,
@@ -205,24 +207,24 @@ class Ship4(index: Int,
     val difference = angularVelocity - ang_vel_deg
     if (difference > angular_velocity_error) {
       val (tacts, power) = maxPossiblePowerAndTactsForRotation(seven.max_power,
-                                                               seven.force_dir,
-                                                               seven.position.actualPos,
-                                                               thisOrActualProxyShipI,
-                                                               ang_vel_deg,
-                                                               thisOrActualProxyShipAngularVelocity,
-                                                               angular_velocity_error)
+        seven.force_dir,
+        seven.position.actualPos,
+        thisOrActualProxyShipI,
+        ang_vel_deg,
+        thisOrActualProxyShipAngularVelocity,
+        angular_velocity_error)
       seven.power = power
       seven.workTimeTacts = tacts
       seven.active = true
       nine.active = false
     } else if (difference < -angular_velocity_error) {
       val (tacts, power) = maxPossiblePowerAndTactsForRotation(nine.max_power,
-                                                               nine.force_dir,
-                                                               nine.position.actualPos,
-                                                               thisOrActualProxyShipI,
-                                                               ang_vel_deg,
-                                                               thisOrActualProxyShipAngularVelocity,
-                                                               angular_velocity_error)
+        nine.force_dir,
+        nine.position.actualPos,
+        thisOrActualProxyShipI,
+        ang_vel_deg,
+        thisOrActualProxyShipAngularVelocity,
+        angular_velocity_error)
       nine.power = power
       nine.workTimeTacts = tacts
       nine.active = true
@@ -249,11 +251,11 @@ class Ship4(index: Int,
 
     if (ship_velocity_n - need_vel_n > n_diff) {
       val (tacts, power) = maxPossiblePowerForLinearMovement(eight.max_power,
-                                                             eight.force_dir.y,
-                                                             thisOrActualProxyShipMass,
-                                                             need_vel_n,
-                                                             ship_velocity_n,
-                                                             n_diff)
+        eight.force_dir.y,
+        thisOrActualProxyShipMass,
+        need_vel_n,
+        ship_velocity_n,
+        n_diff)
       eight.power = power
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
@@ -261,11 +263,11 @@ class Ship4(index: Int,
       activate_engines += eight
     } else if (ship_velocity_n - need_vel_n < -n_diff) {
       val (tacts, power) = maxPossiblePowerForLinearMovement(two.max_power,
-                                                             two.force_dir.y,
-                                                             thisOrActualProxyShipMass,
-                                                             need_vel_n,
-                                                             ship_velocity_n,
-                                                             n_diff)
+        two.force_dir.y,
+        thisOrActualProxyShipMass,
+        need_vel_n,
+        ship_velocity_n,
+        n_diff)
       two.power = power
       /*println("===========================")
       println(s"$ship_velocity_n -> $ss_n : $tacts : $result_to : $power")*/
@@ -275,11 +277,11 @@ class Ship4(index: Int,
 
     if (ship_velocity_p - need_vel_p > p_diff) {
       val (tacts, power) = maxPossiblePowerForLinearMovement(six.max_power,
-                                                             six.force_dir.x,
-                                                             thisOrActualProxyShipMass,
-                                                             need_vel_p,
-                                                             ship_velocity_p,
-                                                             p_diff)
+        six.force_dir.x,
+        thisOrActualProxyShipMass,
+        need_vel_p,
+        ship_velocity_p,
+        p_diff)
       six.power = power
       /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
       println("===========================")*/
@@ -287,11 +289,11 @@ class Ship4(index: Int,
       activate_engines += six
     } else if (ship_velocity_p - need_vel_p < -p_diff) {
       val (tacts, power) = maxPossiblePowerForLinearMovement(four.max_power,
-                                                             four.force_dir.x,
-                                                             thisOrActualProxyShipMass,
-                                                             need_vel_p,
-                                                             ship_velocity_p,
-                                                             p_diff)
+        four.force_dir.x,
+        thisOrActualProxyShipMass,
+        need_vel_p,
+        ship_velocity_p,
+        p_diff)
       four.power = power
       /*println(s"$ship_velocity_p -> $ss_p : $tacts : $result_to : $power")
       println("===========================")*/
@@ -311,9 +313,10 @@ class Ship4(index: Int,
   }
 
   /**
-   * Можем ли состыковаться с ближайшим кораблем
-   * @return
-   */
+    * Можем ли состыковаться с ближайшим кораблем
+    *
+    * @return
+    */
   def canDockWithNearestShip: Boolean = {
     shipCloser2KmNonMinimized.exists(os => {
       docking_points.exists(dp => {
@@ -322,12 +325,12 @@ class Ship4(index: Int,
     })
   }
 
-  override def tryDock:Boolean = {
+  override def tryDock: Boolean = {
     InterfaceHolder.dockingSwitcher.dockingEnabled && canDockWithNearestShip &&
-    (InterfaceHolder.dockingSwitcher.dockingAuto || (InterfaceHolder.dockingSwitcher.dockingManual && InterfaceHolder.dockUndock.needDock))
+      (InterfaceHolder.dockingSwitcher.dockingAuto || (InterfaceHolder.dockingSwitcher.dockingManual && InterfaceHolder.dockUndock.needDock))
   }
 
-  override def tryUndock:Boolean = {
+  override def tryUndock: Boolean = {
     isDocked && InterfaceHolder.dockUndock.needUndock
   }
 
@@ -359,12 +362,13 @@ class Ship4(index: Int,
   }
 
   /**
-   * Корабль ближе 500 км от нас, интерфейс которого не свернут. Если таких несколько, то ближайший.
-   * Метод используется в алогритмах автоматического уравнивания скорости, поддержания направления, стыковки
-   * @return
-   */
+    * Корабль ближе 500 км от нас, интерфейс которого не свернут. Если таких несколько, то ближайший.
+    * Метод используется в алогритмах автоматического уравнивания скорости, поддержания направления, стыковки
+    *
+    * @return
+    */
   private def shipCloser500KmNonMinimized: Option[PolygonShip] = {
-    def _check(s:PolygonShip):Boolean = {
+    def _check(s: PolygonShip): Boolean = {
       /*println(s"${s.name} s.currentState.active = ${s.currentState.active}")
       println(s"${s.name} s.index != index = ${s.index != index}")
       println(s"${s.name} !dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index) = ${!dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index)}")
@@ -372,21 +376,21 @@ class Ship4(index: Int,
       println(s"${s.name} s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l = ${s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l}")
       println(s"${s.name} s.shipInterface.exists(!_.isMinimized) = ${s.shipInterface.exists(!_.isMinimized)}")*/
       s.currentState.active &&
-      s.thisOrActualProxyShipIndex != thisOrActualProxyShipIndex &&
-      s.isAlive &&
-      s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l &&
-      s.shipInterface.exists(!_.isMinimized)
+        s.thisOrActualProxyShipIndex != thisOrActualProxyShipIndex &&
+        s.isAlive &&
+        s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l &&
+        s.shipInterface.exists(!_.isMinimized)
     }
     ShipsHolder.ships.filter(s => _check(s)).sortBy(s => coord.dist2(s.coord)).headOption
   }
 
   private def shipCloser2KmNonMinimized: Option[PolygonShip] = {
-    def _check(s:PolygonShip):Boolean = {
+    def _check(s: PolygonShip): Boolean = {
       s.currentState.active &&
-      s.thisOrActualProxyShipIndex != thisOrActualProxyShipIndex &&
-      s.isAlive &&
-      s.coord.dist2(coord) < 2 * 1000l * 2 * 1000l &&
-      s.shipInterface.exists(!_.isMinimized)
+        s.thisOrActualProxyShipIndex != thisOrActualProxyShipIndex &&
+        s.isAlive &&
+        s.coord.dist2(coord) < 2 * 1000l * 2 * 1000l &&
+        s.shipInterface.exists(!_.isMinimized)
     }
     ShipsHolder.ships.filter(s => _check(s)).sortBy(s => coord.dist2(s.coord)).headOption
   }
@@ -703,7 +707,7 @@ class Ship4(index: Int,
   ).map(_ * 0.1)
 
   override def drawIfAliveBeforeRotation(): Unit = {
-    if(!isDocked) drawFilledCircle(DVec.zero.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN)) // mass center
+    if (!isDocked) drawFilledCircle(DVec.zero.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN)) // mass center
 
     if (OrbitalKiller.globalScale >= 0.8) {
       if (!InterfaceHolder.rocketsInfo.isMinimized) {
@@ -724,13 +728,13 @@ class Ship4(index: Int,
         drawArrow(DVec.zero.actualPosBeforeRotation, DVec.zero.actualPosBeforeRotation + linearVelocity.n * radius, colorIfPlayerAliveOrRed(BLUE))
         drawArrow(DVec.zero.actualPosBeforeRotation, DVec.zero.actualPosBeforeRotation + relativeLinearVelocity.n * radius, colorIfPlayerAliveOrRed(InterfaceHolder.linearVelocityInfo.color))
         // velocity direction at stop moment
-        if(_stop_after_number_of_tacts > 0 && InterfaceHolder.orbParams.calculationOn) {
+        if (_stop_after_number_of_tacts > 0 && InterfaceHolder.orbParams.calculationOn) {
           thisOrActualProxyShipOrbitData.filter(!_.is_landed).foreach(or => {
             val time_to_stop_msec = (_stop_after_number_of_tacts * base_dt * 1000).toLong
             val new_orbit = or.orbit.withNewFocusPosition(or.planet_state.coord)
             val position_at_stop_moment = new_orbit.orbitalPointAfterTime(coord, time_to_stop_msec, or.ccw)
             val v = new_orbit.orbitalVelocityInPoint(position_at_stop_moment, or.ccw).n
-            drawDashedArrow(DVec.zero.actualPosBeforeRotation - v*radius, DVec.zero.actualPosBeforeRotation + v*radius, 1, colorIfPlayerAliveOrRed(CYAN))
+            drawDashedArrow(DVec.zero.actualPosBeforeRotation - v * radius, DVec.zero.actualPosBeforeRotation + v * radius, 1, colorIfPlayerAliveOrRed(CYAN))
           })
         }
       }
@@ -766,8 +770,8 @@ class Ship4(index: Int,
       drawRectCentered(y.points_center.rotateDeg(rotation), y.points_radius*2, y.points_radius*2, WHITE)
     })*/
 
-    if(InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && RealTrajectory.realTrajectory.nonEmpty) {
-      drawSlidingLines(RealTrajectory.realTrajectory.map(p => p/scale + orbitData.get.planet.coord - coord), YELLOW)
+    if (InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && RealTrajectory.realTrajectory.nonEmpty) {
+      drawSlidingLines(RealTrajectory.realTrajectory.map(p => p / scale + orbitData.get.planet.coord - coord), YELLOW)
     }
   }
 
@@ -777,7 +781,7 @@ class Ship4(index: Int,
         if (left_rocket.isEmpty) {
           openglLocalTransform {
             openglMove(DVec(-3, 3.5).actualPos)
-            drawSlidingLines(rocket_draw_points, WHITE)  // TODO: поправить координаты точек
+            drawSlidingLines(rocket_draw_points, WHITE) // TODO: поправить координаты точек
           }
         }
         if (right_rocket.isEmpty) {

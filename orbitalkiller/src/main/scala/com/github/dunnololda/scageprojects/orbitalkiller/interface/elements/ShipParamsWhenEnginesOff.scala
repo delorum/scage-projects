@@ -1,9 +1,9 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
-import com.github.dunnololda.scageprojects.orbitalkiller.ships.{FreeFlightMode, Maneuvering}
-import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceElement
+import com.github.dunnololda.scageprojects.orbitalkiller.ships.{FreeFlightMode, Maneuvering}
+import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 
 class ShipParamsWhenEnginesOff extends InterfaceElement {
   def linearSpeedStrWhenEnginesOff: String = {
@@ -53,7 +53,7 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
         lbs.get(player_ship.thisOrActualProxyShipIndex) match {
           case Some(bs) =>
             val celestials = lbs.filter(kv => planet_indices.contains(kv._1)).flatMap(kv => {
-              planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
+              system_planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
             }).values.toSeq.sortBy(_._2.mass)
             orbitStrInPointWithVelocity(bs.coord, bs.vel, player_ship.radius, bs.mass, celestials)
           case None => "N/A"

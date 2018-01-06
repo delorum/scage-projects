@@ -3,8 +3,9 @@ package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.ScageColor
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
-import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.{InterfaceElement, InterfaceHolder}
+import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
+import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils._
 
 class MoonRelativeInfo extends InterfaceElement {
   private val strings = Array("")
@@ -15,7 +16,7 @@ class MoonRelativeInfo extends InterfaceElement {
       f"${correctAngle(DVec(0, 1).deg360(player_ship.coord - moon.coord) - moon.currentState.ang)}%.3f град."
     } else {
       val km = (correctAngle(DVec(0, 1).deg360(player_ship.coord - moon.coord) - moon.currentState.ang) / 360.0 * moon.length) / 1000
-      f"$km%.2f/${moon.length/1000}%.2f км"
+      f"$km%.2f/${moon.length / 1000}%.2f км"
     }
     if (player_ship.isLandedOnMoon) {
       strings(0) = s"Луна: landed, pos=$ship_moon_position"

@@ -2,7 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceElement
-import com.github.dunnololda.scageprojects.orbitalkiller.util.TimeUtils._
+import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 
 class TimeInfo extends InterfaceElement {
   private val strings_without_stop_moment = Array("")
@@ -14,13 +14,13 @@ class TimeInfo extends InterfaceElement {
     if (OrbitalKiller._stop_after_number_of_tacts > 0 || OrbitalKiller._set_stop_time) {
       strings_with_stop_moment(0) = s"Время: $time_acceleration ${timeStrSec(OrbitalKiller.timeMsec)}"
       if (OrbitalKiller.timeMultiplier != OrbitalKiller.realtime) {
-        if(OrbitalKiller._set_stop_time) {
+        if (OrbitalKiller._set_stop_time) {
           strings_with_stop_moment(1) = s"[gОстановка через ${timeStrSec((OrbitalKiller._stop_after_number_of_tacts * OrbitalKiller.base_dt * 1000).toLong)} (${timeStrSec((OrbitalKiller._stop_after_number_of_tacts * OrbitalKiller.base_dt * 1000 / (1f * OrbitalKiller.timeMultiplier / 63 * OrbitalKiller.ticks)).toLong)})]"
         } else {
           strings_with_stop_moment(1) = s"Остановка через ${timeStrSec((OrbitalKiller._stop_after_number_of_tacts * OrbitalKiller.base_dt * 1000).toLong)} (${timeStrSec((OrbitalKiller._stop_after_number_of_tacts * OrbitalKiller.base_dt * 1000 / (1f * OrbitalKiller.timeMultiplier / 63 * OrbitalKiller.ticks)).toLong)})"
         }
       } else {
-        if(OrbitalKiller._set_stop_time) {
+        if (OrbitalKiller._set_stop_time) {
           strings_with_stop_moment(1) = s"[gОстановка через ${timeStrSec((OrbitalKiller._stop_after_number_of_tacts * OrbitalKiller.base_dt * 1000).toLong)}]"
         } else {
           strings_with_stop_moment(1) = s"Остановка через ${timeStrSec((OrbitalKiller._stop_after_number_of_tacts * OrbitalKiller.base_dt * 1000).toLong)}"

@@ -4,6 +4,7 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.handlers.RendererD
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.SystemEvolution
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.SystemEvolution._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer

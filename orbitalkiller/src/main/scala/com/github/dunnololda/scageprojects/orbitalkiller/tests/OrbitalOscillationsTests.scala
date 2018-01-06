@@ -2,8 +2,11 @@ package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller._
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.SystemEvolution._
 import com.github.dunnololda.scageprojects.orbitalkiller.planets.{CelestialBody, Planet, Star}
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.SpaceStation2
+import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.PhysicsUtils._
+import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.KeplerOrbit._
 
 object OrbitalOscillationsTests extends ScageApp {
   val earth = new Star(nextId, "Земля", mass = 5.9746E24, coord = DVec.dzero, radius = 6400000)
@@ -124,7 +127,7 @@ object OrbitalOscillationsTests extends ScageApp {
   action {
     //val steps = (math.random*100+1).toInt
     val steps = 1
-    (1 to steps * l - 1).foreach(i => {
+    (1 until steps * l).foreach(i => {
       val s = real_system_evolution.next()
       val station_state = s._2.find(_.index == station.index).get
       val earth_state = s._2.find(_.index == earth.index).get
@@ -156,7 +159,7 @@ object OrbitalOscillationsTests extends ScageApp {
     //println(s"${timeStr((s._1*base_dt*1000).toLong)} : ${mOrKm(ship_moon)} (${mOrKm(min_ship_moon)}, $ship_moon_deg) : ${mOrKm(station_earth)} (${mOrKm(min_station_earth)}, $station_earth_deg)")
     println(s"${timeStr((s._1 * base_dt * 1000).toLong)} : ${mOrKm(station_earth)} : ${msec2OrKmsec2(cen_acc)} (${mOrKm(min_station_earth)})")
 
-    (1 to (steps - 1)).foreach(i => {
+    (1 until steps).foreach(i => {
       val s2 = system_evolution_lx.next()
       val station_state2 = s2._2.find(_.index == station.index).get
       val earth_state2 = s2._2.find(_.index == earth.index).get

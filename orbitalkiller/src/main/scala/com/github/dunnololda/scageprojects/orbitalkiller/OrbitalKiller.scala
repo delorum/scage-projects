@@ -4,14 +4,13 @@ import java.io.FileOutputStream
 
 import com.github.dunnololda.scage.ScageLibD.{DVec, ScageColor, Vec, addGlyphs, appVersion, max_font_size, messageBounds, print, property, stopApp, _}
 import com.github.dunnololda.scage.support.ScageId
-import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.KeplerOrbit._
-import com.github.dunnololda.scageprojects.orbitalkiller.components.{EllipseOrbit, HyperbolaOrbit}
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.{EllipseOrbit, HyperbolaOrbit, SystemEvolution}
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.SystemEvolution
 import com.github.dunnololda.scageprojects.orbitalkiller.planets.{CelestialBody, Planet, PlanetWithAir, Star}
 import com.github.dunnololda.scageprojects.orbitalkiller.ships._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.PhysicsUtils._
+import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.KeplerOrbit._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.{EllipseOrbit, HyperbolaOrbit, KeplerOrbit}
 
 import scala.collection._
@@ -259,20 +258,20 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   val earth_sun_eq_gravity_radius = equalGravityRadius(earth.currentState, sun.currentState)
   val moon_earth_eq_gravity_radius = equalGravityRadius(moon.currentState, earth.currentState)
 
-  val planets = immutable.Map(sun.index -> sun,
+  val system_planets = immutable.Map(sun.index -> sun,
     earth.index -> earth,
     moon.index -> moon)
-  val planet_indices: immutable.Set[Int] = planets.keySet
+  val planet_indices: immutable.Set[Int] = system_planets.keySet
 
   def planetStates(body_states: Map[Int, MutableBodyState]): Seq[(CelestialBody, MutableBodyState)] = {
     body_states.flatMap(kv => {
-      planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
+      system_planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
     }).values.toSeq.sortBy(_._2.mass)
   }
 
   val currentPlanetStates: Seq[(CelestialBody, MutableBodyState)] = planetStates(system_evolution.bodyStates(planet_indices))
 
-  def planetByIndex(index: Int): Option[CelestialBody] = planets.get(index)
+  def planetByIndex(index: Int): Option[CelestialBody] = system_planets.get(index)
 
   // стоим на поверхности Земли
   val ship_start_position = earth.coord + DVec(495, earth.radius + 3.5)
@@ -378,7 +377,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     init_rotation = 0)
 
   def nameByIndex(index: Int): Option[String] = {
-    planets.get(index) match {
+    system_planets.get(index) match {
       case s@Some(x) => s.map(_.name)
       case None => ShipsHolder.shipByIndex(index).map(_.name)
     }

@@ -4,6 +4,7 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.ShipsHolder
+import com.github.dunnololda.scageprojects.orbitalkiller.util.math.Factors._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils._
 
 import scala.collection.mutable
@@ -12,7 +13,7 @@ import scala.collection.mutable.ArrayBuffer
 class SystemEvolution(var base_dt: Double = 1.0 / 63,
                       system_center: DVec = DVec.zero,
                       init_tacts: Long = 0,
-                      collisions_enabled:Boolean = true) {
+                      collisions_enabled: Boolean = true) {
   private val mutable_system = mutable.HashMap[Int, MutableSystemPart]()
   private val all_bodies = ArrayBuffer[MutableBodyState]()
   private val mutable_system_helper = new EvolutionHelper(mutable_system)
@@ -55,8 +56,8 @@ class SystemEvolution(var base_dt: Double = 1.0 / 63,
   }
 
   /**
-   *
-   */
+    *
+    */
   private val collision_exclusions = mutable.HashMap[Int, mutable.HashSet[Int]]()
 
   def addCollisionExclusion(index1: Int, index2: Int): Unit = {
@@ -143,7 +144,7 @@ class SystemEvolution(var base_dt: Double = 1.0 / 63,
     (1 to substeps).foreach(_ => {
       all_bodies.foreach(_.init())
 
-      val collisions = if(collisions_enabled) {
+      val collisions = if (collisions_enabled) {
         /*already_checked.clear()
         val x = splitSpace(new Space(all_bodies, system_center), 5, 2)
         for {
@@ -219,10 +220,10 @@ class SystemEvolution(var base_dt: Double = 1.0 / 63,
     tacts += 1l
   }
 
-  def copy(dt:Double = base_dt, exclude:Set[Int] = Set.empty, collisions_enabled:Boolean = true): SystemEvolution = {
+  def copy(dt: Double = base_dt, exclude: Set[Int] = Set.empty, collisions_enabled: Boolean = true): SystemEvolution = {
     val x = new SystemEvolution(dt, system_center, tacts, collisions_enabled)
     mutable_system.foreach(p => {
-      if(p._2.body.active &&  !exclude.contains(p._1)) {
+      if (p._2.body.active && !exclude.contains(p._1)) {
         x.addBody(p._2.copy(body = p._2.body.copy))
       }
     })
