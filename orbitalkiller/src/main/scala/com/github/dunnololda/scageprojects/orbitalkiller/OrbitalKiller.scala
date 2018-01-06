@@ -5,7 +5,8 @@ import java.io.FileOutputStream
 import com.github.dunnololda.scage.ScageLibD.{DVec, ScageColor, Vec, addGlyphs, appVersion, max_font_size, messageBounds, print, property, stopApp, _}
 import com.github.dunnololda.scage.support.ScageId
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.SystemEvolution
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.BoxShape
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.{BodyState, MutableBodyState, SystemEvolution}
 import com.github.dunnololda.scageprojects.orbitalkiller.planets.{CelestialBody, Planet, PlanetWithAir, Star}
 import com.github.dunnololda.scageprojects.orbitalkiller.ships._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
@@ -64,30 +65,6 @@ case class OrbitData(update_count: Long,
         bs_radius)
     }
   }
-}
-
-sealed trait ViewMode {
-  def rusStr: String
-}
-
-case object FreeViewMode extends ViewMode {
-  override def rusStr: String = "свободный"
-}
-
-case object FixedOnShip extends ViewMode {
-  override def rusStr: String = "фиксация на корабле"
-}
-
-case object FixedOnShipAbsolute extends ViewMode {
-  override def rusStr: String = "фиксация на корабле, абсолютная ориентация"
-}
-
-case object Landing extends ViewMode {
-  override def rusStr: String = "посадка на планету"
-}
-
-case object FixedOnOrbit extends ViewMode {
-  override def rusStr: String = "фиксация на орбите корабля"
 }
 
 object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("screen.width", 1280), property("screen.height", 768)) {

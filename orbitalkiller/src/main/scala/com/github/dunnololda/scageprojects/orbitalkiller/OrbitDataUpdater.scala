@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller.planets.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.ShipsHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._

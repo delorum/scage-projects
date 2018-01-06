@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller._
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller.tests.BodyStatesHolder._
 
 object ConstraintsTest extends ScageScreenAppD("Constraints Test", 640, 480) {

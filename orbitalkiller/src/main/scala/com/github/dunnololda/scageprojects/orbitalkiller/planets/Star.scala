@@ -1,7 +1,8 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.planets
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller.{BodyState, CircleShape}
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.BodyState
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.CircleShape
 
 class Star(val index: Int,
            val name: String,

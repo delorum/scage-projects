@@ -5,9 +5,11 @@ import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.PolygonShape
+import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils.MyVec
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.PhysicsUtils._
-import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
+
 import scala.collection.mutable.ArrayBuffer
 
 class Ship4(index: Int,

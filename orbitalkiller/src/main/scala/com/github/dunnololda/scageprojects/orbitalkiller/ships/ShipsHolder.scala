@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.ships
 
-import com.github.dunnololda.scageprojects.orbitalkiller.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.MutableBodyState
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -22,7 +22,7 @@ object ShipsHolder {
             val bs = l(0)
             val e = l(1)
             //val other_ship_states = helper.bodyStates(ShipsHolder.shipIndicies.filterNot(_ == ship.index))
-            earth.airResistance(bs, e, /*other_ship_states, */28.0, 0.5)
+            earth.airResistance(bs, e, /*other_ship_states, */ 28.0, 0.5)
           })
       },
       (tacts, helper) => {

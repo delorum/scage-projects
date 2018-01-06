@@ -5,10 +5,12 @@ import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements.OtherShipInfo
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.PolygonShape
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller.planets.PlanetWithAir
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils.MyDouble
-import com.github.dunnololda.scageprojects.orbitalkiller.{BodyState, MutableBodyState, OrbitData, OrbitDataUpdater, OrbitalKiller, Wreck, _}
+import com.github.dunnololda.scageprojects.orbitalkiller.{OrbitData, OrbitDataUpdater, OrbitalKiller, Wreck, _}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer

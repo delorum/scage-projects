@@ -1,8 +1,9 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.physics
 
 import com.github.dunnololda.scage.support.DVec
-import com.github.dunnololda.scageprojects.orbitalkiller.{MutableBodyState, _}
+import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.PhysicsUtils._
+
 import scala.collection.mutable
 
 class EvolutionHelper(mutable_system: mutable.HashMap[Int, MutableSystemPart]) {

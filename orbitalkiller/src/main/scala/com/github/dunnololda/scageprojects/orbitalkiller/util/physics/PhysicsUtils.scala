@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.util.physics
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller.MutableBodyState
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.MutableBodyState
 
 /**
   * Created by andrey on 1/6/18.

@@ -4,12 +4,14 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.BodyState
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.PolygonShape
 
 class Rocket1(index: Int,
               init_coord: DVec,
               init_velocity: DVec = DVec.dzero,
               init_rotation: Double = 0.0,
-              ship_designer:Boolean) extends PolygonShip(index, "Доброта", init_coord, init_velocity, init_rotation, ship_designer, false) {
+              ship_designer: Boolean) extends PolygonShip(index, "Доброта", init_coord, init_velocity, init_rotation, ship_designer, false) {
   private val _payload: Double = 196
   private var _fuel_mass: Double = 4
 
@@ -26,7 +28,7 @@ class Rocket1(index: Int,
 
   lazy val engine_size: Double = 0.5 * 0.1
 
-  val start_tact = if(!ship_designer) system_evolution.tacts else 0
+  val start_tact = if (!ship_designer) system_evolution.tacts else 0
   val work_tacts = 1200 // количество тактов, за которое ракета пролетит 10 км
 
   lazy val points: List[DVec] = List(
@@ -55,42 +57,42 @@ class Rocket1(index: Int,
   )
 
   val wreck_parts = List(
-    PolygonShape(List(DVec(-0.2, -2.1000001), DVec(-0.1, -2.0), DVec(0.1, -1.9), DVec(-0.2, -1.8000001)), List(  // 1 NOT CONVEX
+    PolygonShape(List(DVec(-0.2, -2.1000001), DVec(-0.1, -2.0), DVec(0.1, -1.9), DVec(-0.2, -1.8000001)), List(// 1 NOT CONVEX
       PolygonShape(List(DVec(-0.2, -1.8000001), DVec(-0.1, -2.0), DVec(0.1, -1.9)), List()),
       PolygonShape(List(DVec(-0.2, -1.8000001), DVec(-0.2, -2.1000001), DVec(-0.1, -2.0)), List())
     )),
-    PolygonShape(List(DVec(-0.1, -2.0), DVec(0.1, -2.0), DVec(0.2, -1.9), DVec(0.1, -1.7), DVec(0.1, -1.9)), List()),  // 2
-    PolygonShape(List(DVec(0.1, -2.0), DVec(0.2, -2.1000001), DVec(0.2, -1.9)), List()),  // 3
-    PolygonShape(List(DVec(0.1, -1.7), DVec(0.2, -1.9), DVec(0.2, -1.8000001)), List()),  // 4
-    PolygonShape(List(DVec(-0.2, -1.8000001), DVec(0.1, -1.9), DVec(0.0, -1.7), DVec(-0.1, -1.7)), List()),  // 5
-    PolygonShape(List(DVec(0.1, -1.3000001), DVec(0.0, -1.4), DVec(0.0, -1.7), DVec(0.1, -1.9)), List()),  // 6
-    PolygonShape(List(DVec(-0.1, -1.7), DVec(0.0, -1.7), DVec(0.0, -1.4), DVec(0.1, -1.3000001), DVec(0.1, -1.1), DVec(-0.1, -1.3000001)), List(  // 7 NOT CONVEX
+    PolygonShape(List(DVec(-0.1, -2.0), DVec(0.1, -2.0), DVec(0.2, -1.9), DVec(0.1, -1.7), DVec(0.1, -1.9)), List()), // 2
+    PolygonShape(List(DVec(0.1, -2.0), DVec(0.2, -2.1000001), DVec(0.2, -1.9)), List()), // 3
+    PolygonShape(List(DVec(0.1, -1.7), DVec(0.2, -1.9), DVec(0.2, -1.8000001)), List()), // 4
+    PolygonShape(List(DVec(-0.2, -1.8000001), DVec(0.1, -1.9), DVec(0.0, -1.7), DVec(-0.1, -1.7)), List()), // 5
+    PolygonShape(List(DVec(0.1, -1.3000001), DVec(0.0, -1.4), DVec(0.0, -1.7), DVec(0.1, -1.9)), List()), // 6
+    PolygonShape(List(DVec(-0.1, -1.7), DVec(0.0, -1.7), DVec(0.0, -1.4), DVec(0.1, -1.3000001), DVec(0.1, -1.1), DVec(-0.1, -1.3000001)), List(// 7 NOT CONVEX
       PolygonShape(List(DVec(-0.1, -1.7), DVec(0.0, -1.7), DVec(0.0, -1.4), DVec(-0.1, -1.3000001)), List()),
       PolygonShape(List(DVec(-0.1, -1.3000001), DVec(0.0, -1.4), DVec(0.1, -1.3000001), DVec(0.1, -1.1)), List())
     )),
-    PolygonShape(List(DVec(-0.1, -1.3000001), DVec(0.1, -1.1), DVec(0.1, -0.90000004), DVec(-0.1, -0.8)), List()),  // 8
-    PolygonShape(List(DVec(-0.1, -0.8), DVec(0.1, -0.90000004), DVec(0.1, -0.7), DVec(-0.1, -0.7)), List()),  // 9
-    PolygonShape(List(DVec(-0.1, -0.7), DVec(0.1, -0.5), DVec(-0.1, -0.3)), List()),  // 10
-    PolygonShape(List(DVec(-0.1, -0.7), DVec(0.1, -0.7), DVec(0.1, -0.5)), List()),  // 11
-    PolygonShape(List(DVec(-0.1, -0.3), DVec(0.1, -0.5), DVec(0.1, -0.2)), List()),  // 12
-    PolygonShape(List(DVec(-0.1, -0.3), DVec(0.1, -0.2), DVec(0.1, -0.1), DVec(-0.1, 0.0)), List()),  // 13
-    PolygonShape(List(DVec(-0.1, 0.0), DVec(0.1, -0.1), DVec(0.0, 0.3)), List()),  // 14
-    PolygonShape(List(DVec(-0.1, 0.0), DVec(0.0, 0.3), DVec(0.0, 0.6), DVec(-0.1, 0.4)), List()),  // 15
-    PolygonShape(List(DVec(0.0, 0.3), DVec(0.1, -0.1), DVec(0.1, 0.5), DVec(0.0, 0.5)), List()),  // 16
-    PolygonShape(List(DVec(-0.1, 0.4), DVec(0.0, 0.6), DVec(0.0, 0.5), DVec(0.1, 0.5), DVec(0.1, 0.7), DVec(-0.1, 0.8)), List(  // 17 NOT CONVEX
+    PolygonShape(List(DVec(-0.1, -1.3000001), DVec(0.1, -1.1), DVec(0.1, -0.90000004), DVec(-0.1, -0.8)), List()), // 8
+    PolygonShape(List(DVec(-0.1, -0.8), DVec(0.1, -0.90000004), DVec(0.1, -0.7), DVec(-0.1, -0.7)), List()), // 9
+    PolygonShape(List(DVec(-0.1, -0.7), DVec(0.1, -0.5), DVec(-0.1, -0.3)), List()), // 10
+    PolygonShape(List(DVec(-0.1, -0.7), DVec(0.1, -0.7), DVec(0.1, -0.5)), List()), // 11
+    PolygonShape(List(DVec(-0.1, -0.3), DVec(0.1, -0.5), DVec(0.1, -0.2)), List()), // 12
+    PolygonShape(List(DVec(-0.1, -0.3), DVec(0.1, -0.2), DVec(0.1, -0.1), DVec(-0.1, 0.0)), List()), // 13
+    PolygonShape(List(DVec(-0.1, 0.0), DVec(0.1, -0.1), DVec(0.0, 0.3)), List()), // 14
+    PolygonShape(List(DVec(-0.1, 0.0), DVec(0.0, 0.3), DVec(0.0, 0.6), DVec(-0.1, 0.4)), List()), // 15
+    PolygonShape(List(DVec(0.0, 0.3), DVec(0.1, -0.1), DVec(0.1, 0.5), DVec(0.0, 0.5)), List()), // 16
+    PolygonShape(List(DVec(-0.1, 0.4), DVec(0.0, 0.6), DVec(0.0, 0.5), DVec(0.1, 0.5), DVec(0.1, 0.7), DVec(-0.1, 0.8)), List(// 17 NOT CONVEX
       PolygonShape(List(DVec(-0.1, 0.8), DVec(-0.1, 0.4), DVec(0.0, 0.6)), List()),
       PolygonShape(List(DVec(-0.1, 0.8), DVec(0.0, 0.6), DVec(0.1, 0.6), DVec(0.1, 0.7)), List()),
       PolygonShape(List(DVec(0.0, 0.6), DVec(0.0, 0.5), DVec(0.1, 0.5), DVec(0.1, 0.6)), List())
     )),
-    PolygonShape(List(DVec(-0.1, 0.8), DVec(0.1, 0.7), DVec(0.1, 1.0), DVec(-0.1, 1.1)), List()),  // 18
-    PolygonShape(List(DVec(-0.1, 1.1), DVec(0.1, 1.0), DVec(0.1, 1.2), DVec(-0.1, 1.3000001)), List()),  // 19
-    PolygonShape(List(DVec(-0.1, 1.3000001), DVec(0.1, 1.2), DVec(0.1, 1.5), DVec(0.0, 1.5)), List()),  // 20
-    PolygonShape(List(DVec(-0.1, 1.3000001), DVec(0.0, 1.5), DVec(-0.1, 1.6)), List()),  // 21
-    PolygonShape(List(DVec(-0.1, 1.6), DVec(0.0, 1.5), DVec(0.1, 1.5), DVec(0.1, 1.7)), List()),  // 22
-    PolygonShape(List(DVec(-0.1, 1.6), DVec(0.1, 1.7), DVec(-0.1, 1.7)), List()),  // 23
-    PolygonShape(List(DVec(-0.1, 1.8000001), DVec(0.0, 1.7), DVec(0.0, 2.1000001)), List()),  // 24
-    PolygonShape(List(DVec(-0.1, 1.8000001), DVec(-0.1, 1.7), DVec(0.0, 1.7)), List()),  // 25
-    PolygonShape(List(DVec(0.0, 1.7), DVec(0.1, 1.7), DVec(0.1, 1.8000001), DVec(0.0, 2.1000001)), List())  // 26
+    PolygonShape(List(DVec(-0.1, 0.8), DVec(0.1, 0.7), DVec(0.1, 1.0), DVec(-0.1, 1.1)), List()), // 18
+    PolygonShape(List(DVec(-0.1, 1.1), DVec(0.1, 1.0), DVec(0.1, 1.2), DVec(-0.1, 1.3000001)), List()), // 19
+    PolygonShape(List(DVec(-0.1, 1.3000001), DVec(0.1, 1.2), DVec(0.1, 1.5), DVec(0.0, 1.5)), List()), // 20
+    PolygonShape(List(DVec(-0.1, 1.3000001), DVec(0.0, 1.5), DVec(-0.1, 1.6)), List()), // 21
+    PolygonShape(List(DVec(-0.1, 1.6), DVec(0.0, 1.5), DVec(0.1, 1.5), DVec(0.1, 1.7)), List()), // 22
+    PolygonShape(List(DVec(-0.1, 1.6), DVec(0.1, 1.7), DVec(-0.1, 1.7)), List()), // 23
+    PolygonShape(List(DVec(-0.1, 1.8000001), DVec(0.0, 1.7), DVec(0.0, 2.1000001)), List()), // 24
+    PolygonShape(List(DVec(-0.1, 1.8000001), DVec(-0.1, 1.7), DVec(0.0, 1.7)), List()), // 25
+    PolygonShape(List(DVec(0.0, 1.7), DVec(0.1, 1.7), DVec(0.1, 1.8000001), DVec(0.0, 2.1000001)), List()) // 26
   )
 
   val docking_points = Nil
