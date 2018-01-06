@@ -1,7 +1,8 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers
 
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceSwitcher
-import com.github.dunnololda.scageprojects.orbitalkiller.{CelestialBody, OrbitalKiller, RealTrajectory}
+import com.github.dunnololda.scageprojects.orbitalkiller.planets.CelestialBody
+import com.github.dunnololda.scageprojects.orbitalkiller.{OrbitalKiller, RealTrajectory}
 
 class OrbitSwitcher extends InterfaceSwitcher {
   override val strVariants: Array[String] = Array("Auto", "Earth", "Moon", "Sun")

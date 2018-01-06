@@ -4,9 +4,12 @@ import java.io.FileOutputStream
 
 import com.github.dunnololda.scage.ScageLibD.{DVec, ScageColor, Vec, addGlyphs, appVersion, max_font_size, messageBounds, print, property, stopApp, _}
 import com.github.dunnololda.scage.support.ScageId
+import com.github.dunnololda.scageprojects.orbitalkiller.components.{EllipseOrbit, HyperbolaOrbit, KeplerOrbit}
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.SystemEvolution
+import com.github.dunnololda.scageprojects.orbitalkiller.planets.{CelestialBody, Planet, PlanetWithAir, Star}
 import com.github.dunnololda.scageprojects.orbitalkiller.ships._
+import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 
 import scala.collection._
 

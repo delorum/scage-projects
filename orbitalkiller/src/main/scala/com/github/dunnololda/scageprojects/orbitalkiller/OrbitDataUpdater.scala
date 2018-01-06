@@ -2,23 +2,26 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller.components.KeplerOrbit
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
+import com.github.dunnololda.scageprojects.orbitalkiller.planets.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.ShipsHolder
+import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 
 import scala.collection.{Set, mutable}
 
 object OrbitDataUpdater {
   private val w = earth.radius * scale / 2f
 
-  private def drawStringInOrbitPoint(str:String, deg:Double, o:KeplerOrbit, orbit_color:ScageColor): Unit = {
+  private def drawStringInOrbitPoint(str: String, deg: Double, o: KeplerOrbit, orbit_color: ScageColor): Unit = {
     openglLocalTransform {
       openglMove(o.orbitalPointByTrueAnomalyDeg(deg) * scale)
-      drawFilledRectCentered(DVec.zero, w/globalScale, w/globalScale, orbit_color)
+      drawFilledRectCentered(DVec.zero, w / globalScale, w / globalScale, orbit_color)
       print(str, Vec.zero, color = orbit_color, size = (max_font_size / globalScale).toFloat)
     }
   }
 
-  private def printCalculatedData(flight_time_msec:Long, orbital_point:DVec, mouse_teta_rad2Pi:Double, o:KeplerOrbit, planet_radius:Double, orbit_color:ScageColor): Unit = {
+  private def printCalculatedData(flight_time_msec: Long, orbital_point: DVec, mouse_teta_rad2Pi: Double, o: KeplerOrbit, planet_radius: Double, orbit_color: ScageColor): Unit = {
     val flight_time_str = s"${timeStrSec(flight_time_msec)}"
     openglLocalTransform {
       openglMove(orbital_point * scale)
@@ -27,22 +30,22 @@ object OrbitDataUpdater {
     }
   }
 
-  private def drawFuturePositions(maybe_flight_time_msec:Option[Long]): Unit = {
+  private def drawFuturePositions(maybe_flight_time_msec: Option[Long]): Unit = {
     InterfaceHolder.shipInterfaces.filter(si => {
       !si.isMinimized && !si.monitoring_ship.isCrashed && !player_ship.isDockedToShip(si.monitoring_ship)
     }).flatMap(_.monitoring_ship.thisOrActualProxyShipOrbitData).foreach(x => {
       val ship_orbit = x.orbit.withNewFocusPosition(x.planet_state.coord)
       maybe_flight_time_msec.foreach(flight_time_msec => {
         val position_after_time = ship_orbit.orbitalPointAfterTime(x.body_state.coord, flight_time_msec, x.ccw)
-        drawCircle(position_after_time * scale, w/globalScale, YELLOW)
+        drawCircle(position_after_time * scale, w / globalScale, YELLOW)
       })
       if (_stop_after_number_of_tacts > 0) {
         val time_to_stop_msec = (_stop_after_number_of_tacts * base_dt * 1000).toLong
         val position_when_stop_moment = ship_orbit.orbitalPointAfterTime(x.body_state.coord, time_to_stop_msec, x.ccw)
-        drawCircle(position_when_stop_moment * scale, w/globalScale, GREEN)
+        drawCircle(position_when_stop_moment * scale, w / globalScale, GREEN)
       }
     })
-    if(player_ship.thisOrActualProxyShipCurrentOrbitData.exists(or => or.planet.index == earth.index)) {
+    if (player_ship.thisOrActualProxyShipCurrentOrbitData.exists(or => or.planet.index == earth.index)) {
       moon.orbitRender.foreach(x => {
         val moon_orbit = x.orbit.withNewFocusPosition(x.planet_state.coord)
         maybe_flight_time_msec.foreach(flight_time_msec => {
@@ -57,7 +60,7 @@ object OrbitDataUpdater {
           drawCircle(position_when_stop_moment * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
         }
       })
-    } else if(player_ship.thisOrActualProxyShipCurrentOrbitData.exists(or => or.planet.index == sun.index)) {
+    } else if (player_ship.thisOrActualProxyShipCurrentOrbitData.exists(or => or.planet.index == sun.index)) {
       earth.orbitRender.foreach(x => {
         val earth_orbit = x.orbit.withNewFocusPosition(x.planet_state.coord)
         maybe_flight_time_msec.foreach(flight_time_msec => {
@@ -75,43 +78,43 @@ object OrbitDataUpdater {
     }
   }
 
-  private def drawRealTrajectoryOfPlayerShip(planet_state:MutableBodyState, orbit_color: ScageColor): Unit = {
+  private def drawRealTrajectoryOfPlayerShip(planet_state: MutableBodyState, orbit_color: ScageColor): Unit = {
     openglLocalTransform {
       openglMove(planet_state.coord * scale)
       drawSlidingLines(RealTrajectory.realTrajectory, orbit_color)
     }
   }
 
-  private def hyperbolaOrbitDataForNonPlayerShip(update_count:Long, 
-                                                 bs: MutableBodyState, 
-                                                 body_radius:Double, 
-                                                 planet_state:MutableBodyState, 
-                                                 planet:CelestialBody, 
-                                                 o:HyperbolaOrbit,
-                                                 ccw:Boolean, 
-                                                 yy:List[DVec], 
+  private def hyperbolaOrbitDataForNonPlayerShip(update_count: Long,
+                                                 bs: MutableBodyState,
+                                                 body_radius: Double,
+                                                 planet_state: MutableBodyState,
+                                                 planet: CelestialBody,
+                                                 o: HyperbolaOrbit,
+                                                 ccw: Boolean,
+                                                 yy: List[DVec],
                                                  orbit_color: ScageColor) = {
     OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       openglLocalTransform {
         openglMove(planet_state.coord * scale)
         drawSlidingLines(yy, orbit_color)
       }
-      if(InterfaceHolder.namesSwitcher.showNames) {
+      if (InterfaceHolder.namesSwitcher.showNames) {
         val new_o = o.withNewFocusPosition(planet_state.coord)
         drawStringInOrbitPoint("P", 0, new_o, orbit_color)
       }
     })
   }
-  
-  private def hyperbolaOrbitDataForPlanet(update_count:Long, 
-                                      bs: MutableBodyState, 
-                                      body_radius:Double, 
-                                      planet_state:MutableBodyState, 
-                                      planet:CelestialBody, 
-                                      o:HyperbolaOrbit,
-                                      ccw:Boolean, 
-                                      yy:List[DVec], 
-                                      orbit_color: ScageColor) = {
+
+  private def hyperbolaOrbitDataForPlanet(update_count: Long,
+                                          bs: MutableBodyState,
+                                          body_radius: Double,
+                                          planet_state: MutableBodyState,
+                                          planet: CelestialBody,
+                                          o: HyperbolaOrbit,
+                                          ccw: Boolean,
+                                          yy: List[DVec],
+                                          orbit_color: ScageColor) = {
     OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       openglLocalTransform {
         openglMove(planet_state.coord * scale)
@@ -119,19 +122,19 @@ object OrbitDataUpdater {
       }
     })
   }
-  
-  private def hyperbolaOrbitDataForPlayerShip(update_count:Long, 
-                                          bs: MutableBodyState, 
-                                          body_radius:Double, 
-                                          planet_state:MutableBodyState, 
-                                          planet:CelestialBody, 
-                                          o:HyperbolaOrbit,
-                                          ccw:Boolean, 
-                                          yy:List[DVec], 
-                                          orbit_color: ScageColor) = {
+
+  private def hyperbolaOrbitDataForPlayerShip(update_count: Long,
+                                              bs: MutableBodyState,
+                                              body_radius: Double,
+                                              planet_state: MutableBodyState,
+                                              planet: CelestialBody,
+                                              o: HyperbolaOrbit,
+                                              ccw: Boolean,
+                                              yy: List[DVec],
+                                              orbit_color: ScageColor) = {
     OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       val real_trajectory_enabled = InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && RealTrajectory.realTrajectory.nonEmpty
-      if(real_trajectory_enabled) {
+      if (real_trajectory_enabled) {
         drawRealTrajectoryOfPlayerShip(planet_state, orbit_color)
       } else {
         openglLocalTransform {
@@ -139,7 +142,7 @@ object OrbitDataUpdater {
           drawSlidingLines(yy, orbit_color)
         }
         val new_o = o.withNewFocusPosition(planet_state.coord)
-        if(InterfaceHolder.namesSwitcher.showNames) {
+        if (InterfaceHolder.namesSwitcher.showNames) {
           drawStringInOrbitPoint("P", 0, new_o, orbit_color)
         }
         val mouse_point = absCoord(mouseCoord) / scale
@@ -177,7 +180,7 @@ object OrbitDataUpdater {
             }
 
             if (InterfaceHolder.orbParams.calculationOn) {
-              printCalculatedData(flight_time_msec, orbital_point, mouse_teta_rad2Pi, o, planet.radius, orbit_color:ScageColor)
+              printCalculatedData(flight_time_msec, orbital_point, mouse_teta_rad2Pi, o, planet.radius, orbit_color: ScageColor)
               drawFuturePositions(Some(flight_time_msec))
             }
           } else if (InterfaceHolder.orbParams.calculationOn && _stop_after_number_of_tacts > 0) {
@@ -187,67 +190,67 @@ object OrbitDataUpdater {
       }
     })
   }
-  
-  private def ellipseOrbitDataForNonPlayerShip(update_count:Long, 
-                                           bs: MutableBodyState, 
-                                           body_radius:Double, 
-                                           planet_state:MutableBodyState, 
-                                           planet:CelestialBody, 
-                                           o:EllipseOrbit,
-                                           ccw:Boolean,
-                                           orbit_color: ScageColor) = {
+
+  private def ellipseOrbitDataForNonPlayerShip(update_count: Long,
+                                               bs: MutableBodyState,
+                                               body_radius: Double,
+                                               planet_state: MutableBodyState,
+                                               planet: CelestialBody,
+                                               o: EllipseOrbit,
+                                               ccw: Boolean,
+                                               orbit_color: ScageColor) = {
     OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       val new_center = o.centerIfFocusPosition(planet_state.coord)
       openglLocalTransform {
         openglMove(new_center * scale)
-        if(o.f2 != o.f) openglRotateDeg(Vec(1, 0).signedDeg(o.f_minus_f2_n))
+        if (o.f2 != o.f) openglRotateDeg(Vec(1, 0).signedDeg(o.f_minus_f2_n))
         drawEllipse(DVec.zero, o.a * scale, o.b * scale, orbit_color)
       }
-      if(InterfaceHolder.namesSwitcher.showNames) {
+      if (InterfaceHolder.namesSwitcher.showNames) {
         val new_o = o.withNewFocusPosition(planet_state.coord)
         drawStringInOrbitPoint("P", 0, new_o, orbit_color)
         drawStringInOrbitPoint("A", 180, new_o, orbit_color)
       }
     })
   }
-  
-  private def ellipseOrbitDataForPlanet(update_count:Long, 
-                                        bs: MutableBodyState, 
-                                        body_radius:Double, 
-                                        planet_state:MutableBodyState, 
-                                        planet:CelestialBody, 
-                                        o:EllipseOrbit,
-                                        ccw:Boolean,
+
+  private def ellipseOrbitDataForPlanet(update_count: Long,
+                                        bs: MutableBodyState,
+                                        body_radius: Double,
+                                        planet_state: MutableBodyState,
+                                        planet: CelestialBody,
+                                        o: EllipseOrbit,
+                                        ccw: Boolean,
                                         orbit_color: ScageColor) = {
     OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       val new_center = o.centerIfFocusPosition(planet_state.coord)
       openglLocalTransform {
         openglMove(new_center * scale)
-        if(o.f2 != o.f) openglRotateDeg(Vec(1, 0).signedDeg(o.f_minus_f2_n))
+        if (o.f2 != o.f) openglRotateDeg(Vec(1, 0).signedDeg(o.f_minus_f2_n))
         drawEllipse(DVec.zero, o.a * scale, o.b * scale, orbit_color)
       }
     })
   }
-  
-  private def ellipseOrbitDataForPlayerShip(update_count:Long, 
-                                            bs: MutableBodyState, 
-                                            body_radius:Double, 
-                                            planet_state:MutableBodyState, 
-                                            planet:CelestialBody, 
-                                            o:EllipseOrbit,
-                                            ccw:Boolean,
+
+  private def ellipseOrbitDataForPlayerShip(update_count: Long,
+                                            bs: MutableBodyState,
+                                            body_radius: Double,
+                                            planet_state: MutableBodyState,
+                                            planet: CelestialBody,
+                                            o: EllipseOrbit,
+                                            ccw: Boolean,
                                             orbit_color: ScageColor) = {
     OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
-      if(InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && RealTrajectory.realTrajectory.nonEmpty) {
+      if (InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && RealTrajectory.realTrajectory.nonEmpty) {
         drawRealTrajectoryOfPlayerShip(planet_state, orbit_color)
       } else {
         val new_o = o.withNewFocusPosition(planet_state.coord)
         openglLocalTransform {
           openglMove(new_o.center * scale)
-          if(new_o.f2 != new_o.f) openglRotateDeg(Vec(-1, 0).signedDeg(new_o.f2 - new_o.f))
+          if (new_o.f2 != new_o.f) openglRotateDeg(Vec(-1, 0).signedDeg(new_o.f2 - new_o.f))
           drawEllipse(DVec.zero, new_o.a * scale, new_o.b * scale, orbit_color)
         }
-        if(InterfaceHolder.namesSwitcher.showNames) {
+        if (InterfaceHolder.namesSwitcher.showNames) {
           drawStringInOrbitPoint("P", 0, new_o, orbit_color)
           drawStringInOrbitPoint("A", 180, new_o, orbit_color)
         }
@@ -271,32 +274,32 @@ object OrbitDataUpdater {
           set_stop_moment = false
         }
         if (InterfaceHolder.orbParams.calculationOn) {
-          printCalculatedData(flight_time_msec, orbital_point, mouse_teta_rad2Pi, o, planet.radius, orbit_color:ScageColor)
+          printCalculatedData(flight_time_msec, orbital_point, mouse_teta_rad2Pi, o, planet.radius, orbit_color: ScageColor)
           drawFuturePositions(Some(flight_time_msec))
         }
       }
     })
   }
 
-  def updateOrbitData(update_count:Long,
+  def updateOrbitData(update_count: Long,
                       body_index: Int,
-                      body_radius:Double,
+                      body_radius: Double,
                       orbit_color: ScageColor,
                       some_system_state: mutable.Map[Int, MutableBodyState],
                       need_planets: Set[Int],
-                      calculate_orbit_around:Option[Int]): Option[OrbitData] = {
+                      calculate_orbit_around: Option[Int]): Option[OrbitData] = {
     some_system_state.get(body_index).flatMap(bs => {
       updateOrbitData(update_count, bs, body_radius, orbit_color, some_system_state, need_planets, calculate_orbit_around)
     })
   }
 
-  def updateOrbitData(update_count:Long,
+  def updateOrbitData(update_count: Long,
                       bs: MutableBodyState,
-                      body_radius:Double,
+                      body_radius: Double,
                       orbit_color: ScageColor,
                       some_system_state: mutable.Map[Int, MutableBodyState],
                       need_planets: Set[Int],
-                      calculate_orbit_around:Option[Int]): Option[OrbitData] = {
+                      calculate_orbit_around: Option[Int]): Option[OrbitData] = {
     val celestials = some_system_state.filter(kv => need_planets.contains(kv._1)).flatMap(kv => {
       planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
     }).values.toSeq.sortBy(_._2.mass)
@@ -325,7 +328,7 @@ object OrbitDataUpdater {
               (h.f_minus_center_n * r).rotateRad(true_anomaly) * scale
             }).toList
             if (bs.index != player_ship.thisOrActualProxyShipIndex) {
-              if(ShipsHolder.shipIndicies.contains(bs.index)) {
+              if (ShipsHolder.shipIndicies.contains(bs.index)) {
                 Some(hyperbolaOrbitDataForNonPlayerShip(update_count, bs, body_radius, planet_state, planet, h, ccw, yy, orbit_color))
               } else {
                 Some(hyperbolaOrbitDataForPlanet(update_count, bs, body_radius, planet_state, planet, h, ccw, yy, orbit_color))
@@ -335,7 +338,7 @@ object OrbitDataUpdater {
             }
           case e: EllipseOrbit =>
             if (bs.index != player_ship.thisOrActualProxyShipIndex) {
-              if(ShipsHolder.shipIndicies.contains(bs.index)) {
+              if (ShipsHolder.shipIndicies.contains(bs.index)) {
                 Some(ellipseOrbitDataForNonPlayerShip(update_count, bs, body_radius, planet_state, planet, e, ccw, orbit_color))
               } else {
                 Some(ellipseOrbitDataForPlanet(update_count, bs, body_radius, planet_state, planet, e, ccw, orbit_color))

@@ -3,6 +3,8 @@ package com.github.dunnololda.scageprojects.orbitalkiller.components
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
+import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils._
+import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 
 sealed trait KeplerOrbit {
   def a: Double
@@ -15,15 +17,15 @@ sealed trait KeplerOrbit {
 
   def center: DVec
 
-  def r_p:Double
+  def r_p: Double
 
-  protected def calcFallPos(fall_point:DVec, planet_ang:Double, planet_radius:Double):String = {
+  protected def calcFallPos(fall_point: DVec, planet_ang: Double, planet_radius: Double): String = {
     if (InterfaceHolder.degOrKm.selectedVariant == 0) {
       f"${correctAngle(DVec(0, 1).deg360(fall_point - f) - planet_ang)}%.3f град."
     } else {
-      val planet_length = 2*math.Pi*planet_radius
+      val planet_length = 2 * math.Pi * planet_radius
       val km = (correctAngle(DVec(0, 1).deg360(fall_point - f) - planet_ang) / 360.0 * planet_length) / 1000
-      f"$km%.2f/${planet_length/1000}%.2f км"
+      f"$km%.2f/${planet_length / 1000}%.2f км"
     }
   }
 
@@ -37,17 +39,27 @@ sealed trait KeplerOrbit {
                     ship_velocity: DVec,
                     ship_radius: Double): String
 
-  def orbitalPointByTrueAnomalyDeg(angle_deg:Double):DVec
-  def tetaRad2PiInPoint(p:DVec):Double
-  def distanceByTrueAnomalyRad(angle_rad:Double):Double
-  def orbitalVelocityValueByTrueAnomalyRad(teta_rad: Double):Double
-  def orbitalVelocityByTrueAnomalyRad(teta_rad: Double, ccw:Boolean):DVec
+  def orbitalPointByTrueAnomalyDeg(angle_deg: Double): DVec
+
+  def tetaRad2PiInPoint(p: DVec): Double
+
+  def distanceByTrueAnomalyRad(angle_rad: Double): Double
+
+  def orbitalVelocityValueByTrueAnomalyRad(teta_rad: Double): Double
+
+  def orbitalVelocityByTrueAnomalyRad(teta_rad: Double, ccw: Boolean): DVec
+
   def orbitalPointAfterTime(point1: DVec, time_msec: Long, ccw: Boolean): DVec
-  def withNewFocusPosition(new_f:DVec):KeplerOrbit
-  def orbitalPointInPoint(p:DVec):DVec
-  def travelTimeOnOrbitMsec(from:DVec, to:DVec, ccw:Boolean, recalculate_orbital_points: Boolean = false):Long
-  def orbitalPointAfterTimeCCW(coord:DVec, flight_time_msec:Long):DVec
-  def orbitalVelocityInPoint(point: DVec, ccw:Boolean):DVec
+
+  def withNewFocusPosition(new_f: DVec): KeplerOrbit
+
+  def orbitalPointInPoint(p: DVec): DVec
+
+  def travelTimeOnOrbitMsec(from: DVec, to: DVec, ccw: Boolean, recalculate_orbital_points: Boolean = false): Long
+
+  def orbitalPointAfterTimeCCW(coord: DVec, flight_time_msec: Long): DVec
+
+  def orbitalVelocityInPoint(point: DVec, ccw: Boolean): DVec
 }
 
 class EllipseOrbit(
@@ -130,7 +142,7 @@ class EllipseOrbit(
     }
   }
 
-  lazy val f_minus_f2_n = Option((f - f2).n).filterNot(_.isZero).getOrElse(DVec(0,1))
+  lazy val f_minus_f2_n = Option((f - f2).n).filterNot(_.isZero).getOrElse(DVec(0, 1))
   val inv_n = a * math.sqrt(a / mu) // это 1/n
 
   def tetaDeg360ByDir(dir: DVec) = f_minus_f2_n.deg360(dir)
@@ -169,6 +181,7 @@ class EllipseOrbit(
     * Расстояние от притягивающего центра до орбиты в данном направлении. Определяем истинную аномалию данного направления
     * и по формуле считаем длину радиус-вектора.
     * https://en.wikipedia.org/wiki/True_anomaly#Radius_from_true_anomaly
+    *
     * @param dir - вектор направления
     * @return
     */
@@ -208,8 +221,8 @@ class EllipseOrbit(
     val (l1, l2, _) = if (t1 == 0) {
       if (t2 < 180) (xl1, xl2, "None")
       else (2 * math.Pi - xl1, -xl2, "F & A")
-    } else if(t2 == 0) {
-      if(t1 > 180) (xl1, xl2, "None")
+    } else if (t2 == 0) {
+      if (t1 > 180) (xl1, xl2, "None")
       else (2 * math.Pi - xl1, -xl2, "F & A")
     } else {
       if (areLinesIntersect(f2 - f_minus_f2_n * r_p, f2, orbital_point1, orbital_point2)) {
@@ -243,6 +256,7 @@ class EllipseOrbit(
     * Время в миллисекундах, которое займет перемещение корабля по эллиптической орбите из точки point1 в точку point2 против часово стрелки.
     * Вычисляется по формуле Ламберта, которую нашел в книге М.Б. Балка "Элементы динамики космического полета", стр 122-129
     * http://pskgu.ru/ebooks/astro3/astro3_03_05.pdf
+    *
     * @param point1 - начальная точка
     * @param point2 - конечная точка
     * @return
@@ -289,6 +303,7 @@ class EllipseOrbit(
     * Орбитальная скорость в точке орбиты с данной истинной аномалией. Это скорость относительно притягивающего центра.
     * То есть, если планета в свою очередь движется по орбите, то чтобы получить абсолютную скорость, надо вычислять и прибавлять
     * эту скорость планеты в данный момент времени и так далее.
+    *
     * @param teta_rad - угол в радианах между радиус вектором на точку на орбите и направлением на перицентр.
     *                 Если против часовой стрелки - положительный, от 0 до pi, иначе отрицательный, от 0 до -pi
     *                 https://en.wikipedia.org/wiki/Lambert%27s_problem
@@ -297,23 +312,23 @@ class EllipseOrbit(
     *         vt - перпендикулярна радиальной компоненте. t = r.perpendicular
     *         math.sqrt(vr*vr + vt*vt) даст числовое выражение скорости
     */
-  def orbitalVelocityByTrueAnomalyRad(teta_rad: Double, ccw:Boolean):DVec = {
+  def orbitalVelocityByTrueAnomalyRad(teta_rad: Double, ccw: Boolean): DVec = {
     val vr = math.sqrt(mu / p) * e * math.sin(teta_rad)
     val vt = math.sqrt(mu / p) * (1 + e * math.cos(teta_rad))
     val r = f_minus_f2_n.rotateRad(teta_rad)
     val t = r.perpendicular
-    if(ccw) vr*r + vt*t  else -vr*r - vt*t
+    if (ccw) vr * r + vt * t else -vr * r - vt * t
   }
 
-  def orbitalVelocityByDir(dir: DVec, ccw:Boolean):DVec = {
+  def orbitalVelocityByDir(dir: DVec, ccw: Boolean): DVec = {
     orbitalVelocityByTrueAnomalyRad(tetaRad2PiByDir(dir), ccw)
   }
 
-  def orbitalVelocityInPoint(point: DVec, ccw:Boolean):DVec = {
+  def orbitalVelocityInPoint(point: DVec, ccw: Boolean): DVec = {
     orbitalVelocityByTrueAnomalyRad(tetaRad2PiInPoint(point), ccw)
   }
 
-  def orbitalVelocityValueByTrueAnomalyRad(teta_rad: Double):Double = {
+  def orbitalVelocityValueByTrueAnomalyRad(teta_rad: Double): Double = {
     orbitalVelocityByTrueAnomalyRad(teta_rad, ccw = true).norma
   }
 
@@ -324,15 +339,15 @@ class EllipseOrbit(
     val t1 = tetaDeg360InPoint(point1)
     val time_from_r_p_msec = travelTimeOnOrbitMsecCCW(0, t1 /*, print_variant = true*/)
     val all_time_msec = time_from_r_p_msec + time_msec
-    val M = 1 / inv_n * (0.001*all_time_msec)
+    val M = 1 / inv_n * (0.001 * all_time_msec)
     val E1 = M + e * math.sin(M)
-    def solver(prev_E:Double = E1, i:Int = 0, max_i:Int = 100):(Double, Int) = {
-      val diff = (prev_E - e*math.sin(prev_E) - M).abs
-      if(diff < 1E-15 || i >= max_i) (prev_E, i)
-      else solver(M + e*math.sin(prev_E), i+1, max_i)
+    def solver(prev_E: Double = E1, i: Int = 0, max_i: Int = 100): (Double, Int) = {
+      val diff = (prev_E - e * math.sin(prev_E) - M).abs
+      if (diff < 1E-15 || i >= max_i) (prev_E, i)
+      else solver(M + e * math.sin(prev_E), i + 1, max_i)
     }
     val (res_E, i) = solver()
-    if(OrbitalKiller.tacts % 63 == 0) println(s"elliptic orbitalPointAfterTimeCCW i $i")
+    if (OrbitalKiller.tacts % 63 == 0) println(s"elliptic orbitalPointAfterTimeCCW i $i")
     val tg_half_teta_res_rad = math.sqrt((1 + e) / (1 - e)) * math.tan(res_E / 2)
     val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
     val teta_res_deg = teta_res_rad / math.Pi * 180
@@ -342,16 +357,16 @@ class EllipseOrbit(
   def orbitalPointAfterTimeCW(point1: DVec, time_msec: Long): DVec = {
     val t1 = tetaDeg360InPoint(point1)
     val time_from_r_p_msec = travelTimeOnOrbitMsecCW(0, t1 /*, print_variant = true*/)
-    val all_time_msec = t*1000 - (time_from_r_p_msec + time_msec)
-    val M = 1 / inv_n * (0.001*all_time_msec)
+    val all_time_msec = t * 1000 - (time_from_r_p_msec + time_msec)
+    val M = 1 / inv_n * (0.001 * all_time_msec)
     val E1 = M + e * math.sin(M)
-    def solver(prev_E:Double = E1, i:Int = 0, max_i:Int = 100):(Double, Int) = {
-      val diff = (prev_E - e*math.sin(prev_E) - M).abs
-      if(diff < 1E-15 || i >= max_i) (prev_E, i)
-      else solver(M + e*math.sin(prev_E), i+1, max_i)
+    def solver(prev_E: Double = E1, i: Int = 0, max_i: Int = 100): (Double, Int) = {
+      val diff = (prev_E - e * math.sin(prev_E) - M).abs
+      if (diff < 1E-15 || i >= max_i) (prev_E, i)
+      else solver(M + e * math.sin(prev_E), i + 1, max_i)
     }
     val (resE, iterations) = solver()
-    if(OrbitalKiller.tacts % 63 == 0) println(s"elliptic orbitalPointAfterTimeCW i $iterations")
+    if (OrbitalKiller.tacts % 63 == 0) println(s"elliptic orbitalPointAfterTimeCW i $iterations")
     val tg_half_teta_res_rad = math.sqrt((1 + e) / (1 - e)) * math.tan(resE / 2)
     val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
     val teta_res_deg = teta_res_rad / math.Pi * 180
@@ -363,13 +378,13 @@ class EllipseOrbit(
     else orbitalPointAfterTimeCW(point1, time_msec)
   }
 
-  def withNewFocusPosition(new_f:DVec):EllipseOrbit = {
+  def withNewFocusPosition(new_f: DVec): EllipseOrbit = {
     val new_f2 = new_f - (f - f2)
     val new_center = (new_f2 - new_f).n * c + new_f
     new EllipseOrbit(a, b, e, c, p, r_p, r_a, t, new_f, new_f2, new_center, mu)
   }
 
-  def centerIfFocusPosition(new_f:DVec):DVec = {
+  def centerIfFocusPosition(new_f: DVec): DVec = {
     (f2 - f).n * c + new_f
   }
 }
@@ -381,7 +396,7 @@ class HyperbolaOrbit(
                       val f: DVec, // координаты первого фокуса (координаты небесного тела, вокруг которого вращаемся)
                       val center: DVec, // координаты центра
                       val mu: Double) extends KeplerOrbit {
-  def withNewFocusPosition(new_f:DVec):HyperbolaOrbit = {
+  def withNewFocusPosition(new_f: DVec): HyperbolaOrbit = {
     val new_center = center - f + new_f
     new HyperbolaOrbit(a, b, e, new_f, new_center, mu)
   }
@@ -517,7 +532,7 @@ class HyperbolaOrbit(
     val chl2 = 1 + (r1 + r2 - s) / (2 * a)
 
     val l1 = math.log(chl1 + math.sqrt(chl1 * chl1 - 1))
-    val l2 = math.log(chl2 + math.sqrt(chl2 * chl2 - 1))*(if(wll_pass_r_p) -1 else 1)
+    val l2 = math.log(chl2 + math.sqrt(chl2 * chl2 - 1)) * (if (wll_pass_r_p) -1 else 1)
     ((inv_n * ((math.sinh(l1) - l1) - (math.sinh(l2) - l2))) * 1000).toLong
   }
 
@@ -557,31 +572,32 @@ class HyperbolaOrbit(
     * Орбитальная скорость в точке орбиты с данной истинной аномалией. Это скорость относительно притягивающего центра.
     * То есть, если планета в свою очередь движется по орбите, то чтобы получить абсолютную скорость, надо вычислять и прибавлять
     * эту скорость планеты в данный момент времени и так далее.
+    *
     * @param teta_rad - угол в радианах между радиус вектором на точку на орбите и направлением на перицентр.
     *                 Если против часовой стрелки - положительный, от 0 до pi, иначе отрицательный, от 0 до -pi
     *                 Рой А. Движение по орбитам. стр. 109
     *                 http://stu.alnam.ru/book_mor-60
     * @return
     */
-  def orbitalVelocityValueByTrueAnomalyRad(teta_rad: Double):Double = {
+  def orbitalVelocityValueByTrueAnomalyRad(teta_rad: Double): Double = {
     val orbital_point = orbitalPointByTrueAnomalyRad(teta_rad)
     val r = orbital_point.dist(f)
     math.sqrt(mu * (2 / r + 1 / a))
   }
 
-  def orbitalVelocityByTrueAnomalyRad(teta_rad: Double, ccw:Boolean):DVec = {
+  def orbitalVelocityByTrueAnomalyRad(teta_rad: Double, ccw: Boolean): DVec = {
     orbitalVelocityInPoint(orbitalPointByTrueAnomalyRad(teta_rad), ccw)
   }
 
-  def orbitalVelocityByDir(dir: DVec):Double = {
+  def orbitalVelocityByDir(dir: DVec): Double = {
     orbitalVelocityValueByTrueAnomalyRad(tetaRad2PiByDir(dir))
   }
 
-  def orbitalVelocityInPoint(point: DVec, ccw:Boolean):DVec = {
+  def orbitalVelocityInPoint(point: DVec, ccw: Boolean): DVec = {
     val v = orbitalVelocityValueByTrueAnomalyRad(tetaRad2PiInPoint(point))
     val r = point.dist(f)
-    val phi = 3*math.Pi/2 + math.sqrt(a * a * (e * e - 1) / (r * (2 * a + r))).myacos // угол между вектором скорости и радиус-вектором
-    if(ccw) (point - f).rotateRad(-phi).n*v else (point - f).rotateRad(phi).n*v
+    val phi = 3 * math.Pi / 2 + math.sqrt(a * a * (e * e - 1) / (r * (2 * a + r))).myacos // угол между вектором скорости и радиус-вектором
+    if (ccw) (point - f).rotateRad(-phi).n * v else (point - f).rotateRad(phi).n * v
   }
 
   // Балк М.Б. Элементы динамики космического полета. Гл. III, параграф 3 "Решение уравнения Кеплера", стр. 111
@@ -589,10 +605,10 @@ class HyperbolaOrbit(
   // https://ru.wikipedia.org/wiki/Уравнение_Кеплера
   def orbitalPointAfterTimeCCW(point1: DVec, time_msec: Long): DVec = {
     def _arsh(z: Double) = math.log(z + math.sqrt(z * z + 1))
-    def solver(prev_H:Double, M:Double, i:Int = 0, max_i:Int = 100):(Double, Int) = {
-      val diff = (e*math.sinh(prev_H) - prev_H - M).abs
-      if(diff < 1E-15 || i >= max_i) (prev_H, i)
-      else solver(_arsh((prev_H + M) / e), M, i+1, max_i)
+    def solver(prev_H: Double, M: Double, i: Int = 0, max_i: Int = 100): (Double, Int) = {
+      val diff = (e * math.sinh(prev_H) - prev_H - M).abs
+      if (diff < 1E-15 || i >= max_i) (prev_H, i)
+      else solver(_arsh((prev_H + M) / e), M, i + 1, max_i)
     }
     val t1 = tetaDeg360InPoint(point1)
     val away_from_rp = teta_deg_min >= t1 && t1 >= 0
@@ -606,12 +622,12 @@ class HyperbolaOrbit(
     } else {
       (time_msec - time_from_r_p_to_cur_point_msec).abs
     }
-    val M = 1 / inv_n * (0.001*time_from_r_p_msec)
+    val M = 1 / inv_n * (0.001 * time_from_r_p_msec)
     val (resH, iterations) = solver(_arsh((M + M) / e), M)
-    if(OrbitalKiller.tacts % 63 == 0) println(s"hyperbolic orbitalPointAfterTimeCCW away $away_from_rp after_r_p ${away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec} i $iterations")
+    if (OrbitalKiller.tacts % 63 == 0) println(s"hyperbolic orbitalPointAfterTimeCCW away $away_from_rp after_r_p ${away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec} i $iterations")
     val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(resH / 2)
     val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
-    val teta_res_deg = if(away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec) {
+    val teta_res_deg = if (away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec) {
       teta_res_rad / math.Pi * 180
     } else {
       360 - teta_res_rad / math.Pi * 180
@@ -621,29 +637,29 @@ class HyperbolaOrbit(
 
   def orbitalPointAfterTimeCW(point1: DVec, time_msec: Long): DVec = {
     def _arsh(z: Double) = math.log(z + math.sqrt(z * z + 1))
-    def solver(prev_H:Double, M:Double, i:Int = 0, max_i:Int = 100):(Double, Int) = {
-      val diff = (e*math.sinh(prev_H) - prev_H - M).abs
-      if(diff < 1E-15 || i >= max_i) (prev_H, i)
-      else solver(_arsh((prev_H + M) / e), M, i+1, max_i)
+    def solver(prev_H: Double, M: Double, i: Int = 0, max_i: Int = 100): (Double, Int) = {
+      val diff = (e * math.sinh(prev_H) - prev_H - M).abs
+      if (diff < 1E-15 || i >= max_i) (prev_H, i)
+      else solver(_arsh((prev_H + M) / e), M, i + 1, max_i)
     }
     val t1 = tetaDeg360InPoint(point1)
     val away_from_rp = 360 >= t1 && t1 >= teta_deg_max
-    val time_from_r_p_to_cur_point_msec = if(away_from_rp) {
+    val time_from_r_p_to_cur_point_msec = if (away_from_rp) {
       travelTimeOnOrbitMsecCW(360, t1)
     } else {
       travelTimeOnOrbitMsecCW(t1, 0)
     }
-    val time_from_r_p_msec = if(away_from_rp) {
+    val time_from_r_p_msec = if (away_from_rp) {
       time_from_r_p_to_cur_point_msec + time_msec
     } else {
       (time_msec - time_from_r_p_to_cur_point_msec).abs
     }
-    val M = 1 / inv_n * (0.001*time_from_r_p_msec)
+    val M = 1 / inv_n * (0.001 * time_from_r_p_msec)
     val (resH, iterations) = solver(_arsh((M + M) / e), M)
-    if(OrbitalKiller.tacts % 63 == 0) println(s"hyperbolic orbitalPointAfterTimeCW away $away_from_rp after_r_p ${away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec} i $iterations")
+    if (OrbitalKiller.tacts % 63 == 0) println(s"hyperbolic orbitalPointAfterTimeCW away $away_from_rp after_r_p ${away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec} i $iterations")
     val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(resH / 2)
     val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
-    val teta_res_deg = if(away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec) {
+    val teta_res_deg = if (away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec) {
       360 - teta_res_rad / math.Pi * 180
     } else {
       teta_res_rad / math.Pi * 180
@@ -654,5 +670,95 @@ class HyperbolaOrbit(
   def orbitalPointAfterTime(point1: DVec, time_msec: Long, ccw: Boolean): DVec = {
     if (ccw) orbitalPointAfterTimeCCW(point1, time_msec)
     else orbitalPointAfterTimeCW(point1, time_msec)
+  }
+}
+
+object KeplerOrbit {
+  /**
+    * Вычисляет параметры орбиты
+    *
+    * @param planet_mass            - масса планеты
+    * @param planet_coord           - абсолютная координата планеты
+    * @param body_mass              - масса тела, вращающегося вокруг планеты
+    * @param body_relative_coord    - относительная координата тела (абсолютная координата тела минус абсолютная координата планеты)
+    * @param body_relative_velocity - относительная линейная скорость тела (абсолютная скорость тела минус абсолютная скорость планеты)
+    * @param G                      - гравитационная постоянная
+    * @return объект Orbit, содержащий вычисленный набор параметров
+    */
+  def calculateOrbit(planet_mass: Double, planet_coord: DVec, body_mass: Double, body_relative_coord: DVec, body_relative_velocity: DVec, G: Double): KeplerOrbit = {
+    //https://ru.wikipedia.org/wiki/Гравитационный_параметр
+    //val mu = (planet_mass + body_mass) * G // гравитационный параметр
+    val mu = planet_mass * G // гравитационный параметр
+
+    //http://ru.wikipedia.org/wiki/Кеплеровы_элементы_орбиты
+    //val a = body_relative_coord.norma*k/(2*k*k - body_relative_coord.norma*body_velocity.norma2)
+
+    //https://en.wikipedia.org/wiki/Specific_orbital_energy
+    val epsilon = body_relative_velocity.norma2 / 2 - mu / body_relative_coord.norma // орбитальная энергия - сумма потенциальной и кинетической энергии тел, деленные на приведенную массу
+
+    //http://ru.wikipedia.org/wiki/Большая_полуось
+    val a = math.abs(mu / (2 * epsilon)) // большая полуось
+
+    //http://en.wikipedia.org/wiki/Kepler_orbit
+    val r_n = body_relative_coord.n
+    val v_t = math.abs(body_relative_velocity * r_n.perpendicular)
+    val p = math.pow(body_relative_coord.norma * v_t, 2) / mu // фокальный параметр (половина длины хорды, проходящей через фокус и перпендикулярной к фокальной оси)
+
+    //http://ru.wikipedia.org/wiki/Эллипс
+    val b = math.sqrt(math.abs(a * p)) // малая полуось
+
+    if (epsilon < 0) {
+      val e = math.sqrt(math.abs(1 - (b * b) / (a * a))) // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
+
+      val c = a * e // фокальное расстояние (полурасстояние между фокусами)
+      val r_p = a * (1 - e) // перигей
+      val r_a = a * (1 + e) // апогей
+
+      val t = 2 * math.Pi * math.sqrt(math.abs(a * a * a / mu)) // орбитальный период (период обращения по орбите, в секундах)
+
+      val d1 = body_relative_coord.norma // расстояние от тела до первого фокуса (планеты)
+      val d2 = 2 * a - d1 // расстояние до второго фокуса (свойства эллипса: d1+d2 = 2*a)
+      val alpha = body_relative_coord.signedDeg(body_relative_velocity) // угол между вектором скорости тела - касательным к эллипсу и направлением на первый фокус (свойство эллипса: угол между касательной и вектором на второй фокус такой же)
+      val f1 = planet_coord // координаты первого фокуса - координаты планеты (она в фокусе эллипса-орбиты)
+      val f2 = body_relative_velocity.rotateDeg(alpha).n * d2 + body_relative_coord + planet_coord // координаты второго фокуса
+      val center = (f2 - f1).n * c + f1 // координаты центра орбиты-эллипса
+
+      /*if(a == d1 || f2 == f1) {
+        println("orbit is round")
+      }
+
+      if(a == 0 || b == 0 || e.isNaN || c.isNaN || p == 0 || r_p.isNaN || r_a.isNaN || t == 0) {
+        throw new Exception("ellipse orbit calculation failed")
+      }*/
+
+      new EllipseOrbit(a, b, e, c, p, r_p, r_a, t, f1, f2, center, G * (planet_mass + body_mass))
+    } else {
+      // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
+      val e = math.sqrt(math.abs(1 + (b * b) / (a * a)))
+
+      val true_anomaly = math.abs(((a * (e * e - 1) - body_relative_coord.norma) / (body_relative_coord.norma * e)).myacos)
+
+      val counterclockwise = body_relative_coord.signedDeg(body_relative_velocity) > 0
+      val moving_away = body_relative_velocity * body_relative_coord.n > 0
+
+      val signum = if (counterclockwise) {
+        if (moving_away) -1 else 1
+      } else {
+        if (moving_away) 1 else -1
+      }
+
+      val center = planet_coord - body_relative_coord.rotateRad(true_anomaly * signum).n * a * e
+
+      new HyperbolaOrbit(a, b, e, planet_coord, center, mu)
+    }
+  }
+
+  def specificOrbitalEnergy(planet_mass: Double,
+                            planet_coord: DVec,
+                            body_mass: Double,
+                            body_relative_coord: DVec,
+                            body_relative_velocity: DVec, G: Double): Double = {
+    val mu = (planet_mass + body_mass) * G // гравитационный параметр
+    body_relative_velocity.norma2 / 2 - mu / body_relative_coord.norma
   }
 }
