@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.github.dunnololda.scageprojects</groupId>
   <artifactId>orbitalkiller</artifactId>
-  <version>12</version>
+  <version>realworld-double-54</version>
   <inceptionYear>2011</inceptionYear>
 
   <name>Orbital Killer</name>
@@ -12,9 +12,9 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <scala.version>2.10.1</scala.version>
-    <lwjgl.version>2.8.2</lwjgl.version>
-    <scage.version>0.9.3-SNAPSHOT</scage.version>
+    <scala.version>2.11.8</scala.version>
+    <lwjgl.version>2.9.3</lwjgl.version>
+    <scage.version>11.9</scage.version>
     <src.dir>src</src.dir>
   </properties>
 
@@ -30,11 +30,17 @@
       <url>https://oss.sonatype.org/content/groups/scala-tools/</url>
     </repository>
 
-    <repository>
+    <!--<repository>
+      <id>slick.cokeandcode.com</id>
+      <name>Slick Maven Repository</name>
+      <url>http://slick.cokeandcode.com/mavenrepo</url>
+    </repository>-->
+
+    <!--<repository>
       <id>lwjgl</id>
       <name>lwjgl</name>
       <url>http://adterrasperaspera.com/lwjgl</url>
-    </repository>
+    </repository>-->
   </repositories>
 
   <pluginRepositories>
@@ -52,6 +58,11 @@
   </pluginRepositories>
 
   <dependencies>
+      <dependency>
+          <groupId>org.lwjgl.lwjgl</groupId>
+          <artifactId>lwjgl</artifactId>
+          <version>${lwjgl.version}</version>
+      </dependency>
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
@@ -65,11 +76,17 @@
     </dependency>
 
     <dependency>
-        <groupId>com.github.dunnololda.scage</groupId>
-        <artifactId>scage</artifactId>
+        <groupId>com.github.dunnololda</groupId>
+        <artifactId>scage_2.10</artifactId>
         <version>${scage.version}</version>
         <scope>compile</scope>
     </dependency>
+
+      <dependency>
+          <groupId>org.jbox2d</groupId>
+          <artifactId>jbox2d-library</artifactId>
+          <version>2.2.1.1</version>
+      </dependency>
   </dependencies>
 
   <build>
@@ -135,9 +152,13 @@
         </executions>
         <configuration>
           <scalaVersion>${scala.version}</scalaVersion>
-          <args>
-            <arg>-optimise</arg>
-          </args>
+            <args>
+                <!--<arg>-optimise</arg>-->
+                <arg>-unchecked</arg>
+                <arg>-deprecation</arg>
+                <arg>-feature</arg>
+                <arg>-Yinline-warnings</arg>
+            </args>
         </configuration>
       </plugin>
 
@@ -163,7 +184,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
-                  <execution>
+                  <!--<execution>
                     <id>unpack</id>
                     <phase>generate-resources</phase>
                     <goals>
@@ -181,7 +202,7 @@
                         </artifactItem>
                       </artifactItems>
                     </configuration>
-                  </execution>
+                  </execution>-->
                   <execution>
                     <id>copy-dependencies</id>
                     <phase>package</phase>
@@ -194,14 +215,27 @@
                   </execution>
                 </executions>
       </plugin>
-
+        <plugin>
+            <groupId>com.googlecode.mavennatives</groupId>
+            <artifactId>maven-nativedependencies-plugin</artifactId>
+            <version>0.0.5</version>
+            <executions>
+                <execution>
+                    <id>unpacknatives</id>
+                    <phase>generate-resources</phase>
+                    <goals>
+                        <goal>copy</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
       <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <version>2.7.2</version>
             <configuration>
                 <argLine>
-                    -Djava.library.path=${project.build.directory}/native/${os.type} -DLWJGL_DISABLE_XRANDR=true -Dfile.encoding=UTF-8
+                    -Dscage.properties=${scageproperties} -Djava.library.path=${project.build.directory}/native/${os.type} -DLWJGL_DISABLE_XRANDR=true -Dfile.encoding=UTF-8
                 </argLine>
             </configuration>
       </plugin>
@@ -211,6 +245,7 @@
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>2.3.1</version>
                     <configuration>
+                        <finalName>orbitalkiller</finalName>
                        <archive>
                           <manifest>
                              <addClasspath>true</addClasspath>
@@ -223,6 +258,18 @@
   </build>
 
   <profiles>
+      <profile>
+          <id>openjdk</id>
+          <dependencies>
+              <dependency>
+                  <groupId>javax.jnlp</groupId>
+                  <artifactId>jnlp-api</artifactId>
+                  <version>5.0</version>
+                  <scope>system</scope>
+                  <systemPath>/usr/bin/javaws</systemPath>
+              </dependency>
+          </dependencies>
+      </profile>
       <profile>
           <id>build</id>
           <activation>

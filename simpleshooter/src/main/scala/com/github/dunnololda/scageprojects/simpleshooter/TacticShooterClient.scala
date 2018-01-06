@@ -1,12 +1,26 @@
 package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.scage.ScageLib._
-import collection.mutable
-import com.github.dunnololda.simplenet.{State => NetState, _}
+import play.api.libs.json._
+import scala.collection.mutable
+import com.github.dunnololda.simplenet._
 import scala.collection.mutable.ArrayBuffer
 
+case class TacticShooterClientData(cps_infos_received:Option[Boolean],
+                                   gs_update_received:Option[Boolean],
+                                   gameslist:Option[Boolean],
+                                   join:Option[JoinGameData],
+                                   create:Option[Boolean],
+                                   startgame:Option[Boolean],
+                                   pn:Option[Int],
+                                   d:Option[Vec],
+                                   pov:Option[Vec], 
+                                   sendmap:Option[Boolean], 
+                                   cleardest:Option[Boolean],
+                                   ft:Option[Int])
+
 class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simple Shooter Client") {
-  private val client = UdpNetClient(address = host, port = port, ping_timeout= 1000, check_timeout = 5000)
+  private val client = UdpNetClient(address = host, port = port, ping_timeout= 1000, check_if_offline_timeout = 5000)
 
   private val states = mutable.ArrayBuffer[TacticServerData]()
 
@@ -14,7 +28,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   private var game_stats_pause_interface = ArrayBuffer[() => String]()
   private var skip_stats_rows = 0
 
-  private val builder = NetState.newBuilder
+  private val fields = ArrayBuffer[(String, JsValue)]()
 
   private var new_destination:Option[Vec] = None
   private var new_pov:Option[Vec] = None
@@ -32,6 +46,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   private var map_display_lists:Option[List[(Int, () => ScageColor)]] = None
 
   private var current_state:Option[TacticServerData] = None
+  private val others_last_seen = mutable.HashMap[(Int, Int, Int), Vec]()  // team, number of group in team, number of member in group
 
   private val fire_toggles = mutable.HashMap[Int, Int]()
   private def fireToggle = fire_toggles.getOrElseUpdate(selected_player, 0)
@@ -66,7 +81,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
     }
   }
 
-  private var render_mouse = scaledCoord(mouseCoord)
+  private var render_mouse = absCoord(mouseCoord)
   private val number_place = Vec(1, 1).n*human_size
 
   private var _center = Vec.zero
@@ -76,7 +91,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
     val TacticServerData(third_yours, third_others, third_your_bullets, third_other_bullets, third_receive_moment) = third
     val TacticServerData(second_yours, second_others, second_your_bullets, second_other_bullets, _) = second
     val result_yours = third_yours.map(ty => {
-      second_yours.find(_.number == ty.number) match {
+      second_yours.find(_.number_of_fighter_in_group == ty.number_of_fighter_in_group) match {
         case Some(sy) =>
           ty.copy(
             coord = ty.coord + (sy.coord - ty.coord)*(System.currentTimeMillis() - third_receive_moment)/100f
@@ -85,7 +100,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
       }
     })
     val result_others = third_others.map(to => {
-      second_others.find(x => x.id == to.id && x.number == to.number) match {
+      second_others.find(x => x.id == to.id && x.number_of_fighter_in_group == to.number_of_fighter_in_group) match {
         case Some(so) =>
           to.copy(
             coord = to.coord + (so.coord - to.coord)*(System.currentTimeMillis() - third_receive_moment)/100f
@@ -133,15 +148,20 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
 
   private def ourPlayerColor(player:TacticClientPlayer, is_selected:Boolean):ScageColor = {
     if(on_pause) DARK_GRAY
-    else if(player.isDead) GRAY
+    else if(player.isDead) WHITE
     else if(is_selected) YELLOW
     else GREEN
   }
 
   private def enemyPlayerColor(player:TacticClientPlayer):ScageColor = {
     if(on_pause) DARK_GRAY
-    else if(player.isDead) GRAY
+    else if(player.isDead) WHITE
     else RED
+  }
+
+  private def lastSeenEnemyPlayerColor:ScageColor = {
+    if(on_pause) DARK_GRAY
+    else GRAY
   }
 
   private def inputChanged:Boolean = {
@@ -150,7 +170,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
     map.walls.isEmpty ||
     clear_destinations ||
     send_fire_toggle.nonEmpty ||
-    builder.nonEmpty
+    fields.nonEmpty
   }
 
   private def selectPlayer(number:Int) {
@@ -210,7 +230,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   leftMouseIgnorePause(
     onBtnDown = m => {
       if(!on_pause) {
-        val sm = scaledCoord(m)
+        val sm = absCoord(m)
         if(isCoordInsideMapBorders(sm)) {
           new_destination = Some(sm)
         }
@@ -254,58 +274,80 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   })
 
   mouseMotion(onMotion = m => {
-    if(!pov_fixed) new_pov = Some(scaledCoord(m))
+    if(!pov_fixed) new_pov = Some(absCoord(m))
   })
 
+  implicit val VecJson_reader = {
+    case class VecJson(x:Float, y:Float)
+    import play.api.libs.functional.syntax._
+    (
+      (__ \ "x").read[Float] and
+      (__ \ "y").read[Float]
+    )(VecJson.apply _).map(z => Vec(z.x, z.y))
+  }
+  implicit val ControlPointData_reader = Json.reads[ControlPointData]
+  implicit val GameInfoData_reader = Json.reads[GameInfoData]
+  implicit val Wall_reader = Json.reads[Wall]
+  implicit val GameMapData_reader = Json.reads[GameMapData]
+  implicit val TacticServerPlayerData_reader = Json.reads[TacticServerPlayerData]
+  implicit val TacticServerBulletData_reader = Json.reads[TacticServerBulletData]
+  implicit val PlayerStatsData_reader = Json.reads[PlayerStatsData]
+  implicit val TeamStatsData_reader = Json.reads[TeamStatsData]
+  implicit val GameStatsData_reader = Json.reads[GameStatsData]
+  implicit val TacticShooterServerData_reader = Json.reads[TacticShooterServerData]
+
   // receive data
-  actionIgnorePause(10) {
+  actionStaticPeriodIgnorePause(10) {
     client.newEvent {
-      case NewUdpServerData(message) =>
-        //println(message.toJsonString)
-        //println(game_stats)
-        if(message.contains("gameentered")) is_game_entered = true
-        if(message.contains("fire_toggle_set")) send_fire_toggle = None
-        if(message.contains("dests_cleared")) clear_destinations = false
-        message.value[NetState]("map").foreach(m => {
-          //println(m)
-          map = gameMap(m)
-          val walls_dl = displayList {
-            map.walls.foreach(wall => {
-              drawLine(wall.from, wall.to)
-              /*drawCircle(wall.from, near_wall_area, GRAY)
-              drawCircle(wall.to, near_wall_area, GRAY)*/
+      case NewUdpServerData(received_data) =>
+        received_data.validate[TacticShooterServerData] match {
+          case JsSuccess(data, _) =>
+            if(data.gameentered.exists(x => x)) is_game_entered = true
+            if(data.fire_toggle_set.exists(x => x)) send_fire_toggle = None
+            if(data.dests_cleared.exists(x => x)) clear_destinations = false
+            data.map.foreach(m => {
+              //println(m)
+              map = gameMap(m)
+              val walls_dl = displayList {
+                map.walls.foreach(wall => {
+                  drawLine(wall.from, wall.to)
+                  /*drawCircle(wall.from, near_wall_area, GRAY)
+                  drawCircle(wall.to, near_wall_area, GRAY)*/
+                })
+              }
+              val safe_zones_dl = displayList {
+                map.safe_zones.foreach(sz => {
+                  drawSlidingLines(sz)
+                })
+              }
+              val edges_dl = displayList {
+                drawSlidingLines(map_edges)
+              }
+              map_display_lists = Some(List((walls_dl, () => checkPausedColor(WHITE)),
+                (safe_zones_dl, () => checkPausedColor(GREEN)),
+                (edges_dl, () => checkPausedColor(GRAY))))
             })
-          }
-          val safe_zones_dl = displayList {
-            map.safe_zones.foreach(sz => {
-              drawSlidingLines(sz)
+            data.gs.foreach(m => {
+              game_stats = Some(gameStats(m))
+              if(!is_game_started && game_stats.map(_.game_start_moment_sec).getOrElse(None).nonEmpty) is_game_started = true
+              //println(game_stats.get)
+              buildGameStatsPauseInterface()
+              fields += ("gs_update_received" -> JsBoolean(value = true))
             })
-          }
-          val edges_dl = displayList {
-            drawSlidingLines(map_edges)
-          }
-          map_display_lists = Some(List((walls_dl, () => checkPausedColor(WHITE)),
-                                        (safe_zones_dl, () => checkPausedColor(GREEN)),
-                                        (edges_dl, () => checkPausedColor(GRAY))))
-        })
-        message.value[NetState]("gs").foreach(m => {
-          game_stats = Some(gameStats(m))
-          if(!is_game_started && game_stats.map(_.game_start_moment_sec).getOrElse(None).nonEmpty) is_game_started = true
-          //println(game_stats.get)
-          buildGameStatsPauseInterface()
-          builder += ("gs_update_received" -> true)
-        })
-        if(message.contains("cps_infos")) {
-          controlPointInfos(message).foreach {
-            case ControlPointInfo(number, team, control_time) => map.control_points.get(number).foreach(x => {
-              x.team = team
-              x.control_start_time_sec = control_time
-            })
-          }
-          builder += ("cps_infos_received" -> true)
+            if(data.cps_infos.nonEmpty) {
+              controlPointInfos(data.cps_infos.get).foreach {
+                case ControlPointInfo(number, team, control_time) => map.control_points.get(number).foreach(x => {
+                  x.team = team
+                  x.control_start_time_sec = control_time
+                })
+              }
+              fields += ("cps_infos_received" -> JsBoolean(value = true))
+            }
+            val sd = tacticServerData(data, System.currentTimeMillis())
+            states += sd
+          case JsError(error) =>
+            println(s"[client] failed to parse server data $received_data: $error")
         }
-        val sd = tacticServerData(message, System.currentTimeMillis())
-        states += sd
       case UdpServerConnected =>
         is_connected = true
       case UdpServerDisconnected =>
@@ -314,8 +356,15 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   }
 
   // update state
-  actionIgnorePause(10) {
+  actionStaticPeriodIgnorePause(10) {
     current_state = optInterpolatedState
+    current_state.foreach {
+      case cs =>
+        cs.others.withFilter(player => player.team != cs.yours.head.team).foreach {
+          case enemy =>
+            others_last_seen((enemy.team, enemy.number_of_group_in_team, enemy.number_of_fighter_in_group)) = enemy.coord
+        }
+    }
     if(dir.notZero) {
       val new_center = _center + dir.n*5f
       if(isCoordInsideMapBorders(new_center)) _center = new_center
@@ -325,7 +374,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
 
 
 
-  actionIgnorePause(1000) {
+  actionStaticPeriodIgnorePause(1000) {
     if(!is_game_over) {
       game_stats match {
         case Some(GameStats(_, Some(game_start_moment_sec), _)) =>
@@ -346,33 +395,33 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
   }
 
   // send data
-  actionIgnorePause(50) {
+  actionStaticPeriodIgnorePause(50) {
     if(!is_game_entered) {
       join_game match {
         case Some(jg) =>
-          client.send(NetState("join" -> jg.netState))
+          client.send(Json.obj("join" -> jg.netState))
         case None =>
-          client.send(NetState("create" -> true))
+          client.send(Json.obj("create" -> true))
       }
     } else {
-      if(!is_game_started && want_start_game) builder += ("startgame" -> true)
+      if(!is_game_started && want_start_game) fields += ("startgame" -> JsBoolean(value = true))
       if(inputChanged) {
-        builder += ("pn" -> selected_player)
+        fields += ("pn" -> JsNumber(selected_player))
         new_destination.foreach(nd => {
-          builder += ("d" -> NetState("x" -> nd.x, "y" -> nd.y))
+          fields += ("d" -> Json.obj("x" -> nd.x, "y" -> nd.y))
           new_destination = None
         })
         new_pov.foreach(nd => {
-          builder += ("pov" -> NetState("x" -> nd.x, "y" -> nd.y))
+          fields += ("pov" -> Json.obj("x" -> nd.x, "y" -> nd.y))
           new_pov = None
         })
-        if(map.isEmpty) builder += ("sendmap" -> true)
+        if(map.isEmpty) fields += ("sendmap" -> JsBoolean(value = true))
         if(clear_destinations) {
-          builder += ("cleardest" -> true)
+          fields += ("cleardest" -> JsBoolean(value = true))
         }
-        send_fire_toggle.foreach(ft => builder += ("ft" -> ft))
-        client.send(builder.toState)
-        builder.clear()
+        send_fire_toggle.foreach(ft => fields += ("ft" -> JsNumber(ft)))
+        client.send(JsObject(fields.toList))
+        fields.clear()
       }
     }
   }
@@ -407,10 +456,10 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
           }
 
           yours.foreach(you => {
-            if(you.number == selected_player) {
+            if(you.number_of_fighter_in_group == selected_player) {
               val color = ourPlayerColor(you, is_selected = true)
               drawCircle(you.coord, human_size/2, color)
-              print(s"${you.team}.${you.number_in_team+1}.${you.number+1} ${if(you.is_reloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
+              print(s"${you.team}.${you.number_of_group_in_team+1}.${you.number_of_fighter_in_group+1} ${if(you.is_reloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
               you.destinations.foreach(d => drawFilledCircle(d, 3, color))
               if(you.destinations.length > 0) {
                 (you.coord :: you.destinations).sliding(2).foreach {
@@ -420,7 +469,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
                 }
               }
               if(!on_pause) {
-                render_mouse = scaledCoord(mouseCoord)
+                render_mouse = absCoord(mouseCoord)
               }
               if(!pov_fixed && !on_pause) {
                 val pov = (render_mouse - you.coord).n
@@ -431,10 +480,10 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
                 drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), color)
                 drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), color)
                 if(pov_fixed) drawCircle(pov_point, 7, color)
-                val pov_point1 = you.coord + pov.rotateDeg(pov_angle) * pov_distance
+                /*val pov_point1 = you.coord + pov.rotateDeg(pov_angle) * pov_distance
                 val pov_point2 = you.coord + pov.rotateDeg(-pov_angle) * pov_distance
                 drawLine(you.coord, pov_point1, DARK_GRAY)
-                drawLine(you.coord, pov_point2, DARK_GRAY)
+                drawLine(you.coord, pov_point2, DARK_GRAY)*/
               } else {
                 val pov_point = you.coord + you.pov*100f
                 if(map.hitChanceModification(pov_point, you.coord)) {
@@ -443,13 +492,13 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
                 drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), color)
                 drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), color)
                 if(pov_fixed) drawCircle(pov_point, 7, color)
-                val pov_point1 = you.coord + you.pov.rotateDeg(pov_angle) * pov_distance
+                /*val pov_point1 = you.coord + you.pov.rotateDeg(pov_angle) * pov_distance
                 val pov_point2 = you.coord + you.pov.rotateDeg(-pov_angle) * pov_distance
                 drawLine(you.coord, pov_point1, DARK_GRAY)
-                drawLine(you.coord, pov_point2, DARK_GRAY)
+                drawLine(you.coord, pov_point2, DARK_GRAY)*/
               }
-              drawCircle(you.coord, human_audibility_radius, DARK_GRAY)
-              drawCircle(you.coord, bullet_audibility_radius, DARK_GRAY)
+              //drawCircle(you.coord, human_audibility_radius, DARK_GRAY)
+              //drawCircle(you.coord, bullet_audibility_radius, DARK_GRAY)
               drawLine(you.coord, render_mouse, DARK_GRAY)
               val r = render_mouse.dist(you.coord)
               print(f"${r/human_size}%.2f m", render_mouse, max_font_size/globalScale, DARK_GRAY)
@@ -460,7 +509,7 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
               if(map.hitChanceModification(pov_point, you.coord)) {
                 drawCircle(you.coord, human_size/2+3, color)
               }
-              print(s"${you.team}.${you.number_in_team+1}.${you.number+1}  ${if(you.is_reloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
+              print(s"${you.team}.${you.number_of_group_in_team+1}.${you.number_of_fighter_in_group+1}  ${if(you.is_reloading) "перезарядка" else you.bullets}", you.coord+number_place, max_font_size/globalScale, color)
               you.destinations.foreach(d => drawFilledCircle(d, 3, color))
               if(you.destinations.length > 0) {
                 (you.coord :: you.destinations).sliding(2).foreach {
@@ -473,12 +522,12 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
               drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), color)
               drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), color)
               drawCircle(pov_point, 7, color)
-              val pov_point1 = you.coord + you.pov.rotateDeg(pov_angle) * pov_distance
+              /*val pov_point1 = you.coord + you.pov.rotateDeg(pov_angle) * pov_distance
               val pov_point2 = you.coord + you.pov.rotateDeg(-pov_angle) * pov_distance
               drawLine(you.coord, pov_point1, DARK_GRAY)
-              drawLine(you.coord, pov_point2, DARK_GRAY)
-              drawCircle(you.coord, human_audibility_radius, DARK_GRAY)
-              drawCircle(you.coord, bullet_audibility_radius, DARK_GRAY)
+              drawLine(you.coord, pov_point2, DARK_GRAY)*/
+              //drawCircle(you.coord, human_audibility_radius, DARK_GRAY)
+              //drawCircle(you.coord, bullet_audibility_radius, DARK_GRAY)
             }
           })
 
@@ -491,21 +540,29 @@ class TacticShooterClient(join_game:Option[JoinGame]) extends ScageScreen("Simpl
                 drawCircle(player.coord, human_size/2+3, player_color)
               }
               val info = if(player.team == yours.head.team) {
-                s"${player.team}.${player.number_in_team+1}.${player.number+1} ${if(player.is_reloading) "перезарядка" else player.bullets}"
+                s"${player.team}.${player.number_of_group_in_team+1}.${player.number_of_fighter_in_group+1} ${if(player.is_reloading) "перезарядка" else player.bullets}"
               } else {
-                s"${player.team}.${player.number_in_team+1}.${player.number+1} ${if(player.is_reloading) "перезарядка" else player.bullets} ${
+                s"${player.team}.${player.number_of_group_in_team+1}.${player.number_of_fighter_in_group+1} ${if(player.is_reloading) "перезарядка" else player.bullets} ${
                   (map.chanceToHit(you.coord, you.pov, you.isMoving, player.coord, player.isMoving, player.pov)*100).toInt
                 }%"
               }
               print(info, player.coord+number_place, max_font_size/globalScale, player_color, align = "center")
               drawLine(pov_point + Vec(5, -5), pov_point + Vec(-5, 5), player_color)
               drawLine(pov_point + Vec(-5, -5), pov_point + Vec(5, 5), player_color)
-              val pov_point1 = player.coord + player.pov.rotateDeg(pov_angle) * pov_distance
+              /*val pov_point1 = player.coord + player.pov.rotateDeg(pov_angle) * pov_distance
               val pov_point2 = player.coord + player.pov.rotateDeg(-pov_angle) * pov_distance
               drawLine(player.coord, pov_point1, DARK_GRAY)
-              drawLine(player.coord, pov_point2, DARK_GRAY)
-              drawCircle(player.coord, human_audibility_radius, DARK_GRAY)
-              drawCircle(player.coord, bullet_audibility_radius, DARK_GRAY)
+              drawLine(player.coord, pov_point2, DARK_GRAY)*/
+              //drawCircle(player.coord, human_audibility_radius, DARK_GRAY)
+              //drawCircle(player.coord, bullet_audibility_radius, DARK_GRAY)
+          }
+          val others_set = others.map(o => (o.team, o.number_of_group_in_team, o.number_of_fighter_in_group)).toSet
+
+          others_last_seen.filterNot(kv => others_set.contains(kv._1)).foreach {
+            case ((team, group, number), last_seen_position) =>
+              drawCircle(last_seen_position, human_size/2, lastSeenEnemyPlayerColor)
+              val info = s"$team.${group+1}.${number+1}"
+              print(info, last_seen_position+number_place, max_font_size/globalScale, lastSeenEnemyPlayerColor, align = "center")
           }
 
           your_bullets.foreach(b => {

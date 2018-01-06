@@ -16,20 +16,18 @@
 
  <resources>
    <j2se href="http://java.sun.com/products/autodl/j2se" version="1.5+" max-heap-size="512m" />
-   <property name="scage.properties" value="$scageproperties" />
+   <property name="jnlp.app.properties" value="$scageproperties" />
    <property name="LWJGL_DISABLE_XRANDR" value="true" />
-   <property name="net.port" value="65001" />
-   <property name="net.server" value="fzeulf.netris.ru" />
    $dependencies
  </resources>
  <resources os="Windows">
-    <nativelib href="natives/lwjgl-windows.jar"/>
+    <nativelib href="natives/lwjgl-natives.jar"/>
   </resources>
   <resources os="Linux">
-    <nativelib href="natives/lwjgl-linux.jar"/>
+    <nativelib href="natives/lwjgl-natives.jar"/>
   </resources>
   <resources os="Mac">
-    <nativelib href="natives/lwjgl-macosx.jar"/>  
+    <nativelib href="natives/lwjgl-natives.jar"/>
   </resources>
 
  <application-desc main-class="$mainClass" />

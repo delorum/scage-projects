@@ -7,20 +7,12 @@
     </formats>
     <fileSets>
         <fileSet>
-            <directory>${project.build.directory}/native/${os.type}</directory>
-            <outputDirectory>native</outputDirectory>
+            <directory>${project.build.directory}/natives</directory>
+            <outputDirectory>natives</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>${project.build.directory}/lib</directory>
             <outputDirectory>lib</outputDirectory>
-        </fileSet>
-        <fileSet>
-            <directory>resources</directory>
-            <outputDirectory>resources</outputDirectory>
-        </fileSet>
-        <fileSet>
-            <directory>levels</directory>
-            <outputDirectory>levels</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>run-scripts/${os.type}</directory>
@@ -31,7 +23,7 @@
     </fileSets>
     <files>
         <file>
-            <source>${project.build.directory}/${artifactId}-${version}.jar</source>
+            <source>${project.build.directory}/${project.artifactId}-${project.version}.jar</source>
             <outputDirectory>lib</outputDirectory>
         </file>
     </files>

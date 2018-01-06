@@ -1,0 +1,190 @@
+CrossRoad 550.0:70.0
+CrossRoad 40.0:70.0
+CrossRoad 40.0:580.0
+CrossRoad 550.0:580.0
+CrossRoad 295.0:70.0
+FourLaneRoad 70.0:70.0 265.0:70.0
+FourLaneRoad 325.0:70.0 520.0:70.0
+CrossRoad 295.0:580.0
+FourLaneRoad 70.0:580.0 265.0:580.0
+FourLaneRoad 325.0:580.0 520.0:580.0
+CrossRoad 40.0:325.0
+FourLaneRoad 40.0:100.0 40.0:295.0
+FourLaneRoad 40.0:355.0 40.0:550.0
+CrossRoad 550.0:325.0
+FourLaneRoad 550.0:100.0 550.0:295.0
+FourLaneRoad 550.0:355.0 550.0:550.0
+CrossRoad 295.0:325.0
+FourLaneRoad 295.0:100.0 295.0:295.0
+FourLaneRoad 295.0:355.0 295.0:550.0
+FourLaneRoad 70.0:325.0 265.0:325.0
+FourLaneRoad 325.0:325.0 520.0:325.0
+NetworkPoint 265.0:340.0 -> 220.0:340.0
+NetworkPoint 55.0:355.0 -> 55.0:400.0
+NetworkPoint 430.0:340.0 -> 385.0:340.0
+NetworkPoint 55.0:445.0 -> 55.0:490.0
+NetworkPoint 295.0:70.0 -> 310.0:100.0 325.0:55.0
+NetworkPoint 505.0:55.0 -> 520.0:55.0
+NetworkPoint 85.0:85.0 -> 70.0:85.0
+NetworkPoint 55.0:400.0 -> 55.0:445.0
+NetworkPoint 310.0:445.0 -> 310.0:490.0
+NetworkPoint 340.0:85.0 -> 325.0:85.0
+NetworkPoint 520.0:340.0 -> 475.0:340.0
+NetworkPoint 70.0:595.0 -> 40.0:580.0
+NetworkPoint 280.0:580.0 -> 265.0:595.0
+NetworkPoint 55.0:295.0 -> 70.0:310.0 55.0:355.0 40.0:310.0
+NetworkPoint 310.0:400.0 -> 310.0:445.0
+NetworkPoint 175.0:85.0 -> 130.0:85.0
+NetworkPoint 550.0:70.0 -> 565.0:100.0
+NetworkPoint 310.0:355.0 -> 310.0:400.0
+NetworkPoint 130.0:85.0 -> 85.0:85.0
+NetworkPoint 55.0:190.0 -> 55.0:235.0
+NetworkPoint 325.0:595.0 -> 265.0:595.0 295.0:580.0 310.0:580.0
+NetworkPoint 565.0:400.0 -> 565.0:445.0
+NetworkPoint 310.0:295.0 -> 325.0:310.0 295.0:310.0 310.0:355.0 295.0:325.0
+NetworkPoint 25.0:550.0 -> 25.0:505.0
+NetworkPoint 55.0:280.0 -> 55.0:295.0
+NetworkPoint 430.0:85.0 -> 385.0:85.0
+NetworkPoint 25.0:505.0 -> 25.0:460.0
+NetworkPoint 565.0:445.0 -> 565.0:490.0
+NetworkPoint 265.0:310.0 -> 280.0:295.0 280.0:325.0 295.0:325.0
+NetworkPoint 55.0:235.0 -> 55.0:280.0
+NetworkPoint 565.0:355.0 -> 565.0:400.0
+NetworkPoint 55.0:325.0 -> 70.0:310.0
+NetworkPoint 25.0:460.0 -> 25.0:415.0
+NetworkPoint 520.0:310.0 -> 550.0:325.0 535.0:295.0 535.0:325.0
+NetworkPoint 280.0:550.0 -> 280.0:505.0
+NetworkPoint 220.0:85.0 -> 175.0:85.0
+NetworkPoint 565.0:295.0 -> 565.0:355.0 550.0:325.0 550.0:310.0
+NetworkPoint 310.0:325.0 -> 325.0:310.0
+NetworkPoint 280.0:505.0 -> 280.0:460.0
+NetworkPoint 310.0:235.0 -> 310.0:280.0
+NetworkPoint 280.0:460.0 -> 280.0:415.0
+NetworkPoint 70.0:565.0 -> 115.0:565.0
+NetworkPoint 310.0:190.0 -> 310.0:235.0
+NetworkPoint 385.0:85.0 -> 340.0:85.0
+NetworkPoint 310.0:280.0 -> 310.0:295.0
+NetworkPoint 535.0:550.0 -> 535.0:505.0
+NetworkPoint 535.0:505.0 -> 535.0:460.0
+NetworkPoint 565.0:235.0 -> 565.0:280.0
+NetworkPoint 535.0:460.0 -> 535.0:415.0
+NetworkPoint 265.0:55.0 -> 295.0:70.0 325.0:55.0 280.0:70.0
+NetworkPoint 325.0:565.0 -> 370.0:565.0
+NetworkPoint 565.0:280.0 -> 565.0:295.0
+NetworkPoint 565.0:190.0 -> 565.0:235.0
+NetworkPoint 475.0:85.0 -> 430.0:85.0
+NetworkPoint 160.0:565.0 -> 205.0:565.0
+NetworkPoint 115.0:565.0 -> 160.0:565.0
+NetworkPoint 55.0:100.0 -> 55.0:145.0
+NetworkPoint 25.0:415.0 -> 25.0:370.0
+NetworkPoint 520.0:55.0 -> 550.0:70.0
+NetworkPoint 310.0:70.0 -> 325.0:55.0
+NetworkPoint 415.0:565.0 -> 460.0:565.0
+NetworkPoint 55.0:145.0 -> 55.0:190.0
+NetworkPoint 265.0:85.0 -> 220.0:85.0
+NetworkPoint 25.0:370.0 -> 25.0:355.0
+NetworkPoint 25.0:355.0 -> 25.0:295.0 40.0:325.0 40.0:340.0
+NetworkPoint 205.0:565.0 -> 250.0:565.0
+NetworkPoint 70.0:340.0 -> 55.0:355.0 40.0:325.0 55.0:325.0
+NetworkPoint 280.0:415.0 -> 280.0:370.0
+NetworkPoint 280.0:370.0 -> 280.0:355.0
+NetworkPoint 520.0:85.0 -> 475.0:85.0
+NetworkPoint 310.0:100.0 -> 310.0:145.0
+NetworkPoint 280.0:325.0 -> 265.0:340.0
+NetworkPoint 370.0:565.0 -> 415.0:565.0
+NetworkPoint 310.0:145.0 -> 310.0:190.0
+NetworkPoint 460.0:565.0 -> 505.0:565.0
+NetworkPoint 535.0:415.0 -> 535.0:370.0
+NetworkPoint 325.0:340.0 -> 310.0:355.0 310.0:325.0 295.0:325.0
+NetworkPoint 295.0:565.0 -> 280.0:550.0
+NetworkPoint 115.0:310.0 -> 160.0:310.0
+NetworkPoint 25.0:250.0 -> 25.0:205.0
+NetworkPoint 535.0:370.0 -> 535.0:355.0
+NetworkPoint 565.0:100.0 -> 565.0:145.0
+NetworkPoint 535.0:325.0 -> 520.0:340.0
+NetworkPoint 25.0:295.0 -> 25.0:250.0
+NetworkPoint 25.0:205.0 -> 25.0:160.0
+NetworkPoint 565.0:145.0 -> 565.0:190.0
+NetworkPoint 25.0:160.0 -> 25.0:115.0
+NetworkPoint 280.0:355.0 -> 265.0:340.0 295.0:340.0 280.0:295.0 295.0:325.0
+NetworkPoint 70.0:310.0 -> 115.0:310.0
+NetworkPoint 370.0:310.0 -> 415.0:310.0
+NetworkPoint 280.0:250.0 -> 280.0:205.0
+NetworkPoint 40.0:580.0 -> 25.0:550.0
+NetworkPoint 280.0:205.0 -> 280.0:160.0
+NetworkPoint 280.0:295.0 -> 280.0:250.0
+NetworkPoint 130.0:595.0 -> 85.0:595.0
+NetworkPoint 25.0:100.0 -> 40.0:70.0
+NetworkPoint 535.0:355.0 -> 520.0:340.0 535.0:295.0 550.0:340.0
+NetworkPoint 280.0:160.0 -> 280.0:115.0
+NetworkPoint 250.0:565.0 -> 265.0:565.0
+NetworkPoint 160.0:310.0 -> 205.0:310.0
+NetworkPoint 535.0:295.0 -> 535.0:250.0
+NetworkPoint 535.0:205.0 -> 535.0:160.0
+NetworkPoint 385.0:595.0 -> 340.0:595.0
+NetworkPoint 535.0:160.0 -> 535.0:115.0
+NetworkPoint 505.0:565.0 -> 520.0:565.0
+NetworkPoint 325.0:310.0 -> 370.0:310.0
+NetworkPoint 85.0:595.0 -> 70.0:595.0
+NetworkPoint 295.0:580.0 -> 265.0:595.0 280.0:550.0
+NetworkPoint 280.0:100.0 -> 265.0:85.0 295.0:70.0 295.0:85.0
+NetworkPoint 535.0:250.0 -> 535.0:205.0
+NetworkPoint 250.0:310.0 -> 265.0:310.0
+NetworkPoint 25.0:115.0 -> 25.0:100.0
+NetworkPoint 550.0:580.0 -> 520.0:595.0
+NetworkPoint 340.0:595.0 -> 325.0:595.0
+NetworkPoint 535.0:100.0 -> 520.0:85.0
+NetworkPoint 40.0:325.0 -> 70.0:310.0 25.0:295.0
+NetworkPoint 415.0:310.0 -> 460.0:310.0
+NetworkPoint 70.0:55.0 -> 115.0:55.0
+NetworkPoint 175.0:595.0 -> 130.0:595.0
+NetworkPoint 70.0:85.0 -> 55.0:100.0
+NetworkPoint 40.0:310.0 -> 25.0:295.0
+NetworkPoint 280.0:115.0 -> 280.0:100.0
+NetworkPoint 295.0:325.0 -> 265.0:340.0 310.0:355.0 280.0:295.0 325.0:310.0
+NetworkPoint 85.0:340.0 -> 70.0:340.0
+NetworkPoint 280.0:70.0 -> 265.0:85.0
+NetworkPoint 430.0:595.0 -> 385.0:595.0
+NetworkPoint 325.0:55.0 -> 370.0:55.0
+NetworkPoint 505.0:310.0 -> 520.0:310.0
+NetworkPoint 205.0:310.0 -> 250.0:310.0
+NetworkPoint 265.0:595.0 -> 220.0:595.0
+NetworkPoint 460.0:310.0 -> 505.0:310.0
+NetworkPoint 535.0:115.0 -> 535.0:100.0
+NetworkPoint 40.0:340.0 -> 55.0:355.0
+NetworkPoint 550.0:325.0 -> 520.0:340.0 565.0:355.0
+NetworkPoint 340.0:340.0 -> 325.0:340.0
+NetworkPoint 115.0:55.0 -> 160.0:55.0
+NetworkPoint 220.0:595.0 -> 175.0:595.0
+NetworkPoint 55.0:550.0 -> 70.0:565.0
+NetworkPoint 325.0:85.0 -> 310.0:100.0 265.0:85.0 310.0:70.0
+NetworkPoint 520.0:595.0 -> 475.0:595.0
+NetworkPoint 295.0:310.0 -> 280.0:295.0
+NetworkPoint 55.0:535.0 -> 55.0:550.0
+NetworkPoint 295.0:340.0 -> 310.0:355.0
+NetworkPoint 55.0:490.0 -> 55.0:535.0
+NetworkPoint 475.0:595.0 -> 430.0:595.0
+NetworkPoint 265.0:565.0 -> 280.0:550.0 325.0:565.0 280.0:580.0
+NetworkPoint 130.0:340.0 -> 85.0:340.0
+NetworkPoint 310.0:550.0 -> 295.0:580.0 325.0:565.0 295.0:565.0
+NetworkPoint 550.0:310.0 -> 535.0:295.0
+NetworkPoint 205.0:55.0 -> 250.0:55.0
+NetworkPoint 370.0:55.0 -> 415.0:55.0
+NetworkPoint 385.0:340.0 -> 340.0:340.0
+NetworkPoint 565.0:550.0 -> 550.0:580.0
+NetworkPoint 220.0:340.0 -> 175.0:340.0
+NetworkPoint 310.0:580.0 -> 325.0:565.0
+NetworkPoint 460.0:55.0 -> 505.0:55.0
+NetworkPoint 310.0:535.0 -> 310.0:550.0
+NetworkPoint 550.0:340.0 -> 565.0:355.0
+NetworkPoint 310.0:490.0 -> 310.0:535.0
+NetworkPoint 160.0:55.0 -> 205.0:55.0
+NetworkPoint 520.0:565.0 -> 535.0:550.0
+NetworkPoint 175.0:340.0 -> 130.0:340.0
+NetworkPoint 475.0:340.0 -> 430.0:340.0
+NetworkPoint 40.0:70.0 -> 70.0:55.0
+NetworkPoint 415.0:55.0 -> 460.0:55.0
+NetworkPoint 565.0:535.0 -> 565.0:550.0
+NetworkPoint 565.0:490.0 -> 565.0:535.0
+NetworkPoint 250.0:55.0 -> 265.0:55.0
+NetworkPoint 295.0:85.0 -> 310.0:100.0

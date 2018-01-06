@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.github.dunnololda.scageprojects</groupId>
   <artifactId>simpleshooter</artifactId>
-  <version>1.6</version>
+  <version>1.7</version>
   <inceptionYear>2013</inceptionYear>
 
   <name>Simple Shooter</name>
@@ -12,9 +12,9 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <scala.version>2.10.1</scala.version>
-    <lwjgl.version>2.8.2</lwjgl.version>
-    <scage.version>0.9.3-SNAPSHOT</scage.version>
+    <scala.version>2.10.4</scala.version>
+    <lwjgl.version>2.9.3</lwjgl.version>
+    <scage.version>11.4</scage.version>
     <src.dir>src</src.dir>
   </properties>
 
@@ -28,18 +28,6 @@
       <id>scala-tools.org</id>
       <name>Scala-Tools Maven2 Repository</name>
       <url>https://oss.sonatype.org/content/groups/scala-tools</url>
-    </repository>
-
-    <repository>
-      <id>slick.cokeandcode.com</id>
-      <name>Slick Maven Repository</name>
-      <url>http://slick.cokeandcode.com/mavenrepo</url>
-    </repository>
-
-    <repository>
-      <id>lwjgl</id>
-      <name>lwjgl</name>
-      <url>http://adterrasperaspera.com/lwjgl</url>
     </repository>
   </repositories>
 
@@ -60,8 +48,8 @@
   <dependencies>
     <dependency>
       <groupId>com.github.dunnololda</groupId>
-      <artifactId>simple-net</artifactId>
-      <version>1.3</version>
+      <artifactId>simple-net_2.10</artifactId>
+      <version>2.1</version>
     </dependency>
 
     <dependency>
@@ -77,8 +65,8 @@
     </dependency>
 
     <dependency>
-        <groupId>com.github.dunnololda.scage</groupId>
-        <artifactId>scage</artifactId>
+        <groupId>com.github.dunnololda</groupId>
+        <artifactId>scage_2.10</artifactId>
         <version>${scage.version}</version>
         <scope>compile</scope>
     </dependency>
@@ -147,9 +135,14 @@
         </executions>
         <configuration>
           <scalaVersion>${scala.version}</scalaVersion>
-          <args>
-            <arg>-optimise</arg>
-          </args>
+            <args>
+                <!--<arg>-optimise</arg>-->
+                <arg>-unchecked</arg>
+                <arg>-deprecation</arg>
+                <arg>-feature</arg>
+                <arg>-Yinline-warnings</arg>
+                <!--<arg>-target:jvm-1.7</arg>-->
+            </args>
         </configuration>
       </plugin>
 
@@ -171,41 +164,55 @@
         </configuration>
       </plugin>
 
-      <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                  <execution>
-                    <id>unpack</id>
-                    <phase>generate-resources</phase>
-                    <goals>
-                      <goal>unpack</goal>
-                    </goals>
-                    <configuration>
-                      <artifactItems>
-                        <artifactItem>
-                          <groupId>org.lwjgl</groupId>
-                          <artifactId>lwjgl-native</artifactId>
-                          <version>${lwjgl.version}</version>
-                          <type>jar</type>
-                          <outputDirectory>${project.build.directory}/native</outputDirectory>
-                          <overWrite>true</overWrite>
-                        </artifactItem>
-                      </artifactItems>
-                    </configuration>
-                  </execution>
-                  <execution>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+                <!--<execution>
+                  <id>unpack</id>
+                  <phase>generate-resources</phase>
+                  <goals>
+                    <goal>unpack</goal>
+                  </goals>
+                  <configuration>
+                    <artifactItems>
+                      <artifactItem>
+                        <groupId>org.lwjgl</groupId>
+                        <artifactId>lwjgl-native</artifactId>
+                        <version>${lwjgl.version}</version>
+                        <type>jar</type>
+                        <outputDirectory>${project.build.directory}/native</outputDirectory>
+                        <overWrite>true</overWrite>
+                      </artifactItem>
+                    </artifactItems>
+                  </configuration>
+                </execution>-->
+                <execution>
                     <id>copy-dependencies</id>
                     <phase>package</phase>
                     <goals>
-                      <goal>copy-dependencies</goal>
+                        <goal>copy-dependencies</goal>
                     </goals>
                     <configuration>
-                      <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                        <outputDirectory>${project.build.directory}/lib</outputDirectory>
                     </configuration>
-                  </execution>
-                </executions>
-      </plugin>
+                </execution>
+            </executions>
+        </plugin>
+        <plugin>
+            <groupId>com.googlecode.mavennatives</groupId>
+            <artifactId>maven-nativedependencies-plugin</artifactId>
+            <version>0.0.5</version>
+            <executions>
+                <execution>
+                    <id>unpacknatives</id>
+                    <phase>generate-resources</phase>
+                    <goals>
+                        <goal>copy</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
     </plugins>
   </build>
 

@@ -1,13 +1,16 @@
 package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.scage.ScageLib._
-import com.github.dunnololda.simplenet.{State => NetState, _}
-import collection.mutable
-import collection.mutable.ArrayBuffer
-import scala.Some
+import com.github.dunnololda.simplenet._
+import play.api.libs.json._
+
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+
+case class ShooterClientData(up:Option[Boolean], down:Option[Boolean], left:Option[Boolean], right:Option[Boolean], shoots:Option[List[Vec]], sendmap:Option[Boolean])
 
 object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", default_window_width, default_window_height) {
-  private val client = UdpNetClient(address = "fzeulf.netris.ru", port = 10000, ping_timeout= 1000, check_timeout = 5000)
+  private val client = UdpNetClient(address = "fzeulf.netris.ru", port = 10000, ping_timeout= 1000, check_if_offline_timeout = 5000)
 
   private val moves = mutable.HashMap[String, Boolean]("up" -> false, "left" -> false, "down" -> false, "right" -> false)
   private val shoots = ArrayBuffer[Vec]()
@@ -20,18 +23,17 @@ object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", defa
   leftMouse(100, onBtnDown = m => shoots += m)
 
   // send data
-  action(100) {
-
+  actionStaticPeriod(100) {
     if(moves.exists(_._2) || shoots.nonEmpty || map.walls.isEmpty) {
-      val builder = ArrayBuffer[(String, Any)]()
-      builder ++= moves.filter(_._2)
+      val fields = ArrayBuffer[(String, JsValue)]()
+      fields ++= moves.filter(_._2).map(x => x._1 -> JsBoolean(x._2))
       if(shoots.nonEmpty) {
-        builder += ("shoots" -> shoots.map(v => NetState("x" -> v.x, "y" -> v.y)).toList)
+        fields += ("shoots" -> JsArray(shoots.map(v => Json.obj("x" -> v.x, "y" -> v.y))))
       }
       if(map.isEmpty) {
-        builder += ("sendmap" -> true)
+        fields += ("sendmap" -> JsBoolean(value = true))
       }
-      val state = NetState(builder:_*)
+      val state = JsObject(fields)
       client.send(state)
       shoots.clear()
     }
@@ -46,17 +48,30 @@ object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", defa
 
   private var is_connected = false
 
+  implicit val VecJson_reader = {
+    case class VecJson(x:Float, y:Float)
+    import play.api.libs.functional.syntax._
+    (
+      (__ \ "x").read[Float] and
+      (__ \ "y").read[Float]
+    )(VecJson.apply _).map(z => Vec(z.x, z.y))
+  }
+  implicit val ControlPoint_reader = Json.reads[ControlPoint]
+  implicit val Wall_reader = Json.reads[Wall]
+  implicit val MapData_reader = Json.reads[MapData]
+  implicit val Client_reader = Json.reads[Client]
+  implicit val ShooterServerData_reader = Json.reads[ShooterServerData]
+
   // receive data
-  action(10) {
+  actionStaticPeriod(10) {
     client.newEvent {
-      case NewUdpServerData(message) =>
-        //println(message.toJsonString)
-        if(message.contains("walls")) {
-          map = gameMap(message.value[NetState]("map").get)
-        } else {
-          val sd = serverData(message)
-          //println(sd)
-          states += sd
+      case NewUdpServerData(received_data) =>
+        received_data.validate[ShooterServerData] match {
+          case JsSuccess(data, _) =>
+            data.map.foreach(m => map = gameMap(m))
+            serverData(data).foreach(sd => states += sd)            
+          case JsError(error) =>
+            println(s"[client] failed to parse server data: $received_data, error: $error")
         }
       case UdpServerConnected => is_connected = true
       case UdpServerDisconnected => is_connected = false
@@ -64,7 +79,7 @@ object ShooterClient extends ScageScreenApp(s"Simple Shooter v$appVersion", defa
   }
 
   // update state
-  /*action(10) {
+  /*actionStaticPeriod(10) {
 
   }*/
 

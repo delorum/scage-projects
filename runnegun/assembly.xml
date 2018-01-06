@@ -7,16 +7,12 @@
     </formats>
     <fileSets>
         <fileSet>
-            <directory>${runnegun.build.directory}/native/${os.type}</directory>
-            <outputDirectory>native</outputDirectory>
+            <directory>${project.build.directory}/natives</directory>
+            <outputDirectory>natives</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>${runnegun.build.directory}/lib</directory>
+            <directory>${project.build.directory}/lib</directory>
             <outputDirectory>lib</outputDirectory>
-        </fileSet>
-        <fileSet>
-            <directory>resources</directory>
-            <outputDirectory>resources</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>run-scripts/${os.type}</directory>
@@ -27,17 +23,8 @@
     </fileSets>
     <files>
         <file>
-            <source>${runnegun.build.directory}/${artifactId}-${version}.jar</source>
+            <source>${project.build.directory}/${project.artifactId}-${project.version}.jar</source>
             <outputDirectory>lib</outputDirectory>
-        </file>
-        <file>
-            <source>${property.file}</source>
-            <outputDirectory>/</outputDirectory>
-        </file>
-        <file>
-            <source>log4j.properties</source>
-            <outputDirectory>lib</outputDirectory>
-            <filtered>true</filtered>
         </file>
     </files>
 </assembly>

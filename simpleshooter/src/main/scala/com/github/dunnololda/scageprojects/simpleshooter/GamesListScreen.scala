@@ -1,11 +1,12 @@
 package com.github.dunnololda.scageprojects.simpleshooter
 
 import com.github.dunnololda.scage.ScageLib._
-import com.github.dunnololda.simplenet.{State => NetState, _}
+import com.github.dunnololda.simplenet._
+import play.api.libs.json._
 import scala.collection.mutable.ArrayBuffer
 
 class GamesListScreen extends ScageScreen("Games List Screen") {
-  private val client = UdpNetClient(address = host, port = port, ping_timeout= 1000, check_timeout = 5000)
+  private val client = UdpNetClient(address = host, port = port, ping_timeout= 1000, check_if_offline_timeout = 5000)
 
   private var is_list_received = false
   private var selected_game:Option[Int] = None
@@ -129,15 +130,39 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
     }
   })
 
+  implicit val VecJson_reader = {
+    case class VecJson(x:Float, y:Float)
+    import play.api.libs.functional.syntax._
+    (
+      (__ \ "x").read[Float] and
+      (__ \ "y").read[Float]
+    )(VecJson.apply _).map(z => Vec(z.x, z.y))
+  }
+  implicit val ControlPointData_reader = Json.reads[ControlPointData]
+  implicit val GameInfoData_reader = Json.reads[GameInfoData]
+  implicit val Wall_reader = Json.reads[Wall]
+  implicit val GameMapData_reader = Json.reads[GameMapData]
+  implicit val TacticServerPlayerData_reader = Json.reads[TacticServerPlayerData]
+  implicit val TacticServerBulletData_reader = Json.reads[TacticServerBulletData]
+  implicit val PlayerStatsData_reader = Json.reads[PlayerStatsData]
+  implicit val TeamStatsData_reader = Json.reads[TeamStatsData]
+  implicit val GameStatsData_reader = Json.reads[GameStatsData]
+  implicit val TacticShooterServerData_reader = Json.reads[TacticShooterServerData]
+
   // receive data
-  action(10) {
+  actionStaticPeriod(10) {
     client.newEvent {
-      case NewUdpServerData(message) =>
-        if(message.contains("gameslist")) {
-          games_list.clear()
-          games_list ++= gamesList(message)
-          buildGameListInterface()
-          is_list_received = true
+      case NewUdpServerData(received_data) =>
+        received_data.validate[TacticShooterServerData] match {
+          case JsSuccess(data, _ ) =>
+            if(data.gameslist.nonEmpty) {
+              games_list.clear()
+              games_list ++= gamesList(data)
+              buildGameListInterface()
+              is_list_received = true
+            }
+          case JsError(error) =>
+            println(s"[client] failed to parse server data $received_data: $error")
         }
       case UdpServerConnected => is_connected = true
       case UdpServerDisconnected => is_connected = false
@@ -145,9 +170,9 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
   }
 
   // send data
-  action(1000) {
+  actionStaticPeriod(1000) {
     if(!is_list_received) {
-      client.send(NetState("gameslist" -> true))
+      client.send(Json.obj("gameslist" -> true))
     }
   }
 
@@ -181,5 +206,6 @@ class GamesListScreen extends ScageScreen("Games List Screen") {
 
   dispose {
     client.stop()
+    Unit
   }
 }

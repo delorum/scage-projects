@@ -1,71 +1,132 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
-import OrbitalKiller._
-import com.github.dunnololda.scage.ScageLib._
+import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scage.support.ScageId
+import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 
-case class Engine(position:Vec, force_dir:Vec, max_power:Float, power_step:Float, ship:Ship) {
+class Engine(val name: Int,
+             val position: DVec, // позиция относительно центра массы корабля (ц.м. в точке (0,0))
+             val force_dir: DVec, // вектор направления приложения силы
+             val max_power: Double, // в ньютонах
+             val default_power_percent: Int, // при выборе данного двигателя какая мощность выставляется по умолчанию
+             val fuel_consumption_per_sec_at_full_power: Double, // Расход топлива в килограммах в секунду на полной мощности
+             val ship: PolygonShip) {
+  val index: Int = ScageId.nextId
   private var worktime_tacts = 0l
   private var stop_moment_tacts = 0l
 
-  def worktimeTacts = worktime_tacts
-  def worktimeTacts_=(new_worktime_tacts:Long) {
-    worktime_tacts = new_worktime_tacts
-    stop_moment_tacts = tacts + worktime_tacts*timeMultiplier
+  def workTimeMsec = (worktime_tacts * base_dt * 1000).toLong
+
+  def workTimeStr = timeStrMsec((worktime_tacts * base_dt * 1000).toLong)
+
+  def workTimeTacts = worktime_tacts
+
+  def workTimeTacts_=(new_worktime_tacts: Long) {
+    if (new_worktime_tacts >= 0) {
+      val prev = worktime_tacts
+      worktime_tacts = new_worktime_tacts
+      stop_moment_tacts = tacts + worktime_tacts
+      if (ship.fuelMassWhenEnginesOff < 0 && new_worktime_tacts > prev) {
+        val possible_fuel_for_this_engine = ship.fuelMassWhenEnginesOffWithoutEngine(this)
+        if (worktime_tacts > prev && possible_fuel_for_this_engine > 0) {
+          worktime_tacts = (possible_fuel_for_this_engine / fuelConsumptionPerTact).toLong
+          stop_moment_tacts = tacts + worktime_tacts
+        } else {
+          worktime_tacts = prev
+          stop_moment_tacts = tacts + worktime_tacts
+        }
+      }
+    }
+  }
+
+  def maxFuelConsumptionPerTact: Double = {
+    fuel_consumption_per_sec_at_full_power * base_dt
+  }
+
+  def fuelConsumptionPerTact: Double = {
+    fuel_consumption_per_sec_at_full_power * (_power / max_power) * base_dt
+  }
+
+  def fuelConsumptionPerSec: Double = {
+    fuel_consumption_per_sec_at_full_power * (_power / max_power)
   }
 
   def stopMomentTacts = stop_moment_tacts
 
-  private var _power:Float = 1f
+  private var _power: Double = 0.0
+
   def power = _power
-  def power_=(new_power:Float) {
-    if(new_power >= 0 && new_power < max_power) {
+
+  def power_=(new_power: Double) {
+    if (new_power >= 0 && new_power <= max_power && new_power != _power) {
+      val prev = _power
       _power = new_power
+      if (ship.fuelMassWhenEnginesOff < 0) {
+        _power = prev
+      }
     }
   }
 
-  def force = force_dir*power
-  def torque = -force*/position
+  def powerPercent: Long = math.round(_power / max_power * 100)
 
-  private var is_active:Boolean = false
-  def active = is_active
-  def active_=(bool:Boolean) {
-    if(is_active != bool) {
-      is_active = bool
-      if(is_active) {
-        //_power = 1f
-        if(worktime_tacts == 0) {
-          worktimeTacts = 10
-        } else worktimeTacts = worktimeTacts
-        ship.selected_engine = Some(this)
+  def powerPercent_=(new_power_percent: Long) {
+    if (new_power_percent >= 0 && new_power_percent <= 100) {
+      val new_power = {
+        if (InterfaceHolder.gSwitcher.maxGSet) {
+          math.min(
+            max_power * new_power_percent / 100.0,
+            ship.thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
+              earth.airResistance(ship.currentState, earth.currentState, /*ShipsHolder.currentShipStatesExceptShip(ship.index), */28, 0.5).norma
+            }
+          )
+        } else {
+          max_power * new_power_percent / 100.0
+        }
+      }
+      val prev = _power
+      _power = new_power
+      if (ship.fuelMassWhenEnginesOff < 0) {
+        _power = prev
       } else {
-        ship.selected_engine = ship.engines.filter(_.active).lastOption
-      }
-      updateFutureTrajectory()
-    }
-  }
-  def switchActive() {
-    if(!is_active) {
-      is_active = true
-      //_power = 1f
-      if(worktime_tacts == 0) {
-        worktimeTacts = 10
-      } else worktimeTacts = worktimeTacts
-      ship.selected_engine = Some(this)
-      updateFutureTrajectory()
-    } else {
-      if (!ship.isSelectedEngine(this)) ship.selected_engine = Some(this)
-      else {
-        is_active = false
-        ship.selected_engine = ship.engines.filter(_.active).lastOption
-        updateFutureTrajectory()
+        if((ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) && InterfaceHolder.gSwitcher.maxGSet) {
+          ship.syncOtherEnginesPower(index)
+        }
       }
     }
   }
 
-  action {
-    if(is_active) {
-      if(worktime_tacts > 0) worktime_tacts -= 1
-      else active = false
+  def force = force_dir * power
+
+  def torque = -force */ position
+
+  private var is_active: Boolean = false
+
+  def active = is_active
+
+  def active_=(bool: Boolean) {
+    if (is_active != bool) {
+      if (bool) {
+        if (!ship.engineDisabled(index) && ship.fuelMass > fuelConsumptionPerTact) {
+          is_active = true
+          if (power == 0) {
+            powerPercent = default_power_percent
+          }
+          //timeMultiplier = realtime
+          if (workTimeTacts == 0) workTimeTacts = 10
+          if((ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) && InterfaceHolder.gSwitcher.maxGSet) {
+            ship.syncOtherEnginesPower(index)
+          }
+        } else {
+          is_active = false
+        }
+      } else {
+        is_active = false
+      }
+      needToUpdateOrbits("engine active")
     }
+  }
+
+  def switchActive() {
+    active = !active
   }
 }
