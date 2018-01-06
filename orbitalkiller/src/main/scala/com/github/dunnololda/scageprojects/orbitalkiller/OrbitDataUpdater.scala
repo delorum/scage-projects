@@ -2,11 +2,11 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
-import com.github.dunnololda.scageprojects.orbitalkiller.components.KeplerOrbit
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.planets.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.ShipsHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
+import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.KeplerOrbit
 
 import scala.collection.{Set, mutable}
 
