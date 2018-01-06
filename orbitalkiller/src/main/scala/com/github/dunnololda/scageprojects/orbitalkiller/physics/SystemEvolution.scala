@@ -8,85 +8,6 @@ import com.github.dunnololda.scageprojects.orbitalkiller.ships.ShipsHolder
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class SixDimVector(val a1: Double, val a2: Double, val a3: Double, val a4: Double, val a5: Double, val a6: Double) {
-  private val l = List(a1, a2, a3, a4, a5, a6)
-
-  def this(l: Seq[Double]) = this(l.head, l(1), l(2), l(3), l(4), l(5))
-
-  def *(k: Double): SixDimVector = new SixDimVector(l.map(_ * k))
-
-  def *(p: SixDimVector): Double = l.zip(p.l).map(kv => kv._1 * kv._2).sum
-
-  def **(p: SixDimVector): SixDimVector = new SixDimVector(l.zip(p.l).map(kv => kv._1 * kv._2))
-
-  def +(p: SixDimVector): SixDimVector = new SixDimVector(l.zip(p.l).map(kv => kv._1 + kv._2))
-
-  /*val bVel = DVec(a1, a2)
-  val bAngVelRad = a3
-  val aVel = DVec(a4, a5)
-  val aAngVelRad = a6*/
-}
-
-// http://myselph.de/gamePhysics/equalityConstraints.html
-// http://gamedevelopment.tutsplus.com/tutorials/modelling-and-solving-physical-constraints--gamedev-12578
-// http://www.bulletphysics.com/ftp/pub/test/physics/papers/IterativeDynamics.pdf
-class Joint(val a: MutableBodyState, val vertexA: DVec, val b: MutableBodyState, val vertexB: DVec) {
-  def solveConstraint(_dt: Double) {
-    val MInv = new SixDimVector(b.invMass, b.invMass, b.invI, a.invMass, a.invMass, a.invI)
-    val pA = a.coord + vertexA.rotateDeg(a.ang)
-    val cA = a.coord
-    val pB = b.coord + vertexB.rotateDeg(b.ang)
-    val cB = b.coord
-    val J = {
-      val e1 = pB - pA
-      val e2 = (pA - pB) */ (pB - cB)
-      val e3 = pA - pB
-      val e4 = (pB - pA) */ (pA - cA)
-      new SixDimVector(e1.x, e1.y, e2, e3.x, e3.y, e4) * 2
-    }
-    val C = (pA - pB) * (pA - pB)
-    val bias = 0.2 / _dt * C
-    /*val prev_a_vel = a.vel
-    val prev_a_ang_vel = a.ang_vel
-    val prev_b_vel = b.vel
-    val prev_b_ang_vel = b.ang_vel*/
-    (1 to 4).foreach(iteration => {
-      val v = new SixDimVector(b.vel.x, b.vel.y, b.ang_vel.toRad, a.vel.x, a.vel.y, a.ang_vel.toRad) // previous state
-      val lambdaDenominator = J * (MInv ** J)
-      if (math.abs(lambdaDenominator) > 1E-15) {
-        val lambda = -(J * v + bias) / lambdaDenominator // the magnitude of the constraint impulse
-        val new_v = v + (MInv ** (J * lambda))
-        a.vel = DVec(new_v.a4, new_v.a5)
-        a.ang_vel = new_v.a6.toDeg
-        b.vel = DVec(new_v.a1, new_v.a2)
-        b.ang_vel = new_v.a3.toDeg
-      }
-    })
-    /*println(f"${(a.vel - prev_a_vel)*(b.coord - a.coord).n}%.5f : ${(b.vel - prev_b_vel)*(b.coord - a.coord).n}%.5f")
-    println(f"${(a.vel - prev_a_vel)*(b.coord - a.coord).p}%.5f : ${(b.vel - prev_b_vel)*(b.coord - a.coord).p}%.5f")
-    println(f"${a.ang_vel - prev_a_ang_vel}%.5f : ${b.ang_vel - prev_b_ang_vel}%.5f")*/
-  }
-
-  val m_distance = b.coord.dist(a.coord)
-
-  def solveConstraint2(_dt: Double): Unit = {
-    val axis = b.coord - a.coord
-    val currentDistance = axis.norma
-    val unitAxis = axis/currentDistance
-    val relVel = (b.vel - a.vel)*unitAxis
-    val relDist = currentDistance - m_distance
-    val remove = relVel+relDist/_dt
-    val impulse = remove / (a.invMass + b.invMass)
-    val I = unitAxis*impulse
-    a.vel = a.vel + ( I * a.invMass )
-    b.vel = b.vel - ( I * b.invMass )
-  }
-}
-
-case class MutableSystemPart(body: MutableBodyState,
-                             force: (Long, EvolutionHelper) => DVec,
-                             torque: (Long, EvolutionHelper) => Double)
-
 class SystemEvolution(var base_dt: Double = 1.0 / 63,
                       system_center: DVec = DVec.zero,
                       init_tacts: Long = 0,
@@ -306,32 +227,4 @@ class SystemEvolution(var base_dt: Double = 1.0 / 63,
     })
     x
   }
-}
-
-class EvolutionHelper(mutable_system: mutable.HashMap[Int, MutableSystemPart]) {
-  def gravityForceFromTo(planet_index: Int, ship_index: Int): DVec = {
-    (for {
-      planet <- mutable_system.get(planet_index).map(_.body)
-      ship <- mutable_system.get(ship_index).map(_.body)
-    } yield gravityForce(planet.coord, planet.mass, ship.coord, ship.mass, G)).getOrElse(DVec.zero)
-  }
-
-  def funcOrDVecZero(body_index: Int, func: MutableBodyState => DVec): DVec = {
-    mutable_system.get(body_index).map(bs => func(bs.body)).getOrElse(DVec.zero)
-  }
-
-  def funcOfArrayOrDVecZero(body_indicies: Array[Int], func: Array[MutableBodyState] => DVec): DVec = {
-    val bodies = body_indicies.flatMap(idx => mutable_system.get(idx).map(bs => bs.body))
-    if (bodies.length == body_indicies.length) func(bodies) else DVec.zero
-  }
-
-  def funcOrDoubleZero(body_index: Int, func: MutableBodyState => Double): Double = {
-    mutable_system.get(body_index).map(bs => func(bs.body)).getOrElse(0.0)
-  }
-
-  def bodyStates(indicies: collection.Set[Int]) = mutable_system.filter(kv => kv._2.body.active && indicies.contains(kv._1)).map(kv => kv._2.body).toSeq
-
-  def bodyStatesMap(indicies: Set[Int]) = mutable_system.filter(kv => kv._2.body.active && indicies.contains(kv._1)).map(kv => (kv._1, kv._2.body))
-
-  def bodyState(index: Int) = mutable_system.get(index).filter(_.body.active).map(_.body)
 }
