@@ -146,24 +146,24 @@ trait OrbitKeyControls extends OrbitalComponentsAware {
   def anyEngineKeyPressed = engine_keys.exists(k => keyPressed(k))
 
   keyIgnorePause(KEY_ADD, 100, onKeyDown = {
-    orbitalComponents.timeMultiplier += realtime
+    orbitalComponents.timeMultiplier.timeMultiplier += realtime
   } /*, onKeyUp = updateFutureTrajectory("KEY_ADD")*/)
   keyIgnorePause(KEY_SUBTRACT, 100, onKeyDown = {
-    if (orbitalComponents.timeMultiplier > realtime) {
-      orbitalComponents.timeMultiplier -= realtime
+    if (orbitalComponents.timeMultiplier.timeMultiplier > realtime) {
+      orbitalComponents.timeMultiplier.timeMultiplier -= realtime
     }
   } /*, onKeyUp = updateFutureTrajectory("KEY_SUBTRACT")*/)
 
   keyIgnorePause(KEY_MULTIPLY, 100, onKeyDown = {
-    if (orbitalComponents.timeMultiplier == realtime) {
-      orbitalComponents.timeMultiplier = realtime * 50
+    if (orbitalComponents.timeMultiplier.timeMultiplier == realtime) {
+      orbitalComponents.timeMultiplier.timeMultiplier = realtime * 50
     } else {
-      orbitalComponents.timeMultiplier += realtime * 50
+      orbitalComponents.timeMultiplier.timeMultiplier += realtime * 50
     }
   } /*, onKeyUp = updateFutureTrajectory("KEY_MULTIPLY")*/)
   keyIgnorePause(KEY_DIVIDE, 100, onKeyDown = {
-    if (orbitalComponents.timeMultiplier != realtime) {
-      orbitalComponents.timeMultiplier = realtime
+    if (orbitalComponents.timeMultiplier.timeMultiplier != realtime) {
+      orbitalComponents.timeMultiplier.timeMultiplier = realtime
     }
   } /*, onKeyUp = updateFutureTrajectory("KEY_DIVIDE")*/)
 

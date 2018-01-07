@@ -5,8 +5,7 @@ import BasicComponents._
 /**
   * Created by andrey on 1/7/18.
   */
-trait TimeMultiplier {
-  this: OrbitalComponents =>
+class TimeMultiplier(shipComponents: ShipComponents) {
   private var _time_multiplier = realtime
 
   def timeMultiplier = {

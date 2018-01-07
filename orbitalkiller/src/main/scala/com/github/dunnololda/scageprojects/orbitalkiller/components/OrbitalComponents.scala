@@ -8,7 +8,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.render.OrbitRenderDataU
 /**
   * Created by andrey on 1/6/18.
   */
-class OrbitalComponents extends TimeMultiplier with DrawMapMode with ViewModeComponents {
+class OrbitalComponents extends DrawMapMode with ViewModeComponents {
   val system_evolution: SystemEvolution = new SystemEvolution(base_dt)
 
   val planetComponents = new PlanetComponents(system_evolution)
@@ -24,6 +24,8 @@ class OrbitalComponents extends TimeMultiplier with DrawMapMode with ViewModeCom
   var _set_stop_time: Boolean = false
   var _stop_after_number_of_tacts: Long = 0
   var _stop_in_orbit_true_anomaly: Double = 0
+
+  val timeMultiplier = new TimeMultiplier(shipComponents)
 
   def nameByIndex(index: Int): Option[String] = {
     planetComponents.system_planets.get(index) match {
