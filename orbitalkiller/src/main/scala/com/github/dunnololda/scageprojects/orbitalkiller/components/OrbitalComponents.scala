@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.components
 import com.github.dunnololda.scageprojects.orbitalkiller.RealTrajectory
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.SystemEvolution
 import BasicComponents._
+import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.render.OrbitRenderDataUpdater
 
 /**
@@ -26,6 +27,9 @@ class OrbitalComponents extends DrawMapMode with ViewModeComponents {
   var _set_stop_time: Boolean = false
   var _stop_after_number_of_tacts: Long = 0
   var _stop_in_orbit_true_anomaly: Double = 0
+  var left_up_corner: Option[DVec] = None
+  var right_down_corner: Option[DVec] = None
+  var set_stop_moment = false
 
   val timeMultiplier = new TimeMultiplier(shipComponents)
 
