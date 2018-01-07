@@ -9,7 +9,8 @@ import scala.collection.mutable
 /**
   * Created by andrey on 1/7/18.
   */
-class SystemEvolutionComponents(system_evolution: SystemEvolution, ships: ShipComponents) extends TimeAware {
+class SystemEvolutionComponents(system_evolution: SystemEvolution,
+                                ships: ShipComponents) extends TimeAware {
 
   import ships._
 

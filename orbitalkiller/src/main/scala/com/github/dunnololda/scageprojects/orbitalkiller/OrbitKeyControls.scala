@@ -15,8 +15,6 @@ trait OrbitKeyControls extends OrbitalComponentsAware {
   private var _set_stop_time = orbitalComponents._set_stop_time
   private var _stop_after_number_of_tacts = orbitalComponents._stop_after_number_of_tacts
 
-  def needToUpdateOrbits(reason: String)
-
   keyIgnorePause(KEY_RETURN, onKeyDown = {
     if (player_ship.isAlive) player_ship.launchRocket()
   })
@@ -76,7 +74,7 @@ trait OrbitKeyControls extends OrbitalComponentsAware {
       }
     }
   }, onKeyUp = if (player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selectedEngine.exists(_.active)) {
-    needToUpdateOrbits("KEY_UP")
+    orbitalComponents.orbitsUpdater.needToUpdateOrbits("KEY_UP")
   })
   keyIgnorePause(KEY_DOWN, repeatTime(KEY_DOWN), onKeyDown = {
     if (player_ship.isAlive) {
@@ -87,7 +85,7 @@ trait OrbitKeyControls extends OrbitalComponentsAware {
       }
     }
   }, onKeyUp = if (player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selectedEngine.exists(_.active)) {
-    needToUpdateOrbits("KEY_DOWN")
+    orbitalComponents.orbitsUpdater.needToUpdateOrbits("KEY_DOWN")
   })
   keyIgnorePause(KEY_T, onKeyDown = _set_stop_time = !_set_stop_time)
   keyIgnorePause(KEY_RIGHT, repeatTime(KEY_RIGHT), onKeyDown = {
@@ -106,7 +104,7 @@ trait OrbitKeyControls extends OrbitalComponentsAware {
       }
     }
   }, onKeyUp = if (!_set_stop_time && player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selectedEngine.exists(_.active)) {
-    needToUpdateOrbits("KEY_RIGHT")
+    orbitalComponents.orbitsUpdater.needToUpdateOrbits("KEY_RIGHT")
   })
   keyIgnorePause(KEY_LEFT, repeatTime(KEY_LEFT), onKeyDown = {
     if (_set_stop_time) {
@@ -127,7 +125,7 @@ trait OrbitKeyControls extends OrbitalComponentsAware {
     }
   }, onKeyUp = {
     if (!_set_stop_time && player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selectedEngine.exists(_.active)) {
-      needToUpdateOrbits("KEY_LEFT")
+      orbitalComponents.orbitsUpdater.needToUpdateOrbits("KEY_LEFT")
     }
   })
 
@@ -279,7 +277,7 @@ trait OrbitKeyControls extends OrbitalComponentsAware {
         InterfaceHolder.realTrajectorySwitcher.numPoints = orbitalComponents.realTrajectory.curPoints
       } else {
         InterfaceHolder.realTrajectorySwitcher.numPoints = 24 * 3600
-        needToUpdateOrbits("reset real trajectory num points")
+        orbitalComponents.orbitsUpdater.needToUpdateOrbits("reset real trajectory num points")
       }
     }
   })

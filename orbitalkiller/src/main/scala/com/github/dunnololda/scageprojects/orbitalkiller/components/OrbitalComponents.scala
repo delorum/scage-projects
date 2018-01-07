@@ -19,7 +19,9 @@ class OrbitalComponents extends DrawMapMode with ViewModeComponents {
 
   val systemEvolutionComponents = new SystemEvolutionComponents(system_evolution, shipComponents)
 
-  val orbitDataUpdater = new OrbitRenderDataUpdater(planetComponents, shipComponents, realTrajectory)
+  val orbitRenderDataUpdater = new OrbitRenderDataUpdater(planetComponents, shipComponents, realTrajectory)
+
+  val orbitsUpdater = new OrbitsUpdater(system_evolution, systemEvolutionComponents, realTrajectory, planetComponents, shipComponents, orbitRenderDataUpdater)
 
   var _set_stop_time: Boolean = false
   var _stop_after_number_of_tacts: Long = 0
