@@ -3,7 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.util.math
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.MutableBodyState
-import com.github.dunnololda.scageprojects.orbitalkiller.planets.CelestialBody
+import com.github.dunnololda.scageprojects.orbitalkiller.celestials.CelestialBody
 
 /**
   * Created by andrey on 1/7/18.

@@ -2,8 +2,8 @@ package com.github.dunnololda.scageprojects.orbitalkiller.components
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.MutableBodyState
-import com.github.dunnololda.scageprojects.orbitalkiller.planets.{CelestialBody, Planet, PlanetWithAir, Star}
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.{MutableBodyState, SystemEvolution}
+import com.github.dunnololda.scageprojects.orbitalkiller.celestials.{CelestialBody, Planet, PlanetWithAir, Star}
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.PhysicsUtils._
 
 import scala.collection.{Map, Seq, immutable}
@@ -11,7 +11,7 @@ import scala.collection.{Map, Seq, immutable}
 /**
   * Created by andrey on 1/7/18.
   */
-trait PlanetComponents extends SystemEvolutionAware with PlanetsAware {
+class PlanetComponents(system_evolution: SystemEvolution) {
   val sun: Star = new Star(
     sunIndex, "Солнце",
     mass = 1.9891E30,

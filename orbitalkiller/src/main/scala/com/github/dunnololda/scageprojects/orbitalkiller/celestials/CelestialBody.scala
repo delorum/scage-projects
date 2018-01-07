@@ -1,4 +1,4 @@
-package com.github.dunnololda.scageprojects.orbitalkiller.planets
+package com.github.dunnololda.scageprojects.orbitalkiller.celestials
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitData

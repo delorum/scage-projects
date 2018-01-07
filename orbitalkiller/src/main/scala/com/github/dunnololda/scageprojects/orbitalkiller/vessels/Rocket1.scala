@@ -1,4 +1,4 @@
-package com.github.dunnololda.scageprojects.orbitalkiller.ships
+package com.github.dunnololda.scageprojects.orbitalkiller.vessels
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec

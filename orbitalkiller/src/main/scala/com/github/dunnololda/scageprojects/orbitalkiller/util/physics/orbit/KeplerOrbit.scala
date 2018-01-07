@@ -3,7 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.MutableBodyState
-import com.github.dunnololda.scageprojects.orbitalkiller.planets.CelestialBody
+import com.github.dunnololda.scageprojects.orbitalkiller.celestials.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils._
 
 import scala.collection.Seq
