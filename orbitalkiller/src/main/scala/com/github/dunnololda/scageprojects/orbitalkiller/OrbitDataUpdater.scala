@@ -2,18 +2,25 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller.celestials.CelestialBody
+import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
+import com.github.dunnololda.scageprojects.orbitalkiller.components.{PlanetComponents, ShipComponents}
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.MutableBodyState
-import com.github.dunnololda.scageprojects.orbitalkiller.celestials.CelestialBody
-import com.github.dunnololda.scageprojects.orbitalkiller.vessels.ShipsHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.KeplerOrbit._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.{EllipseOrbit, HyperbolaOrbit, KeplerOrbit}
-import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
+
 import scala.collection.{Set, mutable}
 
-object OrbitDataUpdater {
+class OrbitDataUpdater(planetComponents: PlanetComponents,
+                       shipComponents: ShipComponents,
+                       realTrajectory: RealTrajectory) {
+
+  import planetComponents._
+  import shipComponents._
+
   private val w = earth.radius * scale / 2f
 
   private def drawStringInOrbitPoint(str: String, deg: Double, o: KeplerOrbit, orbit_color: ScageColor): Unit = {
@@ -24,7 +31,12 @@ object OrbitDataUpdater {
     }
   }
 
-  private def printCalculatedData(flight_time_msec: Long, orbital_point: DVec, mouse_teta_rad2Pi: Double, o: KeplerOrbit, planet_radius: Double, orbit_color: ScageColor): Unit = {
+  private def printCalculatedData(flight_time_msec: Long,
+                                  orbital_point: DVec,
+                                  mouse_teta_rad2Pi: Double,
+                                  o: KeplerOrbit,
+                                  planet_radius: Double,
+                                  orbit_color: ScageColor): Unit = {
     val flight_time_str = s"${timeStrSec(flight_time_msec)}"
     openglLocalTransform {
       openglMove(orbital_point * scale)
@@ -84,7 +96,7 @@ object OrbitDataUpdater {
   private def drawRealTrajectoryOfPlayerShip(planet_state: MutableBodyState, orbit_color: ScageColor): Unit = {
     openglLocalTransform {
       openglMove(planet_state.coord * scale)
-      drawSlidingLines(RealTrajectory.realTrajectory, orbit_color)
+      drawSlidingLines(realTrajectory.realTrajectory, orbit_color)
     }
   }
 
@@ -134,9 +146,9 @@ object OrbitDataUpdater {
                                               o: HyperbolaOrbit,
                                               ccw: Boolean,
                                               yy: List[DVec],
-                                              orbit_color: ScageColor) = {
+                                              orbit_color: ScageColor): OrbitData = {
     OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
-      val real_trajectory_enabled = InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && RealTrajectory.realTrajectory.nonEmpty
+      val real_trajectory_enabled = InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && realTrajectory.realTrajectory.nonEmpty
       if (real_trajectory_enabled) {
         drawRealTrajectoryOfPlayerShip(planet_state, orbit_color)
       } else {
@@ -201,7 +213,7 @@ object OrbitDataUpdater {
                                                planet: CelestialBody,
                                                o: EllipseOrbit,
                                                ccw: Boolean,
-                                               orbit_color: ScageColor) = {
+                                               orbit_color: ScageColor): OrbitData = {
     OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       val new_center = o.centerIfFocusPosition(planet_state.coord)
       openglLocalTransform {
@@ -224,7 +236,7 @@ object OrbitDataUpdater {
                                         planet: CelestialBody,
                                         o: EllipseOrbit,
                                         ccw: Boolean,
-                                        orbit_color: ScageColor) = {
+                                        orbit_color: ScageColor): OrbitData = {
     OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       val new_center = o.centerIfFocusPosition(planet_state.coord)
       openglLocalTransform {
@@ -242,9 +254,9 @@ object OrbitDataUpdater {
                                             planet: CelestialBody,
                                             o: EllipseOrbit,
                                             ccw: Boolean,
-                                            orbit_color: ScageColor) = {
+                                            orbit_color: ScageColor): OrbitData = {
     OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
-      if (InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && RealTrajectory.realTrajectory.nonEmpty) {
+      if (InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && realTrajectory.realTrajectory.nonEmpty) {
         drawRealTrajectoryOfPlayerShip(planet_state, orbit_color)
       } else {
         val new_o = o.withNewFocusPosition(planet_state.coord)
@@ -331,7 +343,7 @@ object OrbitDataUpdater {
               (h.f_minus_center_n * r).rotateRad(true_anomaly) * scale
             }).toList
             if (bs.index != player_ship.thisOrActualProxyShipIndex) {
-              if (ShipsHolder.shipIndicies.contains(bs.index)) {
+              if (shipIndicies.contains(bs.index)) {
                 Some(hyperbolaOrbitDataForNonPlayerShip(update_count, bs, body_radius, planet_state, planet, h, ccw, yy, orbit_color))
               } else {
                 Some(hyperbolaOrbitDataForPlanet(update_count, bs, body_radius, planet_state, planet, h, ccw, yy, orbit_color))
@@ -341,7 +353,7 @@ object OrbitDataUpdater {
             }
           case e: EllipseOrbit =>
             if (bs.index != player_ship.thisOrActualProxyShipIndex) {
-              if (ShipsHolder.shipIndicies.contains(bs.index)) {
+              if (shipIndicies.contains(bs.index)) {
                 Some(ellipseOrbitDataForNonPlayerShip(update_count, bs, body_radius, planet_state, planet, e, ccw, orbit_color))
               } else {
                 Some(ellipseOrbitDataForPlanet(update_count, bs, body_radius, planet_state, planet, e, ccw, orbit_color))

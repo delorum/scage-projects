@@ -1,19 +1,22 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scageprojects.orbitalkiller.celestials.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
-import com.github.dunnololda.scageprojects.orbitalkiller.components.OrbitalComponents
+import com.github.dunnololda.scageprojects.orbitalkiller.components.{PlanetComponents, ShipComponents}
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.{MutableBodyState, SystemEvolution}
-import com.github.dunnololda.scageprojects.orbitalkiller.celestials.CelestialBody
 
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
 
-class RealTrajectory(components: OrbitalComponents,
+class RealTrajectory(system_evolution: SystemEvolution,
+                     planetComponents: PlanetComponents,
+                     shipComponents: ShipComponents,
                      max_multiplier: Option[Double]) {
 
-  import components._
+  import planetComponents._
+  import shipComponents._
 
   private var real_trajectory: ArrayBuffer[DVec] = ArrayBuffer[DVec]()
   var curPoints: Long = 0
@@ -54,31 +57,34 @@ class RealTrajectory(components: OrbitalComponents,
   private var min_m: Double = Double.MaxValue
   private var max_m: Double = 0
 
-  private val calc_multiplier: () => Double = {
-    def m: Double = (for {
-      ps <- system_evolution_copy.bodyState(player_ship.index)
-    } yield {
-      // http://arxiv.org/pdf/1105.1082.pdf
-      // N-body simulations of gravitational dynamics, Walter Dehnen and Justin I. Read,
-      // p. 7, 2.2.3 The choise of time-step, formula (21)
-      // Квадратный корень от softening length, деленного на ускорение в точке, умноженный на коэффициент.
-      // Softening length посчитал как радиус системы (380к км) поделить на квадратный корень от количества взаимодействующих тел (то есть,
-      // корень из трех - Земля, Луна, корабль). Коэффициент подобран так, чтобы минимальный шаг был base_dt.
-      val a = ps.acc.norma
-      if (a != 0) {
-        val m = 1.0 / 543200 * math.sqrt(2.2E8 / a) / base_dt
-        if (m < min_m) min_m = m
-        if (m > max_m) max_m = m
-        m
-      } else 1.0
-    }).getOrElse(1.0)
+  private def calcMultiplier(): Double = {
+    def m: Double = {
+      (for {
+        ps <- system_evolution_copy.bodyState(player_ship.index)
+      } yield {
+        // http://arxiv.org/pdf/1105.1082.pdf
+        // N-body simulations of gravitational dynamics, Walter Dehnen and Justin I. Read,
+        // p. 7, 2.2.3 The choise of time-step, formula (21)
+        // Квадратный корень от softening length, деленного на ускорение в точке, умноженный на коэффициент.
+        // Softening length посчитал как радиус системы (380к км) поделить на квадратный корень от количества взаимодействующих тел (то есть,
+        // корень из трех - Земля, Луна, корабль). Коэффициент подобран так, чтобы минимальный шаг был base_dt.
+        val a = ps.acc.norma
+        if (a != 0) {
+          val m = 1.0 / 543200 * math.sqrt(2.2E8 / a) / base_dt
+          if (m < min_m) min_m = m
+          if (m > max_m) max_m = m
+          m
+        } else 1.0
+      }).getOrElse(1.0)
+    }
+
     max_multiplier.map(x => {
-      if (x == 1) () => 1.0
+      if (x == 1) 1.0
       else {
-        () => math.min(math.max(1, m), x)
+        math.min(math.max(1, m), x)
       }
     }).getOrElse({
-      () => math.max(1, m)
+      math.max(1, m)
     })
   }
 
@@ -87,7 +93,7 @@ class RealTrajectory(components: OrbitalComponents,
       base_dt // пока работают двигатели, dt должен быть равен base_dt, иначе неверно работают формулы.
     } else {
       if (prev_energy /* == 0 */ .isEmpty) prev_energy = energy
-      calc_multiplier() * base_dt
+      calcMultiplier() * base_dt
     }
   }
 
