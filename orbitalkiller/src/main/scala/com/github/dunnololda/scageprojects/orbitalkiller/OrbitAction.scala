@@ -43,11 +43,11 @@ trait OrbitAction extends OrbitalComponentsAware {
     nextStep()
   }
 
-  orbitalComponents.orbitsUpdater.updateOrbits()
+  orbitalComponents.orbitsUpdater.update()
 
   actionDynamicPeriodIgnorePause(1000 / orbitalComponents.timeMultiplier.timeMultiplier) {
-    if ( /*drawMapMode && (*/ !onPause || orbitalComponents.orbitsUpdater._update_orbits /*)*/ ) {
-      orbitalComponents.orbitsUpdater.updateOrbits()
+    if ( /*drawMapMode && (*/ !onPause || orbitalComponents.orbitsUpdater.needUpdateOrbits /*)*/ ) {
+      orbitalComponents.orbitsUpdater.update()
     }
   }
 
