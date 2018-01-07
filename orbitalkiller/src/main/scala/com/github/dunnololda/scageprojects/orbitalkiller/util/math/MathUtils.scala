@@ -1,6 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.util.math
 
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.BodyState
 
 /**
   * Created by andrey on 1/6/18.
@@ -10,6 +11,10 @@ object MathUtils {
     if (angle > 360) correctAngle(angle - 360)
     else if (angle < 0) correctAngle(angle + 360)
     else angle
+  }
+
+  def curvatureRadiusInPoint(body_state: BodyState): Double = {
+    math.abs(body_state.vel.norma2 / (body_state.acc * body_state.vel.p))
   }
 
   implicit class MyVec(v1: DVec) {
