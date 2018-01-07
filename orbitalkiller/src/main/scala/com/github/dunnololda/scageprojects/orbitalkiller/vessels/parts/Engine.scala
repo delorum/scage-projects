@@ -1,4 +1,4 @@
-package com.github.dunnololda.scageprojects.orbitalkiller
+package com.github.dunnololda.scageprojects.orbitalkiller.vessels.parts
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.ScageId

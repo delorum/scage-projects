@@ -11,6 +11,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.celestials.PlanetWithAi
 import com.github.dunnololda.scageprojects.orbitalkiller.render.OrbitRenderData
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils.MyDouble
+import com.github.dunnololda.scageprojects.orbitalkiller.vessels.parts.{Engine, Wreck}
 import com.github.dunnololda.scageprojects.orbitalkiller.{OrbitRenderDataUpdater, OrbitalKiller, Wreck, _}
 
 import scala.collection.mutable

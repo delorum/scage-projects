@@ -6,6 +6,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.BodyState
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.PolygonShape
+import com.github.dunnololda.scageprojects.orbitalkiller.vessels.parts.Engine
 
 class Rocket1(index: Int,
               init_coord: DVec,
