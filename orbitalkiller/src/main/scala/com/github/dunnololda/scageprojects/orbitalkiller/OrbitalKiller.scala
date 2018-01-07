@@ -183,8 +183,12 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
           view_mode = FixedOnShipAbsolute
         case FixedOnOrbit => // в режиме карты зафиксировать центр орбиты в центре экрана
           if (drawMapMode) {
-            _center = _center - orbitAroundCelestialInPointWithVelocity(player_ship.coord, player_ship.linearVelocity, player_ship.mass).map(_._2.center * scale).getOrElse(player_ship.coord)
-            center = orbitAroundCelestialInPointWithVelocity(player_ship.coord, player_ship.linearVelocity, player_ship.mass).map(_._2.center * scale).getOrElse(player_ship.coord) + _center
+            _center = _center - orbitAroundCelestialInPointWithVelocity(player_ship.coord, player_ship.linearVelocity, player_ship.mass, currentPlanetStates)
+              .map(_._2.center * scale)
+              .getOrElse(player_ship.coord)
+            center = orbitAroundCelestialInPointWithVelocity(player_ship.coord, player_ship.linearVelocity, player_ship.mass, currentPlanetStates)
+              .map(_._2.center * scale)
+              .getOrElse(player_ship.coord) + _center
             rotationAngle = 0
             view_mode = FixedOnOrbit
           }
@@ -234,16 +238,6 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }*/
 
-  def orbitAroundCelestialInPointWithVelocity(coord: DVec, velocity: DVec, mass: Double): Option[((CelestialBody, MutableBodyState), KeplerOrbit)] = {
-    insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
-      case Some((planet, planet_state)) =>
-        planetByIndex(planet_state.index).flatMap(planet => {
-          Some(((planet, planet_state), calculateOrbit(planet_state.mass, planet_state.coord, mass, coord - planet_state.coord, velocity - planet_state.vel, G)))
-        })
-      case None => None
-    }
-  }
-
   private var disable_interface_drawing = false
 
   private var _draw_map_mode = false
@@ -253,7 +247,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def drawMapMode_=(new_mode: Boolean) {
     if (new_mode) {
       _draw_map_mode = true
-      orbitAroundCelestialInPointWithVelocity(player_ship.coord, player_ship.linearVelocity, player_ship.mass) match {
+      orbitAroundCelestialInPointWithVelocity(player_ship.coord, player_ship.linearVelocity, player_ship.mass, currentPlanetStates) match {
         case Some((planet, kepler_orbit)) =>
           kepler_orbit match {
             case ellipse: EllipseOrbit =>
@@ -713,7 +707,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
         } {
           globalScale = math.min(1000000, 750 / h)
           if (viewMode == FixedOnOrbit) {
-            _center = c - orbitAroundCelestialInPointWithVelocity(player_ship.coord, player_ship.linearVelocity, player_ship.mass).map(_._2.center * scale).getOrElse(player_ship.coord)
+            _center = c - orbitAroundCelestialInPointWithVelocity(player_ship.coord, player_ship.linearVelocity, player_ship.mass, currentPlanetStates)
+              .map(_._2.center * scale).getOrElse(player_ship.coord)
           } else {
             _center = c
           }
