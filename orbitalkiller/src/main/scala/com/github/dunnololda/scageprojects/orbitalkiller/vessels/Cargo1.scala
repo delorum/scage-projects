@@ -2,7 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.vessels
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.PolygonShape
-import com.github.dunnololda.scageprojects.orbitalkiller.vessels.parts.Engine
+import com.github.dunnololda.scageprojects.orbitalkiller.vessels.parts.{DockingPoints, Engine}
 
 class Cargo1(index: Int,
              init_coord: DVec,

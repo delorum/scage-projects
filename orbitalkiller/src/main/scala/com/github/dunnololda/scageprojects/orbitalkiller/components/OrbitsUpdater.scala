@@ -8,6 +8,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.render.OrbitRenderDataU
 import com.github.dunnololda.scageprojects.orbitalkiller.vessels.Maneuvering
 import BasicComponents._
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.SystemEvolution
+import com.github.dunnololda.scageprojects.orbitalkiller.util.LogUtils
 
 /**
   * Created by andrey on 1/7/18.
@@ -66,7 +67,7 @@ class OrbitsUpdater(system_evolution: SystemEvolution,
   }
 
   def scheduleOrbitsUpdate(reason: String) {
-    println(s"needToUpdateOrbits: $reason")
+    LogUtils.log(s"needToUpdateOrbits: $reason")
     if (onPause) {
       systemEvolutionComponents.system_cache.clear()
       _update_orbits = true

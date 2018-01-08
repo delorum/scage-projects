@@ -5,6 +5,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHold
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.KeplerOrbit._
 import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 import com.github.dunnololda.scageprojects.orbitalkiller.components.{FixedOnOrbit, OrbitalComponentsAware}
+import com.github.dunnololda.scageprojects.orbitalkiller.util.LogUtils
 import com.github.dunnololda.scageprojects.orbitalkiller.vessels.Ship4
 
 /**
@@ -25,7 +26,7 @@ trait OrbitMouseControls extends OrbitalComponentsAware {
       else globalScale -= 0.01
       if (globalScale < 0.01) globalScale = 0.01
     }
-    println(globalScale)
+    LogUtils.log(globalScale)
   })
   mouseWheelUpIgnorePause(onWheelUp = m => {
     val _maxGlobalScale = if (!orbitalComponents.drawMapMode) 30 else 1000000
@@ -40,7 +41,7 @@ trait OrbitMouseControls extends OrbitalComponentsAware {
       else globalScale += 100000
       if (globalScale > _maxGlobalScale) globalScale = _maxGlobalScale
     }
-    println(globalScale)
+    LogUtils.log(globalScale)
   })
 
   leftMouseIgnorePause(onBtnDown = m => {

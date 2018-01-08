@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
+import com.github.dunnololda.scageprojects.orbitalkiller.util.LogUtils
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils._
 
@@ -291,7 +292,7 @@ class EllipseOrbit(
       else solver(M + e * math.sin(prev_E), i + 1, max_i)
     }
     val (res_E, i) = solver()
-    if (OrbitalKiller.tacts % 63 == 0) println(s"elliptic orbitalPointAfterTimeCCW i $i")
+    if (OrbitalKiller.tacts % 63 == 0) LogUtils.log(s"elliptic orbitalPointAfterTimeCCW i $i")
     val tg_half_teta_res_rad = math.sqrt((1 + e) / (1 - e)) * math.tan(res_E / 2)
     val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
     val teta_res_deg = teta_res_rad / math.Pi * 180
@@ -310,7 +311,7 @@ class EllipseOrbit(
       else solver(M + e * math.sin(prev_E), i + 1, max_i)
     }
     val (resE, iterations) = solver()
-    if (OrbitalKiller.tacts % 63 == 0) println(s"elliptic orbitalPointAfterTimeCW i $iterations")
+    if (OrbitalKiller.tacts % 63 == 0) LogUtils.log(s"elliptic orbitalPointAfterTimeCW i $iterations")
     val tg_half_teta_res_rad = math.sqrt((1 + e) / (1 - e)) * math.tan(resE / 2)
     val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
     val teta_res_deg = teta_res_rad / math.Pi * 180

@@ -1,7 +1,8 @@
-package com.github.dunnololda.scageprojects.orbitalkiller.vessels
+package com.github.dunnololda.scageprojects.orbitalkiller.vessels.parts
 
-import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scage.ScageLibD.Double2DVecrich
+import com.github.dunnololda.scage.support.{DVec, ScageId}
+import com.github.dunnololda.scageprojects.orbitalkiller.vessels.PolygonShip
 
 class DockingPoints(val p1: DVec,
                     val p2: DVec,

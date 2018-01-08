@@ -4,6 +4,7 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller.render.OrbitRenderData
+import com.github.dunnololda.scageprojects.orbitalkiller.util.LogUtils
 
 trait CelestialBody {
   def index: Int
@@ -28,7 +29,7 @@ trait CelestialBody {
 
   def air_free_altitude: Double
 
-  println(s"$name -> $index")
+  LogUtils.log(s"$name -> $index")
   val currentState: MutableBodyState = initState.toMutableBodyState
   val ground_length_km = (2 * math.Pi * radius / 1000).toInt
   val groundSpeedMsec = currentState.ang_vel.toRad * radius

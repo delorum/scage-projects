@@ -2,6 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.MutableBodyState
+import com.github.dunnololda.scageprojects.orbitalkiller.util.LogUtils
 
 case class MutableContact(a: MutableBodyState, b: MutableBodyState, contact_point: DVec, normal: DVec, separation: Double) {
   def solveCollision(_dt: Double) {
@@ -56,7 +57,7 @@ case class MutableContact(a: MutableBodyState, b: MutableBodyState, contact_poin
     if (separation > 0.005) {
       val correction = separation / (a.invMass + b.invMass)
       if (correction != 0) {
-        println(s"$tacts correction: separation=$separation correction_${a.index}=${-a.invMass * correction} correction_${b.index}=${b.invMass * correction}")
+        LogUtils.log(s"$tacts correction: separation=$separation correction_${a.index}=${-a.invMass * correction} correction_${b.index}=${b.invMass * correction}")
       }
       if (!a.is_static) a.coord += normal * (-a.invMass * correction)
       if (!b.is_static) b.coord += normal * b.invMass * correction

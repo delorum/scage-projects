@@ -2,11 +2,11 @@ package com.github.dunnololda.scageprojects.orbitalkiller.vessels
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.{DVec, ScageId}
-import com.github.dunnololda.scageprojects.orbitalkiller._
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.PolygonShape
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.{BodyState, MutableBodyState}
+import com.github.dunnololda.scageprojects.orbitalkiller.util.LogUtils
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils.MyDouble
-import com.github.dunnololda.scageprojects.orbitalkiller.vessels.parts.Engine
+import com.github.dunnololda.scageprojects.orbitalkiller.vessels.parts.{DockingPoints, Engine}
 
 class ProxyShip(ship1: PolygonShip,
                 ship1_init_coord: DVec,
@@ -22,11 +22,11 @@ class ProxyShip(ship1: PolygonShip,
   (ship1.mass * ship1.linearVelocity + ship2.mass * ship2.linearVelocity) / (ship1.mass + ship2.mass),
   ship1.rotation, false, false) {
 
-  println(s"init_rotation=$init_rotation")
-  println(s"ship1_init_coord=$ship1_init_coord")
-  println(s"ship2_init_coord=$ship2_init_coord")
-  println(s"ship2_rotation_diff=$ship2_rotation_diff")
-  println(s"init_coord=$init_coord")
+  LogUtils.log(s"init_rotation=$init_rotation")
+  LogUtils.log(s"ship1_init_coord=$ship1_init_coord")
+  LogUtils.log(s"ship2_init_coord=$ship2_init_coord")
+  LogUtils.log(s"ship2_rotation_diff=$ship2_rotation_diff")
+  LogUtils.log(s"init_coord=$init_coord")
 
   lazy val ship1_coord_diff = (ship1_init_coord - init_coord).rotateDeg(-init_rotation).map(v => DVec(v.x.round2Digits, v.y.round2Digits))
   lazy val ship2_rotation_diff = (ship2_init_rotation - ship1_init_rotation).round
