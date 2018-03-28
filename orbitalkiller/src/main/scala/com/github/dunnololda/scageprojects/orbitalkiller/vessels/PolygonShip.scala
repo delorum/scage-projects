@@ -69,7 +69,7 @@ abstract class PolygonShip(val index: Int,
         case Some(se) =>
           if (e.index == se.index) {
             val selected = selectedEngine
-            if (selected.length == 1) {
+            if (selected.lengthCompare(1) == 0) {
               selected.head.switchActive()
             } else {
               selected.head.switchActive()
@@ -81,7 +81,7 @@ abstract class PolygonShip(val index: Int,
           } else {
             selected_engine = Some(e)
             val selected = selectedEngine
-            if (selected.length > 1) {
+            if (selected.lengthCompare(1) > 0) {
               selected.tail.foreach(x => {
                 x.powerPercent = selected.head.powerPercent
               })
@@ -90,7 +90,7 @@ abstract class PolygonShip(val index: Int,
         case None =>
           selected_engine = Some(e)
           val selected = selectedEngine
-          if (selected.length > 1) {
+          if (selected.lengthCompare(1) > 0) {
             selected.tail.foreach(x => {
               x.powerPercent = selected.head.powerPercent
             })
@@ -123,7 +123,7 @@ abstract class PolygonShip(val index: Int,
 
   protected var dock_data: Option[DockData] = None
 
-  def dockData = dock_data
+  def dockData: Option[DockData] = dock_data
 
   def isDocked: Boolean = dock_data.nonEmpty
 
@@ -261,11 +261,11 @@ abstract class PolygonShip(val index: Int,
     _orbit_data.exists(_.is_landed_on_moon)
   }
 
-  def coord = if (isAlive) currentState.coord else main_ship_wreck.headOption.map(_.coord).getOrElse(currentState.coord)
+  def coord: DVec = if (isAlive) currentState.coord else main_ship_wreck.map(_.coord).getOrElse(currentState.coord)
 
-  def linearVelocity = if (isAlive) currentState.vel else main_ship_wreck.headOption.map(_.linearVelocity).getOrElse(currentState.vel)
+  def linearVelocity: DVec = if (isAlive) currentState.vel else main_ship_wreck.map(_.linearVelocity).getOrElse(currentState.vel)
 
-  def relativeLinearVelocity = {
+  def relativeLinearVelocity: DVec = {
     linearVelocity - _orbit_data.map(_.planet_state.vel).getOrElse(DVec.zero)
   }
 
@@ -292,23 +292,17 @@ abstract class PolygonShip(val index: Int,
 
   def thisOrActualProxyShipVelocityStr: String = dock_data.map(_.proxy_ship.thisOrActualProxyShipVelocityStr).getOrElse(velocityStr)
 
-  def angularVelocity = if (isAlive) currentState.ang_vel else main_ship_wreck.headOption.map(_.angularVelocity).getOrElse(currentState.ang_vel)
+  def angularVelocity: Double = if (isAlive) currentState.ang_vel else main_ship_wreck.map(_.angularVelocity).getOrElse(currentState.ang_vel)
 
   def thisOrActualProxyShipAngularVelocity: Double = dock_data.map(_.proxy_ship.thisOrActualProxyShipAngularVelocity).getOrElse(angularVelocity)
 
-  def rotation = if (isAlive) currentState.ang else main_ship_wreck.headOption.map(_.rotation).getOrElse(currentState.ang)
+  def rotation: Double = if (isAlive) currentState.ang else main_ship_wreck.map(_.rotation).getOrElse(currentState.ang)
 
   def thisOrActualProxyShipRotation: Double = dock_data.map(_.proxy_ship.thisOrActualProxyShipRotation).getOrElse(rotation)
 
-  def currentReactiveForce(time: Long, bs: BodyState): DVec = {
-    engines.filter(e => e.active && time < e.stopMomentTacts).foldLeft(DVec.dzero) {
-      case (sum, e) => sum + (e.force_dir.actualDir * e.power).rotateDeg(bs.ang)
-    }
-  }
-
   def currentReactiveForce(tacts: Long, bs: MutableBodyState): DVec = {
     engines.filter(e => e.active && tacts < e.stopMomentTacts).foldLeft(DVec.dzero) {
-      case (sum, e) => sum + (e.force_dir.actualDir * e.power).rotateDeg(bs.ang)
+      case (sum, e) => sum + e.force.actualDir.rotateDeg(bs.ang)
     }
   }
 
@@ -338,11 +332,11 @@ abstract class PolygonShip(val index: Int,
   }
 
   def fuelMassWhenEnginesOff: Double = {
-    fuelMass - engines.filter(e => e.active).map(e => e.workTimeTacts * e.fuelConsumptionPerTact).sum
+    fuelMass - engines.filter(e => e.active).map(e => e.fuelConsumption).sum
   }
 
   def fuelMassWhenEnginesOffWithoutEngine(ee: Engine): Double = {
-    fuelMass - engines.filter(e => e.active && e != ee).map(e => e.workTimeTacts * e.fuelConsumptionPerTact).sum
+    fuelMass - engines.filter(e => e.active && e != ee).map(e => e.fuelConsumption).sum
   }
 
   def deactivateAllEngines(): Unit = {
@@ -606,7 +600,7 @@ abstract class PolygonShip(val index: Int,
 
   private var prev_flight_mode_and_engine_states: Option[(FlightMode, List[(Long, Double, Boolean)])] = None
 
-  def haveSavedFlightMode = prev_flight_mode_and_engine_states.nonEmpty
+  def haveSavedFlightMode: Boolean = prev_flight_mode_and_engine_states.nonEmpty
 
   def saveFlightModeAndEngineStates(prev_flight_mode: FlightMode): Unit = {
     prev_flight_mode_and_engine_states = Some((prev_flight_mode, engines.map(e => (e.workTimeTacts, e.power, e.active))))
@@ -758,15 +752,15 @@ abstract class PolygonShip(val index: Int,
   private var is_dead = false
   private var death_reason = ""
 
-  def deathReason = death_reason
+  def deathReason: String = death_reason
 
-  def isDead = is_dead
+  def isDead: Boolean = is_dead
 
-  def isAlive = !is_dead
+  def isAlive: Boolean = !is_dead
 
   private var ship_is_crashed = false
 
-  def isCrashed = ship_is_crashed
+  def isCrashed: Boolean = ship_is_crashed
 
   /**
     * Если на пилота действует перегрузка, уменьшается этот счетчик. Скорость его уменьшения зависит от величины перегрузки.
@@ -815,9 +809,9 @@ abstract class PolygonShip(val index: Int,
     ans * base_dt
   }
 
-  def colorIfAliveOrRed(color: => ScageColor) = if (isDead) RED else color
+  def colorIfAliveOrRed(color: => ScageColor): ScageColor = if (isDead) RED else color
 
-  def colorIfPlayerAliveOrRed(color: => ScageColor) = if (OrbitalKiller.player_ship.isDead) RED else color
+  def colorIfPlayerAliveOrRed(color: => ScageColor): ScageColor = if (OrbitalKiller.player_ship.isDead) RED else color
 
   protected var main_ship_wreck: Option[Wreck] = None
 
@@ -928,7 +922,7 @@ abstract class PolygonShip(val index: Int,
 
   def fuelMassStr = s"Остаток топлива: ${gOrKg(fuelMass)}"
 
-  def shadowSideStr = {
+  def shadowSideStr: String = {
     inShadowOfPlanet(coord) match {
       case Some((planet, planet_state)) =>
         /*planet_name match {
@@ -952,9 +946,9 @@ abstract class PolygonShip(val index: Int,
 
   lazy val shape = PolygonShape(points, convex_parts)
 
-  lazy val draw_points = points :+ points.head
+  lazy val draw_points: List[DVec] = points :+ points.head
 
-  def actualDrawPoints = {
+  def actualDrawPoints: List[DVec] = {
     val (coord_diff, rotation_diff) = ourCoordAndRotationDiff
     draw_points.map(p => {
       if (rotation_diff != 0) {
@@ -971,7 +965,7 @@ abstract class PolygonShip(val index: Int,
     *
     * @return List<List<DVec>> - Во внутреннем списке всегда два элемента.
     */
-  def curDrawLines = draw_points.zipWithIndex.sliding(2).map {
+  def curDrawLines: List[List[(DVec, Int)]] = draw_points.zipWithIndex.sliding(2).map {
     case List((p1, p1idx), (p2, p2idx)) =>
       List((coord + p1.rotateDeg(rotation), p1idx), (coord + p2.rotateDeg(rotation), p2idx))
   }.toList
@@ -1010,7 +1004,7 @@ abstract class PolygonShip(val index: Int,
 
   private var _orbit_data: Option[OrbitRenderData] = None
 
-  def orbitData = _orbit_data
+  def orbitData: Option[OrbitRenderData] = _orbit_data
 
   def thisOrActualProxyShipOrbitData: Option[OrbitRenderData] = dock_data.map(_.proxy_ship.thisOrActualProxyShipOrbitData).getOrElse(_orbit_data)
 
@@ -1066,7 +1060,7 @@ abstract class PolygonShip(val index: Int,
 
   private var _current_orbit_data: Option[OrbitRenderData] = None
 
-  def currentOrbitData = _current_orbit_data
+  def currentOrbitData: Option[OrbitRenderData] = _current_orbit_data
 
   def thisOrActualProxyShipCurrentOrbitData: Option[OrbitRenderData] = dock_data.map(_.proxy_ship.thisOrActualProxyShipOrbitData).getOrElse(_current_orbit_data)
 

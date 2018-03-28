@@ -19,9 +19,9 @@ class Planet(val index: Int,
              val orbiting_body: CelestialBody,
              val air_free_altitude: Double) extends CelestialBody {
 
-  def coord = currentState.coord
+  def coord: DVec = currentState.coord
 
-  def linearVelocity = currentState.vel
+  def linearVelocity: DVec = currentState.vel
 
   def initState: BodyState = BodyState(
     index,
@@ -35,7 +35,7 @@ class Planet(val index: Int,
     shape = CircleShape(radius),
     is_static = false)
 
-  val half_hill_radius = halfHillRadius(mass, coord.dist(orbiting_body.coord), orbiting_body.mass)
+  val half_hill_radius: Double = halfHillRadius(mass, coord.dist(orbiting_body.coord), orbiting_body.mass)
 
   // рельеф планеты: треугольные горы. два параметра: высота в метрах, ширина основания в метрах
   private val ground_features = Array.ofDim[(Int, Int)](ground_length_km)

@@ -1,7 +1,6 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 import com.github.dunnololda.scageprojects.orbitalkiller.components._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.vessels._
@@ -11,9 +10,9 @@ import com.github.dunnololda.scageprojects.orbitalkiller.vessels._
   */
 trait OrbitKeyControls extends OrbitalComponentsAware {
   this: ScageScreenAppDMT =>
+
   private val player_ship: Ship4 = orbitalComponents.shipComponents.player_ship
-  private var _set_stop_time = orbitalComponents._set_stop_time
-  private var _stop_after_number_of_tacts = orbitalComponents._stop_after_number_of_tacts
+  var _set_stop_time: Boolean = false
 
   keyIgnorePause(KEY_RETURN, onKeyDown = {
     if (player_ship.isAlive) player_ship.launchRocket()
@@ -90,7 +89,7 @@ trait OrbitKeyControls extends OrbitalComponentsAware {
   keyIgnorePause(KEY_T, onKeyDown = _set_stop_time = !_set_stop_time)
   keyIgnorePause(KEY_RIGHT, repeatTime(KEY_RIGHT), onKeyDown = {
     if (_set_stop_time) {
-      _stop_after_number_of_tacts += InterfaceHolder.timeStepSwitcher.timeStep
+      orbitalComponents.stop_after_number_of_tacts.inc(InterfaceHolder.timeStepSwitcher.timeStep)
     } else {
       if (player_ship.isAlive) {
         if (player_ship.flightMode != NearestPlanetVelocity) {
@@ -108,7 +107,7 @@ trait OrbitKeyControls extends OrbitalComponentsAware {
   })
   keyIgnorePause(KEY_LEFT, repeatTime(KEY_LEFT), onKeyDown = {
     if (_set_stop_time) {
-      _stop_after_number_of_tacts -= InterfaceHolder.timeStepSwitcher.timeStep
+      orbitalComponents.stop_after_number_of_tacts.dec(InterfaceHolder.timeStepSwitcher.timeStep)
     } else {
       if (player_ship.isAlive) {
         if (player_ship.flightMode != NearestPlanetVelocity) {
@@ -142,28 +141,24 @@ trait OrbitKeyControls extends OrbitalComponentsAware {
 
   private val engine_keys = List(KEY_UP, KEY_DOWN, KEY_RIGHT, KEY_LEFT)
 
-  def anyEngineKeyPressed = engine_keys.exists(k => keyPressed(k))
+  def anyEngineKeyPressed: Boolean = engine_keys.exists(k => keyPressed(k))
 
   keyIgnorePause(KEY_ADD, 100, onKeyDown = {
-    orbitalComponents.timeMultiplier.timeMultiplier += realtime
+    orbitalComponents.timeMultiplier.incByRealTime()
   } /*, onKeyUp = updateFutureTrajectory("KEY_ADD")*/)
   keyIgnorePause(KEY_SUBTRACT, 100, onKeyDown = {
-    if (orbitalComponents.timeMultiplier.timeMultiplier > realtime) {
-      orbitalComponents.timeMultiplier.timeMultiplier -= realtime
-    }
+    orbitalComponents.timeMultiplier.decByRealTime()
   } /*, onKeyUp = updateFutureTrajectory("KEY_SUBTRACT")*/)
 
   keyIgnorePause(KEY_MULTIPLY, 100, onKeyDown = {
-    if (orbitalComponents.timeMultiplier.timeMultiplier == realtime) {
-      orbitalComponents.timeMultiplier.timeMultiplier = realtime * 50
+    if (orbitalComponents.timeMultiplier.isRealTime) {
+      orbitalComponents.timeMultiplier.setToRealTime(50)
     } else {
-      orbitalComponents.timeMultiplier.timeMultiplier += realtime * 50
+      orbitalComponents.timeMultiplier.incByRealTime(50)
     }
   } /*, onKeyUp = updateFutureTrajectory("KEY_MULTIPLY")*/)
   keyIgnorePause(KEY_DIVIDE, 100, onKeyDown = {
-    if (orbitalComponents.timeMultiplier.timeMultiplier != realtime) {
-      orbitalComponents.timeMultiplier.timeMultiplier = realtime
-    }
+    orbitalComponents.timeMultiplier.setToRealTime()
   } /*, onKeyUp = updateFutureTrajectory("KEY_DIVIDE")*/)
 
   keyIgnorePause(KEY_W, 10, onKeyDown = {

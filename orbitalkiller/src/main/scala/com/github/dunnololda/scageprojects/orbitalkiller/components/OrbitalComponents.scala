@@ -5,6 +5,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.physics.SystemEvolution
 import BasicComponents._
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.render.OrbitRenderDataUpdater
+import com.github.dunnololda.scageprojects.orbitalkiller.util.TactsCounter
 
 /**
   * Created by andrey on 1/6/18.
@@ -18,14 +19,15 @@ class OrbitalComponents extends DrawMapMode with ViewModeComponents {
 
   val realTrajectory = new RealTrajectory(system_evolution, planetComponents, shipComponents, None)
 
-  val systemEvolutionComponents = new SystemEvolutionComponents(system_evolution, shipComponents)
+  val systemTimer = new SystemTimer(system_evolution)
+
+  val futureStateCalculator = new FutureStateCalculator(system_evolution, shipComponents)
 
   val orbitRenderDataUpdater = new OrbitRenderDataUpdater(planetComponents, shipComponents, realTrajectory)
 
-  val orbitsUpdater = new OrbitsUpdater(system_evolution, systemEvolutionComponents, realTrajectory, planetComponents, shipComponents, orbitRenderDataUpdater)
+  val orbitsUpdater = new OrbitsUpdater(system_evolution, systemTimer, futureStateCalculator, realTrajectory, planetComponents, shipComponents, orbitRenderDataUpdater)
 
-  var _set_stop_time: Boolean = false
-  var _stop_after_number_of_tacts: Long = 0
+  val stop_after_number_of_tacts: TactsCounter = new TactsCounter()
   var _stop_in_orbit_true_anomaly: Double = 0
   var left_up_corner: Option[DVec] = None
   var right_down_corner: Option[DVec] = None

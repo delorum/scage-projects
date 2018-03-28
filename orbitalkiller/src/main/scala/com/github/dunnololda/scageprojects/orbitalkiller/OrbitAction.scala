@@ -18,22 +18,17 @@ trait OrbitAction extends OrbitalComponentsAware {
   }
 
   private def nextStep() {
-    (1 to orbitalComponents.timeMultiplier.timeMultiplier).foreach(step => {
+    orbitalComponents.timeMultiplier.foreach(_ => {
       orbitalComponents.shipComponents.ships.foreach(s => {
         s.beforeStep()
       })
       orbitalComponents.system_evolution.step()
       orbitalComponents.shipComponents.ships.foreach(s => {
-        s.afterStep(orbitalComponents.systemEvolutionComponents.timeMsec)
+        s.afterStep(orbitalComponents.timeMsec)
       })
-      if (orbitalComponents._stop_after_number_of_tacts > 0) {
-        orbitalComponents._stop_after_number_of_tacts -= 1
-        if (orbitalComponents._stop_after_number_of_tacts <= 0) {
-          if (orbitalComponents.timeMultiplier.timeMultiplier != realtime) {
-            orbitalComponents.timeMultiplier.timeMultiplier = realtime
-          }
-          pause()
-        }
+      if (orbitalComponents.stop_after_number_of_tacts.decIfNotDoneAndCheck()) {
+        orbitalComponents.timeMultiplier.setToRealTime()
+        pause()
       }
     })
   }
