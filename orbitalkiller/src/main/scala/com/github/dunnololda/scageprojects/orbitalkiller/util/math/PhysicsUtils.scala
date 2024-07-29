@@ -1,4 +1,4 @@
-package com.github.dunnololda.scageprojects.orbitalkiller.util.physics
+package com.github.dunnololda.scageprojects.orbitalkiller.util.math
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.MutableBodyState
@@ -12,7 +12,7 @@ object PhysicsUtils {
   }
 
   private def _satelliteSpeed(from_planet_to_body: DVec, planet_velocity: DVec, planet_mass: Double, G: Double, counterclockwise: Boolean): DVec = {
-    val sat_speed = from_planet_to_body.p * scala.math.sqrt(G * planet_mass / from_planet_to_body.norma)
+    val sat_speed = from_planet_to_body.p * math.sqrt(G * planet_mass / from_planet_to_body.norma)
     if (!counterclockwise) planet_velocity + sat_speed * (-1)
     else planet_velocity + sat_speed
   }
@@ -29,7 +29,7 @@ object PhysicsUtils {
   }
 
   private def _escapeVelocity(from_planet_to_body: DVec, planet_velocity: DVec, planet_mass: Double, G: Double, counterclockwise: Boolean): DVec = {
-    val esc_speed = from_planet_to_body.p * scala.math.sqrt(G * planet_mass / from_planet_to_body.norma) * scala.math.sqrt(2)
+    val esc_speed = from_planet_to_body.p * math.sqrt(G * planet_mass / from_planet_to_body.norma) * math.sqrt(2)
     if (!counterclockwise) planet_velocity + esc_speed * (-1)
     else planet_velocity + esc_speed
   }
@@ -62,16 +62,16 @@ object PhysicsUtils {
     val r_a = r_p + apogee_diff
     val mu = planet_mass * G
     if (ccw) {
-      planet_velocity + scala.math.sqrt(-2 * mu / (r_p + r_a) + 2 * mu / r_p) * (perigee_coord - planet_coord).p
+      planet_velocity + math.sqrt(-2 * mu / (r_p + r_a) + 2 * mu / r_p) * (perigee_coord - planet_coord).p
     } else {
-      planet_velocity - scala.math.sqrt(-2 * mu / (r_p + r_a) + 2 * mu / r_p) * (perigee_coord - planet_coord).p
+      planet_velocity - math.sqrt(-2 * mu / (r_p + r_a) + 2 * mu / r_p) * (perigee_coord - planet_coord).p
     }
   }
 
   def equalGravityRadius(planet1: MutableBodyState, planet2: MutableBodyState): Double = {
     val A = planet1.coord.dist(planet2.coord)
     val X = planet1.mass / planet2.mass
-    A * scala.math.sqrt(X) / (scala.math.sqrt(X) + 1)
+    A * math.sqrt(X) / (math.sqrt(X) + 1)
   }
 
   /**
@@ -83,11 +83,11 @@ object PhysicsUtils {
     * @return
     */
   def soi(smaller_planet_mass: Double, semi_major_axis: Double, bigger_planet_mass: Double): Double = {
-    semi_major_axis * scala.math.pow(smaller_planet_mass / bigger_planet_mass, 2.0 / 5)
+    semi_major_axis * math.pow(smaller_planet_mass / bigger_planet_mass, 2.0 / 5)
   }
 
   def halfHillRadius(smaller_planet_mass: Double, semi_major_axis: Double, bigger_planet_mass: Double): Double = {
-    0.5 * semi_major_axis * scala.math.pow(smaller_planet_mass / (3 * bigger_planet_mass), 1.0 / 3)
+    0.5 * semi_major_axis * math.pow(smaller_planet_mass / (3 * bigger_planet_mass), 1.0 / 3)
   }
 
   /**

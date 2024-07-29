@@ -4,7 +4,7 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.{BodyState, CircleShape}
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils._
-import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.PhysicsUtils._
+import com.github.dunnololda.scageprojects.orbitalkiller.util.math.PhysicsUtils._
 
 import scala.collection.Seq
 
