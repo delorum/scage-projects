@@ -6,7 +6,6 @@ import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicCompone
 import com.github.dunnololda.scageprojects.orbitalkiller.components.{PlanetComponents, ShipComponents}
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.{MutableBodyState, SystemEvolution}
-import com.github.dunnololda.scageprojects.orbitalkiller.util.LogUtils
 
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
@@ -160,9 +159,9 @@ class RealTrajectory(system_evolution: SystemEvolution,
       val e = energy
       val x = e.map(_._2).sum - prev_energy.map(_._2).sum
       if (max_multiplier.contains(1)) {
-        LogUtils.log(f"real trajectory dt ${system_evolution_copy.base_dt / base_dt}%.2f*base_dt, dE=${x / prev_energy.map(_._2).sum}%.10f, curPoints/numPoints $curPoints/${InterfaceHolder.realTrajectorySwitcher.numPoints} dropped/length $dropped/${real_trajectory.length}")
+        println(f"real trajectory dt ${system_evolution_copy.base_dt / base_dt}%.2f*base_dt, dE=${x / prev_energy.map(_._2).sum}%.10f, curPoints/numPoints $curPoints/${InterfaceHolder.realTrajectorySwitcher.numPoints} dropped/length $dropped/${real_trajectory.length}")
       } else {
-        LogUtils.log(f"real trajectory dt ${system_evolution_copy.base_dt / base_dt}%.2f*base_dt, dE=${x / prev_energy.map(_._2).sum}%.10f, min_m = $min_m, max_m = $max_m, curPoints/numPoints $curPoints/${InterfaceHolder.realTrajectorySwitcher.numPoints} dropped/length $dropped/${real_trajectory.length}")
+        println(f"real trajectory dt ${system_evolution_copy.base_dt / base_dt}%.2f*base_dt, dE=${x / prev_energy.map(_._2).sum}%.10f, min_m = $min_m, max_m = $max_m, curPoints/numPoints $curPoints/${InterfaceHolder.realTrajectorySwitcher.numPoints} dropped/length $dropped/${real_trajectory.length}")
       }
       prev_energy = energy
       /*println(e.zip(init_energy).map {

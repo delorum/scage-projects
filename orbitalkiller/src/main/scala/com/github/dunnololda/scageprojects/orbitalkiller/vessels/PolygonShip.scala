@@ -1,32 +1,31 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.vessels
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scage.support.DVec
+import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.celestials.PlanetWithAir
-import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements.OtherShipInfo
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller.render.OrbitRenderData
-import com.github.dunnololda.scageprojects.orbitalkiller.util.{DrawUtils, LogUtils}
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils.MyDouble
-import com.github.dunnololda.scageprojects.orbitalkiller.vessels.parts.{DockData, DockingPoints, Engine, Wreck}
-
+import com.github.dunnololda.scageprojects.orbitalkiller.vessels.parts.{Engine, Wreck}
+import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-abstract class PolygonShip(val index: Int,
-                           val name: String,
-                           protected val init_coord: DVec,
-                           protected val init_velocity: DVec = DVec.dzero,
-                           protected val init_rotation: Double = 0,
-                           ship_designer: Boolean,
-                           create_interface: Boolean) {
-  LogUtils.log(s"$name -> $index")
+abstract class PolygonShip(
+                            val index: Int,
+                            val name: String,
+                            protected val init_coord: DVec,
+                            protected val init_velocity: DVec = DVec.dzero,
+                            protected val init_rotation: Double = 0,
+                            ship_designer: Boolean,
+                            create_interface: Boolean) {
+  println(s"$name -> $index")
   protected var selected_engine: Option[Engine] = None
 
   def selectedEngine: List[Engine] = selected_engine match {
@@ -421,12 +420,12 @@ abstract class PolygonShip(val index: Int,
         case DVec(1, 0) =>
           ((e.position.rotateDeg(rotation_diff) + DVec(-0.25, 0) * engine_size) + coord_diff, 0.5 * engine_size, 1 * engine_size)
         case _ =>
-          LogUtils.log(s"${e.ship.name} ${e.name} ${e.force_dir} $rotation_diff $force_dir")
+          println(s"${e.ship.name} ${e.name} ${e.force_dir} $rotation_diff $force_dir")
           throw new Exception("engine force dir other than vertical or horizontal is not supported")
       }
       if (globalScale >= 20 && InterfaceHolder.namesSwitcher.showNames) {
         print(e.name, e.position.actualPos.toVec, (max_font_size / globalScale).toFloat, WHITE)
-        DrawUtils.drawArrow(center, center + force_dir * radius / 6, WHITE)
+        drawArrow(center, center + force_dir * radius / 6, WHITE)
       }
 
       val in_shadow = {
@@ -1266,7 +1265,7 @@ abstract class PolygonShip(val index: Int,
   }
 
   def syncOtherEnginesPower(except_engine_index: Int): Unit = {
-    LogUtils.log(s"syncOtherEnginesPower(except_engine=$except_engine_index)")
+    println(s"syncOtherEnginesPower(except_engine=$except_engine_index)")
     if (InterfaceHolder.gSwitcher.maxGSet) {
       val active_engines_except = engines.filter(e => e.active && 0 < e.stopMomentTacts && e.index != except_engine_index)
       if (active_engines_except.nonEmpty) {
@@ -1319,7 +1318,7 @@ abstract class PolygonShip(val index: Int,
           currentState.active = false
           deactivate_moment_msec = time_msec
           deactivate_point_relative = coord - _orbit_data.map(_.planet.coord).getOrElse(DVec.zero)
-          LogUtils.log(s"deactivated $name")
+          println(s"deactivated $name")
         }
       } else {
         if (!deactivate_condition || (drawMapMode && ship_interface.exists(!_.isMinimized))) {
@@ -1327,7 +1326,7 @@ abstract class PolygonShip(val index: Int,
         }
         if (!deactivate_condition) {
           currentState.active = true
-          LogUtils.log(s"activated $name")
+          println(s"activated $name")
           //println(s"activated $name, reason: $reason")
         }
       }

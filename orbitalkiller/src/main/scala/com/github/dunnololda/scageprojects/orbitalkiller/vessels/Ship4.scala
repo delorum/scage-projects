@@ -10,7 +10,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils.MyVec
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.PhysicsUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
-import com.github.dunnololda.scageprojects.orbitalkiller.vessels.parts.{DisabledEngine, DockingPoints, Engine}
+import com.github.dunnololda.scageprojects.orbitalkiller.vessels.parts.Engine
 
 import scala.collection.mutable.ArrayBuffer
 

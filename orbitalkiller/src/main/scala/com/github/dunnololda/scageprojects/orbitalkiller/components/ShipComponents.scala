@@ -6,7 +6,6 @@ import com.github.dunnololda.scageprojects.orbitalkiller.vessels._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.PhysicsUtils._
 import BasicComponents._
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.{MutableBodyState, SystemEvolution}
-import com.github.dunnololda.scageprojects.orbitalkiller.util.LogUtils
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -79,8 +78,8 @@ class ShipComponents(system_evolution: SystemEvolution, planets: PlanetComponent
   val sat1_init_velocity = speedToHaveOrbitWithParams(sat1_start_position, math.random * 3000000, earth.coord, earth.linearVelocity, earth.mass, G)
   //val sat1_start_position=DVec(1365327.0285981554, 6507689.41090233)
   //val sat1_init_velocity=DVec(21868.653743674382, 1661.8351848003101)
-  LogUtils.log(s"sat1_start_position=$sat1_start_position")
-  LogUtils.log(s"sat1_init_velocity=$sat1_init_velocity")
+  println(s"sat1_start_position=$sat1_start_position")
+  println(s"sat1_init_velocity=$sat1_init_velocity")
 
 
   // на круговой орбите в 200 км от поверхности Земли
@@ -100,8 +99,8 @@ class ShipComponents(system_evolution: SystemEvolution, planets: PlanetComponent
   //val sat2_start_position = earth.coord + DVec(100, earth.radius + 199000)
   //val sat2_init_velocity = satelliteSpeed(sat2_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
 
-  LogUtils.log(s"sat2_start_position=$sat2_start_position")
-  LogUtils.log(s"sat2_init_velocity=$sat2_init_velocity")
+  println(s"sat2_start_position=$sat2_start_position")
+  println(s"sat2_init_velocity=$sat2_init_velocity")
   val sat2 = new Satellite2(ScageId.nextId,
     init_coord = sat2_start_position,
     init_velocity = sat2_init_velocity,
@@ -151,7 +150,7 @@ class ShipComponents(system_evolution: SystemEvolution, planets: PlanetComponent
 
   def removeShipByIndex(ship_index: Int): Unit = {
     _shipsMap.remove(ship_index).foreach(ship => {
-      LogUtils.log(s"removed ship ${ship.name}")
+      println(s"removed ship ${ship.name}")
       update_list = true
       system_evolution.removeBodyByIndex(ship_index)
     })

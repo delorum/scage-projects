@@ -1,6 +1,4 @@
-package com.github.dunnololda.scageprojects.orbitalkiller.vessels.parts
-
-import com.github.dunnololda.scageprojects.orbitalkiller.vessels.{PolygonShip, ProxyShip}
+package com.github.dunnololda.scageprojects.orbitalkiller.vessels
 
 case class DockData(dock_to_ship: PolygonShip,
                     our_dp: DockingPoints,

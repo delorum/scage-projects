@@ -3,7 +3,6 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 import com.github.dunnololda.scageprojects.orbitalkiller.components.OrbitalComponentsAware
-import com.github.dunnololda.scageprojects.orbitalkiller.util.LogUtils
 
 /**
   * Created by andrey on 1/7/18.
@@ -55,7 +54,7 @@ trait OrbitAction extends OrbitalComponentsAware {
   actionStaticPeriodIgnorePause(10000) {
     if (orbitalComponents.timeMultiplier.timeMultiplier != realtime &&
       orbitalComponents.timeMultiplier.timeMultiplier > 1f * orbitalComponents.timeMultiplier.timeMultiplier / 63 * ticks + 20) {
-      LogUtils.log("updating timeMultiplier")
+      println("updating timeMultiplier")
       orbitalComponents.timeMultiplier.timeMultiplier = (orbitalComponents.timeMultiplier.timeMultiplier * 1f / 63 * ticks).toInt
     }
   }

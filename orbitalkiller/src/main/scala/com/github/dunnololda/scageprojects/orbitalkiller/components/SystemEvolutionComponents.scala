@@ -2,7 +2,6 @@ package com.github.dunnololda.scageprojects.orbitalkiller.components
 
 import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.{MutableBodyState, SystemEvolution}
-import com.github.dunnololda.scageprojects.orbitalkiller.util.LogUtils
 import com.github.dunnololda.scageprojects.orbitalkiller.vessels.Maneuvering
 
 import scala.collection.mutable
@@ -26,7 +25,7 @@ class SystemEvolutionComponents(system_evolution: SystemEvolution,
   def getFutureState(tacts: Long): mutable.Map[Int, MutableBodyState] = {
     if (player_ship.flightMode != Maneuvering) {
       system_cache.getOrElseUpdate(tacts, {
-        LogUtils.log("adding to system_cache")
+        println("adding to system_cache")
         val system_evolution_copy = system_evolution.copy(base_dt)
         val steps = tacts - system_evolution_copy.tacts
         (1l to steps).foreach(x => {
