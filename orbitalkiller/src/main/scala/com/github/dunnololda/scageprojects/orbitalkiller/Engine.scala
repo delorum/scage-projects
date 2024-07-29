@@ -3,12 +3,10 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.ScageId
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
-import com.github.dunnololda.scageprojects.orbitalkiller.celestials.PlanetWithAir
-import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
-import com.github.dunnololda.scageprojects.orbitalkiller.components.TactsAware
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
-import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.vessels.{FreeFlightMode, Maneuvering, PolygonShip}
+import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
+import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 
 class Engine(val name: Int,
              val position: DVec, // позиция относительно центра массы корабля (ц.м. в точке (0,0))
@@ -16,12 +14,7 @@ class Engine(val name: Int,
              val max_power: Double, // в ньютонах
              val default_power_percent: Int, // при выборе данного двигателя какая мощность выставляется по умолчанию
              val fuel_consumption_per_sec_at_full_power: Double, // Расход топлива в килограммах в секунду на полной мощности
-             val ship: PolygonShip,
-             timer: TactsAware,
-             earth: PlanetWithAir) {
-
-  import timer._
-
+             val ship: PolygonShip) {
   val index: Int = ScageId.nextId
   private var worktime_tacts = 0l
   private var stop_moment_tacts = 0l
@@ -86,8 +79,8 @@ class Engine(val name: Int,
         if (InterfaceHolder.gSwitcher.maxGSet) {
           math.min(
             max_power * new_power_percent / 100.0,
-            ship.thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * earth.g + {
-              earth.airResistance(ship.currentState, earth.currentState, /*ShipsHolder.currentShipStatesExceptShip(ship.index), */ 28, 0.5).norma
+            ship.thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
+              earth.airResistance(ship.currentState, earth.currentState, /*ShipsHolder.currentShipStatesExceptShip(ship.index), */28, 0.5).norma
             }
           )
         } else {
@@ -99,7 +92,7 @@ class Engine(val name: Int,
       if (ship.fuelMassWhenEnginesOff < 0) {
         _power = prev
       } else {
-        if ((ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) && InterfaceHolder.gSwitcher.maxGSet) {
+        if((ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) && InterfaceHolder.gSwitcher.maxGSet) {
           ship.syncOtherEnginesPower(index)
         }
       }
@@ -124,7 +117,7 @@ class Engine(val name: Int,
           }
           //timeMultiplier = realtime
           if (workTimeTacts == 0) workTimeTacts = 10
-          if ((ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) && InterfaceHolder.gSwitcher.maxGSet) {
+          if((ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) && InterfaceHolder.gSwitcher.maxGSet) {
             ship.syncOtherEnginesPower(index)
           }
         } else {

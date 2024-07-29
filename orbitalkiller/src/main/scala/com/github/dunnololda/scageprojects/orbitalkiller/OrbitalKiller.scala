@@ -3,31 +3,80 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import java.io.FileOutputStream
 
 import com.github.dunnololda.scage.ScageLibD.{DVec, Vec, addGlyphs, appVersion, max_font_size, messageBounds, print, property, stopApp, _}
-import com.github.dunnololda.scageprojects.orbitalkiller.celestials.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 import com.github.dunnololda.scageprojects.orbitalkiller.components.OrbitalComponents
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.BoxShape
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.{BodyState, MutableBodyState}
+import com.github.dunnololda.scageprojects.orbitalkiller.celestials.CelestialBody
+import com.github.dunnololda.scageprojects.orbitalkiller.vessels._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.DrawUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.GeometryUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.KeplerOrbit._
-import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.{EllipseOrbit, HyperbolaOrbit}
-import com.github.dunnololda.scageprojects.orbitalkiller.vessels._
+import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.{EllipseOrbit, HyperbolaOrbit, KeplerOrbit}
 
 import scala.collection._
 
 //import collection.mutable.ArrayBuffer
 
+case class OrbitData(update_count: Long,
+                     body_state: MutableBodyState,
+                     bs_radius: Double,
+                     planet_state: MutableBodyState,
+                     planet: CelestialBody,
+                     orbit: KeplerOrbit,
+                     ccw: Boolean,
+                     render: () => Unit) {
+  lazy val ellipseOrbit: Option[EllipseOrbit] = orbit match {
+    case x: EllipseOrbit => Some(x)
+    case _ => None
+  }
+  lazy val hyperbolaOrbit: Option[HyperbolaOrbit] = orbit match {
+    case x: HyperbolaOrbit => Some(x)
+    case _ => None
+  }
+
+  val init_bs_coord = body_state.coord
+  val init_bs_vel = body_state.vel
+  val init_planet_coord = planet_state.coord
+  val init_planet_vel = planet_state.vel
+  val init_planet_ang = planet_state.ang
+
+  lazy val planet_radius_plus_body_radius_sq = (planet.radius + bs_radius) * (planet.radius + bs_radius)
+  lazy val is_landed: Boolean = {
+    init_bs_coord.dist2(init_planet_coord) <= planet_radius_plus_body_radius_sq &&
+      ((init_bs_vel - init_planet_vel) * (init_bs_coord - init_planet_coord).n).abs < 0.5 &&
+      (((init_bs_vel - init_planet_vel) * (init_bs_coord - init_planet_coord).p) / init_bs_coord.dist(init_planet_coord) * planet.radius - planet.groundSpeedMsec).abs < 0.5
+  }
+
+  lazy val is_landed_on_earth: Boolean = is_landed && planet.index == earthIndex
+  lazy val is_landed_on_moon: Boolean = is_landed && planet.index == moonIndex
+
+  lazy val orbitStrDefinition: String = {
+    if (is_landed) "landed"
+    else {
+      orbit.strDefinition(planet.name,
+        planet.radius,
+        init_planet_vel,
+        init_planet_ang,
+        planet.groundSpeedMsec,
+        planet.g,
+        init_bs_coord,
+        init_bs_vel,
+        bs_radius)
+    }
+  }
+}
+
 object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("screen.width", 1280), property("screen.height", 768)) {
   val components = new OrbitalComponents
 
   import components._
-  import planetComponents._
   import shipComponents._
   import systemEvolutionComponents._
+  import planetComponents._
 
   private var _time_multiplier = realtime
 
@@ -704,8 +753,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     //println("updateOrbits")
     if (player_ship.flightMode == Maneuvering || !onPause || !player_ship.engines.exists(_.active)) {
       // если в режиме маневрирования, или не в режиме маневрирования, но не на паузе, или на паузе, но двигатели не работают - рисуем текущее состояние
-      moon.orbitRender = orbitDataUpdater.updateOrbitData(update_count, moon.index, moon.radius, player_ship.colorIfPlayerAliveOrRed(GREEN), system_evolution.allBodyStates, Set(earth.index, sun.index), None)
-      earth.orbitRender = orbitDataUpdater.updateOrbitData(update_count, earth.index, earth.radius, player_ship.colorIfPlayerAliveOrRed(ORANGE), system_evolution.allBodyStates, Set(sun.index), None)
+      moon.orbitRender = OrbitDataUpdater.updateOrbitData(update_count, moon.index, moon.radius, player_ship.colorIfPlayerAliveOrRed(GREEN), system_evolution.allBodyStates, Set(earth.index, sun.index), None)
+      earth.orbitRender = OrbitDataUpdater.updateOrbitData(update_count, earth.index, earth.radius, player_ship.colorIfPlayerAliveOrRed(ORANGE), system_evolution.allBodyStates, Set(sun.index), None)
       player_ship.updateOrbitData(update_count, player_ship.colorIfPlayerAliveOrRed(YELLOW), timeMsec, system_evolution.allBodyStates, InterfaceHolder.orbitSwitcher.calculateOrbitAround)
       InterfaceHolder.orbitInfo.markUpdateNeeded()
       InterfaceHolder.shipInterfaces.foreach(si => {
@@ -718,8 +767,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       // в эту секцию мы попадаем, если мы не в режиме маневрирования, на паузе, и двигатели работают
       val stop_moment_tacts = player_ship.engines.map(_.stopMomentTacts).max
       val system_state_when_engines_off = getFutureState(stop_moment_tacts)
-      moon.orbitRender = orbitDataUpdater.updateOrbitData(update_count, moon.index, moon.radius, player_ship.colorIfPlayerAliveOrRed(GREEN), system_state_when_engines_off, Set(earth.index, sun.index), None)
-      earth.orbitRender = orbitDataUpdater.updateOrbitData(update_count, earth.index, earth.radius, player_ship.colorIfPlayerAliveOrRed(ORANGE), system_state_when_engines_off, Set(sun.index), None)
+      moon.orbitRender = OrbitDataUpdater.updateOrbitData(update_count, moon.index, moon.radius, player_ship.colorIfPlayerAliveOrRed(GREEN), system_state_when_engines_off, Set(earth.index, sun.index), None)
+      earth.orbitRender = OrbitDataUpdater.updateOrbitData(update_count, earth.index, earth.radius, player_ship.colorIfPlayerAliveOrRed(ORANGE), system_state_when_engines_off, Set(sun.index), None)
       val stop_moment_msec = (stop_moment_tacts * base_dt * 1000).toLong
       player_ship.updateOrbitData(update_count, player_ship.colorIfPlayerAliveOrRed(YELLOW), stop_moment_msec, system_state_when_engines_off, InterfaceHolder.orbitSwitcher.calculateOrbitAround)
       InterfaceHolder.orbitInfo.markUpdateNeeded()
