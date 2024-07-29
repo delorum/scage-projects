@@ -4,7 +4,6 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.PolygonShape
-import com.github.dunnololda.scageprojects.orbitalkiller.vessels.parts.Engine
 
 class Satellite1(index: Int,
                  init_coord: DVec,
