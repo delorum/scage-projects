@@ -43,18 +43,22 @@ trait OrbitMouseControls extends OrbitalComponentsAware {
     println(globalScale)
   })
 
+
+  var left_up_corner: Option[DVec] = None
+  var right_down_corner: Option[DVec] = None
+  var set_stop_moment = false
   leftMouseIgnorePause(onBtnDown = m => {
     if (orbitalComponents.drawMapMode) {
-      orbitalComponents.left_up_corner = Some(absCoord(m))
+      left_up_corner = Some(absCoord(m))
     } else {
       InterfaceHolder.clickInterfaceElem(m, 0)
     }
   }, onBtnUp = m => {
     if (orbitalComponents.drawMapMode) {
-      if (orbitalComponents.right_down_corner.nonEmpty) {
+      if (right_down_corner.nonEmpty) {
         for {
-          x <- orbitalComponents.left_up_corner
-          y <- orbitalComponents.right_down_corner
+          x <- left_up_corner
+          y <- right_down_corner
           c = (y - x).n * (y.dist(x) / 2f) + x
           h = math.abs(y.y - x.y)
           if h * globalScale > 10
@@ -74,15 +78,15 @@ trait OrbitMouseControls extends OrbitalComponentsAware {
       } else {
         val player_ship: Ship4 = orbitalComponents.shipComponents.player_ship
         if (!InterfaceHolder.clickInterfaceElem(m, 0) && player_ship.isAlive && (keyPressed(KEY_LSHIFT) || keyPressed(KEY_RSHIFT))) {
-          orbitalComponents.set_stop_moment = true
+          set_stop_moment = true
         }
       }
-      orbitalComponents.left_up_corner = None
-      orbitalComponents.right_down_corner = None
+      left_up_corner = None
+      right_down_corner = None
     }
   })
   leftMouseDragIgnorePause(onDrag = m => if (orbitalComponents.drawMapMode) {
-    orbitalComponents.right_down_corner = Some(absCoord(m))
+    right_down_corner = Some(absCoord(m))
   })
 
   rightMouseIgnorePause(onBtnDown = m => {
