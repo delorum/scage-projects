@@ -4,7 +4,6 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller.celestials.CelestialBody
-import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils._
 
 import scala.collection.Seq
@@ -176,17 +175,6 @@ object KeplerOrbit {
           ship_coord.dist2(smaller_planet_state.coord) <= smaller_planet.half_hill_radius2
       }
       if (x.nonEmpty) x else Some(planet_states.last)
-    }
-  }
-
-  def orbitAroundCelestialInPointWithVelocity(coord: DVec,
-                                              velocity: DVec,
-                                              mass: Double,
-                                              planet_states: Seq[(CelestialBody, MutableBodyState)])
-  : Option[((CelestialBody, MutableBodyState), KeplerOrbit)] = {
-    insideSphereOfInfluenceOfCelestialBody(coord, mass, planet_states).map {
-      case ((planet, planet_state)) =>
-        ((planet, planet_state), calculateOrbit(planet_state.mass, planet_state.coord, mass, coord - planet_state.coord, velocity - planet_state.vel, G))
     }
   }
 }
