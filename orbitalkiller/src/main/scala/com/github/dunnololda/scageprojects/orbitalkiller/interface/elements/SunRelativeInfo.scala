@@ -3,9 +3,8 @@ package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.ScageColor
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.{InterfaceElement, InterfaceHolder}
-import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
-import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils._
 
 class SunRelativeInfo extends InterfaceElement {
   private val strings = Array("")
@@ -18,7 +17,7 @@ class SunRelativeInfo extends InterfaceElement {
       f"${correctAngle(DVec(0, 1).deg360(player_ship.coord - sun.coord) - sun.currentState.ang)}%.3f град."
     } else {
       val km = (correctAngle(DVec(0, 1).deg360(player_ship.coord - sun.coord) - sun.currentState.ang) / 360.0 * sun.length) / 1000
-      f"$km%.2f/${sun.length / 1000}%.2f км"
+      f"$km%.2f/${sun.length/1000}%.2f км"
     }
     strings(0) = s"Солнце: dist=${mOrKmOrMKm(player_ship.coord.dist(sun.coord) - sun.radius)}, v.vel=$ship_sun_vertical_speed, h.vel=$ship_sun_tangent_speed, pos=$ship_sun_position"
   }

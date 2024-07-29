@@ -1,8 +1,8 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils.MyVec
-import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.HyperbolaOrbit
+import com.github.dunnololda.scageprojects.orbitalkiller._
+
 
 object HyperbolaOrbitPositionTest extends ScageScreenAppD("Hyperbola Orbit Position Test", 640, 480) {
   val G: Double = 6.6742867E-11

@@ -3,7 +3,6 @@ package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceElement
-import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.PhysicsUtils._
 
 class PlanetsInfluenceInfo extends InterfaceElement {
   private val strings = Array("")

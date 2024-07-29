@@ -6,9 +6,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHold
 import com.github.dunnololda.scageprojects.orbitalkiller.planets.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.ShipsHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
-import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils._
-import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.KeplerOrbit._
-import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.{EllipseOrbit, HyperbolaOrbit, KeplerOrbit}
+import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.KeplerOrbit
 
 import scala.collection.{Set, mutable}
 
@@ -303,7 +301,7 @@ object OrbitDataUpdater {
                       need_planets: Set[Int],
                       calculate_orbit_around: Option[Int]): Option[OrbitData] = {
     val celestials = some_system_state.filter(kv => need_planets.contains(kv._1)).flatMap(kv => {
-      system_planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
+      planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
     }).values.toSeq.sortBy(_._2.mass)
     // смотрим, где он находится
     val bs_coord = bs.coord

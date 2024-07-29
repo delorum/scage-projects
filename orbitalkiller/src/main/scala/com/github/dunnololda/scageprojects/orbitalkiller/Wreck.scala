@@ -10,7 +10,7 @@ class Wreck(mass: Double, init_coord: DVec, init_velocity: DVec, init_rotation: 
 
   def colorIfPlayerAliveOrRed(color: => ScageColor) = if (OrbitalKiller.player_ship.isDead) RED else color
 
-  val currentState: MutableBodyState = new MutableBodyState(BodyState(
+  val currentState:MutableBodyState = new MutableBodyState(BodyState(
     index = index,
     mass = mass,
     vel = init_velocity,
@@ -30,7 +30,7 @@ class Wreck(mass: Double, init_coord: DVec, init_velocity: DVec, init_rotation: 
           val bs = l(0)
           val e = l(1)
           //val other_ship_states = helper.bodyStates(ShipsHolder.shipIndicies.filterNot(_ == player_ship.index))
-          earth.airResistance(bs, e, /*other_ship_states, */ 28, 0.5)
+          earth.airResistance(bs, e, /*other_ship_states, */28, 0.5)
         })
     },
     (tacts, helper) => 0.0
@@ -47,7 +47,7 @@ class Wreck(mass: Double, init_coord: DVec, init_velocity: DVec, init_rotation: 
   def rotation = currentState.ang
 
   val render_id = render {
-    if (!drawMapMode && coord.dist2(player_ship.coord) < 100000 * 100000 && !system_planets.exists(p => p._2.coord.dist2(coord) < p._2.radius2)) {
+    if (!drawMapMode && coord.dist2(player_ship.coord) < 100000 * 100000 && !planets.exists(p => p._2.coord.dist2(coord) < p._2.radius2)) {
       openglLocalTransform {
         openglMove(currentState.coord - base)
         /*mbs.contacts.foreach(x => {
@@ -67,7 +67,7 @@ class Wreck(mass: Double, init_coord: DVec, init_velocity: DVec, init_rotation: 
 
   if (!is_main) {
     actionStaticPeriod(1000) {
-      if (timeMultiplier > 10 || coord.dist2(player_ship.coord) > 100000l * 100000l || system_planets.exists(p => p._2.coord.dist2(coord) < p._2.radius2)) {
+      if (timeMultiplier > 10 || coord.dist2(player_ship.coord) > 100000l * 100000l || planets.exists(p => p._2.coord.dist2(coord) < p._2.radius2)) {
         system_evolution.removeBodyByIndex(index)
         delOperation(render_id)
         deleteSelf()

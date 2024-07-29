@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils.MyVec
+import com.github.dunnololda.scageprojects.orbitalkiller._
 
 case class Orbit2(
                    a: Double, // большая полуось
@@ -58,13 +58,12 @@ case class Orbit2(
   }
 
   /**
-    * Расстояние от притягивающего центра до орбиты в данном направлении. Определяем истинную аномалию данного направления
-    * и по формуле считаем длину радиус-вектора.
-    * https://en.wikipedia.org/wiki/True_anomaly#Radius_from_true_anomaly
-    *
-    * @param dir - вектор направления
-    * @return
-    */
+   * Расстояние от притягивающего центра до орбиты в данном направлении. Определяем истинную аномалию данного направления
+   * и по формуле считаем длину радиус-вектора.
+   * https://en.wikipedia.org/wiki/True_anomaly#Radius_from_true_anomaly
+   * @param dir - вектор направления
+   * @return
+   */
   def distanceByDir(dir: DVec) = {
     p / (1 + e * math.cos(tetaSignedRadByDir(dir)))
   }
@@ -91,15 +90,14 @@ case class Orbit2(
   }
 
   /**
-    * Время в миллисекундах, которое займет перемещение корабля по эллиптической орбите из точки point1 в точку point2
-    * против часовой стрелки.
-    * Вычисляется по формуле Ламберта, которую нашел в книге М.Б. Балка "Элементы динамики космического полета", стр 122-129
-    * http://pskgu.ru/ebooks/astro3/astro3_03_05.pdf
-    *
-    * @param point1 - начальная точка
-    * @param point2 - конечная точка
-    * @return
-    */
+   * Время в миллисекундах, которое займет перемещение корабля по эллиптической орбите из точки point1 в точку point2
+   * против часовой стрелки.
+   * Вычисляется по формуле Ламберта, которую нашел в книге М.Б. Балка "Элементы динамики космического полета", стр 122-129
+   * http://pskgu.ru/ebooks/astro3/astro3_03_05.pdf
+   * @param point1 - начальная точка
+   * @param point2 - конечная точка
+   * @return
+   */
   def travelTimeOnOrbitMsecCCW(point1: DVec, point2: DVec, mu: Double): (Long, String) = {
     val t1 = tetaDeg360InPoint(point1)
     val t2 = tetaDeg360InPoint(point2)
@@ -115,8 +113,8 @@ case class Orbit2(
     val (l1, l2, variant) = if (t1 == 0) {
       if (t2 < 180) (xl1, xl2, "None")
       else (2 * math.Pi - xl1, -xl2, "F & A")
-    } else if (t2 == 0) {
-      if (t1 > 180) (xl1, xl2, "None")
+    } else if(t2 == 0) {
+      if(t1 > 180) (xl1, xl2, "None")
       else (2 * math.Pi - xl1, -xl2, "F & A")
     } else {
       if (areLinesIntersect(f2 + (f2 - f1).n * r_p, f2, orbital_point1, orbital_point2)) {
@@ -139,14 +137,13 @@ case class Orbit2(
   }
 
   /**
-    * Орбитальная скорость в точке орбиты с данной истинной аномалией
-    *
-    * @param teta_rad - угол в радианах между радиус вектором на точку на орбите и направлением на перицентр.
-    *                 Если против часовой стрелки - положительный, от 0 до pi, иначе отрицательный, от 0 до -pi
-    *                 https://en.wikipedia.org/wiki/Lambert%27s_problem
-    *                 https://en.wikipedia.org/wiki/Kepler_orbit
-    * @return
-    */
+   * Орбитальная скорость в точке орбиты с данной истинной аномалией
+   * @param teta_rad - угол в радианах между радиус вектором на точку на орбите и направлением на перицентр.
+   *                 Если против часовой стрелки - положительный, от 0 до pi, иначе отрицательный, от 0 до -pi
+   *                 https://en.wikipedia.org/wiki/Lambert%27s_problem
+   *                 https://en.wikipedia.org/wiki/Kepler_orbit
+   * @return
+   */
   def orbitalVelocityByTrueAnomalyRad(teta_rad: Double, mu: Double) = {
     val vr = math.sqrt(mu / p) * e * math.sin(teta_rad)
     val vt = math.sqrt(mu / p) * (1 + e * math.cos(teta_rad))
