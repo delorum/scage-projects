@@ -5,7 +5,6 @@ import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements.OtherShipInfo
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
-import com.github.dunnololda.scageprojects.orbitalkiller.planets.PlanetWithAir
 import com.github.dunnololda.scageprojects.orbitalkiller.{BodyState, MutableBodyState, OrbitData, OrbitDataUpdater, OrbitalKiller, Wreck, _}
 
 import scala.collection.mutable

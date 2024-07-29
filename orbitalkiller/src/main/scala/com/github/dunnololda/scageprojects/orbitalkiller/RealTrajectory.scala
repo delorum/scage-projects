@@ -7,7 +7,6 @@ import scala.collection.mutable.ArrayBuffer
 import OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.SystemEvolution
-import com.github.dunnololda.scageprojects.orbitalkiller.planets.CelestialBody
 
 object RealTrajectory extends RealTrajectoryC(None)
 object RealTrajectory2 extends RealTrajectoryC(Some(1))

@@ -2,7 +2,6 @@ package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller._
-import com.github.dunnololda.scageprojects.orbitalkiller.planets.{CelestialBody, Planet, Star}
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.SpaceStation2
 
 object OrbitalOscillationsTests extends ScageApp {
