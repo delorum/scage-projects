@@ -17,6 +17,115 @@ import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicCompone
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
+sealed trait FlightMode {
+  def rusStr: String
+}
+
+// 1
+case object FreeFlightMode extends FlightMode {
+  override def rusStr: String = "свободный"
+}
+
+// 2
+case object Killrot extends FlightMode {
+  override def rusStr: String = "запрет вращения"
+}
+
+// 3
+case object RelativeVelocityAligned extends FlightMode {
+  override def rusStr: String = "ориентация по траектории"
+}
+
+// shift+3
+case object OppositeRelativeVelocityAligned extends FlightMode {
+  override def rusStr: String = "ориентация против траектории"
+}
+
+// 4
+case object CirclularOrbit extends FlightMode {
+  override def rusStr: String = "выход на круговую орбиту"
+}
+
+// 5
+case object NearestShipVelocity extends FlightMode {
+  override def rusStr: String = "уравнять скорость с кораблем"
+}
+
+// 6
+case object NearestShipAligned extends FlightMode {
+  override def rusStr: String = "ориентация на корабль"
+}
+
+// 7
+case object NearestShipAutoDocking extends FlightMode {
+  override def rusStr: String = "стыковка с кораблем"
+}
+
+// 8
+case object NearestPlanetVelocity extends FlightMode {
+  override def rusStr: String = "уравнять скорость с ближайшей планетой"
+}
+
+// 9
+// vacant
+
+// 0
+case object Maneuvering extends FlightMode {
+  override def rusStr: String = "маневрирование"
+}
+
+case class DisabledEngine(e: Int, instead_engines: List[Int] = Nil)
+
+class DockingPoints(val p1: DVec,
+                    val p2: DVec,
+                    ship: PolygonShip,
+                    val disabled_engine: Option[DisabledEngine],
+                    val ordered_hull: List[DVec]) {
+  val index = ScageId.nextId
+  val joint_point = p1 + (p2 - p1) * 0.5
+  val dock_dir = joint_point.n
+  val dock_dist = 0.5
+
+  // в метрах, при каком расстоянии между точками стыковки двух кораблей происходит захватю Для простоты это значение - одинаковая для всех константа. Вынесли сюда, чтобы было одно место, где поменять.
+  def curP1 = ship.currentState.coord + p1.rotateDeg(ship.currentState.ang)
+
+  def curP1vel = ship.currentState.vel + (ship.currentState.ang_vel * p1.rotateDeg(90))
+
+  def curP2 = ship.currentState.coord + p2.rotateDeg(ship.currentState.ang)
+
+  def curP2vel = ship.currentState.vel + (ship.currentState.ang_vel * p2.rotateDeg(90))
+
+  /**
+    * Стыковочные точки находятся на достаточном расстоянии друг от друга, чтобы состыковаться
+    *
+    * @param other_ship_docking_points - стыковочные точки другого корабля
+    * @return
+    */
+  def pointsMatch(other_ship_docking_points: DockingPoints): Boolean = {
+    curP1.dist(other_ship_docking_points.curP1) < dock_dist && curP2.dist(other_ship_docking_points.curP2) < dock_dist
+  }
+
+  /**
+    * Наши стыковочные точки лежат на линиях стыковки. Если дальше двигаться в сторону точек стыковки другого корабля, то состыкуемся
+    *
+    * @param dp - стыковочные точки другого корабля
+    * @return
+    */
+  def pointsOnTheRightWay(dp: DockingPoints): (Boolean, Boolean) = {
+    val vv1 = (dp.curP1 - dp.curP2).n * dock_dist
+    val vv2 = vv1.perpendicular
+
+    val p1_on_the_right_way = (curP1 - (dp.curP1 + vv1)).perpendicular * vv2 < 0 && (curP1 - (dp.curP1 - vv1)).perpendicular * vv2 > 0 // p1 inside line
+    val p2_on_the_right_way = (curP2 - (dp.curP2 + vv1)).perpendicular * vv2 < 0 && (curP2 - (dp.curP2 - vv1)).perpendicular * vv2 > 0 // p2_inside_line
+    (p1_on_the_right_way, p2_on_the_right_way)
+  }
+}
+
+case class DockData(dock_to_ship: PolygonShip,
+                    our_dp: DockingPoints,
+                    other_ship_dp: DockingPoints,
+                    proxy_ship: ProxyShip)
+
 abstract class PolygonShip(
                             val index: Int,
                             val name: String,
