@@ -22,12 +22,10 @@ class OrbitsUpdater(system_evolution: SystemEvolution,
   import shipComponents._
   import planetComponents._
 
-  private var _update_orbits = false
-  def needUpdateOrbits: Boolean = _update_orbits
-
+  var _update_orbits = false
   var update_count: Long = 0l
 
-  def update() {
+  def updateOrbits() {
     //println("updateOrbits")
     if (player_ship.flightMode == Maneuvering || !onPause || !player_ship.engines.exists(_.active)) {
       // если в режиме маневрирования, или не в режиме маневрирования, но не на паузе, или на паузе, но двигатели не работают - рисуем текущее состояние
@@ -65,7 +63,7 @@ class OrbitsUpdater(system_evolution: SystemEvolution,
     _update_orbits = false
   }
 
-  def scheduleOrbitsUpdate(reason: String) {
+  def needToUpdateOrbits(reason: String) {
     println(s"needToUpdateOrbits: $reason")
     if (onPause) {
       systemEvolutionComponents.system_cache.clear()
