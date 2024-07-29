@@ -5,7 +5,7 @@ import com.github.dunnololda.scage.ScageLibD._
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
 import OrbitalKiller._
-import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
+import com.github.dunnololda.scageprojects.orbitalkiller.interfaces.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.SystemEvolution
 
 object RealTrajectory extends RealTrajectoryC(None)
