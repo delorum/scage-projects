@@ -9,7 +9,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.Poly
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils.MyVec
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.PhysicsUtils._
-import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
+
 import scala.collection.mutable.ArrayBuffer
 
 class Ship4(index: Int,
@@ -152,11 +152,12 @@ class Ship4(index: Int,
       }
     }
 
-    percent_seq.map { percent =>
-      val power = max_power * 0.01 * percent
-      val force = force_dir * power
-      val acc = force / mass
-      (howManyTacts(to, from, acc, base_dt), power, percent)
+    percent_seq.map {
+      case percent =>
+        val power = max_power * 0.01 * percent
+        val force = force_dir * power
+        val acc = force / mass
+        (howManyTacts(to, from, acc, base_dt), power, percent)
     }.find {
       case ((tacts, result_to), power, percent) =>
         //println(s"maxPossiblePowerForLinearMovement find: $power, $percent: ${math.abs(to - result_to)}")
@@ -181,11 +182,12 @@ class Ship4(index: Int,
                                                   to: Double,
                                                   from: Double,
                                                   max_diff: Double): (Int, Double) = {
-    default_percent_seq.map { percent =>
-      val power = max_power * 0.01 * percent
-      val torque = (-force_dir * power) */ position
-      val ang_acc = (torque / I).toDeg
-      (howManyTacts(to, from, ang_acc, base_dt), power, percent)
+    default_percent_seq.map {
+      case percent =>
+        val power = max_power * 0.01 * percent
+        val torque = (-force_dir * power) */ position
+        val ang_acc = (torque / I).toDeg
+        (howManyTacts(to, from, ang_acc, base_dt), power, percent)
     }.find {
       case ((tacts, result_to), power, percent) =>
         //println(s"maxPossiblePowerAndTactsForRotation find: $power, $percent: ${math.abs(to - result_to)}")
