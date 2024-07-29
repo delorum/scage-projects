@@ -6,7 +6,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicCompone
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.BoxShape
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.KeplerOrbit._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.{EllipseOrbit, HyperbolaOrbit}
-import com.github.dunnololda.scageprojects.orbitalkiller.FixedOnOrbit
+import com.github.dunnololda.scageprojects.orbitalkiller.{FixedOnOrbit, FixedOnShip, FreeViewMode}
 
 /**
   * Created by andrey on 1/7/18.

@@ -1,4 +1,4 @@
-package com.github.dunnololda.scageprojects.orbitalkiller.components
+package com.github.dunnololda.scageprojects.orbitalkiller
 
 sealed trait ViewMode {
   def rusStr: String

@@ -4,7 +4,6 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.KeplerOrbit._
 import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
-import com.github.dunnololda.scageprojects.orbitalkiller.components.{FixedOnOrbit, OrbitalComponentsAware}
 import com.github.dunnololda.scageprojects.orbitalkiller.vessels.Ship4
 
 /**

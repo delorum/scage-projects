@@ -3,7 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import com.github.dunnololda.scage.ScageLibD.{DVec, Vec, addGlyphs, appVersion, max_font_size, messageBounds, print, property, _}
 import com.github.dunnololda.scageprojects.orbitalkiller.celestials.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
-import com.github.dunnololda.scageprojects.orbitalkiller.components.{FixedOnShip, OrbitalComponents}
+import com.github.dunnololda.scageprojects.orbitalkiller.components.OrbitalComponents
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller.render.OrbitRenderData
@@ -39,14 +39,14 @@ object OrbitalKiller
     }
   }
 
-  actionDynamicPeriodIgnorePause(500 / timeMultiplier.timeMultiplier) {
+  actionDynamicPeriodIgnorePause(500 / timeMultiplier) {
     realTrajectory.continue()
     //RealTrajectory2.continue()
     //RealTrajectory3.continue()
   }
 
   private def nextStep() {
-    (1 to timeMultiplier.timeMultiplier).foreach(step => {
+    (1 to timeMultiplier).foreach(step => {
       ships.foreach(s => {
         s.beforeStep()
       })
@@ -57,8 +57,8 @@ object OrbitalKiller
       if (_stop_after_number_of_tacts > 0) {
         _stop_after_number_of_tacts -= 1
         if (_stop_after_number_of_tacts <= 0) {
-          if (timeMultiplier.timeMultiplier != realtime) {
-            timeMultiplier.timeMultiplier = realtime
+          if (timeMultiplier != realtime) {
+            timeMultiplier = realtime
           }
           pause()
         }
@@ -165,17 +165,16 @@ object OrbitalKiller
 
   updateOrbits()
 
-  actionDynamicPeriodIgnorePause(1000 / timeMultiplier.timeMultiplier) {
+  actionDynamicPeriodIgnorePause(1000 / timeMultiplier) {
     if ( /*drawMapMode && (*/ !onPause || _update_orbits /*)*/ ) {
       updateOrbits()
     }
   }
 
   actionStaticPeriodIgnorePause(10000) {
-    if (timeMultiplier.timeMultiplier != realtime &&
-      timeMultiplier.timeMultiplier > 1f * timeMultiplier.timeMultiplier / 63 * ticks + 20) {
+    if (timeMultiplier != realtime && timeMultiplier > 1f * timeMultiplier / 63 * ticks + 20) {
       println("updating timeMultiplier")
-      timeMultiplier.timeMultiplier = (timeMultiplier.timeMultiplier * 1f / 63 * ticks).toInt
+      timeMultiplier = (timeMultiplier * 1f / 63 * ticks).toInt
     }
   }
 
