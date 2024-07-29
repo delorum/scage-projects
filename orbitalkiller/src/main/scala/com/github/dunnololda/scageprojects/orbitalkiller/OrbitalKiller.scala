@@ -19,7 +19,7 @@ import scala.collection._
 
 object OrbitalKiller
   extends ScageScreenAppDMT("Orbital Killer", property("screen.width", 1280), property("screen.height", 768))
-    with OrbitKeyControls with OrbitMouseControls with OrbitAction {
+    with OrbitKeyControls with OrbitMouseControls {
   val orbitalComponents: OrbitalComponents = new OrbitalComponents
 
   import orbitalComponents._
@@ -27,6 +27,55 @@ object OrbitalKiller
   import planetComponents._
   import shipComponents._
   import systemEvolutionComponents._
+
+  actionDynamicPeriodIgnorePause(500 / timeMultiplier.timeMultiplier) {
+    realTrajectory.continue()
+    //RealTrajectory2.continue()
+    //RealTrajectory3.continue()
+  }
+
+  private def nextStep() {
+    (1 to timeMultiplier.timeMultiplier).foreach(step => {
+      ships.foreach(s => {
+        s.beforeStep()
+      })
+      system_evolution.step()
+      ships.foreach(s => {
+        s.afterStep(timeMsec)
+      })
+      if (_stop_after_number_of_tacts > 0) {
+        _stop_after_number_of_tacts -= 1
+        if (_stop_after_number_of_tacts <= 0) {
+          if (timeMultiplier.timeMultiplier != realtime) {
+            timeMultiplier.timeMultiplier = realtime
+          }
+          pause()
+        }
+      }
+    })
+  }
+
+  nextStep()
+
+  action {
+    nextStep()
+  }
+
+  updateOrbits()
+
+  actionDynamicPeriodIgnorePause(1000 / timeMultiplier.timeMultiplier) {
+    if ( /*drawMapMode && (*/ !onPause || _update_orbits /*)*/ ) {
+      updateOrbits()
+    }
+  }
+
+  actionStaticPeriodIgnorePause(10000) {
+    if (timeMultiplier.timeMultiplier != realtime &&
+      timeMultiplier.timeMultiplier > 1f * timeMultiplier.timeMultiplier / 63 * ticks + 20) {
+      println("updating timeMultiplier")
+      timeMultiplier.timeMultiplier = (timeMultiplier.timeMultiplier * 1f / 63 * ticks).toInt
+    }
+  }
 
   center = _center
   windowCenter = DVec((windowWidth - 1024) + 1024 / 2, windowHeight / 2)
