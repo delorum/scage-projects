@@ -1,7 +1,8 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.physics
 
-import com.github.dunnololda.scage.ScageLibD.Double2Vecrich
 import com.github.dunnololda.scage.support.DVec
+import com.github.dunnololda.scageprojects.orbitalkiller.MutableBodyState
+import com.github.dunnololda.scage.ScageLibD.Double2Vecrich
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.SixDimVector
 
 // http://myselph.de/gamePhysics/equalityConstraints.html
@@ -49,13 +50,13 @@ class Joint(val a: MutableBodyState, val vertexA: DVec, val b: MutableBodyState,
   def solveConstraint2(_dt: Double): Unit = {
     val axis = b.coord - a.coord
     val currentDistance = axis.norma
-    val unitAxis = axis / currentDistance
-    val relVel = (b.vel - a.vel) * unitAxis
+    val unitAxis = axis/currentDistance
+    val relVel = (b.vel - a.vel)*unitAxis
     val relDist = currentDistance - m_distance
-    val remove = relVel + relDist / _dt
+    val remove = relVel+relDist/_dt
     val impulse = remove / (a.invMass + b.invMass)
-    val I = unitAxis * impulse
-    a.vel = a.vel + (I * a.invMass)
-    b.vel = b.vel - (I * b.invMass)
+    val I = unitAxis*impulse
+    a.vel = a.vel + ( I * a.invMass )
+    b.vel = b.vel - ( I * b.invMass )
   }
 }

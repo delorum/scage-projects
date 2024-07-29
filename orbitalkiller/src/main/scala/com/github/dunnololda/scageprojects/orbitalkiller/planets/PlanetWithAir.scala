@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.planets
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.MutableBodyState
+import com.github.dunnololda.scageprojects.orbitalkiller.MutableBodyState
 
 class PlanetWithAir(index: Int,
                     name: String,

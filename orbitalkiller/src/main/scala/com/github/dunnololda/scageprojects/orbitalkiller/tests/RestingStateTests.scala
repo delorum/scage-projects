@@ -1,9 +1,8 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.BodyState
+import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.SystemEvolution._
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.{BoxShape, LineShape}
 
 object RestingStateTests extends ScageScreenAppD("Resting State Tests", 800, 600) {
   val w1 = BodyState(nextId, 1, DVec.zero, DVec.zero, DVec(0, 0), 0.0, 0.0, 0.0, LineShape(DVec(windowWidth, 0)), is_static = true)

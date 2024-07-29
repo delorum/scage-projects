@@ -1,6 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.physics
 
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scageprojects.orbitalkiller.BodyState
 
 case class CollisionData(collided_body: BodyState,
                          contact_point: DVec,

@@ -3,8 +3,6 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.PolygonShape
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.{BodyState, MutableBodyState}
 
 class Wreck(mass: Double, init_coord: DVec, init_velocity: DVec, init_rotation: Double, points: List[DVec], val is_main: Boolean) {
   val index = ScageId.nextId

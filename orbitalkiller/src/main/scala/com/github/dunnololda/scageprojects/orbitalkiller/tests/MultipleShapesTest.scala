@@ -1,9 +1,8 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.SystemEvolution._
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.PolygonShape
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.{BodyState, MutableBodyState}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer

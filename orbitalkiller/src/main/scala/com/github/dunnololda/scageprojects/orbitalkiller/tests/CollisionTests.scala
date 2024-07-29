@@ -2,10 +2,8 @@ package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLib._
 import com.github.dunnololda.scage.support.ScageId
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.BodyState
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.SystemEvolution._
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions._
-import Space._
+import com.github.dunnololda.scageprojects.orbitalkiller.{BodyState, BoxShape, CircleShape, LineShape, PolygonShape, _}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -74,7 +72,9 @@ object CollisionTests extends ScageScreenApp("Collision Tests", 640, 480) {
 
   private def nextStep() {
     val (_, body_states) = real_system_evolution.next()
-    body_states.foreach { bs => current_body_states(bs.index) = bs }
+    body_states.foreach {
+      case bs => current_body_states(bs.index) = bs
+    }
   }
 
   nextStep()

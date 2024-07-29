@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLib._
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.AABB
+import com.github.dunnololda.scageprojects.orbitalkiller.AABB
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -163,14 +163,14 @@ object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
   })
 
   /**
-    *
-    * @param space     - начальное пространство, которое будем разделять
-    * @param max_level - сколько максимально может быть уровней вложенности пространств
-    * @param target    - сколько максимально может быть тел внутри пространства
-    * @param level     - текущий уровень вложенности
-    * @param spaces    - результат, список пространств
-    * @return
-    */
+   *
+   * @param space - начальное пространство, которое будем разделять
+   * @param max_level - сколько максимально может быть уровней вложенности пространств
+   * @param target - сколько максимально может быть тел внутри пространства
+   * @param level - текущий уровень вложенности
+   * @param spaces - результат, список пространств
+   * @return
+   */
   private def splitMySpace(space: MySpace, max_level: Int, target: Int, level: Int = 0, spaces: List[MySpace] = Nil): List[MySpace] = {
     if (space.bodies.length <= target) {
       space :: spaces
@@ -184,24 +184,16 @@ object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
   }
 
   keyIgnorePause(KEY_W, 10, onKeyDown = {
-    _center = center;
-    _center += Vec(0, 5 / globalScale);
-    center = _center
+    _center = center; _center += Vec(0, 5 / globalScale); center = _center
   })
   keyIgnorePause(KEY_A, 10, onKeyDown = {
-    _center = center;
-    _center += Vec(-5 / globalScale, 0);
-    center = _center
+    _center = center; _center += Vec(-5 / globalScale, 0); center = _center
   })
   keyIgnorePause(KEY_S, 10, onKeyDown = {
-    _center = center;
-    _center += Vec(0, -5 / globalScale);
-    center = _center
+    _center = center; _center += Vec(0, -5 / globalScale); center = _center
   })
   keyIgnorePause(KEY_D, 10, onKeyDown = {
-    _center = center;
-    _center += Vec(5 / globalScale, 0);
-    center = _center
+    _center = center; _center += Vec(5 / globalScale, 0); center = _center
   })
   keyIgnorePause(KEY_SPACE, onKeyDown = {
     val sorted_planets = planets.sortBy(-_.m)

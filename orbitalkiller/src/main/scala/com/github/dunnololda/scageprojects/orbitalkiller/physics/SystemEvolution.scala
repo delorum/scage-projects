@@ -2,9 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.physics
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.CollisionDetector._
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.Space
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.Space._
+import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.ShipsHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.Factors._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils._
