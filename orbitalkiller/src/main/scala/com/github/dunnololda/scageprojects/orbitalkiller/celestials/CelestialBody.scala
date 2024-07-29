@@ -31,11 +31,11 @@ trait CelestialBody {
 
   LogUtils.log(s"$name -> $index")
   val currentState: MutableBodyState = initState.toMutableBodyState
-  val ground_length_km: Int = (2 * math.Pi * radius / 1000).toInt
-  val groundSpeedMsec: Double = currentState.ang_vel.toRad * radius
-  val length: Double = 2 * math.Pi * radius
+  val ground_length_km = (2 * math.Pi * radius / 1000).toInt
+  val groundSpeedMsec = currentState.ang_vel.toRad * radius
+  val length = 2 * math.Pi * radius
 
-  val g: Double = G * mass / (radius * radius) // ускорение свободного падения, м/с^2
+  val g = G * mass / (radius * radius) // ускорение свободного падения, м/с^2
 
   var orbitRender: Option[OrbitRenderData] = None
 }

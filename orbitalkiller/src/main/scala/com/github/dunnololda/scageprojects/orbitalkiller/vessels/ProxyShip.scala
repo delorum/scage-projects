@@ -127,6 +127,11 @@ class ProxyShip(ship1: PolygonShip,
     }
   }
 
+  override def currentReactiveForce(time: Long, bs: BodyState): DVec = {
+    ship1.currentReactiveForce(time, bs) +
+      ship2.currentReactiveForce(time, bs)
+  }
+
   override def currentReactiveForce(tacts: Long, bs: MutableBodyState): DVec = {
     ship1.currentReactiveForce(tacts, bs) +
       ship2.currentReactiveForce(tacts, bs)

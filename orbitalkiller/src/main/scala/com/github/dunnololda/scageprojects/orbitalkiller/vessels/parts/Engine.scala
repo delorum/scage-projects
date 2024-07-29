@@ -2,7 +2,8 @@ package com.github.dunnololda.scageprojects.orbitalkiller.vessels.parts
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.ScageId
-import com.github.dunnololda.scageprojects.orbitalkiller.celestials.Earth
+import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller.celestials.PlanetWithAir
 import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 import com.github.dunnololda.scageprojects.orbitalkiller.components.TimeAware
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
@@ -17,7 +18,7 @@ class Engine(val name: Int,
              val fuel_consumption_per_sec_at_full_power: Double, // Расход топлива в килограммах в секунду на полной мощности
              val ship: PolygonShip,
              timer: TimeAware,
-             earth: Earth) {
+             earth: PlanetWithAir) {
 
   import timer._
 
@@ -25,11 +26,11 @@ class Engine(val name: Int,
   private var worktime_tacts = 0l
   private var stop_moment_tacts = 0l
 
-  def workTimeMsec: Long = (worktime_tacts * base_dt * 1000).toLong
+  def workTimeMsec = (worktime_tacts * base_dt * 1000).toLong
 
-  def workTimeStr: String = timeStrMsec((worktime_tacts * base_dt * 1000).toLong)
+  def workTimeStr = timeStrMsec((worktime_tacts * base_dt * 1000).toLong)
 
-  def workTimeTacts: Long = worktime_tacts
+  def workTimeTacts = worktime_tacts
 
   def workTimeTacts_=(new_worktime_tacts: Long) {
     if (new_worktime_tacts >= 0) {
@@ -57,19 +58,15 @@ class Engine(val name: Int,
     fuel_consumption_per_sec_at_full_power * (_power / max_power) * base_dt
   }
 
-  def fuelConsumption: Double = {
-    worktime_tacts * fuelConsumptionPerTact
-  }
-
   def fuelConsumptionPerSec: Double = {
     fuel_consumption_per_sec_at_full_power * (_power / max_power)
   }
 
-  def stopMomentTacts: Long = stop_moment_tacts
+  def stopMomentTacts = stop_moment_tacts
 
   private var _power: Double = 0.0
 
-  def power: Double = _power
+  def power = _power
 
   def power_=(new_power: Double) {
     if (new_power >= 0 && new_power <= max_power && new_power != _power) {
@@ -109,13 +106,13 @@ class Engine(val name: Int,
     }
   }
 
-  def force: DVec = force_dir * power
+  def force = force_dir * power
 
-  def torque: Double = -force */ position
+  def torque = -force */ position
 
   private var is_active: Boolean = false
 
-  def active: Boolean = is_active
+  def active = is_active
 
   def active_=(bool: Boolean) {
     if (is_active != bool) {

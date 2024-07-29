@@ -88,7 +88,7 @@ trait OrbitMouseControls extends OrbitalComponentsAware {
 
   rightMouseIgnorePause(onBtnDown = m => {
     if (!InterfaceHolder.clickInterfaceElem(m, 1) && (keyPressed(KEY_LSHIFT) || keyPressed(KEY_RSHIFT))) {
-      orbitalComponents.stop_after_number_of_tacts.reset()
+      orbitalComponents._stop_after_number_of_tacts = 0
     }
   })
 }

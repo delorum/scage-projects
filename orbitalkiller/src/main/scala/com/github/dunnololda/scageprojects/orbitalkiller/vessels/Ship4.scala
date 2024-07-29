@@ -18,8 +18,7 @@ class Ship4(index: Int,
             init_coord: DVec,
             init_velocity: DVec = DVec.dzero,
             init_rotation: Double = 0.0,
-            ship_designer: Boolean = false) extends PolygonShip(
-  index, "Снежинка", init_coord, init_velocity, init_rotation, ship_designer, false) {
+            ship_designer: Boolean = false) extends PolygonShip(index, "Снежинка", init_coord, init_velocity, init_rotation, ship_designer, false) {
   private var _payload: Double = 5 * 1000
   private var _fuel_mass: Double = 1000
 
@@ -384,7 +383,6 @@ class Ship4(index: Int,
         s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l &&
         s.shipInterface.exists(!_.isMinimized)
     }
-
     ShipsHolder.ships.filter(s => _check(s)).sortBy(s => coord.dist2(s.coord)).headOption
   }
 
@@ -396,7 +394,6 @@ class Ship4(index: Int,
         s.coord.dist2(coord) < 2 * 1000l * 2 * 1000l &&
         s.shipInterface.exists(!_.isMinimized)
     }
-
     ShipsHolder.ships.filter(s => _check(s)).sortBy(s => coord.dist2(s.coord)).headOption
   }
 
@@ -627,7 +624,6 @@ class Ship4(index: Int,
         }
       })
     }
-
     val left_rocket_status = left_rocket match {
       case Some(r) =>
         if (r.isAlive) {

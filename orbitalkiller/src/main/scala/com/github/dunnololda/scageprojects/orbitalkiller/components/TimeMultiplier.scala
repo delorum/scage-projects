@@ -30,22 +30,4 @@ class TimeMultiplier(shipComponents: ShipComponents) {
     math.max((0.1*math.pow(351.3011068768212/a, 10.0/7)/5).toInt, 1)*/
     1
   }*/
-
-  def foreach(func: Int => Any): Unit = {
-    (1 to _time_multiplier).foreach(func)
-  }
-
-  def isRealTime: Boolean = _time_multiplier == realtime
-
-  def setToRealTime(mul: Int = 1): Unit = {
-    _time_multiplier = realtime * mul
-  }
-
-  def incByRealTime(mul: Int = 1): Unit = {
-    _time_multiplier += realtime * mul
-  }
-
-  def decByRealTime(): Unit = {
-    _time_multiplier = math.max(_time_multiplier - realtime, realtime)
-  }
 }
