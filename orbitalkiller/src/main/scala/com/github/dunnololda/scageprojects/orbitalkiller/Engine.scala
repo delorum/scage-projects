@@ -5,7 +5,7 @@ import com.github.dunnololda.scage.support.ScageId
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.celestials.PlanetWithAir
 import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
-import com.github.dunnololda.scageprojects.orbitalkiller.components.TimeAware
+import com.github.dunnololda.scageprojects.orbitalkiller.components.TactsAware
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.vessels.{FreeFlightMode, Maneuvering, PolygonShip}
@@ -17,7 +17,7 @@ class Engine(val name: Int,
              val default_power_percent: Int, // при выборе данного двигателя какая мощность выставляется по умолчанию
              val fuel_consumption_per_sec_at_full_power: Double, // Расход топлива в килограммах в секунду на полной мощности
              val ship: PolygonShip,
-             timer: TimeAware,
+             timer: TactsAware,
              earth: PlanetWithAir) {
 
   import timer._

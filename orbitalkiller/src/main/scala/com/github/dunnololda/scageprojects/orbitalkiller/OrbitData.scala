@@ -1,18 +1,18 @@
-package com.github.dunnololda.scageprojects.orbitalkiller.render
+package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scageprojects.orbitalkiller.celestials.CelestialBody
-import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.{EllipseOrbit, HyperbolaOrbit, KeplerOrbit}
+import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 
-case class OrbitRenderData(update_count: Long,
-                           body_state: MutableBodyState,
-                           bs_radius: Double,
-                           planet_state: MutableBodyState,
-                           planet: CelestialBody,
-                           orbit: KeplerOrbit,
-                           ccw: Boolean,
-                           render: () => Unit) {
+case class OrbitData(update_count: Long,
+                     body_state: MutableBodyState,
+                     bs_radius: Double,
+                     planet_state: MutableBodyState,
+                     planet: CelestialBody,
+                     orbit: KeplerOrbit,
+                     ccw: Boolean,
+                     render: () => Unit) {
   lazy val ellipseOrbit: Option[EllipseOrbit] = orbit match {
     case x: EllipseOrbit => Some(x)
     case _ => None

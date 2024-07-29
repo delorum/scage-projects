@@ -8,10 +8,9 @@ import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements.Othe
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller.celestials.PlanetWithAir
-import com.github.dunnololda.scageprojects.orbitalkiller.render.OrbitRenderData
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils.MyDouble
-import com.github.dunnololda.scageprojects.orbitalkiller.{OrbitRenderDataUpdater, OrbitalKiller, Wreck, _}
+import com.github.dunnololda.scageprojects.orbitalkiller.{OrbitData, OrbitDataUpdater, OrbitalKiller, Wreck, _}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -1115,11 +1114,11 @@ abstract class PolygonShip(
     }
   }
 
-  private var _orbit_data: Option[OrbitRenderData] = None
+  private var _orbit_data: Option[OrbitData] = None
 
   def orbitData = _orbit_data
 
-  def thisOrActualProxyShipOrbitData: Option[OrbitRenderData] = dock_data.map(_.proxy_ship.thisOrActualProxyShipOrbitData).getOrElse(_orbit_data)
+  def thisOrActualProxyShipOrbitData: Option[OrbitData] = dock_data.map(_.proxy_ship.thisOrActualProxyShipOrbitData).getOrElse(_orbit_data)
 
   def updateOrbitData(update_count: Long,
                       orbit_color: ScageColor,
@@ -1171,11 +1170,11 @@ abstract class PolygonShip(
     }
   }
 
-  private var _current_orbit_data: Option[OrbitRenderData] = None
+  private var _current_orbit_data: Option[OrbitData] = None
 
   def currentOrbitData = _current_orbit_data
 
-  def thisOrActualProxyShipCurrentOrbitData: Option[OrbitRenderData] = dock_data.map(_.proxy_ship.thisOrActualProxyShipOrbitData).getOrElse(_current_orbit_data)
+  def thisOrActualProxyShipCurrentOrbitData: Option[OrbitData] = dock_data.map(_.proxy_ship.thisOrActualProxyShipOrbitData).getOrElse(_current_orbit_data)
 
   private def updateCurrentOrbitData(update_count: Long, orbit_color: ScageColor, calculate_orbit_around: Option[Int]): Unit = {
     if (currentState.active) {

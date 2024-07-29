@@ -1,8 +1,7 @@
-package com.github.dunnololda.scageprojects.orbitalkiller.render
+package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
-import com.github.dunnololda.scageprojects.orbitalkiller.RealTrajectory
 import com.github.dunnololda.scageprojects.orbitalkiller.celestials.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 import com.github.dunnololda.scageprojects.orbitalkiller.components.{PlanetComponents, ShipComponents}
@@ -15,9 +14,9 @@ import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.{Ell
 
 import scala.collection.{Set, mutable}
 
-class OrbitRenderDataUpdater(planetComponents: PlanetComponents,
-                             shipComponents: ShipComponents,
-                             realTrajectory: RealTrajectory) {
+class OrbitDataUpdater(planetComponents: PlanetComponents,
+                       shipComponents: ShipComponents,
+                       realTrajectory: RealTrajectory) {
 
   import planetComponents._
   import shipComponents._
@@ -109,8 +108,8 @@ class OrbitRenderDataUpdater(planetComponents: PlanetComponents,
                                                  o: HyperbolaOrbit,
                                                  ccw: Boolean,
                                                  yy: List[DVec],
-                                                 orbit_color: ScageColor): OrbitRenderData = {
-    OrbitRenderData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
+                                                 orbit_color: ScageColor): OrbitData = {
+    OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       openglLocalTransform {
         openglMove(planet_state.coord * scale)
         drawSlidingLines(yy, orbit_color)
@@ -131,7 +130,7 @@ class OrbitRenderDataUpdater(planetComponents: PlanetComponents,
                                           ccw: Boolean,
                                           yy: List[DVec],
                                           orbit_color: ScageColor) = {
-    OrbitRenderData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
+    OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       openglLocalTransform {
         openglMove(planet_state.coord * scale)
         drawSlidingLines(yy, orbit_color)
@@ -147,8 +146,8 @@ class OrbitRenderDataUpdater(planetComponents: PlanetComponents,
                                               o: HyperbolaOrbit,
                                               ccw: Boolean,
                                               yy: List[DVec],
-                                              orbit_color: ScageColor): OrbitRenderData = {
-    OrbitRenderData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
+                                              orbit_color: ScageColor): OrbitData = {
+    OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       val real_trajectory_enabled = InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && realTrajectory.realTrajectory.nonEmpty
       if (real_trajectory_enabled) {
         drawRealTrajectoryOfPlayerShip(planet_state, orbit_color)
@@ -214,8 +213,8 @@ class OrbitRenderDataUpdater(planetComponents: PlanetComponents,
                                                planet: CelestialBody,
                                                o: EllipseOrbit,
                                                ccw: Boolean,
-                                               orbit_color: ScageColor): OrbitRenderData = {
-    OrbitRenderData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
+                                               orbit_color: ScageColor): OrbitData = {
+    OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       val new_center = o.centerIfFocusPosition(planet_state.coord)
       openglLocalTransform {
         openglMove(new_center * scale)
@@ -237,8 +236,8 @@ class OrbitRenderDataUpdater(planetComponents: PlanetComponents,
                                         planet: CelestialBody,
                                         o: EllipseOrbit,
                                         ccw: Boolean,
-                                        orbit_color: ScageColor): OrbitRenderData = {
-    OrbitRenderData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
+                                        orbit_color: ScageColor): OrbitData = {
+    OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       val new_center = o.centerIfFocusPosition(planet_state.coord)
       openglLocalTransform {
         openglMove(new_center * scale)
@@ -255,8 +254,8 @@ class OrbitRenderDataUpdater(planetComponents: PlanetComponents,
                                             planet: CelestialBody,
                                             o: EllipseOrbit,
                                             ccw: Boolean,
-                                            orbit_color: ScageColor): OrbitRenderData = {
-    OrbitRenderData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
+                                            orbit_color: ScageColor): OrbitData = {
+    OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       if (InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && realTrajectory.realTrajectory.nonEmpty) {
         drawRealTrajectoryOfPlayerShip(planet_state, orbit_color)
       } else {
@@ -303,7 +302,7 @@ class OrbitRenderDataUpdater(planetComponents: PlanetComponents,
                       orbit_color: ScageColor,
                       some_system_state: mutable.Map[Int, MutableBodyState],
                       need_planets: Set[Int],
-                      calculate_orbit_around: Option[Int]): Option[OrbitRenderData] = {
+                      calculate_orbit_around: Option[Int]): Option[OrbitData] = {
     some_system_state.get(body_index).flatMap(bs => {
       updateOrbitData(update_count, bs, body_radius, orbit_color, some_system_state, need_planets, calculate_orbit_around)
     })
@@ -315,7 +314,7 @@ class OrbitRenderDataUpdater(planetComponents: PlanetComponents,
                       orbit_color: ScageColor,
                       some_system_state: mutable.Map[Int, MutableBodyState],
                       need_planets: Set[Int],
-                      calculate_orbit_around: Option[Int]): Option[OrbitRenderData] = {
+                      calculate_orbit_around: Option[Int]): Option[OrbitData] = {
     val celestials = some_system_state.filter(kv => need_planets.contains(kv._1)).flatMap(kv => {
       system_planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
     }).values.toSeq.sortBy(_._2.mass)

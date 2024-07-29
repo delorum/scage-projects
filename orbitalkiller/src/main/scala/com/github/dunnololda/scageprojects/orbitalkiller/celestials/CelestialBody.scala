@@ -1,9 +1,9 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.celestials
 
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scageprojects.orbitalkiller.OrbitData
 import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.{BodyState, MutableBodyState}
-import com.github.dunnololda.scageprojects.orbitalkiller.render.OrbitRenderData
 
 trait CelestialBody {
   def index: Int
@@ -36,6 +36,6 @@ trait CelestialBody {
 
   val g = G * mass / (radius * radius) // ускорение свободного падения, м/с^2
 
-  var orbitRender: Option[OrbitRenderData] = None
+  var orbitRender: Option[OrbitData] = None
 }
 
