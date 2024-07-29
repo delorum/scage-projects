@@ -8,7 +8,7 @@ import com.github.dunnololda.scage.ScageLibD.max_font_size
 import com.github.dunnololda.scage.ScageLibD.print
 import com.github.dunnololda.scage.ScageLibD.property
 import com.github.dunnololda.scage.ScageLibD.stopApp
-import com.github.dunnololda.scageprojects.orbitalkiller.vessels.PolygonShip
+import com.github.dunnololda.scageprojects.orbitalkiller.ships.PolygonShip
 
 import scala.collection.mutable.ArrayBuffer
 

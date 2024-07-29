@@ -4,7 +4,7 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.ScageId
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
-import com.github.dunnololda.scageprojects.orbitalkiller.vessels.{FreeFlightMode, Maneuvering, PolygonShip}
+import com.github.dunnololda.scageprojects.orbitalkiller.ships.{FreeFlightMode, Maneuvering, PolygonShip}
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 

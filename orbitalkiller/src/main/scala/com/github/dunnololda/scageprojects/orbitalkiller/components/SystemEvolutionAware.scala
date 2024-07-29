@@ -2,16 +2,15 @@ package com.github.dunnololda.scageprojects.orbitalkiller.components
 
 import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.{MutableBodyState, SystemEvolution}
-import com.github.dunnololda.scageprojects.orbitalkiller.vessels.Maneuvering
+import com.github.dunnololda.scageprojects.orbitalkiller.ships.Maneuvering
 
 import scala.collection.mutable
 
 /**
   * Created by andrey on 1/7/18.
   */
-class SystemEvolutionComponents(system_evolution: SystemEvolution, ships: ShipComponents) {
-
-  import ships._
+trait SystemEvolutionAware extends ShipsAware {
+  def system_evolution: SystemEvolution
 
   def tacts: Long = system_evolution.tacts
 
@@ -28,7 +27,7 @@ class SystemEvolutionComponents(system_evolution: SystemEvolution, ships: ShipCo
         val system_evolution_copy = system_evolution.copy(base_dt)
         val steps = tacts - system_evolution_copy.tacts
         (1l to steps).foreach(x => {
-          system_evolution_copy.allBodyStates.map(bs => (bs._2, shipByIndex(bs._2.index))).foreach(bs => {
+          system_evolution_copy.allBodyStates.map(bs => (bs._2, shipsHolder.shipByIndex(bs._2.index))).foreach(bs => {
             if (bs._1.ang_vel != 0 && math.abs(bs._1.ang_vel) < angular_velocity_error) {
               bs._1.ang_vel = 0
             }

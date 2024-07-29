@@ -5,7 +5,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers.RealTrajectorySwitcher
-import com.github.dunnololda.scageprojects.orbitalkiller.vessels.{FreeFlightMode, NearestPlanetVelocity, NearestShipAutoDocking, PolygonShip}
+import com.github.dunnololda.scageprojects.orbitalkiller.ships.{FreeFlightMode, NearestPlanetVelocity, NearestShipAutoDocking, PolygonShip}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer

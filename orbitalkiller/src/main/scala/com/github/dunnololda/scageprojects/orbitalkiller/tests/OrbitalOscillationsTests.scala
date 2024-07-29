@@ -4,8 +4,8 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.BodyState
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.SystemEvolution._
-import com.github.dunnololda.scageprojects.orbitalkiller.celestials.{CelestialBody, Planet, Star}
-import com.github.dunnololda.scageprojects.orbitalkiller.vessels.SpaceStation2
+import com.github.dunnololda.scageprojects.orbitalkiller.planets.{CelestialBody, Planet, Star}
+import com.github.dunnololda.scageprojects.orbitalkiller.ships.SpaceStation2
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.PhysicsUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.KeplerOrbit._
 

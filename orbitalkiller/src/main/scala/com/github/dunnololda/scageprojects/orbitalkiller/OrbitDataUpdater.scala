@@ -4,13 +4,13 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.MutableBodyState
-import com.github.dunnololda.scageprojects.orbitalkiller.celestials.CelestialBody
-import com.github.dunnololda.scageprojects.orbitalkiller.vessels.ShipsHolder
+import com.github.dunnololda.scageprojects.orbitalkiller.planets.CelestialBody
+import com.github.dunnololda.scageprojects.orbitalkiller.ships.ShipsHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.KeplerOrbit._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.{EllipseOrbit, HyperbolaOrbit, KeplerOrbit}
-import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
+
 import scala.collection.{Set, mutable}
 
 object OrbitDataUpdater {
@@ -96,7 +96,7 @@ object OrbitDataUpdater {
                                                  o: HyperbolaOrbit,
                                                  ccw: Boolean,
                                                  yy: List[DVec],
-                                                 orbit_color: ScageColor): OrbitData = {
+                                                 orbit_color: ScageColor) = {
     OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       openglLocalTransform {
         openglMove(planet_state.coord * scale)

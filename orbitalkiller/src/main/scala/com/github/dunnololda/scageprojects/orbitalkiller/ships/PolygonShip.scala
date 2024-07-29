@@ -1,4 +1,4 @@
-package com.github.dunnololda.scageprojects.orbitalkiller.vessels
+package com.github.dunnololda.scageprojects.orbitalkiller.ships
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.{DVec, ScageId}
@@ -7,7 +7,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHold
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements.OtherShipInfo
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.{BodyState, MutableBodyState}
-import com.github.dunnololda.scageprojects.orbitalkiller.celestials.PlanetWithAir
+import com.github.dunnololda.scageprojects.orbitalkiller.planets.PlanetWithAir
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils.MyDouble
 import com.github.dunnololda.scageprojects.orbitalkiller.{OrbitData, OrbitDataUpdater, OrbitalKiller, Wreck, _}

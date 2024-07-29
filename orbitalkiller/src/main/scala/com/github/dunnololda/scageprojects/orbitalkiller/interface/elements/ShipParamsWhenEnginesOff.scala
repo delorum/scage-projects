@@ -2,7 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceElement
-import com.github.dunnololda.scageprojects.orbitalkiller.vessels.{FreeFlightMode, Maneuvering}
+import com.github.dunnololda.scageprojects.orbitalkiller.ships.{FreeFlightMode, Maneuvering}
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 
 class ShipParamsWhenEnginesOff extends InterfaceElement {

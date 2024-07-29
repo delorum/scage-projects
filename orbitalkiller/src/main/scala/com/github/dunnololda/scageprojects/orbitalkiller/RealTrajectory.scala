@@ -5,7 +5,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicCompone
 import com.github.dunnololda.scageprojects.orbitalkiller.components.OrbitalComponents
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.{MutableBodyState, SystemEvolution}
-import com.github.dunnololda.scageprojects.orbitalkiller.celestials.CelestialBody
+import com.github.dunnololda.scageprojects.orbitalkiller.planets.CelestialBody
 
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer

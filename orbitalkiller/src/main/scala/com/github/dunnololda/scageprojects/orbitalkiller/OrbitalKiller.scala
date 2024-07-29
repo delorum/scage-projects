@@ -8,8 +8,8 @@ import com.github.dunnololda.scageprojects.orbitalkiller.components.OrbitalCompo
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.BoxShape
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.{BodyState, MutableBodyState}
-import com.github.dunnololda.scageprojects.orbitalkiller.celestials.CelestialBody
-import com.github.dunnololda.scageprojects.orbitalkiller.vessels._
+import com.github.dunnololda.scageprojects.orbitalkiller.planets.CelestialBody
+import com.github.dunnololda.scageprojects.orbitalkiller.ships._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.DrawUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.GeometryUtils._
@@ -74,9 +74,6 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   val components = new OrbitalComponents
 
   import components._
-  import shipComponents._
-  import systemEvolutionComponents._
-  import planetComponents._
 
   private var _time_multiplier = realtime
 
@@ -90,7 +87,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def timeMultiplier_=(new_time_multiplier: Int) {
     if (new_time_multiplier > 0) {
       _time_multiplier = new_time_multiplier
-      ships.flatMap(_.engines).filter(_.active).foreach(e => {
+      shipsHolder.ships.flatMap(_.engines).filter(_.active).foreach(e => {
         e.workTimeTacts = e.workTimeTacts
       })
       /*}*/
@@ -126,11 +123,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   private def nextStep() {
     (1 to timeMultiplier).foreach(step => {
-      ships.foreach(s => {
+      shipsHolder.ships.foreach(s => {
         s.beforeStep()
       })
       system_evolution.step()
-      ships.foreach(s => {
+      shipsHolder.ships.foreach(s => {
         s.afterStep(timeMsec)
       })
       if (_stop_after_number_of_tacts > 0) {

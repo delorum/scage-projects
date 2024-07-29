@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers
 
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceSwitcher
-import com.github.dunnololda.scageprojects.orbitalkiller.celestials.CelestialBody
+import com.github.dunnololda.scageprojects.orbitalkiller.planets.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller.{OrbitalKiller, RealTrajectory}
 
 class OrbitSwitcher extends InterfaceSwitcher {

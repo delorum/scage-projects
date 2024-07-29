@@ -2,21 +2,13 @@ package com.github.dunnololda.scageprojects.orbitalkiller.components
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.ScageId
-import com.github.dunnololda.scageprojects.orbitalkiller.vessels._
+import com.github.dunnololda.scageprojects.orbitalkiller.ships._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.PhysicsUtils._
-import BasicComponents._
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.{MutableBodyState, SystemEvolution}
-
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 /**
   * Created by andrey on 1/7/18.
   */
-class ShipComponents(system_evolution: SystemEvolution, planets: PlanetComponents) {
-
-  import planets._
-
+trait ShipComponents extends ShipsAware with PlanetsAware { this: OrbitalComponents =>
   // стоим на поверхности Земли
   val ship_start_position = earth.coord + DVec(495, earth.radius + 3.5)
   val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p * earth.groundSpeedMsec /*DVec.zero*/
@@ -120,62 +112,5 @@ class ShipComponents(system_evolution: SystemEvolution, planets: PlanetComponent
     init_velocity = cargo1_init_velocity,
     init_rotation = 0)
 
-  def addShip(ship: PolygonShip): Unit = {
-    _ships += ship
-    _shipsMap += (ship.index -> ship)
-    _shipIndicies += ship.index
-    system_evolution.addBody(
-      ship.currentState,
-      (tacts, helper) => {
-        helper.gravityForceFromTo(sun.index, ship.index) +
-          helper.gravityForceFromTo(earth.index, ship.index) +
-          helper.gravityForceFromTo(moon.index, ship.index) +
-          helper.funcOrDVecZero(ship.index, bs => ship.currentReactiveForce(tacts, bs)) +
-          helper.funcOfArrayOrDVecZero(Array(ship.index, earth.index), l => {
-            val bs = l(0)
-            val e = l(1)
-            //val other_ship_states = helper.bodyStates(ShipsHolder.shipIndicies.filterNot(_ == ship.index))
-            earth.airResistance(bs, e, /*other_ship_states, */ 28.0, 0.5)
-          })
-      },
-      (tacts, helper) => {
-        helper.funcOrDoubleZero(ship.index, bs => ship.currentTorque(tacts))
-      }
-    )
-  }
-
-  def removeShip(ship: PolygonShip): Unit = {
-    removeShipByIndex(ship.index)
-  }
-
-  def removeShipByIndex(ship_index: Int): Unit = {
-    _shipsMap.remove(ship_index).foreach(ship => {
-      println(s"removed ship ${ship.name}")
-      update_list = true
-      system_evolution.removeBodyByIndex(ship_index)
-    })
-    _shipIndicies -= ship_index
-  }
-
-  private var update_list: Boolean = false
-
-  def ships: Seq[PolygonShip] = {
-    if (update_list) {
-      _ships --= _ships.filter(s => !_shipsMap.contains(s.index))
-      update_list = false
-    }
-    _ships
-  }
-
-  private val _ships = ArrayBuffer[PolygonShip]()
-  private val _shipsMap = mutable.HashMap[Int, PolygonShip]()
-
-  //ships.map(s => (s.index, s)).toMap
-  def shipByIndex(index: Int): Option[PolygonShip] = _shipsMap.get(index)
-
-  private var _shipIndicies: mutable.HashSet[Int] = mutable.HashSet[Int]()
-
-  def shipIndicies: mutable.Set[Int] = _shipIndicies
-
-  def currentShipStatesExceptShip(ship_index: Int): Seq[MutableBodyState] = _ships.withFilter(x => x.currentState.active && x.index != ship_index).map(_.currentState)
+  val shipsHolder: ShipsHolder = new ShipsHolder(this)
 }
