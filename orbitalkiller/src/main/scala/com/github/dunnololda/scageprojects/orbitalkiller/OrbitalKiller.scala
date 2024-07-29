@@ -3,14 +3,14 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import java.io.FileOutputStream
 
 import com.github.dunnololda.scage.ScageLibD.{DVec, ScageColor, Vec, addGlyphs, appVersion, max_font_size, messageBounds, print, property, stopApp, _}
-import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
-import com.github.dunnololda.scageprojects.orbitalkiller.components.OrbitalComponents
+import com.github.dunnololda.scage.support.ScageId
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.BoxShape
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.{BodyState, MutableBodyState}
-import com.github.dunnololda.scageprojects.orbitalkiller.planets.CelestialBody
+import com.github.dunnololda.scageprojects.orbitalkiller.physics.{BodyState, MutableBodyState, SystemEvolution}
+import com.github.dunnololda.scageprojects.orbitalkiller.planets.{CelestialBody, Planet, PlanetWithAir, Star}
 import com.github.dunnololda.scageprojects.orbitalkiller.ships._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
+import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.PhysicsUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.KeplerOrbit._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.{EllipseOrbit, HyperbolaOrbit, KeplerOrbit}
 
@@ -48,8 +48,8 @@ case class OrbitData(update_count: Long,
       (((init_bs_vel - init_planet_vel) * (init_bs_coord - init_planet_coord).p) / init_bs_coord.dist(init_planet_coord) * planet.radius - planet.groundSpeedMsec).abs < 0.5
   }
 
-  lazy val is_landed_on_earth: Boolean = is_landed && planet.index == earthIndex
-  lazy val is_landed_on_moon: Boolean = is_landed && planet.index == moonIndex
+  lazy val is_landed_on_earth: Boolean = is_landed && planet.index == OrbitalKiller.earth.index
+  lazy val is_landed_on_moon: Boolean = is_landed && planet.index == OrbitalKiller.moon.index
 
   lazy val orbitStrDefinition: String = {
     if (is_landed) "landed"
@@ -68,9 +68,22 @@ case class OrbitData(update_count: Long,
 }
 
 object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("screen.width", 1280), property("screen.height", 768)) {
-  val components = new OrbitalComponents
+  val k: Double = 1 // доля секунды симуляции, которая обрабатывается за одну реальную секунду, если не применяется ускорение
 
-  import components._
+  val linear_velocity_error = 0.1
+  val angular_velocity_error = 0.0102
+  // значение подобрано эмпирически при тестах с малым количеством топлива
+  val angle_error = 0.1
+
+  // движок делает вызов обработчика примерно 63 раза в секунду, за каждый вызов будет обрабатывать вот такую порцию симуляции
+  // то есть, мы хотим, чтобы за одну реальную секунду обрабатывалось k секунд симуляции, поэтому за один такт движка (которых 60 в секунду)
+  // будем обрабатывать k/60
+  val base_dt: Double = 1.0 / 63 * k
+
+  // какой длины в пикселях на экране будет реальная длина в 1 метр
+  /*val zoom:Double = 10*/
+
+  val realtime = (1.0 / k).toInt // 1/k соответствует реальному течению времени
 
   private var _time_multiplier = realtime
 
@@ -83,8 +96,10 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   def timeMultiplier_=(new_time_multiplier: Int) {
     if (new_time_multiplier > 0) {
+      // разрешаем переход на ускоренное/замедленное течение времени только если все двигатели выключены
+      /*if (new_time_multiplier == realtime || ShipsHolder.ships.flatMap(_.engines).forall(!_.active)) {*/
       _time_multiplier = new_time_multiplier
-      shipsHolder.ships.flatMap(_.engines).filter(_.active).foreach(e => {
+      ShipsHolder.ships.flatMap(_.engines).filter(_.active).foreach(e => {
         e.workTimeTacts = e.workTimeTacts
       })
       /*}*/
@@ -97,21 +112,252 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     1
   }*/
 
+  val system_evolution = new SystemEvolution(base_dt)
+
+  def tacts: Long = system_evolution.tacts
+
+  def timeMsec: Long = (tacts * base_dt * 1000).toLong
+
+  def currentBodyState(index: Int): Option[MutableBodyState] = system_evolution.bodyState(index)
+
+  private val system_cache = mutable.HashMap[Long, mutable.Map[Int, MutableBodyState]]()
+
+  def getFutureState(tacts: Long): mutable.Map[Int, MutableBodyState] = {
+    if (player_ship.flightMode != Maneuvering) {
+      system_cache.getOrElseUpdate(tacts, {
+        println("adding to system_cache")
+        val system_evolution_copy = system_evolution.copy(base_dt)
+        val steps = tacts - system_evolution_copy.tacts
+        (1l to steps).foreach(x => {
+          system_evolution_copy.allBodyStates.map(bs => (bs._2, ShipsHolder.shipByIndex(bs._2.index))).foreach(bs => {
+            if (bs._1.ang_vel != 0 && math.abs(bs._1.ang_vel) < angular_velocity_error) {
+              bs._1.ang_vel = 0
+            }
+            bs._2.foreach(s => {
+              bs._1.mass = s.thisOrActualProxyShipCurrentMass(system_evolution_copy.tacts)
+            })
+          })
+          system_evolution_copy.step()
+        })
+        system_evolution_copy.allBodyStates
+      })
+    } else collection.mutable.Map()
+  }
+
   def needToUpdateOrbits(reason: String) {
     println(s"needToUpdateOrbits: $reason")
     if (onPause) {
       system_cache.clear()
       _update_orbits = true
-      realTrajectory.init()
+      RealTrajectory.init()
       //RealTrajectory2.init()
       //RealTrajectory3.init()
     }
   }
 
   actionDynamicPeriodIgnorePause(500 / timeMultiplier) {
-    realTrajectory.continue()
+    RealTrajectory.continue()
     //RealTrajectory2.continue()
     //RealTrajectory3.continue()
+  }
+
+  val sun = new Star(
+    ScageId.nextId, "Солнце",
+    mass = 1.9891E30,
+    coord = DVec(0, 1.496E11),
+    radius = 6.9551E8
+  )
+
+  system_evolution.addBody(
+    sun.currentState,
+    (tacts, helper) => {
+      helper.gravityForceFromTo(earth.index, sun.index) +
+        helper.gravityForceFromTo(moon.index, sun.index)
+    },
+    (tacts, helper) => {
+      0.0
+    }
+  )
+
+  val earth_start_position = DVec.dzero
+  val earth_init_velocity = speedToHaveOrbitWithParams(earth_start_position, 0, sun.coord, sun.linearVelocity, sun.mass, G, ccw = true)
+  val earth = new PlanetWithAir(
+    index = ScageId.nextId, name = "Земля",
+    mass = 5.9746E24,
+    init_coord = earth_start_position,
+    init_velocity = earth_init_velocity,
+    //init_ang_vel = 0.0,
+    init_ang_vel = 360.0 / (24l * 60 * 60),
+    radius = 6400000 /*6314759.95726045*/ ,
+    orbiting_body = sun, air_free_altitude = 101000,
+    T0 = 288,
+    L = 0.00288 /*0.0065*/ ,
+    P0 = 101325,
+    M = 0.02896,
+    R = 8.314)
+
+  system_evolution.addBody(
+    earth.currentState,
+    (tacts, helper) => {
+      helper.gravityForceFromTo(sun.index, earth.index) +
+        helper.gravityForceFromTo(moon.index, earth.index)
+    },
+    (tacts, helper) => {
+      0.0
+    }
+  )
+
+  val moon_start_position = earth.coord + DVec(0, 1).rotateDeg(280) * 380000000l
+  val moon_init_velocity = speedToHaveOrbitWithParams(moon_start_position, 0, earth.coord, earth.linearVelocity, earth.mass, G, ccw = true)
+  val moon = new Planet(
+    ScageId.nextId, "Луна",
+    mass = 7.3477E22,
+    init_coord = moon_start_position,
+    init_velocity = moon_init_velocity,
+    init_ang_vel = 360.0 / (26l * 24 * 60 * 60 + 8l * 60 * 60 + 59l * 60 + 44), // период орбиты луны в данной симуляции: 26 д. 8 ч. 59 мин. 44 сек, равен периоду обращения вокруг собственной оси
+    radius = 1737000,
+    earth, 2000)
+
+  system_evolution.addBody(
+    moon.currentState,
+    (tacts, helper) => {
+      helper.gravityForceFromTo(sun.index, moon.index) +
+        helper.gravityForceFromTo(earth.index, moon.index)
+    },
+    (tacts, helper) => {
+      0.0
+    }
+  )
+
+  system_evolution.addCollisionExclusion(earth.index, moon.index)
+  system_evolution.addCollisionExclusion(earth.index, sun.index)
+  system_evolution.addCollisionExclusion(moon.index, sun.index)
+  val earth_sun_eq_gravity_radius = equalGravityRadius(earth.currentState, sun.currentState)
+  val moon_earth_eq_gravity_radius = equalGravityRadius(moon.currentState, earth.currentState)
+
+  val system_planets = immutable.Map(sun.index -> sun,
+    earth.index -> earth,
+    moon.index -> moon)
+  val planet_indices: immutable.Set[Int] = system_planets.keySet
+
+  def planetStates(body_states: Map[Int, MutableBodyState]): Seq[(CelestialBody, MutableBodyState)] = {
+    body_states.flatMap(kv => {
+      system_planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
+    }).values.toSeq.sortBy(_._2.mass)
+  }
+
+  val currentPlanetStates: Seq[(CelestialBody, MutableBodyState)] = planetStates(system_evolution.bodyStates(planet_indices))
+
+  def planetByIndex(index: Int): Option[CelestialBody] = system_planets.get(index)
+
+  // стоим на поверхности Земли
+  val ship_start_position = earth.coord + DVec(495, earth.radius + 3.5)
+  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p * earth.groundSpeedMsec /*DVec.zero*/
+
+  // суборбитальная траектория
+  //val ship_start_position = earth.coord + DVec(500, earth.radius + 100000)
+  //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
+
+  // на круговой орбите в 200 км от поверхности Земли
+  //val ship_start_position = earth.coord + DVec(0, 1).rotateDeg(170)*(earth.radius + 200000)
+  //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, 0, earth.coord, earth.linearVelocity, earth.mass, G, ccw = true)
+
+  //val ship_start_position = earth.coord + DVec(-100, earth.radius + 198000)
+  //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, 900000, earth.coord, earth.linearVelocity, earth.mass, G, ccw = false)
+
+  //val ship_start_position = earth.coord + DVec(-100, earth.radius + 199015)
+  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
+
+  // стоим на поверхности Луны
+  //val ship_start_position = moon.coord + DVec(500, moon.radius + 3.5)
+  //val ship_init_velocity = moon.linearVelocity + (ship_start_position - moon.coord).p*moon.groundSpeedMsec/*DVec.zero*//*satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15*/
+  //val ship_init_velocity = -escapeVelocity(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.01
+
+  // на орбите в 100 км от поверхности Луны
+  //val ship_start_position = moon.coord + DVec(0, 1).rotateDeg(90)*(moon.radius + 100000)
+  //val ship_init_velocity = speedToHaveOrbitWithParams(ship_start_position, 0, moon.coord, moon.linearVelocity, moon.mass, G, ccw = true)//satelliteSpeed(ship_start_position, moon.coord, moon.linearVelocity, moon.mass, G, counterclockwise = false)
+  //val ship_init_velocity = satelliteSpeed(ship_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)*1.15
+
+  // на гиперболической орбите Земли, приближаемся к перицентру, летим по часовой стрелке
+  //val ship_start_position = DVec(-6.2797933836710215E7, -1.2455588349688923E8) + earth.coord
+  //val ship_init_velocity = DVec(30521.418357148767,2855.1265848825283)
+
+  // на гиперболической орбите Земли, приближаемся к перицентру, летим против часовой стрелки
+  //val ship_start_position = DVec(9.594617648145294E7, -8.919468846308415E7) + earth.coord
+  //val ship_init_velocity = DVec(28167.17922375556,2692.468259455251)
+
+  val player_ship = new Ship4(ScageId.nextId,
+    init_coord = ship_start_position,
+    init_velocity = ship_init_velocity,
+    init_rotation = 0
+  )
+
+  // на круговой орбите в 200 км от поверхности Земли
+  val station_start_position = earth.coord + DVec(-110, earth.radius + 199160)
+  val station_init_velocity = satelliteSpeed(station_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
+
+  // суборбитальная траектория
+  //val station_start_position = earth.coord + DVec(0, earth.radius + 100000)
+  //val station_init_velocity = speedToHaveOrbitWithParams(station_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
+
+  val station = new SpaceStation2(ScageId.nextId,
+    init_coord = station_start_position,
+    init_velocity = station_init_velocity,
+    init_rotation = 90
+  )
+
+  // случайная орбита с перигеем от 200 до 1000 км, и апогеем от 0 до 3000 км выше перигея
+  val sat1_start_position = earth.coord + DVec(0, 1).rotateDeg(math.random * 360) * (earth.radius + 200000 + math.random * 800000)
+  val sat1_init_velocity = speedToHaveOrbitWithParams(sat1_start_position, math.random * 3000000, earth.coord, earth.linearVelocity, earth.mass, G)
+  //val sat1_start_position=DVec(1365327.0285981554, 6507689.41090233)
+  //val sat1_init_velocity=DVec(21868.653743674382, 1661.8351848003101)
+  println(s"sat1_start_position=$sat1_start_position")
+  println(s"sat1_init_velocity=$sat1_init_velocity")
+
+
+  // на круговой орбите в 200 км от поверхности Земли
+  //val sat1_start_position = earth.coord + DVec(-200, earth.radius + 199000)
+  //val sat1_init_velocity = satelliteSpeed(sat1_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
+  val sat1 = new Satellite1(ScageId.nextId,
+    init_coord = sat1_start_position,
+    init_velocity = sat1_init_velocity,
+    init_rotation = 45
+  )
+
+  // случайная орбита с перигеем от 200 до 1000 км, и апогеем от 0 до 3000 км выше перигея
+  val sat2_start_position = earth.coord + DVec(0, 1).rotateDeg(math.random * 360) * (earth.radius + 200000 + math.random * 800000)
+  val sat2_init_velocity = speedToHaveOrbitWithParams(sat2_start_position, math.random * 3000000, earth.coord, earth.linearVelocity, earth.mass, G)
+
+  // на круговой орбите в 200 км от поверхности Земли
+  //val sat2_start_position = earth.coord + DVec(100, earth.radius + 199000)
+  //val sat2_init_velocity = satelliteSpeed(sat2_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
+
+  println(s"sat2_start_position=$sat2_start_position")
+  println(s"sat2_init_velocity=$sat2_init_velocity")
+  val sat2 = new Satellite2(ScageId.nextId,
+    init_coord = sat2_start_position,
+    init_velocity = sat2_init_velocity,
+    init_rotation = 0
+  )
+
+  // стоим на поверхности Земли
+  val cargo1_start_position = earth.coord + DVec(0, earth.radius + 2)
+  val cargo1_init_velocity = earth.linearVelocity + (cargo1_start_position - earth.coord).p * earth.groundSpeedMsec /*DVec.zero*/
+
+  // на круговой орбите в 200 км от поверхности Земли
+  //val cargo1_start_position = earth.coord + DVec(-100, earth.radius + 199000)
+  //val cargo1_init_velocity = satelliteSpeed(cargo1_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
+
+  val cargo1 = new Cargo1(ScageId.nextId,
+    init_coord = cargo1_start_position,
+    init_velocity = cargo1_init_velocity,
+    init_rotation = 0)
+
+  def nameByIndex(index: Int): Option[String] = {
+    system_planets.get(index) match {
+      case s@Some(x) => s.map(_.name)
+      case None => ShipsHolder.shipByIndex(index).map(_.name)
+    }
   }
 
   var _set_stop_time: Boolean = false
@@ -120,11 +366,11 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   private def nextStep() {
     (1 to timeMultiplier).foreach(step => {
-      shipsHolder.ships.foreach(s => {
+      ShipsHolder.ships.foreach(s => {
         s.beforeStep()
       })
       system_evolution.step()
-      shipsHolder.ships.foreach(s => {
+      ShipsHolder.ships.foreach(s => {
         s.afterStep(timeMsec)
       })
       if (_stop_after_number_of_tacts > 0) {
@@ -703,8 +949,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   keyIgnorePause(KEY_C, onKeyDown = {
     if (InterfaceHolder.realTrajectorySwitcher.showRealTrajectory) {
-      if (realTrajectory.curPoints < InterfaceHolder.realTrajectorySwitcher.numPoints) {
-        InterfaceHolder.realTrajectorySwitcher.numPoints = realTrajectory.curPoints
+      if (RealTrajectory.curPoints < InterfaceHolder.realTrajectorySwitcher.numPoints) {
+        InterfaceHolder.realTrajectorySwitcher.numPoints = RealTrajectory.curPoints
       } else {
         InterfaceHolder.realTrajectorySwitcher.numPoints = 24 * 3600
         needToUpdateOrbits("reset real trajectory num points")
@@ -801,6 +1047,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   windowCenter = DVec((windowWidth - 1024) + 1024 / 2, windowHeight / 2)
   viewMode = FixedOnShip
   globalScale = 10
+
+  val scale = 1e-6
 
   private var _update_orbits = false
   private var update_count: Long = 0l

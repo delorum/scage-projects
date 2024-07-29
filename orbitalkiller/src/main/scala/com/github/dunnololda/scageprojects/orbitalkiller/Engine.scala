@@ -6,7 +6,6 @@ import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.{FreeFlightMode, Maneuvering, PolygonShip}
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
-import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 
 class Engine(val name: Int,
              val position: DVec, // позиция относительно центра массы корабля (ц.м. в точке (0,0))
