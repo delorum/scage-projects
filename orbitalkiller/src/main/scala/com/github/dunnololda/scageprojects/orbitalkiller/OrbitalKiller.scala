@@ -12,6 +12,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.GeometryUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.KeplerOrbit._
+import com.github.dunnololda.scageprojects.orbitalkiller.vessels._
 
 import scala.collection._
 
@@ -23,10 +24,20 @@ object OrbitalKiller
   val orbitalComponents: OrbitalComponents = new OrbitalComponents
 
   import orbitalComponents._
-  import orbitsUpdater._
   import planetComponents._
   import shipComponents._
   import systemEvolutionComponents._
+
+  def needToUpdateOrbits(reason: String) {
+    println(s"needToUpdateOrbits: $reason")
+    if (onPause) {
+      system_cache.clear()
+      _update_orbits = true
+      realTrajectory.init()
+      //RealTrajectory2.init()
+      //RealTrajectory3.init()
+    }
+  }
 
   actionDynamicPeriodIgnorePause(500 / timeMultiplier.timeMultiplier) {
     realTrajectory.continue()
@@ -56,31 +67,6 @@ object OrbitalKiller
   }
 
   nextStep()
-
-  action {
-    nextStep()
-  }
-
-  updateOrbits()
-
-  actionDynamicPeriodIgnorePause(1000 / timeMultiplier.timeMultiplier) {
-    if ( /*drawMapMode && (*/ !onPause || _update_orbits /*)*/ ) {
-      updateOrbits()
-    }
-  }
-
-  actionStaticPeriodIgnorePause(10000) {
-    if (timeMultiplier.timeMultiplier != realtime &&
-      timeMultiplier.timeMultiplier > 1f * timeMultiplier.timeMultiplier / 63 * ticks + 20) {
-      println("updating timeMultiplier")
-      timeMultiplier.timeMultiplier = (timeMultiplier.timeMultiplier * 1f / 63 * ticks).toInt
-    }
-  }
-
-  center = _center
-  windowCenter = DVec((windowWidth - 1024) + 1024 / 2, windowHeight / 2)
-  viewMode = FixedOnShip
-  globalScale = 10
 
   /*def satelliteSpeedStrInPoint(coord: DVec, velocity: DVec, mass: Double): String = {
     insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
@@ -129,6 +115,68 @@ object OrbitalKiller
 
   preinit {
     addGlyphs(s"$ccw_symbol$cw_symbol$rocket_symbol")
+  }
+
+  action {
+    nextStep()
+  }
+
+  center = _center
+  windowCenter = DVec((windowWidth - 1024) + 1024 / 2, windowHeight / 2)
+  viewMode = FixedOnShip
+  globalScale = 10
+
+  private var _update_orbits = false
+  private var update_count: Long = 0l
+
+  private def updateOrbits() {
+    //println("updateOrbits")
+    if (player_ship.flightMode == Maneuvering || !onPause || !player_ship.engines.exists(_.active)) {
+      // если в режиме маневрирования, или не в режиме маневрирования, но не на паузе, или на паузе, но двигатели не работают - рисуем текущее состояние
+      moon.orbitRender = orbitDataUpdater.updateOrbitData(update_count, moon.index, moon.radius, player_ship.colorIfPlayerAliveOrRed(GREEN), system_evolution.allBodyStates, Set(earth.index, sun.index), None)
+      earth.orbitRender = orbitDataUpdater.updateOrbitData(update_count, earth.index, earth.radius, player_ship.colorIfPlayerAliveOrRed(ORANGE), system_evolution.allBodyStates, Set(sun.index), None)
+      player_ship.updateOrbitData(update_count, player_ship.colorIfPlayerAliveOrRed(YELLOW), timeMsec, system_evolution.allBodyStates, InterfaceHolder.orbitSwitcher.calculateOrbitAround)
+      InterfaceHolder.orbitInfo.markUpdateNeeded()
+      InterfaceHolder.shipInterfaces.foreach(si => {
+        if (!si.isMinimized && !si.monitoring_ship.isCrashed) {
+          si.monitoring_ship.updateOrbitData(update_count, player_ship.colorIfPlayerAliveOrRed(MAGENTA), timeMsec, system_evolution.allBodyStates)
+          si.markUpdateNeeded()
+        }
+      })
+    } else {
+      // в эту секцию мы попадаем, если мы не в режиме маневрирования, на паузе, и двигатели работают
+      val stop_moment_tacts = player_ship.engines.map(_.stopMomentTacts).max
+      val system_state_when_engines_off = getFutureState(stop_moment_tacts)
+      moon.orbitRender = orbitDataUpdater.updateOrbitData(update_count, moon.index, moon.radius, player_ship.colorIfPlayerAliveOrRed(GREEN), system_state_when_engines_off, Set(earth.index, sun.index), None)
+      earth.orbitRender = orbitDataUpdater.updateOrbitData(update_count, earth.index, earth.radius, player_ship.colorIfPlayerAliveOrRed(ORANGE), system_state_when_engines_off, Set(sun.index), None)
+      val stop_moment_msec = (stop_moment_tacts * base_dt * 1000).toLong
+      player_ship.updateOrbitData(update_count, player_ship.colorIfPlayerAliveOrRed(YELLOW), stop_moment_msec, system_state_when_engines_off, InterfaceHolder.orbitSwitcher.calculateOrbitAround)
+      InterfaceHolder.orbitInfo.markUpdateNeeded()
+      InterfaceHolder.shipInterfaces.foreach(si => {
+        if (!si.isMinimized && !si.monitoring_ship.isCrashed) {
+          si.monitoring_ship.updateOrbitData(update_count, player_ship.colorIfPlayerAliveOrRed(MAGENTA), stop_moment_msec, system_state_when_engines_off, None)
+          si.markUpdateNeeded()
+        }
+      })
+    }
+    update_count += 1
+    _update_orbits = false
+  }
+
+  updateOrbits()
+
+  actionDynamicPeriodIgnorePause(1000 / timeMultiplier.timeMultiplier) {
+    if ( /*drawMapMode && (*/ !onPause || _update_orbits /*)*/ ) {
+      updateOrbits()
+    }
+  }
+
+  actionStaticPeriodIgnorePause(10000) {
+    if (timeMultiplier.timeMultiplier != realtime &&
+      timeMultiplier.timeMultiplier > 1f * timeMultiplier.timeMultiplier / 63 * ticks + 20) {
+      println("updating timeMultiplier")
+      timeMultiplier.timeMultiplier = (timeMultiplier.timeMultiplier * 1f / 63 * ticks).toInt
+    }
   }
 
   def inShadowOfPlanet(coord: DVec): Option[(CelestialBody, MutableBodyState)] = {
