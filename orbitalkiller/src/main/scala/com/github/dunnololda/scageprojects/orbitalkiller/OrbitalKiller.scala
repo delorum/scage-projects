@@ -4,21 +4,19 @@ import java.io.FileOutputStream
 
 import com.github.dunnololda.scage.ScageLibD.{DVec, ScageColor, Vec, addGlyphs, appVersion, max_font_size, messageBounds, print, property, stopApp, _}
 import com.github.dunnololda.scage.support.ScageId
-import com.github.dunnololda.scageprojects.orbitalkiller.interfaces.InterfaceHolder
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.SystemEvolution
 import com.github.dunnololda.scageprojects.orbitalkiller.ships._
 
 import scala.collection._
 
 //import collection.mutable.ArrayBuffer
 
-case class OrbitData(update_count: Long,
-                     body_state: MutableBodyState,
-                     bs_radius: Double,
-                     planet_state: MutableBodyState,
-                     planet: CelestialBody,
+case class OrbitData(update_count:Long,
+                     body_state:MutableBodyState,
+                     bs_radius:Double,
+                     planet_state:MutableBodyState,
+                     planet:CelestialBody,
                      orbit: KeplerOrbit,
-                     ccw: Boolean,
+                     ccw:Boolean,
                      render: () => Unit) {
   lazy val ellipseOrbit: Option[EllipseOrbit] = orbit match {
     case x: EllipseOrbit => Some(x)
@@ -35,19 +33,18 @@ case class OrbitData(update_count: Long,
   val init_planet_vel = planet_state.vel
   val init_planet_ang = planet_state.ang
 
-  lazy val planet_radius_plus_body_radius_sq = (planet.radius + bs_radius) * (planet.radius + bs_radius)
-  lazy val is_landed: Boolean = {
+  lazy val planet_radius_plus_body_radius_sq = (planet.radius + bs_radius)*(planet.radius + bs_radius)
+  lazy val is_landed:Boolean = {
     init_bs_coord.dist2(init_planet_coord) <= planet_radius_plus_body_radius_sq &&
-      ((init_bs_vel - init_planet_vel) * (init_bs_coord - init_planet_coord).n).abs < 0.5 &&
-      (((init_bs_vel - init_planet_vel) * (init_bs_coord - init_planet_coord).p) / init_bs_coord.dist(init_planet_coord) * planet.radius - planet.groundSpeedMsec).abs < 0.5
+    ((init_bs_vel - init_planet_vel)*(init_bs_coord - init_planet_coord).n).abs < 0.5 &&
+    (((init_bs_vel - init_planet_vel) * (init_bs_coord - init_planet_coord).p) / init_bs_coord.dist(init_planet_coord) * planet.radius - planet.groundSpeedMsec).abs < 0.5
   }
 
-  lazy val is_landed_on_earth: Boolean = is_landed && planet.index == OrbitalKiller.earth.index
-  lazy val is_landed_on_moon: Boolean = is_landed && planet.index == OrbitalKiller.moon.index
+  lazy val is_landed_on_earth:Boolean = is_landed && planet.index == OrbitalKiller.earth.index
+  lazy val is_landed_on_moon:Boolean = is_landed && planet.index == OrbitalKiller.moon.index
 
-  lazy val orbitStrDefinition: String = {
-    if (is_landed) "landed"
-    else {
+  lazy val orbitStrDefinition:String = {
+    if(is_landed) "landed" else {
       orbit.strDefinition(planet.name,
         planet.radius,
         init_planet_vel,
@@ -116,10 +113,10 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     if (new_time_multiplier > 0) {
       // разрешаем переход на ускоренное/замедленное течение времени только если все двигатели выключены
       /*if (new_time_multiplier == realtime || ShipsHolder.ships.flatMap(_.engines).forall(!_.active)) {*/
-      _time_multiplier = new_time_multiplier
-      ShipsHolder.ships.flatMap(_.engines).filter(_.active).foreach(e => {
-        e.workTimeTacts = e.workTimeTacts
-      })
+        _time_multiplier = new_time_multiplier
+        ShipsHolder.ships.flatMap(_.engines).filter(_.active).foreach(e => {
+          e.workTimeTacts = e.workTimeTacts
+        })
       /*}*/
     }
   }
@@ -133,8 +130,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   val system_evolution = new SystemEvolution(base_dt)
 
   def tacts: Long = system_evolution.tacts
-
-  def timeMsec: Long = (tacts * base_dt * 1000).toLong
+  def timeMsec: Long = (tacts*base_dt*1000).toLong
 
   def currentBodyState(index: Int): Option[MutableBodyState] = system_evolution.bodyState(index)
 
@@ -190,7 +186,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     sun.currentState,
     (tacts, helper) => {
       helper.gravityForceFromTo(earth.index, sun.index) +
-        helper.gravityForceFromTo(moon.index, sun.index)
+      helper.gravityForceFromTo(moon.index, sun.index)
     },
     (tacts, helper) => {
       0.0
@@ -218,14 +214,14 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     earth.currentState,
     (tacts, helper) => {
       helper.gravityForceFromTo(sun.index, earth.index) +
-        helper.gravityForceFromTo(moon.index, earth.index)
+      helper.gravityForceFromTo(moon.index, earth.index)
     },
     (tacts, helper) => {
       0.0
     }
   )
 
-  val moon_start_position = earth.coord + DVec(0, 1).rotateDeg(280) * 380000000l
+  val moon_start_position = earth.coord + DVec(0,1).rotateDeg(280)*380000000l
   val moon_init_velocity = speedToHaveOrbitWithParams(moon_start_position, 0, earth.coord, earth.linearVelocity, earth.mass, G, ccw = true)
   val moon = new Planet(
     ScageId.nextId, "Луна",
@@ -240,7 +236,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     moon.currentState,
     (tacts, helper) => {
       helper.gravityForceFromTo(sun.index, moon.index) +
-        helper.gravityForceFromTo(earth.index, moon.index)
+      helper.gravityForceFromTo(earth.index, moon.index)
     },
     (tacts, helper) => {
       0.0
@@ -270,7 +266,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   // стоим на поверхности Земли
   val ship_start_position = earth.coord + DVec(495, earth.radius + 3.5)
-  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p * earth.groundSpeedMsec /*DVec.zero*/
+  val ship_init_velocity = earth.linearVelocity + (ship_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   // суборбитальная траектория
   //val ship_start_position = earth.coord + DVec(500, earth.radius + 100000)
@@ -360,7 +356,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   // стоим на поверхности Земли
   val cargo1_start_position = earth.coord + DVec(0, earth.radius + 2)
-  val cargo1_init_velocity = earth.linearVelocity + (cargo1_start_position - earth.coord).p * earth.groundSpeedMsec /*DVec.zero*/
+  val cargo1_init_velocity = earth.linearVelocity + (cargo1_start_position - earth.coord).p*earth.groundSpeedMsec/*DVec.zero*/
 
   // на круговой орбите в 200 км от поверхности Земли
   //val cargo1_start_position = earth.coord + DVec(-100, earth.radius + 199000)
@@ -378,7 +374,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }
 
-  var _set_stop_time: Boolean = false
+  var _set_stop_time:Boolean = false
   var _stop_after_number_of_tacts: Long = 0
   var _stop_in_orbit_true_anomaly: Double = 0
 
@@ -547,16 +543,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   }
 
   /**
-    * Возвращает информацию о небесном теле, в сфере влияния которого находится наш объект (заведомо гораздо меньшей массы).
-    * Мы вычисляем это, определяя в сфере Хилла какого небесного тела мы находимся. Потенциальные кандидаты передаются в аргументе
-    * planet_state, и они там отсортированы по возрастанию массы. Мы проверяем нахождение в сфере Хилла начиная с самого малого.
-    *
-    * @param ship_coord    - позиция нашего объекта
-    * @param ship_mass     - масса нашего объекта
-    * @param planet_states - информация о небесных телах, в сфере влияния которых потенциально мы можем быть. Это список, и он должен быть
-    *                      отсортирован по возрастанию массы. В конце списка должно быть Солнце!
-    * @return
-    */
+   * Возвращает информацию о небесном теле, в сфере влияния которого находится наш объект (заведомо гораздо меньшей массы).
+   * Мы вычисляем это, определяя в сфере Хилла какого небесного тела мы находимся. Потенциальные кандидаты передаются в аргументе
+   * planet_state, и они там отсортированы по возрастанию массы. Мы проверяем нахождение в сфере Хилла начиная с самого малого.
+   *
+   * @param ship_coord - позиция нашего объекта
+   * @param ship_mass - масса нашего объекта
+   * @param planet_states - информация о небесных телах, в сфере влияния которых потенциально мы можем быть. Это список, и он должен быть
+   *                      отсортирован по возрастанию массы. В конце списка должно быть Солнце!
+   * @return
+   */
   def insideSphereOfInfluenceOfCelestialBody(ship_coord: DVec,
                                              ship_mass: Double,
                                              planet_states: Seq[(CelestialBody, MutableBodyState)]): Option[(CelestialBody, MutableBodyState)] = {
@@ -582,16 +578,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   def drawDashedLine(from: DVec, to: DVec, dash_len: Double, color: ScageColor): Unit = {
     val line_len = (to - from).norma
     val normal = (to - from).n
-    (0.0 to line_len - dash_len by dash_len * 2).foreach { dash_from =>
-      drawLine(from + normal * dash_from, from + normal * (dash_from + dash_len), color)
+    (0.0 to line_len - dash_len by dash_len * 2).foreach {
+      case dash_from => drawLine(from + normal * dash_from, from + normal * (dash_from + dash_len), color)
     }
   }
 
   def drawDashedArrow(from1: DVec, to1: DVec, dash_len: Double, color: ScageColor, scale: Double = globalScale): Unit = {
     val line_len = (to1 - from1).norma
     val normal = (to1 - from1).n
-    (0.0 to line_len - dash_len by dash_len * 2).foreach { dash_from =>
-      drawLine(from1 + normal * dash_from, from1 + normal * (dash_from + dash_len), color)
+    (0.0 to line_len - dash_len by dash_len * 2).foreach {
+      case dash_from => drawLine(from1 + normal * dash_from, from1 + normal * (dash_from + dash_len), color)
     }
     val arrow11 = to1 + ((from1 - to1).n * 10 / scale).rotateDeg(15)
     val arrow12 = to1 + ((from1 - to1).n * 10 / scale).rotateDeg(-15)
@@ -676,8 +672,8 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       ang_vel <- _parseDouble(s(5))
       ang <- _parseDouble(s(6))
     } yield {
-      (index, (acc, vel, coord, ang_acc, ang_vel, ang))
-    }).toMap
+        (index, (acc, vel, coord, ang_acc, ang_vel, ang))
+      }).toMap
 
     for {
       new_tacts <- new_tacts_option
@@ -790,9 +786,10 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
 
   private def repeatTime(code: Int): Long = {
-    keyPress(code).map { kp =>
-      if (kp.was_pressed && System.currentTimeMillis() - kp.pressed_start_time < 100) 100l
-      else 10l
+    keyPress(code).map {
+      case kp =>
+        if (kp.was_pressed && System.currentTimeMillis() - kp.pressed_start_time < 100) 100l
+        else 10l
     }.getOrElse(100l)
   }
 
@@ -820,7 +817,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   })
   keyIgnorePause(KEY_T, onKeyDown = _set_stop_time = !_set_stop_time)
   keyIgnorePause(KEY_RIGHT, repeatTime(KEY_RIGHT), onKeyDown = {
-    if (_set_stop_time) {
+    if(_set_stop_time) {
       _stop_after_number_of_tacts += InterfaceHolder.timeStepSwitcher.timeStep
     } else {
       if (player_ship.isAlive) {
@@ -838,7 +835,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     needToUpdateOrbits("KEY_RIGHT")
   })
   keyIgnorePause(KEY_LEFT, repeatTime(KEY_LEFT), onKeyDown = {
-    if (_set_stop_time) {
+    if(_set_stop_time) {
       _stop_after_number_of_tacts -= InterfaceHolder.timeStepSwitcher.timeStep
     } else {
       if (player_ship.isAlive) {
@@ -937,7 +934,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   keyIgnorePause(KEY_F4, onKeyDown = if (!drawMapMode) viewMode = Landing) // посадка на планету, если не в режиме карты
 
   // функционал толком не работает
-  keyIgnorePause(KEY_F5, onKeyDown = saveGame()) // сохранить текущее состояние системы
+  keyIgnorePause(KEY_F5, onKeyDown = saveGame())                          // сохранить текущее состояние системы
   //keyIgnorePause(KEY_F6, onKeyDown = loadGame())                          // загрузить из файла состояние системы
 
   keyIgnorePause(KEY_I, onKeyDown = {
@@ -946,7 +943,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     else InterfaceHolder.showAllByUser()
   })
   keyIgnorePause(KEY_R, onKeyDown = {
-    if (!player_ship.isDocked) {
+    if(!player_ship.isDocked) {
       player_ship.rockets_enabled = !player_ship.rockets_enabled
       if (player_ship.rockets_enabled) {
         if (InterfaceHolder.rocketsInfo.isMinimizedByUser) {
@@ -961,16 +958,16 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
 
   keyIgnorePause(KEY_N, 100, onKeyDown = {
     if (InterfaceHolder.realTrajectorySwitcher.showRealTrajectory) {
-      InterfaceHolder.realTrajectorySwitcher.numPoints += 24 * 3600
+      InterfaceHolder.realTrajectorySwitcher.numPoints += 24*3600
     }
   })
 
   keyIgnorePause(KEY_C, onKeyDown = {
     if (InterfaceHolder.realTrajectorySwitcher.showRealTrajectory) {
-      if (RealTrajectory.curPoints < InterfaceHolder.realTrajectorySwitcher.numPoints) {
+      if(RealTrajectory.curPoints < InterfaceHolder.realTrajectorySwitcher.numPoints) {
         InterfaceHolder.realTrajectorySwitcher.numPoints = RealTrajectory.curPoints
       } else {
-        InterfaceHolder.realTrajectorySwitcher.numPoints = 24 * 3600
+        InterfaceHolder.realTrajectorySwitcher.numPoints = 24*3600
         needToUpdateOrbits("reset real trajectory num points")
       }
     }
@@ -1069,8 +1066,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   val scale = 1e-6
 
   private var _update_orbits = false
-  private var update_count: Long = 0l
-
+  private var update_count:Long = 0l
   private def updateOrbits() {
     //println("updateOrbits")
     if (player_ship.flightMode == Maneuvering || !onPause || !player_ship.engines.exists(_.active)) {
@@ -1091,7 +1087,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       val system_state_when_engines_off = getFutureState(stop_moment_tacts)
       moon.orbitRender = OrbitDataUpdater.updateOrbitData(update_count, moon.index, moon.radius, player_ship.colorIfPlayerAliveOrRed(GREEN), system_state_when_engines_off, Set(earth.index, sun.index), None)
       earth.orbitRender = OrbitDataUpdater.updateOrbitData(update_count, earth.index, earth.radius, player_ship.colorIfPlayerAliveOrRed(ORANGE), system_state_when_engines_off, Set(sun.index), None)
-      val stop_moment_msec = (stop_moment_tacts * base_dt * 1000).toLong
+      val stop_moment_msec = (stop_moment_tacts*base_dt*1000).toLong
       player_ship.updateOrbitData(update_count, player_ship.colorIfPlayerAliveOrRed(YELLOW), stop_moment_msec, system_state_when_engines_off, InterfaceHolder.orbitSwitcher.calculateOrbitAround)
       InterfaceHolder.orbitInfo.markUpdateNeeded()
       InterfaceHolder.shipInterfaces.foreach(si => {
@@ -1108,7 +1104,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
   updateOrbits()
 
   actionDynamicPeriodIgnorePause(1000 / timeMultiplier) {
-    if ( /*drawMapMode && (*/ !onPause || _update_orbits /*)*/ ) {
+    if (/*drawMapMode && (*/!onPause || _update_orbits/*)*/) {
       updateOrbits()
     }
   }
@@ -1259,7 +1255,7 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
               print(player_ship.name, Vec.zero, color = WHITE, size = (max_font_size / globalScale).toFloat)
             }
           }
-          if (!or.is_landed) render()
+          if(!or.is_landed) render()
       }
 
       InterfaceHolder.shipInterfaces.foreach(si => {

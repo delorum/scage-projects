@@ -5,8 +5,6 @@ import com.github.dunnololda.scage.ScageLibD._
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
 import OrbitalKiller._
-import com.github.dunnololda.scageprojects.orbitalkiller.interfaces.InterfaceHolder
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.SystemEvolution
 
 object RealTrajectory extends RealTrajectoryC(None)
 object RealTrajectory2 extends RealTrajectoryC(Some(1))
@@ -22,7 +20,7 @@ class RealTrajectoryC(max_multiplier:Option[Double]) {
   private var prev_energy:/*Double*/Seq[(String, Double)] = /*0.0*/Seq.empty
 
   def energy:/*Double*/Seq[(String, Double)] = {
-    val all_bodies = system_evolution_copy.allBodyStates.values.toSeq
+    val all_bodies = system_evolution_copy.allBodyStates.map(_._2).toSeq
     val kinetic = all_bodies.map(b => (b.index.toString, 0.5*b.mass*b.vel.norma2 + b.I*b.ang_vel.toRad*b.ang_vel.toRad))
     val potential = all_bodies.combinations(2).map {
       case Seq(b1, b2) => (s"${b1.index}-${b2.index}", - 0.5*G*b1.mass*b2.mass/b1.coord.dist(b2.coord))

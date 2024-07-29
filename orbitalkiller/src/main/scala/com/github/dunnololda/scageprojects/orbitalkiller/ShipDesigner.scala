@@ -4,7 +4,6 @@ import java.lang
 
 import com.github.dunnololda.cli.AppProperties
 import com.github.dunnololda.scage.ScageLib._
-import com.github.dunnololda.scageprojects.orbitalkiller.ships.PolygonShip
 
 case class EngineData(coord: Vec, force_dir: Vec)
 
