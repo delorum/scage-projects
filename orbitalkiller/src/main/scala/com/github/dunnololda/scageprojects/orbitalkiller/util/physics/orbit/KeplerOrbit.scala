@@ -2,11 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
-import com.github.dunnololda.scageprojects.orbitalkiller.physics.MutableBodyState
-import com.github.dunnololda.scageprojects.orbitalkiller.planets.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils._
-
-import scala.collection.Seq
 
 trait KeplerOrbit {
   def a: Double
@@ -151,30 +147,5 @@ object KeplerOrbit {
                             body_relative_velocity: DVec, G: Double): Double = {
     val mu = (planet_mass + body_mass) * G // гравитационный параметр
     body_relative_velocity.norma2 / 2 - mu / body_relative_coord.norma
-  }
-
-  /**
-    * Возвращает информацию о небесном теле, в сфере влияния которого находится наш объект (заведомо гораздо меньшей массы).
-    * Мы вычисляем это, определяя в сфере Хилла какого небесного тела мы находимся. Потенциальные кандидаты передаются в аргументе
-    * planet_state, и они там отсортированы по возрастанию массы. Мы проверяем нахождение в сфере Хилла начиная с самого малого.
-    *
-    * @param ship_coord    - позиция нашего объекта
-    * @param ship_mass     - масса нашего объекта
-    * @param planet_states - информация о небесных телах, в сфере влияния которых потенциально мы можем быть. Это список, и он должен быть
-    *                      отсортирован по возрастанию массы. В конце списка должно быть Солнце!
-    * @return
-    */
-  def insideSphereOfInfluenceOfCelestialBody(ship_coord: DVec,
-                                             ship_mass: Double,
-                                             planet_states: Seq[(CelestialBody, MutableBodyState)]): Option[(CelestialBody, MutableBodyState)] = {
-    if (planet_states.isEmpty) None
-    else if (planet_states.length == 1) Some(planet_states.head)
-    else {
-      val x = planet_states.find {
-        case (smaller_planet, smaller_planet_state) =>
-          ship_coord.dist2(smaller_planet_state.coord) <= smaller_planet.half_hill_radius2
-      }
-      if (x.nonEmpty) x else Some(planet_states.last)
-    }
   }
 }

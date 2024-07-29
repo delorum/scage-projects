@@ -2,7 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import java.io.FileOutputStream
 
-import com.github.dunnololda.scage.ScageLibD.{DVec, Vec, addGlyphs, appVersion, max_font_size, messageBounds, print, property, stopApp, _}
+import com.github.dunnololda.scage.ScageLibD.{DVec, ScageColor, Vec, addGlyphs, appVersion, max_font_size, messageBounds, print, property, stopApp, _}
 import com.github.dunnololda.scageprojects.orbitalkiller.components.BasicComponents._
 import com.github.dunnololda.scageprojects.orbitalkiller.components.OrbitalComponents
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.InterfaceHolder
@@ -10,10 +10,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.physics.collisions.BoxS
 import com.github.dunnololda.scageprojects.orbitalkiller.physics.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller.planets.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller.ships._
-import com.github.dunnololda.scageprojects.orbitalkiller.util.DrawUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.StringUtils._
-import com.github.dunnololda.scageprojects.orbitalkiller.util.math.GeometryUtils._
-import com.github.dunnololda.scageprojects.orbitalkiller.util.math.MathUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.KeplerOrbit._
 import com.github.dunnololda.scageprojects.orbitalkiller.util.physics.orbit.{EllipseOrbit, HyperbolaOrbit, KeplerOrbit}
 
@@ -210,6 +207,10 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }*/
 
+  def curvatureRadiusInPoint(body_state: BodyState): Double = {
+    math.abs(body_state.vel.norma2 / (body_state.acc * body_state.vel.p))
+  }
+
   def curvatureRadiusStrInPoint(body_state: BodyState): String = {
     s"${mOrKmOrMKm(curvatureRadiusInPoint(body_state))}"
   }
@@ -279,6 +280,59 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
       globalScale = 10
       viewMode = FixedOnShip
     }
+  }
+
+  /**
+    * Возвращает информацию о небесном теле, в сфере влияния которого находится наш объект (заведомо гораздо меньшей массы).
+    * Мы вычисляем это, определяя в сфере Хилла какого небесного тела мы находимся. Потенциальные кандидаты передаются в аргументе
+    * planet_state, и они там отсортированы по возрастанию массы. Мы проверяем нахождение в сфере Хилла начиная с самого малого.
+    *
+    * @param ship_coord    - позиция нашего объекта
+    * @param ship_mass     - масса нашего объекта
+    * @param planet_states - информация о небесных телах, в сфере влияния которых потенциально мы можем быть. Это список, и он должен быть
+    *                      отсортирован по возрастанию массы. В конце списка должно быть Солнце!
+    * @return
+    */
+  def insideSphereOfInfluenceOfCelestialBody(ship_coord: DVec,
+                                             ship_mass: Double,
+                                             planet_states: Seq[(CelestialBody, MutableBodyState)]): Option[(CelestialBody, MutableBodyState)] = {
+    if (planet_states.isEmpty) None
+    else if (planet_states.length == 1) Some(planet_states.head)
+    else {
+      val x = planet_states.find {
+        case (smaller_planet, smaller_planet_state) =>
+          ship_coord.dist2(smaller_planet_state.coord) <= smaller_planet.half_hill_radius2
+      }
+      if (x.nonEmpty) x else Some(planet_states.last)
+    }
+  }
+
+  def drawArrow(from1: DVec, to1: DVec, color: ScageColor, scale: Double = globalScale) {
+    val arrow11 = to1 + ((from1 - to1).n * 10 / scale).rotateDeg(15)
+    val arrow12 = to1 + ((from1 - to1).n * 10 / scale).rotateDeg(-15)
+    drawLine(from1, to1, color)
+    drawLine(to1, arrow11, color)
+    drawLine(to1, arrow12, color)
+  }
+
+  def drawDashedLine(from: DVec, to: DVec, dash_len: Double, color: ScageColor): Unit = {
+    val line_len = (to - from).norma
+    val normal = (to - from).n
+    (0.0 to line_len - dash_len by dash_len * 2).foreach { dash_from =>
+      drawLine(from + normal * dash_from, from + normal * (dash_from + dash_len), color)
+    }
+  }
+
+  def drawDashedArrow(from1: DVec, to1: DVec, dash_len: Double, color: ScageColor, scale: Double = globalScale): Unit = {
+    val line_len = (to1 - from1).norma
+    val normal = (to1 - from1).n
+    (0.0 to line_len - dash_len by dash_len * 2).foreach { dash_from =>
+      drawLine(from1 + normal * dash_from, from1 + normal * (dash_from + dash_len), color)
+    }
+    val arrow11 = to1 + ((from1 - to1).n * 10 / scale).rotateDeg(15)
+    val arrow12 = to1 + ((from1 - to1).n * 10 / scale).rotateDeg(-15)
+    drawLine(to1, arrow11, color)
+    drawLine(to1, arrow12, color)
   }
 
   private var _show_game_saved_message = false
@@ -800,6 +854,44 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
     }
   }
 
+  private def circlesIntersection(p0: DVec, r0: Double, p1: DVec, r1: Double): List[DVec] = {
+    val d = p1.dist(p0)
+    if (d > r0 + r1 || d < math.abs(r0 - r1)) Nil
+    else if (d == r0 + r1) {
+      List(p0 + (p1 - p0).n * r0)
+    } else {
+      val a = (r0 * r0 - r1 * r1 + d * d) / (2 * d)
+      val h = math.sqrt(r0 * r0 - a * a)
+      val DVec(x2, y2) = p0 + a * (p1 - p0) / d
+      List(DVec(x2 + h * (p1.y - p0.y) / d, y2 - h * (p1.x - p0.x) / d),
+        DVec(x2 - h * (p1.y - p0.y) / d, y2 + h * (p1.x - p0.x) / d))
+    }
+  }
+
+  private def tangentsFromPointToCircle(p: DVec, c: DVec, r: Double): List[DVec] = {
+    circlesIntersection(c, r, p + (c - p) * 0.5, c.dist(p) / 2)
+  }
+
+  def tangentsFromCircleToCircle(p0: DVec, r0: Double, p1: DVec, r1: Double): Option[(DVec, DVec, DVec, DVec)] = {
+    if (r0 > r1) tangentsFromCircleToCircle(p1, r1, p0, r0)
+    else {
+      val l = tangentsFromPointToCircle(p0, p1, r1 - r0)
+      if (l.length != 2) None
+      else {
+        val List(x1, x2) = l
+        val x1p2_n = (x1 - p1).n
+        val x2p2_n = (x2 - p1).n
+
+        val b1 = p1 + x1p2_n * r1
+        val b2 = p1 + x2p2_n * r1
+
+        val c1 = p0 + x1p2_n * r0
+        val c2 = p0 + x2p2_n * r0
+        Some((c1, c2, b1, b2))
+      }
+    }
+  }
+
   def inShadowOfPlanet(coord: DVec): Option[(CelestialBody, MutableBodyState)] = {
     val ship_sun_dist = coord.dist(sun.coord)
     currentPlanetStates.filterNot(_._1.index == sun.index).find {
@@ -811,6 +903,17 @@ object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("scree
             a1 && a2
           case None => false
         })
+    }
+  }
+
+  private def drawSunTangents(planet_coord: DVec, planet_radius: Double, sun_coord: DVec, sun_radius: Double, dist: Double) {
+    tangentsFromCircleToCircle(planet_coord, planet_radius, sun_coord, sun_radius) match {
+      case Some((c1, c2, b1, b2)) =>
+        val a = (c1 - b1).n * dist
+        val b = (c2 - b2).n * dist
+        drawLine(c1 * scale, (c1 + a) * scale, DARK_GRAY)
+        drawLine(c2 * scale, (c2 + b) * scale, DARK_GRAY)
+      case None =>
     }
   }
 
