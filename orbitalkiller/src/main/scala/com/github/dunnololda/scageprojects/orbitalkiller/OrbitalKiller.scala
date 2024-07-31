@@ -82,7 +82,7 @@ case object FixedOnOrbit extends ViewMode {
   override def rusStr: String = "фиксация на орбите корабля"
 }
 
-object OrbitalKiller extends ScageScreenAppDMT("Orbital Killer", property("screen.width", 1600), property("screen.height", 900)) {
+object OrbitalKiller extends ScageScreenAppD("Orbital Killer", property("screen.width", 1600), property("screen.height", 900)) {
   val k: Double = 1 // доля секунды симуляции, которая обрабатывается за одну реальную секунду, если не применяется ускорение
 
   val linear_velocity_error = 0.1
