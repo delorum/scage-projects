@@ -4,33 +4,11 @@ import java.io.FileOutputStream
 import com.github.dunnololda.scage.ScageLibD.{DVec, ScageColor, Vec, addGlyphs, appVersion, max_font_size, messageBounds, print, property, stopApp, _}
 import com.github.dunnololda.scage.support.ScageId
 import com.github.dunnololda.scageprojects.orbitalkiller.ships._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 
 import scala.collection._
-
-sealed trait ViewMode {
-  def rusStr: String
-}
-
-case object FreeViewMode extends ViewMode {
-  override def rusStr: String = "свободный"
-}
-
-case object FixedOnShip extends ViewMode {
-  override def rusStr: String = "фиксация на корабле"
-}
-
-case object FixedOnShipAbsolute extends ViewMode {
-  override def rusStr: String = "фиксация на корабле, абсолютная ориентация"
-}
-
-case object Landing extends ViewMode {
-  override def rusStr: String = "посадка на планету"
-}
-
-case object FixedOnOrbit extends ViewMode {
-  override def rusStr: String = "фиксация на орбите корабля"
-}
 
 object OrbitalKiller extends ScageScreenAppD("Orbital Killer", property("screen.width", 1600), property("screen.height", 900)) {
   val k: Double = 1 // доля секунды симуляции, которая обрабатывается за одну реальную секунду, если не применяется ускорение
