@@ -1,13 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits
 
-import com.github.dunnololda.scageprojects.orbitalkiller.{
-  CelestialBody,
-  EllipseOrbit,
-  HyperbolaOrbit,
-  KeplerOrbit,
-  MutableBodyState,
-  OrbitalKiller
-}
+import com.github.dunnololda.scageprojects.orbitalkiller.{CelestialBody, EllipseOrbit, HyperbolaOrbit, KeplerOrbit, MutableBodyState}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
 
 case class OrbitRenderData(
     update_count: Long,
@@ -45,8 +39,8 @@ case class OrbitRenderData(
     ) * planet.radius - planet.groundSpeedMsec).abs < 0.5
   }
 
-  lazy val is_landed_on_earth: Boolean = is_landed && planet.index == OrbitalKiller.earth.index
-  lazy val is_landed_on_moon: Boolean = is_landed && planet.index == OrbitalKiller.moon.index
+  lazy val is_landed_on_earth: Boolean = is_landed && planet.index == Main.earth.index
+  lazy val is_landed_on_moon: Boolean = is_landed && planet.index == Main.moon.index
 
   lazy val orbitStrDefinition: String = {
     if (is_landed) "landed"

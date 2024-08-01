@@ -1,6 +1,6 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
-import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer

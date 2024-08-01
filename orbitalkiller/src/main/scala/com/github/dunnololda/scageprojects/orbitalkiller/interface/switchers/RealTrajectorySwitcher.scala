@@ -1,7 +1,8 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers
 
 import com.github.dunnololda.scage.support.messages.ScageMessage
-import com.github.dunnololda.scageprojects.orbitalkiller.{InterfaceHolder, RealTrajectory, OrbitalKiller, InterfaceSwitcher}
+import com.github.dunnololda.scageprojects.orbitalkiller.{InterfaceHolder, InterfaceSwitcher, RealTrajectory}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
 
 class RealTrajectorySwitcher extends InterfaceSwitcher {
   private def enabledRealTrajectorySwitcher = if(InterfaceHolder.realTrajectorySwitcher.numPoints > RealTrajectory.curPoints) {
@@ -19,11 +20,11 @@ class RealTrajectorySwitcher extends InterfaceSwitcher {
 
   override def switchForward(): Unit = {
     super.switchForward()
-    OrbitalKiller.needToUpdateOrbits("changed central body")
+    Main.needToUpdateOrbits("changed central body")
   }
 
   override def switchBack(): Unit = {
     super.switchBack()
-    OrbitalKiller.needToUpdateOrbits("changed central body")
+    Main.needToUpdateOrbits("changed central body")
   }
 }

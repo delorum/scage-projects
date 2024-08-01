@@ -2,8 +2,8 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.ScageId
-import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.Constants
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Constants, Main}
 
 class Engine(
     val name: Int,
@@ -77,7 +77,7 @@ class Engine(
         if (InterfaceHolder.gSwitcher.maxGSet) {
           math.min(
             max_power * new_power_percent / 100.0,
-            ship.thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
+            ship.thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * Main.earth.g + {
               earth
                 .airResistance(
                   ship.currentState,

@@ -2,9 +2,10 @@ package com.github.dunnololda.scageprojects.orbitalkiller.ships
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.{DVec, ScageId}
-import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.Constants
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.AdditionalSymbols.rocket_symbol
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Constants, Main}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -170,7 +171,7 @@ class Ship4(
         default_percent_seq
       } else {
         val max_percent =
-          math.min(mass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g / max_power * 99, 99).toInt.toDouble
+          math.min(mass * InterfaceHolder.gSwitcher.maxG * Main.earth.g / max_power * 99, 99).toInt.toDouble
         ((max_percent to 1.0 by -1.0) ++ (0.9 to 0.1 by -0.1)).view
       }
     }
@@ -262,7 +263,7 @@ class Ship4(
       nine.active = true
       seven.active = false
     }
-    last_correction_or_check_moment = OrbitalKiller.system_evolution.tacts
+    last_correction_or_check_moment = Main.system_evolution.tacts
   }
 
   override def preserveVelocity(need_vel: DVec) {
@@ -345,7 +346,7 @@ class Ship4(
       activate_engines += four
     }
     activateOnlyTheseEngines(activate_engines: _*)
-    last_correction_or_check_moment = OrbitalKiller.system_evolution.tacts
+    last_correction_or_check_moment = Main.system_evolution.tacts
   }
 
   override var vertical_speed_msec: Int = 0
@@ -446,8 +447,8 @@ class Ship4(
         case FreeFlightMode => // свободный режим
         case Killrot => // запрет вращения
           if (
-            allEnginesInactive || OrbitalKiller.system_evolution.tacts - last_correction_or_check_moment >= math.min(
-              OrbitalKiller.system_evolution.tacts,
+            allEnginesInactive || Main.system_evolution.tacts - last_correction_or_check_moment >= math.min(
+              Main.system_evolution.tacts,
               correction_check_period
             )
           ) {
@@ -460,8 +461,8 @@ class Ship4(
           }
         case RelativeVelocityAligned => // ориентация по траектории
           if (
-            allEnginesInactive || OrbitalKiller.system_evolution.tacts - last_correction_or_check_moment >= math.min(
-              OrbitalKiller.system_evolution.tacts,
+            allEnginesInactive || Main.system_evolution.tacts - last_correction_or_check_moment >= math.min(
+              Main.system_evolution.tacts,
               correction_check_period
             )
           ) {
@@ -477,8 +478,8 @@ class Ship4(
           }
         case OppositeRelativeVelocityAligned => // ориентация против траектории
           if (
-            allEnginesInactive || OrbitalKiller.system_evolution.tacts - last_correction_or_check_moment >= math.min(
-              OrbitalKiller.system_evolution.tacts,
+            allEnginesInactive || Main.system_evolution.tacts - last_correction_or_check_moment >= math.min(
+              Main.system_evolution.tacts,
               correction_check_period
             )
           ) {
@@ -494,8 +495,8 @@ class Ship4(
           }
         case CirclularOrbit => // выход на орбиту
           if (
-            allEnginesInactive || OrbitalKiller.system_evolution.tacts - last_correction_or_check_moment >= math.min(
-              OrbitalKiller.system_evolution.tacts,
+            allEnginesInactive || Main.system_evolution.tacts - last_correction_or_check_moment >= math.min(
+              Main.system_evolution.tacts,
               correction_check_period
             )
           ) {
@@ -514,8 +515,8 @@ class Ship4(
           }
         case NearestShipVelocity => // уравнять скорость с ближайшим кораблем, который находится на расстоянии не далее 500 км
           if (
-            allEnginesInactive || OrbitalKiller.system_evolution.tacts - last_correction_or_check_moment >= math.min(
-              OrbitalKiller.system_evolution.tacts,
+            allEnginesInactive || Main.system_evolution.tacts - last_correction_or_check_moment >= math.min(
+              Main.system_evolution.tacts,
               correction_check_period
             )
           ) {
@@ -537,8 +538,8 @@ class Ship4(
           }
         case NearestShipAligned => // ориентация на ближайший корабль
           if (
-            allEnginesInactive || OrbitalKiller.system_evolution.tacts - last_correction_or_check_moment >= math.min(
-              OrbitalKiller.system_evolution.tacts,
+            allEnginesInactive || Main.system_evolution.tacts - last_correction_or_check_moment >= math.min(
+              Main.system_evolution.tacts,
               correction_check_period
             )
           ) {
@@ -560,8 +561,8 @@ class Ship4(
           }
         case NearestShipAutoDocking =>
           if (
-            allEnginesInactive || OrbitalKiller.system_evolution.tacts - last_correction_or_check_moment >= math.min(
-              OrbitalKiller.system_evolution.tacts,
+            allEnginesInactive || Main.system_evolution.tacts - last_correction_or_check_moment >= math.min(
+              Main.system_evolution.tacts,
               correction_check_period
             )
           ) {
@@ -808,7 +809,7 @@ class Ship4(
   override def drawIfAliveBeforeRotation(): Unit = {
     if (!isDocked) drawFilledCircle(DVec.zero.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN)) // mass center
 
-    if (OrbitalKiller.globalScale >= 0.8) {
+    if (Main.globalScale >= 0.8) {
       if (!InterfaceHolder.rocketsInfo.isMinimized) {
         left_rocket.foreach(r => {
           if (r.isAlive) {
@@ -906,7 +907,7 @@ class Ship4(
   }
 
   override def drawIfAliveAfterRotation(): Unit = {
-    if (OrbitalKiller.globalScale >= 0.8) {
+    if (Main.globalScale >= 0.8) {
       if (rockets_enabled) {
         if (left_rocket.isEmpty) {
           openglLocalTransform {
@@ -951,7 +952,7 @@ class Ship4(
     drawSlidingLines(actualDrawPoints, colorIfPlayerAliveOrRed(WHITE))
     // convex_parts.foreach(c => drawSlidingLines(c.points ::: List(c.points.head), colorIfPlayerAliveOrRed(WHITE)))
 
-    if (OrbitalKiller.globalScale >= 0.8) {
+    if (Main.globalScale >= 0.8) {
       dock_data.foreach(d => {
         drawFilledCircle(d.our_dp.p1.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
         drawFilledCircle(d.our_dp.p2.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))

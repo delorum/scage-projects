@@ -1,12 +1,11 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Constants, Main}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
-import OrbitalKiller._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.Constants
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 
 object RealTrajectory extends RealTrajectoryC(None)
 object RealTrajectory2 extends RealTrajectoryC(Some(1))
@@ -43,15 +42,15 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
     real_trajectory.clear()
     curPoints = 0
     dropped = 0
-    system_evolution_copy = system_evolution.copy(
+    system_evolution_copy = Main.system_evolution.copy(
       Constants.base_dt,
-      exclude = immutable.Set(station.index, sat1.index, sat2.index, cargo1.index),
+      exclude = immutable.Set(Main.station.index, Main.sat1.index, Main.sat2.index, Main.cargo1.index),
       collisions_enabled = false
     )
     celestials = system_evolution_copy.allBodyStates
-      .filter(kv => planet_indices.contains(kv._1))
+      .filter(kv => Main.planet_indices.contains(kv._1))
       .flatMap(kv => {
-        planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
+        Main.planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
       })
       .values
       .toSeq
@@ -63,7 +62,7 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
 
   private val calc_multiplier: () => Double = {
     def m: Double = (for {
-      ps <- system_evolution_copy.bodyState(player_ship.index)
+      ps <- system_evolution_copy.bodyState(Main.player_ship.index)
     } yield {
       // http://arxiv.org/pdf/1105.1082.pdf
       // N-body simulations of gravitational dynamics, Walter Dehnen and Justin I. Read,
@@ -92,7 +91,7 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
   }
 
   protected def chooseDt: Double = {
-    if (player_ship.engines.exists(_.stopMomentTacts >= system_evolution_copy.tacts)) {
+    if (Main.player_ship.engines.exists(_.stopMomentTacts >= system_evolution_copy.tacts)) {
       Constants.base_dt // пока работают двигатели, dt должен быть равен base_dt, иначе неверно работают формулы.
     } else {
       if (prev_energy /* == 0 */ .isEmpty) prev_energy = energy
@@ -118,32 +117,32 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
       while (i < 6301 && curPoints + seconds < InterfaceHolder.realTrajectorySwitcher.numPoints) {
         system_evolution_copy.base_dt = chooseDt
         system_evolution_copy
-          .bodyState(player_ship.index)
+          .bodyState(Main.player_ship.index)
           .foreach(bs => {
             if (bs.ang_vel != 0 && math.abs(bs.ang_vel) < Constants.angular_velocity_error) {
               bs.ang_vel = 0
             }
-            bs.mass = player_ship.thisOrActualProxyShipCurrentMass(system_evolution_copy.tacts)
+            bs.mass = Main.player_ship.thisOrActualProxyShipCurrentMass(system_evolution_copy.tacts)
           })
         system_evolution_copy.step()
         (InterfaceHolder.orbitSwitcher.calculateOrbitAround match {
           case Some(idx) =>
             for {
-              player_coord <- system_evolution_copy.bodyState(player_ship.thisOrActualProxyShipIndex).map(_.coord)
+              player_coord <- system_evolution_copy.bodyState(Main.player_ship.thisOrActualProxyShipIndex).map(_.coord)
               planet_coord <- system_evolution_copy.bodyState(idx).map(_.coord)
-            } yield (player_coord - planet_coord) * scale
+            } yield (player_coord - planet_coord) * Main.scale
           case None =>
             system_evolution_copy
-              .bodyState(player_ship.thisOrActualProxyShipIndex)
+              .bodyState(Main.player_ship.thisOrActualProxyShipIndex)
               .map(bs => {
-                player_ship.orbitData match {
+                Main.player_ship.orbitData match {
                   case Some(or) =>
                     system_evolution_copy
                       .bodyState(or.planet_state.index)
-                      .map(p => (bs.coord - p.coord) * scale)
-                      .getOrElse(bs.coord * scale)
+                      .map(p => (bs.coord - p.coord) * Main.scale)
+                      .getOrElse(bs.coord * Main.scale)
                   case None =>
-                    bs.coord * scale
+                    bs.coord * Main.scale
                 }
               })
         }) match {

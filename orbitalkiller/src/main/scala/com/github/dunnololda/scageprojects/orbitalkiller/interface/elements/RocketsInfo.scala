@@ -1,10 +1,11 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 
 import com.github.dunnololda.scage.support.ScageColor
-import com.github.dunnololda.scageprojects.orbitalkiller.{InterfaceElement, OrbitalKiller}
+import com.github.dunnololda.scageprojects.orbitalkiller.InterfaceElement
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.{AdditionalSymbols, Main}
 
 class RocketsInfo extends InterfaceElement {
-  private val _strings: Array[String] = Array(OrbitalKiller.rocket_symbol.toString)
+  private val _strings: Array[String] = Array(AdditionalSymbols.rocket_symbol.toString)
   private var _color = ScageColor.DARK_GRAY
 
   override def shortDescr: String = "R"
@@ -12,15 +13,14 @@ class RocketsInfo extends InterfaceElement {
   override def data: Seq[String] = _strings
 
   override protected def _update(): Unit = {
-    if (OrbitalKiller.player_ship.rockets_enabled) {
+    if (Main.player_ship.rockets_enabled) {
       _color = ScageColor.YELLOW
-      _strings(0) = s"Ракетное вооружение активировано. ${OrbitalKiller.player_ship.rocketsStateStr}"
+      _strings(0) = s"Ракетное вооружение активировано. ${Main.player_ship.rocketsStateStr}"
     } else {
       _color = ScageColor.DARK_GRAY
       _strings(0) = s"Ракетное вооружение деактивировано"
     }
   }
-
 
   override def color: ScageColor = _color
 }

@@ -2,6 +2,7 @@ package com.github.dunnololda.scageprojects
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.{Body => Phys2dBody, BodyList => Phys2dBodyList, Collider => Phys2dCollider, DynamicShape => Phys2dShape, StaticBody => Phys2dStaticBody, _}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.{AdditionalSymbols, Main}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -1293,9 +1294,9 @@ package object orbitalkiller {
                       ship_radius: Double): String = {
       val ccw = (ship_coord - f).perpendicular * (ship_velocity - planet_velocity) >= 0 // летим против часовой?
       val dir = if (ccw) {
-          OrbitalKiller.ccw_symbol // против часовой стрелки
+        AdditionalSymbols.ccw_symbol // против часовой стрелки
         } else {
-          OrbitalKiller.cw_symbol // по часовой стрелке
+        AdditionalSymbols.cw_symbol // по часовой стрелке
         }
       if (r_p - planet_radius < 0) {
         val y_axis = (ship_coord - f).n
@@ -1338,7 +1339,7 @@ package object orbitalkiller {
           (fall_time, fall_pos)
         }
 
-        val allowed_acc = if (InterfaceHolder.gSwitcher.maxGSet) InterfaceHolder.gSwitcher.maxG * planet_g else 1000000 / OrbitalKiller.player_ship.mass
+        val allowed_acc = if (InterfaceHolder.gSwitcher.maxGSet) InterfaceHolder.gSwitcher.maxG * planet_g else 1000000 / Main.player_ship.mass
         val time_to_stop_at_full_power = math.abs(v0y / (allowed_acc - planet_g))
         val fall_time_str = if (fall_time_msec < 500) "" else if (fall_time_msec < 30000) s"[r Поверхность через ${timeStrSec(fall_time_msec)}, $fall_position (${timeStrMsec((time_to_stop_at_full_power * 1000l).toLong)})]" else s"Поверхность через ${timeStrMsec(fall_time_msec)}, $fall_position"
 
@@ -1450,7 +1451,7 @@ package object orbitalkiller {
       /*if(print_variant) {
         println(variant)
         /*if(variant == "F & A") {
-          drawLine(orbital_point1*OrbitalKiller.scale, orbital_point2*OrbitalKiller.scale, YELLOW)
+          drawLine(orbital_point1*Main.scale, orbital_point2*Main.scale, YELLOW)
         }*/
       }*/
       // Балк М.Б. Элементы динамики космического полета, Формула Ламберта
@@ -1550,7 +1551,7 @@ package object orbitalkiller {
         else solver(M + e*math.sin(prev_E), i+1, max_i)
       }
       val (res_E, i) = solver()
-      if(OrbitalKiller.system_evolution.tacts % 63 == 0) println(s"elliptic orbitalPointAfterTimeCCW i $i")
+      if(Main.system_evolution.tacts % 63 == 0) println(s"elliptic orbitalPointAfterTimeCCW i $i")
       val tg_half_teta_res_rad = math.sqrt((1 + e) / (1 - e)) * math.tan(res_E / 2)
       val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
       val teta_res_deg = teta_res_rad / math.Pi * 180
@@ -1569,7 +1570,7 @@ package object orbitalkiller {
         else solver(M + e*math.sin(prev_E), i+1, max_i)
       }
       val (resE, iterations) = solver()
-      if(OrbitalKiller.system_evolution.tacts % 63 == 0) println(s"elliptic orbitalPointAfterTimeCW i $iterations")
+      if(Main.system_evolution.tacts % 63 == 0) println(s"elliptic orbitalPointAfterTimeCW i $iterations")
       val tg_half_teta_res_rad = math.sqrt((1 + e) / (1 - e)) * math.tan(resE / 2)
       val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
       val teta_res_deg = teta_res_rad / math.Pi * 180
@@ -1638,7 +1639,7 @@ package object orbitalkiller {
                       ship_velocity: DVec,
                       ship_radius: Double): String = {
       val ccw = (ship_coord - f).perpendicular * (ship_velocity - planet_velocity) >= 0 // летим против часовой?
-      val dir = if (ccw) OrbitalKiller.ccw_symbol else OrbitalKiller.cw_symbol
+      val dir = if (ccw) AdditionalSymbols.ccw_symbol else AdditionalSymbols.cw_symbol
       val r_p_approach = (ship_coord - f) * (ship_velocity - planet_velocity) >= 0
       val r_p_approach_str = if (r_p_approach) "удаляемся" else "приближаемся"
       if (r_p - planet_radius < 0 && !r_p_approach) {
@@ -1664,7 +1665,7 @@ package object orbitalkiller {
           (travelTimeOnOrbitMsecCW(ship_coord, fall_point), fall_pos)
         }
 
-        val allowed_acc = if (InterfaceHolder.gSwitcher.maxGSet) InterfaceHolder.gSwitcher.maxG * planet_g else 1000000 / OrbitalKiller.player_ship.mass
+        val allowed_acc = if (InterfaceHolder.gSwitcher.maxGSet) InterfaceHolder.gSwitcher.maxG * planet_g else 1000000 / Main.player_ship.mass
         val time_to_stop_at_full_power = math.abs(v0y / (allowed_acc - planet_g))
         val fall_time_str = if (fall_time_msec < 500) "" else if (fall_time_msec < 30000) s"[r Поверхность через ${timeStrSec(fall_time_msec)}, $fall_position (${timeStrMsec((time_to_stop_at_full_power * 1000l).toLong)})]" else s"Поверхность через ${timeStrMsec(fall_time_msec)}, $fall_position"
         f"$prefix, незамкнутая, суборбитальная $dir, $r_p_approach_str, e = $e%.2f, r_p = ${mOrKmOrMKm(r_p - planet_radius)}, $fall_time_str"
@@ -1826,7 +1827,7 @@ package object orbitalkiller {
       }
       val M = 1 / inv_n * (0.001*time_from_r_p_msec)
       val (resH, iterations) = solver(_arsh((M + M) / e), M)
-      if(OrbitalKiller.system_evolution.tacts % 63 == 0) println(s"hyperbolic orbitalPointAfterTimeCCW away $away_from_rp after_r_p ${away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec} i $iterations")
+      if(Main.system_evolution.tacts % 63 == 0) println(s"hyperbolic orbitalPointAfterTimeCCW away $away_from_rp after_r_p ${away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec} i $iterations")
       val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(resH / 2)
       val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
       val teta_res_deg = if(away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec) {
@@ -1858,7 +1859,7 @@ package object orbitalkiller {
       }
       val M = 1 / inv_n * (0.001*time_from_r_p_msec)
       val (resH, iterations) = solver(_arsh((M + M) / e), M)
-      if(OrbitalKiller.system_evolution.tacts % 63 == 0) println(s"hyperbolic orbitalPointAfterTimeCW away $away_from_rp after_r_p ${away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec} i $iterations")
+      if(Main.system_evolution.tacts % 63 == 0) println(s"hyperbolic orbitalPointAfterTimeCW away $away_from_rp after_r_p ${away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec} i $iterations")
       val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(resH / 2)
       val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
       val teta_res_deg = if(away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec) {

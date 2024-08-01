@@ -2,13 +2,14 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.{DVec, ScageId}
-import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 
 class Wreck(mass: Double, init_coord: DVec, init_velocity: DVec, init_rotation: Double, points: List[DVec], val is_main: Boolean) {
   val index = ScageId.nextId
   private val draw_points = points :+ points.head
 
-  def colorIfPlayerAliveOrRed(color: => ScageColor) = if (OrbitalKiller.player_ship.isDead) RED else color
+  def colorIfPlayerAliveOrRed(color: => ScageColor) = if (Main.player_ship.isDead) RED else color
 
   val currentState:MutableBodyState = new MutableBodyState(BodyState(
     index = index,

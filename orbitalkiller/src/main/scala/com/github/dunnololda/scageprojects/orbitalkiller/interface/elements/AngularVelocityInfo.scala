@@ -1,8 +1,8 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 
-import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
-import com.github.dunnololda.scageprojects.orbitalkiller.{InterfaceElement, OrbitalKiller}
+import com.github.dunnololda.scageprojects.orbitalkiller.InterfaceElement
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Constants
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 
 class AngularVelocityInfo extends InterfaceElement {
   private var str = ""
