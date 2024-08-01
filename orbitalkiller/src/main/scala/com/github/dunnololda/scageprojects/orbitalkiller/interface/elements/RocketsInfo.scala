@@ -4,7 +4,7 @@ import com.github.dunnololda.scage.support.ScageColor
 import com.github.dunnololda.scageprojects.orbitalkiller.{InterfaceElement, OrbitalKiller}
 
 class RocketsInfo extends InterfaceElement {
-  private val _strings: Array[String] = Array("\u21e7")
+  private val _strings: Array[String] = Array(OrbitalKiller.rocket_symbol.toString)
   private var _color = ScageColor.DARK_GRAY
 
   override def shortDescr: String = "R"
