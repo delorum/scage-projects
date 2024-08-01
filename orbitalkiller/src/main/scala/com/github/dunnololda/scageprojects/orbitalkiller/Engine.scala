@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.ScageId
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Constants
 
 class Engine(val name: Int,
              val position: DVec, // позиция относительно центра массы корабля (ц.м. в точке (0,0))
@@ -15,9 +16,9 @@ class Engine(val name: Int,
   private var worktime_tacts = 0l
   private var stop_moment_tacts = 0l
 
-  def workTimeMsec = (worktime_tacts * base_dt * 1000).toLong
+  def workTimeMsec = (worktime_tacts * Constants.base_dt * 1000).toLong
 
-  def workTimeStr = timeStrMsec((worktime_tacts * base_dt * 1000).toLong)
+  def workTimeStr = timeStrMsec((worktime_tacts * Constants.base_dt * 1000).toLong)
 
   def workTimeTacts = worktime_tacts
 
@@ -40,11 +41,11 @@ class Engine(val name: Int,
   }
 
   def maxFuelConsumptionPerTact: Double = {
-    fuel_consumption_per_sec_at_full_power * base_dt
+    fuel_consumption_per_sec_at_full_power * Constants.base_dt
   }
 
   def fuelConsumptionPerTact: Double = {
-    fuel_consumption_per_sec_at_full_power * (_power / max_power) * base_dt
+    fuel_consumption_per_sec_at_full_power * (_power / max_power) * Constants.base_dt
   }
 
   def fuelConsumptionPerSec: Double = {

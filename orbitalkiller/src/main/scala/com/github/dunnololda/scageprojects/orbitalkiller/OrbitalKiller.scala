@@ -4,6 +4,7 @@ import java.io.FileOutputStream
 import com.github.dunnololda.scage.ScageLibD.{DVec, ScageColor, Vec, addGlyphs, appVersion, max_font_size, messageBounds, print, property, stopApp, _}
 import com.github.dunnololda.scage.support.ScageId
 import com.github.dunnololda.scageprojects.orbitalkiller.ships._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Constants._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
@@ -11,23 +12,6 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.Orbi
 import scala.collection._
 
 object OrbitalKiller extends ScageScreenAppD("Orbital Killer", property("screen.width", 1600), property("screen.height", 900)) {
-  val k: Double = 1 // доля секунды симуляции, которая обрабатывается за одну реальную секунду, если не применяется ускорение
-
-  val linear_velocity_error = 0.1
-  val angular_velocity_error = 0.0102
-  // значение подобрано эмпирически при тестах с малым количеством топлива
-  val angle_error = 0.1
-
-  // движок делает вызов обработчика примерно 63 раза в секунду, за каждый вызов будет обрабатывать вот такую порцию симуляции
-  // то есть, мы хотим, чтобы за одну реальную секунду обрабатывалось k секунд симуляции, поэтому за один такт движка (которых 60 в секунду)
-  // будем обрабатывать k/60
-  val base_dt: Double = 1.0 / 63 * k
-
-  // какой длины в пикселях на экране будет реальная длина в 1 метр
-  /*val zoom:Double = 10*/
-
-  val realtime = (1.0 / k).toInt // 1/k соответствует реальному течению времени
-
   private var _time_multiplier = realtime
 
   def timeMultiplier = {
@@ -1038,9 +1022,9 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", property("screen.
   }
 
   actionStaticPeriodIgnorePause(10000) {
-    if (timeMultiplier != realtime && timeMultiplier > 1f * timeMultiplier / 63 * ticks + 20) {
+    if (timeMultiplier != realtime && timeMultiplier > 1f * timeMultiplier / 63 * tps + 20) {
       println("updating timeMultiplier")
-      timeMultiplier = (timeMultiplier * 1f / 63 * ticks).toInt
+      timeMultiplier = (timeMultiplier * 1f / 63 * tps).toInt
     }
   }
 
@@ -1274,8 +1258,8 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", property("screen.
     if (onPause) print("Пауза", windowCenter.toVec, align = "center", color = WHITE)
     print("F1 - Справка", 20, windowHeight - 40, align = "bottom-left", color = DARK_GRAY)
     print(s"сборка $appVersion", windowWidth - 20, windowHeight - 20, align = "top-right", color = DARK_GRAY)
-    print(s"FPS/Ticks $fps/$ticks", windowWidth - 20, windowHeight - 40, align = "top-right", color = DARK_GRAY)
-    print(f"Render/Action ${averageRenderTimeMsec * fps / (averageRenderTimeMsec * fps + averageActionTimeMsec * ticks) * 100}%.2f%%/${1 * averageActionTimeMsec * ticks / (averageRenderTimeMsec * fps + averageActionTimeMsec * ticks) * 100}%.2f%%", windowWidth - 20, windowHeight - 60, align = "top-right", color = DARK_GRAY)
+    print(s"FPS/Ticks $fps/$tps", windowWidth - 20, windowHeight - 40, align = "top-right", color = DARK_GRAY)
+    print(f"Render/Action ${averageRenderTimeMsec * fps / (averageRenderTimeMsec * fps + averageActionTimeMsec * tps) * 100}%.2f%%/${1 * averageActionTimeMsec * tps / (averageRenderTimeMsec * fps + averageActionTimeMsec * tps) * 100}%.2f%%", windowWidth - 20, windowHeight - 60, align = "top-right", color = DARK_GRAY)
     print(f"Render/Action $averageRenderTimeMsec%.2f msec/$averageActionTimeMsec%.2f msec", windowWidth - 20, windowHeight - 80, align = "top-right", color = DARK_GRAY)
     print(s"Render/Action $currentRenderTimeMsec msec/$currentActionTimeMsec msec", windowWidth - 20, windowHeight - 100, align = "top-right", color = DARK_GRAY)
 

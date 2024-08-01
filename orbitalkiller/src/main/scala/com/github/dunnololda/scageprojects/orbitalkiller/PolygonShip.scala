@@ -5,6 +5,7 @@ import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements.OtherShipInfo
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.ProxyShip
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Constants
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 
 import scala.collection.mutable
@@ -896,7 +897,7 @@ abstract class PolygonShip(
     } else if (gs <= 27) {
       _linearFunc((20, 1), (27, 0.3))
     } else 100.0 / 0.01
-    ans * base_dt
+    ans * Constants.base_dt
   }
 
   def colorIfAliveOrRed(color: => ScageColor) = if (isDead) RED else color
@@ -973,16 +974,16 @@ abstract class PolygonShip(
       if (!is_dead) {
         if (pilot_average_g < 0.1) {
           if (before_death_counter != 100) {
-            val rate = 100.0 / 60 * base_dt // восстановление после критической перегрузки за 60 секунд
-            val time_to_restore_msec = (((100 - before_death_counter) / rate) * base_dt * 1000).toLong
+            val rate = 100.0 / 60 * Constants.base_dt // восстановление после критической перегрузки за 60 секунд
+            val time_to_restore_msec = (((100 - before_death_counter) / rate) * Constants.base_dt * 1000).toLong
             f"Пилот в состоянии невесомости. Восстанавливается после перегрузки (${timeStrSec(time_to_restore_msec)})"
           } else {
             "Пилот в состоянии невесомости"
           }
         } else if (pilot_average_g <= 1.09) {
           if (before_death_counter != 100) {
-            val rate = 100.0 / 60 * base_dt // восстановление после критической перегрузки за 60 секунд
-            val time_to_restore_msec = (((100 - before_death_counter) / rate) * base_dt * 1000).toLong
+            val rate = 100.0 / 60 * Constants.base_dt // восстановление после критической перегрузки за 60 секунд
+            val time_to_restore_msec = (((100 - before_death_counter) / rate) * Constants.base_dt * 1000).toLong
             f"Пилот испытывает силу тяжести $pilot_average_g%.1fg. Восстанавливается после перегрузки (${timeStrSec(time_to_restore_msec)})"
           } else {
             f"Пилот испытывает силу тяжести $pilot_average_g%.1fg"
@@ -990,7 +991,7 @@ abstract class PolygonShip(
         } else {
           if (pilot_average_g > 4) {
             val rate = deatchCounterChangeRate(pilot_average_g)
-            val time_before_death_msec = ((before_death_counter / rate) * base_dt * 1000).toLong
+            val time_before_death_msec = ((before_death_counter / rate) * Constants.base_dt * 1000).toLong
             f"[rПилот испытывает критическую перегрузку $pilot_average_g%.1fg. Смерть через ${timeStrSec(time_before_death_msec)}]"
           } else {
             if (before_death_counter != 100) {
@@ -1164,7 +1165,7 @@ abstract class PolygonShip(
           }
         }
       })
-      if (currentState.ang_vel != 0 && math.abs(currentState.ang_vel) < OrbitalKiller.angular_velocity_error) {
+      if (currentState.ang_vel != 0 && math.abs(currentState.ang_vel) < Constants.angular_velocity_error) {
         currentState.ang_vel = 0
       }
       currentState.mass = mass /*currentMass(_tacts)*/
@@ -1178,7 +1179,7 @@ abstract class PolygonShip(
     val dvel = currentState.dvel.norma
     if (dvel > 10) {
       // crash tolerance = 10 m/s
-      val crash_g = dvel / OrbitalKiller.base_dt / earth.g
+      val crash_g = dvel / Constants.base_dt / earth.g
       kill(f"Корабль уничтожен в результате столкновения ($crash_g%.2fg)", crash = true)
     }
   }
@@ -1240,7 +1241,7 @@ abstract class PolygonShip(
         }
       } else {
         // автоматическое отключение двигателей, если до смерти от перегрузки осталась одна секунда
-        val time_before_death_msec = ((before_death_counter / rate) * base_dt * 1000).toLong
+        val time_before_death_msec = ((before_death_counter / rate) * Constants.base_dt * 1000).toLong
         if (time_before_death_msec <= 1000) {
           // 1 секунда до гибели от перегрузки
           if (engines.exists(_.active)) {
@@ -1254,7 +1255,7 @@ abstract class PolygonShip(
       if (before_death_counter != 100) {
         if (pilot_average_g <= 1.09) {
           // пилот может восстанавливаться после перегрузки, только если текущая ускорение не выше 1.09g
-          val rate = 100.0 / 60 * base_dt // восстановление после критической перегрузки за 60 секунд
+          val rate = 100.0 / 60 * Constants.base_dt // восстановление после критической перегрузки за 60 секунд
           before_death_counter += rate
           if (before_death_counter >= 100) {
             before_death_counter = 100

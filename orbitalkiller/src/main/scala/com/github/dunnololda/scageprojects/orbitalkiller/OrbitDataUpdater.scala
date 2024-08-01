@@ -2,6 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Constants
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 
 import scala.collection.{Set, mutable}
@@ -36,7 +37,7 @@ object OrbitDataUpdater {
         drawCircle(position_after_time * scale, w/globalScale, YELLOW)
       })
       if (_stop_after_number_of_tacts > 0) {
-        val time_to_stop_msec = (_stop_after_number_of_tacts * base_dt * 1000).toLong
+        val time_to_stop_msec = (_stop_after_number_of_tacts * Constants.base_dt * 1000).toLong
         val position_when_stop_moment = ship_orbit.orbitalPointAfterTime(x.body_state.coord, time_to_stop_msec, x.ccw)
         drawCircle(position_when_stop_moment * scale, w/globalScale, GREEN)
       }
@@ -50,7 +51,7 @@ object OrbitDataUpdater {
           drawCircle(position_after_time * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
         })
         if (_stop_after_number_of_tacts > 0) {
-          val time_to_stop_msec = (_stop_after_number_of_tacts * base_dt * 1000).toLong
+          val time_to_stop_msec = (_stop_after_number_of_tacts * Constants.base_dt * 1000).toLong
           val position_when_stop_moment = moon_orbit.orbitalPointAfterTimeCCW(x.body_state.coord, time_to_stop_msec)
           drawCircle(position_when_stop_moment * scale, moon.radius * scale, GREEN)
           drawCircle(position_when_stop_moment * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
@@ -65,7 +66,7 @@ object OrbitDataUpdater {
           drawCircle(position_after_time * scale, earth.half_hill_radius * scale, color = DARK_GRAY)
         })
         if (_stop_after_number_of_tacts > 0) {
-          val time_to_stop_msec = (_stop_after_number_of_tacts * base_dt * 1000).toLong
+          val time_to_stop_msec = (_stop_after_number_of_tacts * Constants.base_dt * 1000).toLong
           val position_when_stop_moment = earth_orbit.orbitalPointAfterTimeCCW(x.body_state.coord, time_to_stop_msec)
           drawCircle(position_when_stop_moment * scale, earth.radius * scale, GREEN)
           drawCircle(position_when_stop_moment * scale, earth.half_hill_radius * scale, color = DARK_GRAY)
@@ -146,7 +147,7 @@ object OrbitDataUpdater {
 
         if (_stop_after_number_of_tacts > 0) {
           drawFilledCircle(new_o.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly) * scale, 3 / globalScale, RED)
-          drawFilledCircle(new_o.orbitalPointAfterTime(bs.coord, (_stop_after_number_of_tacts * base_dt * 1000).toLong, ccw) * scale, 3 / globalScale, GREEN)
+          drawFilledCircle(new_o.orbitalPointAfterTime(bs.coord, (_stop_after_number_of_tacts * Constants.base_dt * 1000).toLong, ccw) * scale, 3 / globalScale, GREEN)
         }
 
         val mouse_teta_rad2Pi = new_o.tetaRad2PiInPoint(mouse_point)
@@ -170,7 +171,7 @@ object OrbitDataUpdater {
             lazy val flight_time_msec = new_o.travelTimeOnOrbitMsec(bs.coord, orbital_point, ccw)
 
             if (set_stop_moment) {
-              _stop_after_number_of_tacts = (flight_time_msec / 1000 / base_dt).toLong
+              _stop_after_number_of_tacts = (flight_time_msec / 1000 / Constants.base_dt).toLong
               _stop_in_orbit_true_anomaly = mouse_teta_rad2Pi
               set_stop_moment = false
             }
@@ -258,14 +259,14 @@ object OrbitDataUpdater {
 
         if (_stop_after_number_of_tacts > 0) {
           drawFilledCircle(new_o.orbitalPointByTrueAnomalyRad(_stop_in_orbit_true_anomaly) * scale, 3 / globalScale, RED)
-          drawFilledCircle(new_o.orbitalPointAfterTime(bs.coord, (_stop_after_number_of_tacts * base_dt * 1000).toLong, ccw) * scale, 3 / globalScale, GREEN)
+          drawFilledCircle(new_o.orbitalPointAfterTime(bs.coord, (_stop_after_number_of_tacts * Constants.base_dt * 1000).toLong, ccw) * scale, 3 / globalScale, GREEN)
         }
         val mouse_teta_rad2Pi = new_o.tetaRad2PiInPoint(mouse_point)
 
         lazy val flight_time_msec = new_o.travelTimeOnOrbitMsec(bs.coord, orbital_point, ccw)
 
         if (set_stop_moment) {
-          _stop_after_number_of_tacts = (flight_time_msec / 1000 / base_dt).toLong
+          _stop_after_number_of_tacts = (flight_time_msec / 1000 / Constants.base_dt).toLong
           _stop_in_orbit_true_anomaly = mouse_teta_rad2Pi
           set_stop_moment = false
         }
