@@ -4,7 +4,7 @@ java \
 -Djava.library.path=target/natives/ \
 -DLWJGL_DISABLE_XRANDR=true \
 -Dfile.encoding=UTF-8 \
--Dfont.file=unifont-8.0.01.ttf \
+-Dfont.file=DejaVuSansMono.ttf \
 -Dscreen.splash=resources/images/orbitalkillerSplashWithName.png \
 -Dscreen.scagelogo=false \
 -Drender.framerate=100 \
