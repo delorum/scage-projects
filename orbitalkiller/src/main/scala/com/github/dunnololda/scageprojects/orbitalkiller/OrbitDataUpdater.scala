@@ -2,6 +2,8 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
+
 import scala.collection.{Set, mutable}
 
 object OrbitDataUpdater {
@@ -88,7 +90,7 @@ object OrbitDataUpdater {
                                                  ccw:Boolean, 
                                                  yy:List[DVec], 
                                                  orbit_color: ScageColor) = {
-    OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
+    OrbitRenderData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       openglLocalTransform {
         openglMove(planet_state.coord * scale)
         drawSlidingLines(yy, orbit_color)
@@ -109,7 +111,7 @@ object OrbitDataUpdater {
                                       ccw:Boolean, 
                                       yy:List[DVec], 
                                       orbit_color: ScageColor) = {
-    OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
+    OrbitRenderData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       openglLocalTransform {
         openglMove(planet_state.coord * scale)
         drawSlidingLines(yy, orbit_color)
@@ -126,7 +128,7 @@ object OrbitDataUpdater {
                                           ccw:Boolean, 
                                           yy:List[DVec], 
                                           orbit_color: ScageColor) = {
-    OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
+    OrbitRenderData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       val real_trajectory_enabled = InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && RealTrajectory.realTrajectory.nonEmpty
       if(real_trajectory_enabled) {
         drawRealTrajectoryOfPlayerShip(planet_state, orbit_color)
@@ -193,7 +195,7 @@ object OrbitDataUpdater {
                                            o:EllipseOrbit,
                                            ccw:Boolean,
                                            orbit_color: ScageColor) = {
-    OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
+    OrbitRenderData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       val new_center = o.centerIfFocusPosition(planet_state.coord)
       openglLocalTransform {
         openglMove(new_center * scale)
@@ -216,7 +218,7 @@ object OrbitDataUpdater {
                                         o:EllipseOrbit,
                                         ccw:Boolean,
                                         orbit_color: ScageColor) = {
-    OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
+    OrbitRenderData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       val new_center = o.centerIfFocusPosition(planet_state.coord)
       openglLocalTransform {
         openglMove(new_center * scale)
@@ -234,7 +236,7 @@ object OrbitDataUpdater {
                                             o:EllipseOrbit,
                                             ccw:Boolean,
                                             orbit_color: ScageColor) = {
-    OrbitData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
+    OrbitRenderData(update_count, bs, body_radius, planet_state, planet, o, ccw, () => {
       if(InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && RealTrajectory.realTrajectory.nonEmpty) {
         drawRealTrajectoryOfPlayerShip(planet_state, orbit_color)
       } else {
@@ -281,7 +283,7 @@ object OrbitDataUpdater {
                       orbit_color: ScageColor,
                       some_system_state: mutable.Map[Int, MutableBodyState],
                       need_planets: Set[Int],
-                      calculate_orbit_around:Option[Int]): Option[OrbitData] = {
+                      calculate_orbit_around:Option[Int]): Option[OrbitRenderData] = {
     some_system_state.get(body_index).flatMap(bs => {
       updateOrbitData(update_count, bs, body_radius, orbit_color, some_system_state, need_planets, calculate_orbit_around)
     })
@@ -293,7 +295,7 @@ object OrbitDataUpdater {
                       orbit_color: ScageColor,
                       some_system_state: mutable.Map[Int, MutableBodyState],
                       need_planets: Set[Int],
-                      calculate_orbit_around:Option[Int]): Option[OrbitData] = {
+                      calculate_orbit_around:Option[Int]): Option[OrbitRenderData] = {
     val celestials = some_system_state.filter(kv => need_planets.contains(kv._1)).flatMap(kv => {
       planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
     }).values.toSeq.sortBy(_._2.mass)

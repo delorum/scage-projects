@@ -1,62 +1,12 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import java.io.FileOutputStream
-
 import com.github.dunnololda.scage.ScageLibD.{DVec, ScageColor, Vec, addGlyphs, appVersion, max_font_size, messageBounds, print, property, stopApp, _}
 import com.github.dunnololda.scage.support.ScageId
 import com.github.dunnololda.scageprojects.orbitalkiller.ships._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 
 import scala.collection._
-
-//import collection.mutable.ArrayBuffer
-
-case class OrbitData(update_count:Long,
-                     body_state:MutableBodyState,
-                     bs_radius:Double,
-                     planet_state:MutableBodyState,
-                     planet:CelestialBody,
-                     orbit: KeplerOrbit,
-                     ccw:Boolean,
-                     render: () => Unit) {
-  lazy val ellipseOrbit: Option[EllipseOrbit] = orbit match {
-    case x: EllipseOrbit => Some(x)
-    case _ => None
-  }
-  lazy val hyperbolaOrbit: Option[HyperbolaOrbit] = orbit match {
-    case x: HyperbolaOrbit => Some(x)
-    case _ => None
-  }
-
-  val init_bs_coord = body_state.coord
-  val init_bs_vel = body_state.vel
-  val init_planet_coord = planet_state.coord
-  val init_planet_vel = planet_state.vel
-  val init_planet_ang = planet_state.ang
-
-  lazy val planet_radius_plus_body_radius_sq = (planet.radius + bs_radius)*(planet.radius + bs_radius)
-  lazy val is_landed:Boolean = {
-    init_bs_coord.dist2(init_planet_coord) <= planet_radius_plus_body_radius_sq &&
-    ((init_bs_vel - init_planet_vel)*(init_bs_coord - init_planet_coord).n).abs < 0.5 &&
-    (((init_bs_vel - init_planet_vel) * (init_bs_coord - init_planet_coord).p) / init_bs_coord.dist(init_planet_coord) * planet.radius - planet.groundSpeedMsec).abs < 0.5
-  }
-
-  lazy val is_landed_on_earth:Boolean = is_landed && planet.index == OrbitalKiller.earth.index
-  lazy val is_landed_on_moon:Boolean = is_landed && planet.index == OrbitalKiller.moon.index
-
-  lazy val orbitStrDefinition:String = {
-    if(is_landed) "landed" else {
-      orbit.strDefinition(planet.name,
-        planet.radius,
-        init_planet_vel,
-        init_planet_ang,
-        planet.groundSpeedMsec,
-        planet.g,
-        init_bs_coord,
-        init_bs_vel,
-        bs_radius)
-    }
-  }
-}
 
 sealed trait ViewMode {
   def rusStr: String
@@ -1191,7 +1141,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", property("screen.
       val ww = earth.radius * scale / 2f / globalScale
 
       earth.orbitRender.foreach {
-        case OrbitData(_, bs, _, planet_state, _, _, _, render) =>
+        case OrbitRenderData(_, bs, _, planet_state, _, _, _, render) =>
           drawCircle(bs.coord * scale, earth.radius * scale, WHITE)
           if (InterfaceHolder.namesSwitcher.showNames) {
             openglLocalTransform {
@@ -1219,7 +1169,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", property("screen.
       }
 
       moon.orbitRender.foreach {
-        case OrbitData(_, bs, _, planet_state, _, _, _, render) =>
+        case OrbitRenderData(_, bs, _, planet_state, _, _, _, render) =>
           drawCircle(bs.coord * scale, moon.radius * scale, WHITE)
           if (InterfaceHolder.namesSwitcher.showNames) {
             openglLocalTransform {
@@ -1247,7 +1197,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", property("screen.
       }
 
       player_ship.thisOrActualProxyShipOrbitData.foreach {
-        case or@OrbitData(_, bs, _, planet_state, _, _, _, render) =>
+        case or@OrbitRenderData(_, bs, _, planet_state, _, _, _, render) =>
           drawFilledCircle(bs.coord * scale, earth.radius * scale / 2f / globalScale, WHITE)
           if (InterfaceHolder.namesSwitcher.showNames) {
             openglLocalTransform {
@@ -1261,7 +1211,7 @@ object OrbitalKiller extends ScageScreenAppD("Orbital Killer", property("screen.
       InterfaceHolder.shipInterfaces.foreach(si => {
         if (!si.isMinimized) {
           si.monitoring_ship.thisOrActualProxyShipOrbitData.foreach {
-            case or@OrbitData(_, bs, _, planet_state, _, _, _, render) =>
+            case or@OrbitRenderData(_, bs, _, planet_state, _, _, _, render) =>
               val color = if (player_ship.isDead || si.monitoring_ship.isDead) RED else MAGENTA
               drawFilledCircle(bs.coord * scale, earth.radius * scale / 2f / globalScale, color)
               if (InterfaceHolder.namesSwitcher.showNames) {

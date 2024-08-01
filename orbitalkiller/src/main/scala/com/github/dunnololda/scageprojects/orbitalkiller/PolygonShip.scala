@@ -5,6 +5,7 @@ import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements.OtherShipInfo
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.ProxyShip
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -1086,9 +1087,9 @@ abstract class PolygonShip(
     }
   }
 
-  private var _orbit_data: Option[OrbitData] = None
+  private var _orbit_data: Option[OrbitRenderData] = None
   def orbitData = _orbit_data
-  def thisOrActualProxyShipOrbitData:Option[OrbitData] = dock_data.map(_.proxy_ship.thisOrActualProxyShipOrbitData).getOrElse(_orbit_data)
+  def thisOrActualProxyShipOrbitData:Option[OrbitRenderData] = dock_data.map(_.proxy_ship.thisOrActualProxyShipOrbitData).getOrElse(_orbit_data)
   def updateOrbitData(update_count:Long,
                       orbit_color:ScageColor,
                       time_msec:Long,
@@ -1138,9 +1139,9 @@ abstract class PolygonShip(
     }
   }
 
-  private var _current_orbit_data: Option[OrbitData] = None
+  private var _current_orbit_data: Option[OrbitRenderData] = None
   def currentOrbitData = _current_orbit_data
-  def thisOrActualProxyShipCurrentOrbitData:Option[OrbitData] = dock_data.map(_.proxy_ship.thisOrActualProxyShipOrbitData).getOrElse(_current_orbit_data)
+  def thisOrActualProxyShipCurrentOrbitData:Option[OrbitRenderData] = dock_data.map(_.proxy_ship.thisOrActualProxyShipOrbitData).getOrElse(_current_orbit_data)
   private def updateCurrentOrbitData(update_count:Long, orbit_color:ScageColor, calculate_orbit_around:Option[Int]): Unit = {
     if(currentState.active) {
       _current_orbit_data = OrbitDataUpdater.updateOrbitData(update_count, index, radius, orbit_color, system_evolution.allBodyStates, planet_indices, calculate_orbit_around)

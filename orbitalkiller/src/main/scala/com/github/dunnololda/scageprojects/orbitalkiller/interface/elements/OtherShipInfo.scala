@@ -4,6 +4,7 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.ScageColor
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 
 class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
   private val strings = Array("")
@@ -23,8 +24,8 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
           strings(0) = s"${monitoring_ship.name}: docked"
         } else {
           val /*(_, */ need_orbit_period_str /*)*/ = (for {
-            OrbitData(_, _, _, _, our_orbit_planet, our_orbit_kepler, our_ccw, _) <- player_ship.thisOrActualProxyShipCurrentOrbitData
-            os_or @ OrbitData(_, _, _, _, os_orbit_planet, os_orbit_kepler, os_ccw, _) <- monitoring_ship.thisOrActualProxyShipCurrentOrbitData
+            OrbitRenderData(_, _, _, _, our_orbit_planet, our_orbit_kepler, our_ccw, _) <- player_ship.thisOrActualProxyShipCurrentOrbitData
+            os_or @ OrbitRenderData(_, _, _, _, os_orbit_planet, os_orbit_kepler, os_ccw, _) <- monitoring_ship.thisOrActualProxyShipCurrentOrbitData
             if our_orbit_planet.index == os_orbit_planet.index
             if our_ccw == os_ccw
             our_orbit_ellipse <- player_ship.thisOrActualProxyShipCurrentOrbitData.flatMap(_.ellipseOrbit)
