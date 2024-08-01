@@ -1107,7 +1107,7 @@ abstract class PolygonShip(
             updateStateSinceDeactivation(time_msec, some_system_state)
             _orbit_data = OrbitDataUpdater.updateOrbitData(update_count, currentState, radius, orbit_color, some_system_state, planet_indices, calculate_orbit_around)
           }
-          if(time_msec == timeMsec) {
+          if(time_msec == system_evolution.timeMsec) {
             _current_orbit_data = _orbit_data
           } else {
             updateCurrentOrbitData(update_count, orbit_color, calculate_orbit_around)
@@ -1147,7 +1147,7 @@ abstract class PolygonShip(
     if(currentState.active) {
       _current_orbit_data = OrbitDataUpdater.updateOrbitData(update_count, index, radius, orbit_color, system_evolution.allBodyStates, planet_indices, calculate_orbit_around)
     } else {
-      updateStateSinceDeactivation(timeMsec, system_evolution.allBodyStates)
+      updateStateSinceDeactivation(system_evolution.timeMsec, system_evolution.allBodyStates)
       _current_orbit_data = OrbitDataUpdater.updateOrbitData(update_count, currentState, radius, orbit_color, system_evolution.allBodyStates, planet_indices, calculate_orbit_around)
     }
   }

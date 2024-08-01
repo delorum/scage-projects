@@ -6,6 +6,7 @@ import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
 import OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Constants
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 
 object RealTrajectory extends RealTrajectoryC(None)
 object RealTrajectory2 extends RealTrajectoryC(Some(1))

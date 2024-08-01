@@ -5,16 +5,17 @@ import com.github.dunnololda.scage.support.ScageId
 import com.github.dunnololda.scageprojects.orbitalkiller.OrbitalKiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Constants
 
-class Engine(val name: Int,
-             val position: DVec, // позиция относительно центра массы корабля (ц.м. в точке (0,0))
-             val force_dir: DVec, // вектор направления приложения силы
-             val max_power: Double, // в ньютонах
-             val default_power_percent: Int, // при выборе данного двигателя какая мощность выставляется по умолчанию
-             val fuel_consumption_per_sec_at_full_power: Double, // Расход топлива в килограммах в секунду на полной мощности
-             val ship: PolygonShip) {
+class Engine(
+    val name: Int,
+    val position: DVec, // позиция относительно центра массы корабля (ц.м. в точке (0,0))
+    val force_dir: DVec, // вектор направления приложения силы
+    val max_power: Double, // в ньютонах
+    val default_power_percent: Int, // при выборе данного двигателя какая мощность выставляется по умолчанию
+    val fuel_consumption_per_sec_at_full_power: Double, // Расход топлива в килограммах в секунду на полной мощности
+    val ship: PolygonShip) {
   val index: Int = ScageId.nextId
-  private var worktime_tacts = 0l
-  private var stop_moment_tacts = 0l
+  private var worktime_tacts = 0L
+  private var stop_moment_tacts = 0L
 
   def workTimeMsec = (worktime_tacts * Constants.base_dt * 1000).toLong
 
@@ -26,15 +27,15 @@ class Engine(val name: Int,
     if (new_worktime_tacts >= 0) {
       val prev = worktime_tacts
       worktime_tacts = new_worktime_tacts
-      stop_moment_tacts = tacts + worktime_tacts
+      stop_moment_tacts = system_evolution.tacts + worktime_tacts
       if (ship.fuelMassWhenEnginesOff < 0 && new_worktime_tacts > prev) {
         val possible_fuel_for_this_engine = ship.fuelMassWhenEnginesOffWithoutEngine(this)
         if (worktime_tacts > prev && possible_fuel_for_this_engine > 0) {
           worktime_tacts = (possible_fuel_for_this_engine / fuelConsumptionPerTact).toLong
-          stop_moment_tacts = tacts + worktime_tacts
+          stop_moment_tacts = system_evolution.tacts + worktime_tacts
         } else {
           worktime_tacts = prev
-          stop_moment_tacts = tacts + worktime_tacts
+          stop_moment_tacts = system_evolution.tacts + worktime_tacts
         }
       }
     }
@@ -77,7 +78,13 @@ class Engine(val name: Int,
           math.min(
             max_power * new_power_percent / 100.0,
             ship.thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * OrbitalKiller.earth.g + {
-              earth.airResistance(ship.currentState, earth.currentState, /*ShipsHolder.currentShipStatesExceptShip(ship.index), */28, 0.5).norma
+              earth
+                .airResistance(
+                  ship.currentState,
+                  earth.currentState, /*ShipsHolder.currentShipStatesExceptShip(ship.index), */ 28,
+                  0.5
+                )
+                .norma
             }
           )
         } else {
@@ -89,7 +96,9 @@ class Engine(val name: Int,
       if (ship.fuelMassWhenEnginesOff < 0) {
         _power = prev
       } else {
-        if((ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) && InterfaceHolder.gSwitcher.maxGSet) {
+        if (
+          (ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) && InterfaceHolder.gSwitcher.maxGSet
+        ) {
           ship.syncOtherEnginesPower(index)
         }
       }
@@ -112,9 +121,11 @@ class Engine(val name: Int,
           if (power == 0) {
             powerPercent = default_power_percent
           }
-          //timeMultiplier = realtime
+          // timeMultiplier = realtime
           if (workTimeTacts == 0) workTimeTacts = 10
-          if((ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) && InterfaceHolder.gSwitcher.maxGSet) {
+          if (
+            (ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) && InterfaceHolder.gSwitcher.maxGSet
+          ) {
             ship.syncOtherEnginesPower(index)
           }
         } else {

@@ -262,7 +262,7 @@ class Ship4(
       nine.active = true
       seven.active = false
     }
-    last_correction_or_check_moment = OrbitalKiller.tacts
+    last_correction_or_check_moment = OrbitalKiller.system_evolution.tacts
   }
 
   override def preserveVelocity(need_vel: DVec) {
@@ -345,7 +345,7 @@ class Ship4(
       activate_engines += four
     }
     activateOnlyTheseEngines(activate_engines: _*)
-    last_correction_or_check_moment = OrbitalKiller.tacts
+    last_correction_or_check_moment = OrbitalKiller.system_evolution.tacts
   }
 
   override var vertical_speed_msec: Int = 0
@@ -446,8 +446,8 @@ class Ship4(
         case FreeFlightMode => // свободный режим
         case Killrot => // запрет вращения
           if (
-            allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(
-              OrbitalKiller.tacts,
+            allEnginesInactive || OrbitalKiller.system_evolution.tacts - last_correction_or_check_moment >= math.min(
+              OrbitalKiller.system_evolution.tacts,
               correction_check_period
             )
           ) {
@@ -460,8 +460,8 @@ class Ship4(
           }
         case RelativeVelocityAligned => // ориентация по траектории
           if (
-            allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(
-              OrbitalKiller.tacts,
+            allEnginesInactive || OrbitalKiller.system_evolution.tacts - last_correction_or_check_moment >= math.min(
+              OrbitalKiller.system_evolution.tacts,
               correction_check_period
             )
           ) {
@@ -477,8 +477,8 @@ class Ship4(
           }
         case OppositeRelativeVelocityAligned => // ориентация против траектории
           if (
-            allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(
-              OrbitalKiller.tacts,
+            allEnginesInactive || OrbitalKiller.system_evolution.tacts - last_correction_or_check_moment >= math.min(
+              OrbitalKiller.system_evolution.tacts,
               correction_check_period
             )
           ) {
@@ -494,8 +494,8 @@ class Ship4(
           }
         case CirclularOrbit => // выход на орбиту
           if (
-            allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(
-              OrbitalKiller.tacts,
+            allEnginesInactive || OrbitalKiller.system_evolution.tacts - last_correction_or_check_moment >= math.min(
+              OrbitalKiller.system_evolution.tacts,
               correction_check_period
             )
           ) {
@@ -514,8 +514,8 @@ class Ship4(
           }
         case NearestShipVelocity => // уравнять скорость с ближайшим кораблем, который находится на расстоянии не далее 500 км
           if (
-            allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(
-              OrbitalKiller.tacts,
+            allEnginesInactive || OrbitalKiller.system_evolution.tacts - last_correction_or_check_moment >= math.min(
+              OrbitalKiller.system_evolution.tacts,
               correction_check_period
             )
           ) {
@@ -537,8 +537,8 @@ class Ship4(
           }
         case NearestShipAligned => // ориентация на ближайший корабль
           if (
-            allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(
-              OrbitalKiller.tacts,
+            allEnginesInactive || OrbitalKiller.system_evolution.tacts - last_correction_or_check_moment >= math.min(
+              OrbitalKiller.system_evolution.tacts,
               correction_check_period
             )
           ) {
@@ -560,8 +560,8 @@ class Ship4(
           }
         case NearestShipAutoDocking =>
           if (
-            allEnginesInactive || OrbitalKiller.tacts - last_correction_or_check_moment >= math.min(
-              OrbitalKiller.tacts,
+            allEnginesInactive || OrbitalKiller.system_evolution.tacts - last_correction_or_check_moment >= math.min(
+              OrbitalKiller.system_evolution.tacts,
               correction_check_period
             )
           ) {

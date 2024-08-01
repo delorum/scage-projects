@@ -1550,7 +1550,7 @@ package object orbitalkiller {
         else solver(M + e*math.sin(prev_E), i+1, max_i)
       }
       val (res_E, i) = solver()
-      if(OrbitalKiller.tacts % 63 == 0) println(s"elliptic orbitalPointAfterTimeCCW i $i")
+      if(OrbitalKiller.system_evolution.tacts % 63 == 0) println(s"elliptic orbitalPointAfterTimeCCW i $i")
       val tg_half_teta_res_rad = math.sqrt((1 + e) / (1 - e)) * math.tan(res_E / 2)
       val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
       val teta_res_deg = teta_res_rad / math.Pi * 180
@@ -1569,7 +1569,7 @@ package object orbitalkiller {
         else solver(M + e*math.sin(prev_E), i+1, max_i)
       }
       val (resE, iterations) = solver()
-      if(OrbitalKiller.tacts % 63 == 0) println(s"elliptic orbitalPointAfterTimeCW i $iterations")
+      if(OrbitalKiller.system_evolution.tacts % 63 == 0) println(s"elliptic orbitalPointAfterTimeCW i $iterations")
       val tg_half_teta_res_rad = math.sqrt((1 + e) / (1 - e)) * math.tan(resE / 2)
       val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
       val teta_res_deg = teta_res_rad / math.Pi * 180
@@ -1826,7 +1826,7 @@ package object orbitalkiller {
       }
       val M = 1 / inv_n * (0.001*time_from_r_p_msec)
       val (resH, iterations) = solver(_arsh((M + M) / e), M)
-      if(OrbitalKiller.tacts % 63 == 0) println(s"hyperbolic orbitalPointAfterTimeCCW away $away_from_rp after_r_p ${away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec} i $iterations")
+      if(OrbitalKiller.system_evolution.tacts % 63 == 0) println(s"hyperbolic orbitalPointAfterTimeCCW away $away_from_rp after_r_p ${away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec} i $iterations")
       val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(resH / 2)
       val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
       val teta_res_deg = if(away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec) {
@@ -1858,7 +1858,7 @@ package object orbitalkiller {
       }
       val M = 1 / inv_n * (0.001*time_from_r_p_msec)
       val (resH, iterations) = solver(_arsh((M + M) / e), M)
-      if(OrbitalKiller.tacts % 63 == 0) println(s"hyperbolic orbitalPointAfterTimeCW away $away_from_rp after_r_p ${away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec} i $iterations")
+      if(OrbitalKiller.system_evolution.tacts % 63 == 0) println(s"hyperbolic orbitalPointAfterTimeCW away $away_from_rp after_r_p ${away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec} i $iterations")
       val tg_half_teta_res_rad = math.sqrt((e + 1) / (e - 1)) * math.tanh(resH / 2)
       val teta_res_rad = math.atan(tg_half_teta_res_rad) * 2
       val teta_res_deg = if(away_from_rp || time_msec >= time_from_r_p_to_cur_point_msec) {
