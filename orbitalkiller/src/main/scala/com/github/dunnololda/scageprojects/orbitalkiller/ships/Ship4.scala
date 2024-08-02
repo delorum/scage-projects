@@ -2,11 +2,11 @@ package com.github.dunnololda.scageprojects.orbitalkiller.ships
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.{DVec, ScageId}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.AdditionalSymbols.rocket_symbol
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Constants, Main}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.Celestials._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.{TimeConstants, Main}
+
 import scala.collection.mutable.ArrayBuffer
 
 class Ship4(
@@ -181,7 +181,7 @@ class Ship4(
         val power = max_power * 0.01 * percent
         val force = force_dir * power
         val acc = force / mass
-        (howManyTacts(to, from, acc, Constants.base_dt), power, percent)
+        (howManyTacts(to, from, acc, TimeConstants.base_dt), power, percent)
       }
       .find { case ((tacts, result_to), power, percent) =>
         // println(s"maxPossiblePowerForLinearMovement find: $power, $percent: ${math.abs(to - result_to)}")
@@ -213,7 +213,7 @@ class Ship4(
         val power = max_power * 0.01 * percent
         val torque = (-force_dir * power) */ position
         val ang_acc = (torque / I).toDeg
-        (howManyTacts(to, from, ang_acc, Constants.base_dt), power, percent)
+        (howManyTacts(to, from, ang_acc, TimeConstants.base_dt), power, percent)
       }
       .find { case ((tacts, result_to), power, percent) =>
         // println(s"maxPossiblePowerAndTactsForRotation find: $power, $percent: ${math.abs(to - result_to)}")
@@ -234,7 +234,7 @@ class Ship4(
 
   override def preserveAngularVelocity(ang_vel_deg: Double) {
     val difference = angularVelocity - ang_vel_deg
-    if (difference > Constants.angular_velocity_error) {
+    if (difference > TimeConstants.angular_velocity_error) {
       val (tacts, power) = maxPossiblePowerAndTactsForRotation(
         seven.max_power,
         seven.force_dir,
@@ -242,13 +242,13 @@ class Ship4(
         thisOrActualProxyShipI,
         ang_vel_deg,
         thisOrActualProxyShipAngularVelocity,
-        Constants.angular_velocity_error
+        TimeConstants.angular_velocity_error
       )
       seven.power = power
       seven.workTimeTacts = tacts
       seven.active = true
       nine.active = false
-    } else if (difference < -Constants.angular_velocity_error) {
+    } else if (difference < -TimeConstants.angular_velocity_error) {
       val (tacts, power) = maxPossiblePowerAndTactsForRotation(
         nine.max_power,
         nine.force_dir,
@@ -256,7 +256,7 @@ class Ship4(
         thisOrActualProxyShipI,
         ang_vel_deg,
         thisOrActualProxyShipAngularVelocity,
-        Constants.angular_velocity_error
+        TimeConstants.angular_velocity_error
       )
       nine.power = power
       nine.workTimeTacts = tacts
@@ -274,14 +274,14 @@ class Ship4(
     val need_vel_n = need_vel * n // to
 
     val p_diff = math.sqrt(
-      (Constants.linear_velocity_error * Constants.linear_velocity_error - (ship_velocity_n - need_vel_n) * (ship_velocity_n - need_vel_n)).abs
+      (TimeConstants.linear_velocity_error * TimeConstants.linear_velocity_error - (ship_velocity_n - need_vel_n) * (ship_velocity_n - need_vel_n)).abs
     )
 
     val ship_velocity_p = p * linearVelocity
     val need_vel_p = p * need_vel
 
     val n_diff = math.sqrt(
-      (Constants.linear_velocity_error * Constants.linear_velocity_error - (ship_velocity_p - need_vel_p) * (ship_velocity_p - need_vel_p)).abs
+      (TimeConstants.linear_velocity_error * TimeConstants.linear_velocity_error - (ship_velocity_p - need_vel_p) * (ship_velocity_p - need_vel_p)).abs
     )
 
     val activate_engines = ArrayBuffer[Engine]()
@@ -452,7 +452,7 @@ class Ship4(
               correction_check_period
             )
           ) {
-            if (math.abs(angularVelocity) < Constants.angular_velocity_error) {
+            if (math.abs(angularVelocity) < TimeConstants.angular_velocity_error) {
               if (haveSavedFlightMode) restoreFlightModeAndEngineStates()
               else flightMode = FreeFlightMode
             } else {
@@ -467,8 +467,8 @@ class Ship4(
             )
           ) {
             val angle = DVec(0, 1).deg360(relativeLinearVelocity)
-            if (angleMinDiff(rotation, angle) < Constants.angle_error) {
-              if (math.abs(angularVelocity) < Constants.angular_velocity_error) {
+            if (angleMinDiff(rotation, angle) < TimeConstants.angle_error) {
+              if (math.abs(angularVelocity) < TimeConstants.angular_velocity_error) {
                 if (haveSavedFlightMode) restoreFlightModeAndEngineStates()
                 else flightMode = FreeFlightMode
               } else {
@@ -484,8 +484,8 @@ class Ship4(
             )
           ) {
             val angle = DVec(0, -1).deg360(relativeLinearVelocity)
-            if (angleMinDiff(rotation, angle) < Constants.angle_error) {
-              if (math.abs(angularVelocity) < Constants.angular_velocity_error) {
+            if (angleMinDiff(rotation, angle) < TimeConstants.angle_error) {
+              if (math.abs(angularVelocity) < TimeConstants.angular_velocity_error) {
                 if (haveSavedFlightMode) restoreFlightModeAndEngineStates()
                 else flightMode = FreeFlightMode
               } else {
@@ -500,12 +500,12 @@ class Ship4(
               correction_check_period
             )
           ) {
-            if (math.abs(angularVelocity) < Constants.angular_velocity_error) {
+            if (math.abs(angularVelocity) < TimeConstants.angular_velocity_error) {
               thisOrActualProxyShipOrbitData match {
                 case Some(or) =>
                   val ss =
                     satelliteSpeed(coord, linearVelocity, or.planet.coord, or.planet.linearVelocity, or.planet.mass, G)
-                  if (linearVelocity.dist(ss) > Constants.linear_velocity_error) {
+                  if (linearVelocity.dist(ss) > TimeConstants.linear_velocity_error) {
                     preserveVelocity(ss)
                   } else flightMode = FreeFlightMode
                 case None =>
@@ -522,9 +522,9 @@ class Ship4(
           ) {
             shipCloser500KmNonMinimized match {
               case Some(s) =>
-                if (math.abs(angularVelocity) < Constants.angular_velocity_error) {
+                if (math.abs(angularVelocity) < TimeConstants.angular_velocity_error) {
                   val ss = s.linearVelocity
-                  if (linearVelocity.dist(ss) > Constants.linear_velocity_error) {
+                  if (linearVelocity.dist(ss) > TimeConstants.linear_velocity_error) {
                     preserveVelocity(ss)
                   } else {
                     if (haveSavedFlightMode) restoreFlightModeAndEngineStates()
@@ -546,8 +546,8 @@ class Ship4(
             shipCloser500KmNonMinimized match {
               case Some(os) =>
                 val angle = DVec(0, 1).deg360(os.coord - coord)
-                if (angleMinDiff(rotation, angle) < Constants.angle_error) {
-                  if (math.abs(angularVelocity) < Constants.angular_velocity_error) {
+                if (angleMinDiff(rotation, angle) < TimeConstants.angle_error) {
+                  if (math.abs(angularVelocity) < TimeConstants.angular_velocity_error) {
                     if (haveSavedFlightMode) restoreFlightModeAndEngineStates()
                     else flightMode = FreeFlightMode
                   } else {
@@ -588,8 +588,8 @@ class Ship4(
                       val docking_point = osdp.curP1 + 0.5 * (osdp.curP2 - osdp.curP1)
                       val docking_dir = -vv1.perpendicular
                       val angle = dp.dock_dir.deg360(docking_dir)
-                      if (angleMinDiff(rotation, angle) < Constants.angle_error) {
-                        if (math.abs(angularVelocity) < Constants.angular_velocity_error) {
+                      if (angleMinDiff(rotation, angle) < TimeConstants.angle_error) {
+                        if (math.abs(angularVelocity) < TimeConstants.angular_velocity_error) {
                           val A = ship_docking_point.x
                           val B = ship_docking_point.y
                           val C = docking_point.x
@@ -637,7 +637,7 @@ class Ship4(
                           preserveAngularVelocity(0)
                         }
                       } else {
-                        if (linearVelocity.dist(os.linearVelocity) > Constants.linear_velocity_error) {
+                        if (linearVelocity.dist(os.linearVelocity) > TimeConstants.linear_velocity_error) {
                           preserveVelocity(os.linearVelocity)
                         } else {
                           preserveAngle(angle)
@@ -657,9 +657,9 @@ class Ship4(
           } yield (planet, planet_state)) match {
             case Some((planet, planet_state)) =>
               val vertical_orientation = DVec(0, 1).deg360(coord - planet_state.coord)
-              if (angleMinDiff(rotation, vertical_orientation) >= Constants.angle_error) {
+              if (angleMinDiff(rotation, vertical_orientation) >= TimeConstants.angle_error) {
                 preserveAngle(vertical_orientation)
-              } else if (math.abs(angularVelocity) >= Constants.angular_velocity_error) {
+              } else if (math.abs(angularVelocity) >= TimeConstants.angular_velocity_error) {
                 preserveAngularVelocity(0)
               } else {
                 val ship_vertical_speed = (linearVelocity - planet_state.vel) * (coord - planet_state.coord).n
@@ -667,8 +667,8 @@ class Ship4(
                 val vertical_diff = math.abs(ship_vertical_speed - vertical_speed_msec)
                 val horizontal_diff =
                   math.abs(ship_above_ground_velocity - horizontal_speed_msec - planet.groundSpeedMsec)
-                if (vertical_diff > Constants.linear_velocity_error) {
-                  if (horizontal_diff > Constants.linear_velocity_error) {
+                if (vertical_diff > TimeConstants.linear_velocity_error) {
+                  if (horizontal_diff > TimeConstants.linear_velocity_error) {
                     if (vertical_diff > horizontal_diff) {
                       preserveVelocity(
                         (planet_state.vel * (coord - planet_state.coord).n + vertical_speed_msec) * (coord - planet_state.coord).n +
@@ -686,7 +686,7 @@ class Ship4(
                     )
                   }
                 } else {
-                  if (horizontal_diff > Constants.linear_velocity_error) {
+                  if (horizontal_diff > TimeConstants.linear_velocity_error) {
                     preserveVelocity(
                       (planet.groundSpeedMsec + horizontal_speed_msec) * (coord - planet_state.coord).p + planet_state.vel
                     )
@@ -840,7 +840,7 @@ class Ship4(
           thisOrActualProxyShipOrbitData
             .filter(!_.is_landed)
             .foreach(or => {
-              val time_to_stop_msec = (_stop_after_number_of_tacts * Constants.base_dt * 1000).toLong
+              val time_to_stop_msec = (_stop_after_number_of_tacts * TimeConstants.base_dt * 1000).toLong
               val new_orbit = or.orbit.withNewFocusPosition(or.planet_state.coord)
               val position_at_stop_moment = new_orbit.orbitalPointAfterTime(coord, time_to_stop_msec, or.ccw)
               val v = new_orbit.orbitalVelocityInPoint(position_at_stop_moment, or.ccw).n

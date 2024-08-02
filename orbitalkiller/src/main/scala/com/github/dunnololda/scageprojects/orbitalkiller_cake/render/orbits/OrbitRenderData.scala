@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits
 
 import com.github.dunnololda.scageprojects.orbitalkiller.{CelestialBody, EllipseOrbit, HyperbolaOrbit, KeplerOrbit, MutableBodyState}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.Celestials._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main.{earth, moon}
 case class OrbitRenderData(
     update_count: Long,
     body_state: MutableBodyState,

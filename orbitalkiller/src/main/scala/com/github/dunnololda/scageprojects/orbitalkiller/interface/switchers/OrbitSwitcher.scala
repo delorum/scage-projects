@@ -2,7 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers
 
 import com.github.dunnololda.scageprojects.orbitalkiller.{CelestialBody, InterfaceSwitcher}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.Celestials._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main.{earth, moon, sun}
 class OrbitSwitcher extends InterfaceSwitcher {
   override val strVariants: Array[String] = Array("Auto", "Earth", "Moon", "Sun")
 

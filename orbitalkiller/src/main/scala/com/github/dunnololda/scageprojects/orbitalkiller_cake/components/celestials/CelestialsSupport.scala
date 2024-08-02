@@ -3,8 +3,9 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celest
 import com.github.dunnololda.scage.ScageLibD.DVec
 import com.github.dunnololda.scage.support.ScageId
 import com.github.dunnololda.scageprojects.orbitalkiller.{CelestialBody, G, Planet, PlanetWithAir, Star, speedToHaveOrbitWithParams}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.system_evolution.SystemEvolutionAware
 
-object Celestials {
+trait CelestialsSupport extends CelestialsAware with SystemEvolutionAware {
   val sun: Star = new Star(
     ScageId.nextId,
     "Солнце",
@@ -54,5 +55,44 @@ object Celestials {
     2000
   )
 
-  val allCelestials: Seq[CelestialBody] = Seq(sun, earth, moon)
+  private val allCelestials: Seq[CelestialBody] = Seq(sun, earth, moon)
+
+  val celestialsHelper: CelestialsHelper = new CelestialsHelper(allCelestials, systemEvolution)
+
+  systemEvolution.addBody(
+    moon.currentState,
+    (_, helper) => {
+      helper.gravityForceFromTo(sun.index, moon.index) +
+        helper.gravityForceFromTo(earth.index, moon.index)
+    },
+    (_, _) => {
+      0.0
+    }
+  )
+
+  systemEvolution.addBody(
+    earth.currentState,
+    (_, helper) => {
+      helper.gravityForceFromTo(sun.index, earth.index) +
+        helper.gravityForceFromTo(moon.index, earth.index)
+    },
+    (_, _) => {
+      0.0
+    }
+  )
+
+  systemEvolution.addBody(
+    sun.currentState,
+    (_, helper) => {
+      helper.gravityForceFromTo(earth.index, sun.index) +
+        helper.gravityForceFromTo(moon.index, sun.index)
+    },
+    (_, _) => {
+      0.0
+    }
+  )
+
+  systemEvolution.addCollisionExclusion(earth.index, moon.index)
+  systemEvolution.addCollisionExclusion(earth.index, sun.index)
+  systemEvolution.addCollisionExclusion(moon.index, sun.index)
 }

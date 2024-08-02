@@ -3,46 +3,16 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.ScageId
 import com.github.dunnololda.scageprojects.orbitalkiller.ships._
-import com.github.dunnololda.scageprojects.orbitalkiller.{
-  calculateOrbit,
-  equalGravityRadius,
-  mOrKmOrMKm,
-  satelliteSpeed,
-  speedToHaveOrbitWithParams,
-  BodyState,
-  BoxShape,
-  CelestialBody,
-  CirclularOrbit,
-  EllipseOrbit,
-  FreeFlightMode,
-  G,
-  HelpScreen,
-  HyperbolaOrbit,
-  InterfaceHolder,
-  KeplerOrbit,
-  Killrot,
-  Maneuvering,
-  MutableBodyState,
-  NearestPlanetVelocity,
-  NearestShipAligned,
-  NearestShipAutoDocking,
-  NearestShipVelocity,
-  OppositeRelativeVelocityAligned,
-  OrbitDataUpdater,
-  RealTrajectory,
-  RelativeVelocityAligned,
-  ShipsHolder
-}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.Constants._
+import com.github.dunnololda.scageprojects.orbitalkiller.{BodyState, BoxShape, CelestialBody, CirclularOrbit, EllipseOrbit, FreeFlightMode, G, HelpScreen, HyperbolaOrbit, InterfaceHolder, KeplerOrbit, Killrot, Maneuvering, MutableBodyState, NearestPlanetVelocity, NearestShipAligned, NearestShipAutoDocking, NearestShipVelocity, OppositeRelativeVelocityAligned, OrbitDataUpdater, RealTrajectory, RelativeVelocityAligned, ShipsHolder, calculateOrbit, equalGravityRadius, mOrKmOrMKm, satelliteSpeed, speedToHaveOrbitWithParams}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.OrbitalKillerComponents
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.Celestials._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 
 import java.io.FileOutputStream
-import scala.collection.{immutable, mutable, Map, Set, _}
+import scala.collection.{Map, Set, immutable, mutable, _}
 
 object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1600), property("screen.height", 900)) {
   private val components = new OrbitalKillerComponents(this)
@@ -126,7 +96,11 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     // RealTrajectory3.continue()
   }
 
-  val planets = components.celestialsHelper.planets
+  val sun = components.sun
+  val earth = components.earth
+  val moon = components.moon
+
+  val planets: Predef.Map[Int, CelestialBody] = components.celestialsHelper.planets
   val planet_indices: immutable.Set[Int] = components.celestialsHelper.planet_indices
 
   def planetStates(system_state: Map[Int, MutableBodyState]): Seq[(CelestialBody, MutableBodyState)] = {
