@@ -134,7 +134,7 @@ class Engine(
       } else {
         is_active = false
       }
-      needToUpdateOrbits("engine active")
+      needToUpdateRealTrajectory("engine active")
     }
   }
 

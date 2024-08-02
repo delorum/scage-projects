@@ -91,8 +91,8 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     } else collection.mutable.Map()
   }
 
-  def needToUpdateOrbits(reason: String) {
-    println(s"needToUpdateOrbits: $reason")
+  def needToUpdateRealTrajectory(reason: String) {
+    println(s"needToUpdateRealTrajectory: $reason")
     if (onPause) {
       system_cache.clear()
       _update_orbits = true
@@ -868,7 +868,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
         player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selectedEngine
           .exists(_.active)
       ) {
-        needToUpdateOrbits("KEY_UP")
+        needToUpdateRealTrajectory("KEY_UP")
       }
   )
 
@@ -889,7 +889,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
         player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selectedEngine
           .exists(_.active)
       ) {
-        needToUpdateOrbits("KEY_DOWN")
+        needToUpdateRealTrajectory("KEY_DOWN")
       }
   )
   keyIgnorePause(KEY_T, onKeyDown = _set_stop_time = !_set_stop_time)
@@ -918,7 +918,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
         !_set_stop_time && player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selectedEngine
           .exists(_.active)
       ) {
-        needToUpdateOrbits("KEY_RIGHT")
+        needToUpdateRealTrajectory("KEY_RIGHT")
       }
   )
 
@@ -948,7 +948,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
         !_set_stop_time && player_ship.isAlive && player_ship.flightMode != NearestPlanetVelocity && player_ship.selectedEngine
           .exists(_.active)
       ) {
-        needToUpdateOrbits("KEY_LEFT")
+        needToUpdateRealTrajectory("KEY_LEFT")
       }
     }
   )
@@ -1140,7 +1140,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
           InterfaceHolder.realTrajectorySwitcher.numPoints = RealTrajectory.curPoints
         } else {
           InterfaceHolder.realTrajectorySwitcher.numPoints = 24 * 3600
-          needToUpdateOrbits("reset real trajectory num points")
+          needToUpdateRealTrajectory("reset real trajectory num points")
         }
       }
     }

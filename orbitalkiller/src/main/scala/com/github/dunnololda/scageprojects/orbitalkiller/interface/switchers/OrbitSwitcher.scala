@@ -24,11 +24,11 @@ class OrbitSwitcher extends InterfaceSwitcher {
 
   override def switchForward(): Unit = {
     super.switchForward()
-    Main.needToUpdateOrbits("changed central body")
+    Main.needToUpdateRealTrajectory("changed central body")
   }
 
   override def switchBack(): Unit = {
     super.switchBack()
-    Main.needToUpdateOrbits("changed central body")
+    Main.needToUpdateRealTrajectory("changed central body")
   }
 }
