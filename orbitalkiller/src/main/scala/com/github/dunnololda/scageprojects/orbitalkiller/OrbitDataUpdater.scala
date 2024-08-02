@@ -4,7 +4,7 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Constants
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
-
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.Celestials._
 import scala.collection.{Set, mutable}
 
 object OrbitDataUpdater {

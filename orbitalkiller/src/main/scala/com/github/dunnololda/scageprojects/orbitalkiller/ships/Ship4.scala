@@ -6,7 +6,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.AdditionalSymbols.rocket_symbol
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Constants, Main}
-
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.Celestials._
 import scala.collection.mutable.ArrayBuffer
 
 class Ship4(
@@ -171,7 +171,7 @@ class Ship4(
         default_percent_seq
       } else {
         val max_percent =
-          math.min(mass * InterfaceHolder.gSwitcher.maxG * Main.earth.g / max_power * 99, 99).toInt.toDouble
+          math.min(mass * InterfaceHolder.gSwitcher.maxG * earth.g / max_power * 99, 99).toInt.toDouble
         ((max_percent to 1.0 by -1.0) ++ (0.9 to 0.1 by -0.1)).view
       }
     }

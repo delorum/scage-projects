@@ -7,7 +7,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.ships.ProxyShip
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Constants, Main}
-
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.Celestials._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -785,7 +785,7 @@ abstract class PolygonShip(
           e.power = {
             if (InterfaceHolder.gSwitcher.maxGSet) {
               math.min(
-                thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * Main.earth.g + {
+                thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * earth.g + {
                   earth
                     .airResistance(
                       currentState,
@@ -1410,7 +1410,7 @@ abstract class PolygonShip(
       val active_engines = engines.filter(e => e.active && 0 < e.stopMomentTacts)
       if (active_engines.nonEmpty) {
         val cur_force = reactive_force.norma
-        val allowed_force = thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * Main.earth.g
+        val allowed_force = thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * earth.g
         if (cur_force > allowed_force) {
           val force_diff = cur_force - allowed_force
           val force_diff_for_engine = force_diff / active_engines.length
@@ -1495,7 +1495,7 @@ abstract class PolygonShip(
         )
         val reactive_force = currentReactiveForce(0, currentState) + air_resistance
         val cur_force = reactive_force.norma
-        val allowed_force = thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * Main.earth.g
+        val allowed_force = thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * earth.g
         if (cur_force > allowed_force) {
           val force_diff = cur_force - allowed_force
           val force_diff_for_engine = force_diff / active_engines_except.length

@@ -1,30 +1,48 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake
 
-import com.github.dunnololda.scage.ScageLibD
-import com.github.dunnololda.scage.ScageLibD.{DARK_GRAY, DVec, GREEN, KEY_0, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_A, KEY_ADD, KEY_C, KEY_D, KEY_DIVIDE, KEY_DOWN, KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_I, KEY_LCONTROL, KEY_LEFT, KEY_LSHIFT, KEY_M, KEY_MULTIPLY, KEY_N, KEY_NUMPAD1, KEY_NUMPAD2, KEY_NUMPAD3, KEY_NUMPAD4, KEY_NUMPAD5, KEY_NUMPAD6, KEY_NUMPAD7, KEY_NUMPAD8, KEY_NUMPAD9, KEY_P, KEY_Q, KEY_R, KEY_RETURN, KEY_RIGHT, KEY_RSHIFT, KEY_S, KEY_SPACE, KEY_SUBTRACT, KEY_T, KEY_UP, KEY_W, MAGENTA, ORANGE, RED, ScageColor, ScageScreenAppD, Vec, WHITE, YELLOW, addGlyphs, appVersion, drawCircle, drawFilledCircle, drawLine, drawRectCentered, max_font_size, messageBounds, openglLocalTransform, openglMove, openglRotateDeg, print, property, stopApp, windowHeight, windowWidth}
-import com.github.dunnololda.scage.support.ScageId
-import com.github.dunnololda.scageprojects.orbitalkiller.ships.{Cargo1, Satellite1, Satellite2, Ship4, SpaceStation2}
-import com.github.dunnololda.scageprojects.orbitalkiller.{BodyState, BoxShape, CelestialBody, CirclularOrbit, EllipseOrbit, FreeFlightMode, G, HelpScreen, HyperbolaOrbit, InterfaceHolder, KeplerOrbit, Killrot, Maneuvering, MutableBodyState, NearestPlanetVelocity, NearestShipAligned, NearestShipAutoDocking, NearestShipVelocity, OppositeRelativeVelocityAligned, OrbitDataUpdater, Planet, PlanetWithAir, RealTrajectory, RelativeVelocityAligned, ShipsHolder, Star, calculateOrbit, equalGravityRadius, mOrKmOrMKm, satelliteSpeed, speedToHaveOrbitWithParams}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.Constants.{base_dt, realtime}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.OrbitalKillerComponents
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode.{FixedOnOrbit, FixedOnShip, FixedOnShipAbsolute, FreeViewMode, Landing}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
-import com.github.dunnololda.scage.ScageLibD.{DVec, ScageColor, Vec, addGlyphs, appVersion, max_font_size, messageBounds, print, property, stopApp, _}
+import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.ScageId
 import com.github.dunnololda.scageprojects.orbitalkiller.ships._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.AdditionalSymbols.{ccw_symbol, cw_symbol, rocket_symbol}
+import com.github.dunnololda.scageprojects.orbitalkiller.{
+  calculateOrbit,
+  equalGravityRadius,
+  mOrKmOrMKm,
+  satelliteSpeed,
+  speedToHaveOrbitWithParams,
+  BodyState,
+  BoxShape,
+  CelestialBody,
+  CirclularOrbit,
+  EllipseOrbit,
+  FreeFlightMode,
+  G,
+  HelpScreen,
+  HyperbolaOrbit,
+  InterfaceHolder,
+  KeplerOrbit,
+  Killrot,
+  Maneuvering,
+  MutableBodyState,
+  NearestPlanetVelocity,
+  NearestShipAligned,
+  NearestShipAutoDocking,
+  NearestShipVelocity,
+  OppositeRelativeVelocityAligned,
+  OrbitDataUpdater,
+  RealTrajectory,
+  RelativeVelocityAligned,
+  ShipsHolder
+}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Constants._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.OrbitalKillerComponents
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.Celestials._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 
 import java.io.FileOutputStream
-import scala.collection._
-import java.io.FileOutputStream
-import scala.collection.{Map, Set, immutable, mutable}
+import scala.collection.{immutable, mutable, Map, Set, _}
 
 object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1600), property("screen.height", 900)) {
   private val components = new OrbitalKillerComponents(this)
@@ -72,7 +90,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
           println("adding to system_cache")
           val system_evolution_copy = system_evolution.copy(base_dt)
           val steps = tacts - system_evolution_copy.tacts
-          (1L to steps).foreach(x => {
+          (1L to steps).foreach(_ => {
             system_evolution_copy.allBodyStates
               .map(bs => (bs._2, ShipsHolder.shipByIndex(bs._2.index)))
               .foreach(bs => {
@@ -91,7 +109,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     } else collection.mutable.Map()
   }
 
-  def needToUpdateRealTrajectory(reason: String) {
+  def needToUpdateRealTrajectory(reason: String): Unit = {
     println(s"needToUpdateRealTrajectory: $reason")
     if (onPause) {
       system_cache.clear()
@@ -108,117 +126,21 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     // RealTrajectory3.continue()
   }
 
-  val sun = new Star(
-    ScageId.nextId,
-    "Солнце",
-    mass = 1.9891e30,
-    coord = DVec(0, 1.496e11),
-    radius = 6.9551e8
-  )
+  val planets = components.celestialsHelper.planets
+  val planet_indices: immutable.Set[Int] = components.celestialsHelper.planet_indices
 
-  system_evolution.addBody(
-    sun.currentState,
-    (tacts, helper) => {
-      helper.gravityForceFromTo(earth.index, sun.index) +
-        helper.gravityForceFromTo(moon.index, sun.index)
-    },
-    (tacts, helper) => {
-      0.0
-    }
-  )
-
-  val earth_start_position = DVec.dzero
-
-  val earth_init_velocity =
-    speedToHaveOrbitWithParams(earth_start_position, 0, sun.coord, sun.linearVelocity, sun.mass, G, ccw = true)
-
-  val earth = new PlanetWithAir(
-    index = ScageId.nextId,
-    name = "Земля",
-    mass = 5.9746e24,
-    init_coord = earth_start_position,
-    init_velocity = earth_init_velocity,
-    // init_ang_vel = 0.0,
-    init_ang_vel = 360.0 / (24L * 60 * 60),
-    radius = 6400000 /*6314759.95726045*/,
-    orbiting_body = sun,
-    air_free_altitude = 101000,
-    T0 = 288,
-    L = 0.00288 /*0.0065*/,
-    P0 = 101325,
-    M = 0.02896,
-    R = 8.314
-  )
-
-  system_evolution.addBody(
-    earth.currentState,
-    (tacts, helper) => {
-      helper.gravityForceFromTo(sun.index, earth.index) +
-        helper.gravityForceFromTo(moon.index, earth.index)
-    },
-    (tacts, helper) => {
-      0.0
-    }
-  )
-
-  val moon_start_position = earth.coord + DVec(0, 1).rotateDeg(280) * 380000000L
-
-  val moon_init_velocity =
-    speedToHaveOrbitWithParams(moon_start_position, 0, earth.coord, earth.linearVelocity, earth.mass, G, ccw = true)
-
-  val moon = new Planet(
-    ScageId.nextId,
-    "Луна",
-    mass = 7.3477e22,
-    init_coord = moon_start_position,
-    init_velocity = moon_init_velocity,
-    init_ang_vel =
-      360.0 / (26L * 24 * 60 * 60 + 8L * 60 * 60 + 59L * 60 + 44), // период орбиты луны в данной симуляции: 26 д. 8 ч. 59 мин. 44 сек, равен периоду обращения вокруг собственной оси
-    radius = 1737000,
-    earth,
-    2000
-  )
-
-  system_evolution.addBody(
-    moon.currentState,
-    (tacts, helper) => {
-      helper.gravityForceFromTo(sun.index, moon.index) +
-        helper.gravityForceFromTo(earth.index, moon.index)
-    },
-    (tacts, helper) => {
-      0.0
-    }
-  )
-
-  system_evolution.addCollisionExclusion(earth.index, moon.index)
-  system_evolution.addCollisionExclusion(earth.index, sun.index)
-  system_evolution.addCollisionExclusion(moon.index, sun.index)
-  val earth_sun_eq_gravity_radius = equalGravityRadius(earth.currentState, sun.currentState)
-  val moon_earth_eq_gravity_radius = equalGravityRadius(moon.currentState, earth.currentState)
-
-  val planets = immutable.Map(sun.index -> sun, earth.index -> earth, moon.index -> moon)
-  val planet_indices: immutable.Set[Int] = planets.keySet
-
-  def planetStates(body_states: Map[Int, MutableBodyState]): Seq[(CelestialBody, MutableBodyState)] = {
-    body_states
-      .flatMap(kv => {
-        planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
-      })
-      .values
-      .toSeq
-      .sortBy(_._2.mass)
+  def planetStates(system_state: Map[Int, MutableBodyState]): Seq[(CelestialBody, MutableBodyState)] = {
+    components.celestialsHelper.planetStates(system_state)
   }
 
-  val currentPlanetStates: Seq[(CelestialBody, MutableBodyState)] = planetStates(
-    system_evolution.bodyStates(planet_indices)
-  )
+  val currentPlanetStates: Seq[(CelestialBody, MutableBodyState)] = components.celestialsHelper.currentPlanetStates
 
-  def planetByIndex(index: Int): Option[CelestialBody] = planets.get(index)
+  def planetByIndex(index: Int): Option[CelestialBody] = components.celestialsHelper.planetByIndex(index)
 
   // стоим на поверхности Земли
-  val ship_start_position = earth.coord + DVec(495, earth.radius + 3.5)
+  private val ship_start_position = earth.coord + DVec(495, earth.radius + 3.5)
 
-  val ship_init_velocity =
+  private val ship_init_velocity =
     earth.linearVelocity + (ship_start_position - earth.coord).p * earth.groundSpeedMsec /*DVec.zero*/
 
   // суборбитальная траектория
@@ -253,20 +175,27 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   // val ship_start_position = DVec(9.594617648145294E7, -8.919468846308415E7) + earth.coord
   // val ship_init_velocity = DVec(28167.17922375556,2692.468259455251)
 
-  val player_ship =
+  val player_ship: Ship4 =
     new Ship4(ScageId.nextId, init_coord = ship_start_position, init_velocity = ship_init_velocity, init_rotation = 0)
 
   // на круговой орбите в 200 км от поверхности Земли
-  val station_start_position = earth.coord + DVec(-110, earth.radius + 199160)
+  private val station_start_position = earth.coord + DVec(-110, earth.radius + 199160)
 
-  val station_init_velocity =
-    satelliteSpeed(station_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)
+  private val station_init_velocity =
+    satelliteSpeed(
+      station_start_position,
+      earth.coord,
+      earth.linearVelocity,
+      earth.mass,
+      G,
+      counterclockwise = true
+    )
 
   // суборбитальная траектория
   // val station_start_position = earth.coord + DVec(0, earth.radius + 100000)
   // val station_init_velocity = speedToHaveOrbitWithParams(station_start_position, -30000, earth.coord, earth.linearVelocity, earth.mass, G)
 
-  val station = new SpaceStation2(
+  val station: SpaceStation2 = new SpaceStation2(
     ScageId.nextId,
     init_coord = station_start_position,
     init_velocity = station_init_velocity,
@@ -274,10 +203,10 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   )
 
   // случайная орбита с перигеем от 200 до 1000 км, и апогеем от 0 до 3000 км выше перигея
-  val sat1_start_position =
+  private val sat1_start_position =
     earth.coord + DVec(0, 1).rotateDeg(math.random * 360) * (earth.radius + 200000 + math.random * 800000)
 
-  val sat1_init_velocity = speedToHaveOrbitWithParams(
+  private val sat1_init_velocity = speedToHaveOrbitWithParams(
     sat1_start_position,
     math.random * 3000000,
     earth.coord,
@@ -293,7 +222,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   // на круговой орбите в 200 км от поверхности Земли
   // val sat1_start_position = earth.coord + DVec(-200, earth.radius + 199000)
   // val sat1_init_velocity = satelliteSpeed(sat1_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
-  val sat1 = new Satellite1(
+  val sat1: Satellite1 = new Satellite1(
     ScageId.nextId,
     init_coord = sat1_start_position,
     init_velocity = sat1_init_velocity,
@@ -301,10 +230,10 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   )
 
   // случайная орбита с перигеем от 200 до 1000 км, и апогеем от 0 до 3000 км выше перигея
-  val sat2_start_position =
+  private val sat2_start_position =
     earth.coord + DVec(0, 1).rotateDeg(math.random * 360) * (earth.radius + 200000 + math.random * 800000)
 
-  val sat2_init_velocity = speedToHaveOrbitWithParams(
+  private val sat2_init_velocity = speedToHaveOrbitWithParams(
     sat2_start_position,
     math.random * 3000000,
     earth.coord,
@@ -320,7 +249,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   println(s"sat2_start_position=$sat2_start_position")
   println(s"sat2_init_velocity=$sat2_init_velocity")
 
-  val sat2 = new Satellite2(
+  val sat2: Satellite2 = new Satellite2(
     ScageId.nextId,
     init_coord = sat2_start_position,
     init_velocity = sat2_init_velocity,
@@ -328,16 +257,16 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   )
 
   // стоим на поверхности Земли
-  val cargo1_start_position = earth.coord + DVec(0, earth.radius + 2)
+  private val cargo1_start_position = earth.coord + DVec(0, earth.radius + 2)
 
-  val cargo1_init_velocity =
+  private val cargo1_init_velocity =
     earth.linearVelocity + (cargo1_start_position - earth.coord).p * earth.groundSpeedMsec /*DVec.zero*/
 
   // на круговой орбите в 200 км от поверхности Земли
   // val cargo1_start_position = earth.coord + DVec(-100, earth.radius + 199000)
   // val cargo1_init_velocity = satelliteSpeed(cargo1_start_position, earth.coord, earth.linearVelocity, earth.mass, G, counterclockwise = true)/** 1.15 */
 
-  val cargo1 = new Cargo1(
+  val cargo1: Cargo1 = new Cargo1(
     ScageId.nextId,
     init_coord = cargo1_start_position,
     init_velocity = cargo1_init_velocity,
@@ -346,7 +275,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
 
   def nameByIndex(index: Int): Option[String] = {
     planets.get(index) match {
-      case s @ Some(x) => s.map(_.name)
+      case s @ Some(_) => s.map(_.name)
       case None => ShipsHolder.shipByIndex(index).map(_.name)
     }
   }
@@ -355,8 +284,8 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   var _stop_after_number_of_tacts: Long = 0
   var _stop_in_orbit_true_anomaly: Double = 0
 
-  private def nextStep() {
-    (1 to timeMultiplier).foreach(step => {
+  private def nextStep(): Unit = {
+    (1 to timeMultiplier).foreach(_ => {
       ShipsHolder.ships.foreach(s => {
         s.beforeStep()
       })
@@ -382,7 +311,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
 
   def viewMode = view_mode
 
-  def viewMode_=(new_view_mode: ViewMode) {
+  def viewMode_=(new_view_mode: ViewMode): Unit = {
     if (new_view_mode != view_mode) {
       new_view_mode match {
         case FreeViewMode => // свободный
@@ -463,11 +392,11 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   }
 
   def orbitStrInPointWithVelocity(
-                                   coord: DVec,
-                                   velocity: DVec,
-                                   radius: Double,
-                                   mass: Double,
-                                   planet_states: Seq[(CelestialBody, MutableBodyState)]): String = {
+      coord: DVec,
+      velocity: DVec,
+      radius: Double,
+      mass: Double,
+      planet_states: Seq[(CelestialBody, MutableBodyState)]): String = {
     insideSphereOfInfluenceOfCelestialBody(coord, mass, planet_states) match {
       case Some((planet, planet_state)) =>
         val orbit = calculateOrbit(
@@ -502,9 +431,9 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   }*/
 
   def orbitAroundCelestialInPointWithVelocity(
-                                               coord: DVec,
-                                               velocity: DVec,
-                                               mass: Double): Option[((CelestialBody, MutableBodyState), KeplerOrbit)] = {
+      coord: DVec,
+      velocity: DVec,
+      mass: Double): Option[((CelestialBody, MutableBodyState), KeplerOrbit)] = {
     insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
       case Some((planet, planet_state)) =>
         planetByIndex(planet_state.index).flatMap(planet => {
@@ -578,9 +507,9 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
    * @return
    */
   def insideSphereOfInfluenceOfCelestialBody(
-                                              ship_coord: DVec,
-                                              ship_mass: Double,
-                                              planet_states: Seq[(CelestialBody, MutableBodyState)]): Option[(CelestialBody, MutableBodyState)] = {
+      ship_coord: DVec,
+      ship_mass: Double,
+      planet_states: Seq[(CelestialBody, MutableBodyState)]): Option[(CelestialBody, MutableBodyState)] = {
     if (planet_states.isEmpty) None
     else if (planet_states.length == 1) Some(planet_states.head)
     else {
@@ -608,11 +537,11 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   }
 
   def drawDashedArrow(
-                       from1: DVec,
-                       to1: DVec,
-                       dash_len: Double,
-                       color: ScageColor,
-                       scale: Double = globalScale): Unit = {
+      from1: DVec,
+      to1: DVec,
+      dash_len: Double,
+      color: ScageColor,
+      scale: Double = globalScale): Unit = {
     val line_len = (to1 - from1).norma
     val normal = (to1 - from1).n
     (0.0 to line_len - dash_len by dash_len * 2).foreach { case dash_from =>
@@ -1415,11 +1344,11 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   }
 
   private def drawSunTangents(
-                               planet_coord: DVec,
-                               planet_radius: Double,
-                               sun_coord: DVec,
-                               sun_radius: Double,
-                               dist: Double) {
+      planet_coord: DVec,
+      planet_radius: Double,
+      sun_coord: DVec,
+      sun_radius: Double,
+      dist: Double) {
     tangentsFromCircleToCircle(planet_coord, planet_radius, sun_coord, sun_radius) match {
       case Some((c1, c2, b1, b2)) =>
         val a = (c1 - b1).n * dist
@@ -1429,6 +1358,9 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
       case None =>
     }
   }
+
+  private val earth_sun_eq_gravity_radius: Double = equalGravityRadius(earth.currentState, sun.currentState)
+  private val moon_earth_eq_gravity_radius: Double = equalGravityRadius(moon.currentState, earth.currentState)
 
   render {
     if (drawMapMode) {
