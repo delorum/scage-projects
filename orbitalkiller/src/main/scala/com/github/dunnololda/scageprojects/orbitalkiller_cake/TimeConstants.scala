@@ -1,6 +1,6 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake
 
-object Constants {
+object TimeConstants {
   val k: Double = 1 // доля секунды симуляции, которая обрабатывается за одну реальную секунду, если не применяется ускорение
 
   val linear_velocity_error = 0.1
