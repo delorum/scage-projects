@@ -4,4 +4,7 @@ object AdditionalSymbols {
   val ccw_symbol: Char = '\u21b6'
   val cw_symbol: Char = '\u21b7'
   val rocket_symbol: Char = '\u2191'
+
+  // не забыть добавить новые символы сюда, чтобы они проинициализировались
+  val all = s"$ccw_symbol$cw_symbol$rocket_symbol"
 }

@@ -751,10 +751,6 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     }
   }
 
-  preinit {
-    addGlyphs(s"$ccw_symbol$cw_symbol$rocket_symbol")
-  }
-
   keyIgnorePause(
     KEY_RETURN,
     onKeyDown = {
