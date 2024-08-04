@@ -2,7 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_ev
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
-import com.github.dunnololda.scageprojects.orbitalkiller.{MutableBodyState, ShipsHolder, correctAngle, maybeCollisions}
+import com.github.dunnololda.scageprojects.orbitalkiller.{MutableBodyState, correctAngle, maybeCollisions}
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -32,7 +32,7 @@ class SystemEvolution(
 
   private def bulletsInSystem: Boolean = bullets_counter > 0
 
-  def addBody(new_part: MutableSystemPart): Unit = {
+  private def addBody(new_part: MutableSystemPart): Unit = {
     mutable_system += (new_part.body.index -> new_part)
     all_bodies += new_part.body
     if (new_part.body.is_bullet) {
@@ -42,16 +42,11 @@ class SystemEvolution(
 
   def addBody(
       b: MutableBodyState,
-      force: (Long, EvolutionHelper) => DVec,
-      torque: (Long, EvolutionHelper) => Double): Unit = {
-    val new_part = MutableSystemPart(b, force, torque)
+      force: (Long, EvolutionHelper) => DVec = (_, _) => DVec.zero,
+      torque: (Long, EvolutionHelper) => Double = (_, _) => 0.0,
+      onCollision: () => Unit = () => ()): Unit = {
+    val new_part = MutableSystemPart(b, force, torque, onCollision)
     addBody(new_part)
-  }
-
-  def addBody(b: MutableBodyState): Unit = {
-    val new_part = MutableSystemPart(b, (_, _) => DVec.zero, (_, _) => 0.0)
-    mutable_system += (b.index -> new_part)
-    all_bodies += b
   }
 
   def addJoint(a: MutableBodyState, vertexA: DVec, b: MutableBodyState, vertexB: DVec): Joint = {
@@ -159,7 +154,7 @@ class SystemEvolution(
       // println("===============")
 
       // Integrate forces first part
-      mutable_system.foreach { case (_, MutableSystemPart(mb, force, torque)) =>
+      mutable_system.foreach { case (_, MutableSystemPart(mb, force, torque, _)) =>
         if (mb.active && !mb.is_static) {
           val next_force = force(tacts, mutable_system_helper)
           val next_acc = next_force * mb.invMass
@@ -181,7 +176,7 @@ class SystemEvolution(
       if (joints.nonEmpty) joints.foreach(j => j.solveConstraint(dt))
 
       // Integrate velocities and forces last part
-      mutable_system.foreach { case (_, MutableSystemPart(mb, force, torque)) =>
+      mutable_system.foreach { case (_, MutableSystemPart(mb, force, torque, _)) =>
         if (mb.active && !mb.is_static) {
           mb.coord += mb.vel * dt
           mb.ang = correctAngle((mb.ang + mb.ang_vel * dt) % 360)
@@ -201,8 +196,8 @@ class SystemEvolution(
       if (collisions_enabled && collisions.nonEmpty) {
         collisions.foreach(c => {
           c.positionalCorrection(tacts)
-          ShipsHolder.shipByIndex(c.a.index).foreach(s => s.checkCriticalCollision())
-          ShipsHolder.shipByIndex(c.b.index).foreach(s => s.checkCriticalCollision())
+          mutable_system.get(c.a.index).foreach(_.onCollision())
+          mutable_system.get(c.b.index).foreach(_.onCollision())
         })
       }
     })

@@ -4,7 +4,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.InterfaceElement
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
 
 class FlightModeInfo extends InterfaceElement {
-  private val strings = Array(s"Полетный режим: ${Main.player_ship.flightModeStr}")
+  private val strings = Array(s"Полетный режим: N/A")
 
   override def _update(): Unit = {
     strings(0) = s"Полетный режим: ${Main.player_ship.flightModeStr}"

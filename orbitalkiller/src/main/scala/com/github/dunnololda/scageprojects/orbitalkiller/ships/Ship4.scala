@@ -5,11 +5,12 @@ import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.AdditionalSymbols.rocket_symbol
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.{TimeConstants, Main}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ShipsHolder
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Main, TimeConstants}
 
 import scala.collection.mutable.ArrayBuffer
 
-class Ship4(
+abstract class Ship4(
     index: Int,
     init_coord: DVec,
     init_velocity: DVec = DVec.dzero,
@@ -167,11 +168,11 @@ class Ship4(
       max_diff: Double): (Int, Double) = {
     val percent_seq = {
       // сколько процентов тяги двигателя максимально можем использовать в соответствии с ограничением InterfaceHolder.gSwitcher
-      if (!InterfaceHolder.gSwitcher.maxGSet) {
+      if (!interfaceHolder.gSwitcher.maxGSet) {
         default_percent_seq
       } else {
         val max_percent =
-          math.min(mass * InterfaceHolder.gSwitcher.maxG * earth.g / max_power * 99, 99).toInt.toDouble
+          math.min(mass * interfaceHolder.gSwitcher.maxG * earth.g / max_power * 99, 99).toInt.toDouble
         ((max_percent to 1.0 by -1.0) ++ (0.9 to 0.1 by -0.1)).view
       }
     }
@@ -370,19 +371,19 @@ class Ship4(
   }
 
   override def tryDock: Boolean = {
-    InterfaceHolder.dockingSwitcher.dockingEnabled && canDockWithNearestShip &&
-    (InterfaceHolder.dockingSwitcher.dockingAuto || (InterfaceHolder.dockingSwitcher.dockingManual && InterfaceHolder.dockUndock.needDock))
+    interfaceHolder.dockingSwitcher.dockingEnabled && canDockWithNearestShip &&
+    (interfaceHolder.dockingSwitcher.dockingAuto || (interfaceHolder.dockingSwitcher.dockingManual && interfaceHolder.dockUndock.needDock))
   }
 
   override def tryUndock: Boolean = {
-    isDocked && InterfaceHolder.dockUndock.needUndock
+    isDocked && interfaceHolder.dockUndock.needUndock
   }
 
   override def dock(): Unit = {
     super.dock()
     if (isDocked) {
-      InterfaceHolder.dockUndock.setDocked()
-      InterfaceHolder.dockingSwitcher.setDockingManual()
+      interfaceHolder.dockUndock.setDocked()
+      interfaceHolder.dockingSwitcher.setDockingManual()
     }
   }
 
@@ -390,7 +391,7 @@ class Ship4(
     val dist_abs = math.abs(dist)
     // разные значения скоростей для разных ограничений перегрузок - потому что если ограничение на перегрузку, можем просто не успеть
     // затормозить с высокой скорости и врезаться
-    val speeds = InterfaceHolder.gSwitcher.maxG match {
+    val speeds = interfaceHolder.gSwitcher.maxG match {
       case 1 => (25, 25, 15, 10, 10, 5, 2)
       case 4 => (50, 50, 50, 25, 10, 5, 2)
       case _ => (100, 100, 50, 25, 10, 5, 2)
@@ -425,7 +426,7 @@ class Ship4(
       s.coord.dist2(coord) < 500 * 1000L * 500 * 1000L &&
       s.shipInterface.exists(!_.isMinimized)
     }
-    ShipsHolder.ships.filter(s => _check(s)).sortBy(s => coord.dist2(s.coord)).headOption
+    shipsHolder.ships.filter(s => _check(s)).sortBy(s => coord.dist2(s.coord)).headOption
   }
 
   private def shipCloser2KmNonMinimized: Option[PolygonShip] = {
@@ -436,7 +437,7 @@ class Ship4(
       s.coord.dist2(coord) < 2 * 1000L * 2 * 1000L &&
       s.shipInterface.exists(!_.isMinimized)
     }
-    ShipsHolder.ships.filter(s => _check(s)).sortBy(s => coord.dist2(s.coord)).headOption
+    shipsHolder.ships.filter(s => _check(s)).sortBy(s => coord.dist2(s.coord)).headOption
   }
 
   action {
@@ -579,7 +580,7 @@ class Ship4(
             } else {
               shipCloser2KmNonMinimized match {
                 case Some(os) =>
-                  InterfaceHolder.dockingSwitcher.setDockingAuto()
+                  interfaceHolder.dockingSwitcher.setDockingAuto()
                   val dp = docking_points.sortBy(_.curP1.dist2(os.coord)).head
                   val ship_docking_point = dp.curP1 + 0.5 * (dp.curP2 - dp.curP1)
                   os.docking_points.sortBy(osdp => osdp.curP1.dist2(ship_docking_point)).headOption match {
@@ -722,7 +723,7 @@ class Ship4(
     val left_rocket_status = left_rocket match {
       case Some(r) =>
         if (r.isAlive) {
-          val vel = msecOrKmsec((linearVelocity - r.linearVelocity) * (coord - r.coord).n)
+          val vel = msecOrKmsecOrKmhour((linearVelocity - r.linearVelocity) * (coord - r.coord).n)
           val dist = mOrKmOrMKm(coord.dist(r.coord))
           s"[{RED}$rocket_symbol dist=$dist, vel=$vel]"
         } else {
@@ -738,7 +739,7 @@ class Ship4(
     val right_rocket_status = right_rocket match {
       case Some(r) =>
         if (r.isAlive) {
-          val vel = msecOrKmsec((linearVelocity - r.linearVelocity) * (coord - r.coord).n)
+          val vel = msecOrKmsecOrKmhour((linearVelocity - r.linearVelocity) * (coord - r.coord).n)
           val dist = mOrKmOrMKm(coord.dist(r.coord))
           s"[{RED}$rocket_symbol dist=$dist, vel=$vel]"
         } else {
@@ -779,7 +780,7 @@ class Ship4(
         init_velocity = linearVelocity,
         init_rotation = rotation,
         ship_designer = false
-      )
+      )  with ProtectedInterfaceHolderAwareImpl with ProtectedShipsHolderAwareImpl
 
       rocket.two.power = rocket.two.max_power
       rocket.two.workTimeTacts = 63
@@ -810,7 +811,7 @@ class Ship4(
     if (!isDocked) drawFilledCircle(DVec.zero.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN)) // mass center
 
     if (Main.globalScale >= 0.8) {
-      if (!InterfaceHolder.rocketsInfo.isMinimized) {
+      if (!interfaceHolder.rocketsInfo.isMinimized) {
         left_rocket.foreach(r => {
           if (r.isAlive) {
             drawArrow(DVec.zero.actualPos, DVec.zero.actualPos + (r.coord - coord).n * radius, RED)
@@ -823,7 +824,7 @@ class Ship4(
         })
       }
 
-      if (!InterfaceHolder.linearVelocityInfo.isMinimized) {
+      if (!interfaceHolder.linearVelocityInfo.isMinimized) {
         // current velocity
         drawArrow(
           DVec.zero.actualPosBeforeRotation,
@@ -833,10 +834,10 @@ class Ship4(
         drawArrow(
           DVec.zero.actualPosBeforeRotation,
           DVec.zero.actualPosBeforeRotation + relativeLinearVelocity.n * radius,
-          colorIfPlayerAliveOrRed(InterfaceHolder.linearVelocityInfo.color)
+          colorIfPlayerAliveOrRed(interfaceHolder.linearVelocityInfo.color)
         )
         // velocity direction at stop moment
-        if (_stop_after_number_of_tacts > 0 && InterfaceHolder.orbParams.calculationOn) {
+        if (_stop_after_number_of_tacts > 0 && interfaceHolder.orbParams.calculationOn) {
           thisOrActualProxyShipOrbitData
             .filter(!_.is_landed)
             .foreach(or => {
@@ -853,31 +854,31 @@ class Ship4(
             })
         }
       }
-      if (!InterfaceHolder.sunRelativeInfo.isMinimized) {
+      if (!interfaceHolder.sunRelativeInfo.isMinimized) {
         // direction to earth
         drawArrow(
           DVec.zero.actualPosBeforeRotation,
           DVec.zero.actualPosBeforeRotation + (sun.coord - coord).n * radius,
-          colorIfPlayerAliveOrRed(InterfaceHolder.sunRelativeInfo.color)
+          colorIfPlayerAliveOrRed(interfaceHolder.sunRelativeInfo.color)
         )
       }
-      if (!InterfaceHolder.earthRelativeInfo.isMinimized) {
+      if (!interfaceHolder.earthRelativeInfo.isMinimized) {
         // direction to earth
         drawArrow(
           DVec.zero.actualPosBeforeRotation,
           DVec.zero.actualPosBeforeRotation + (earth.coord - coord).n * radius,
-          colorIfPlayerAliveOrRed(InterfaceHolder.earthRelativeInfo.color)
+          colorIfPlayerAliveOrRed(interfaceHolder.earthRelativeInfo.color)
         )
       }
-      if (!InterfaceHolder.moonRelativeInfo.isMinimized) {
+      if (!interfaceHolder.moonRelativeInfo.isMinimized) {
         // direction to moon
         drawArrow(
           DVec.zero.actualPosBeforeRotation,
           DVec.zero.actualPosBeforeRotation + (moon.coord - coord).n * radius,
-          colorIfPlayerAliveOrRed(InterfaceHolder.moonRelativeInfo.color)
+          colorIfPlayerAliveOrRed(interfaceHolder.moonRelativeInfo.color)
         )
       }
-      InterfaceHolder.shipInterfaces.foreach(si => {
+      interfaceHolder.shipInterfaces.foreach(si => {
         if (!si.isMinimized && si.monitoring_ship.isAlive) {
           drawArrow(
             DVec.zero.actualPosBeforeRotation,
@@ -901,7 +902,7 @@ class Ship4(
       drawRectCentered(y.points_center.rotateDeg(rotation), y.points_radius*2, y.points_radius*2, WHITE)
     })*/
 
-    if (InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && RealTrajectory.realTrajectory.nonEmpty) {
+    if (interfaceHolder.realTrajectorySwitcher.showRealTrajectory && RealTrajectory.realTrajectory.nonEmpty) {
       drawSlidingLines(RealTrajectory.realTrajectory.map(p => p / scale + orbitData.get.planet.coord - coord), YELLOW)
     }
   }
@@ -957,7 +958,7 @@ class Ship4(
         drawFilledCircle(d.our_dp.p1.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
         drawFilledCircle(d.our_dp.p2.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
       })
-      if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
+      if (interfaceHolder.dockingSwitcher.dockingEnabled) {
         shipCloser2KmNonMinimized.foreach(s =>
           nearestFreeDockingPoints(s.coord).foreach(dp => {
             drawFilledCircle(dp.p1.actualPos, 0.3, colorIfPlayerAliveOrRed(RED))

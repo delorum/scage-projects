@@ -2,6 +2,7 @@ package com.github.dunnololda.scageprojects
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.{Body => Phys2dBody, BodyList => Phys2dBodyList, Collider => Phys2dCollider, DynamicShape => Phys2dShape, StaticBody => Phys2dStaticBody, _}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main.interfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.{AdditionalSymbols, Main}
 
 import scala.collection.mutable
@@ -1187,8 +1188,8 @@ package object orbitalkiller {
     }
   }
 
-  def msecOrKmsec(msec: Number): String = {
-    InterfaceHolder.msecOrKmH.selectedVariant match {
+  def msecOrKmsecOrKmhour(msec: Number): String = {
+    interfaceHolder.msecOrKmH.selectedVariant match {
       case 0 => // m/sec
         if (math.abs(msec.doubleValue()) < 1000) {
           f"${msec.doubleValue()}%.2f м/сек"
@@ -1237,7 +1238,7 @@ package object orbitalkiller {
     def r_p:Double
 
     protected def calcFallPos(fall_point:DVec, planet_ang:Double, planet_radius:Double):String = {
-      if (InterfaceHolder.degOrKm.selectedVariant == 0) {
+      if (interfaceHolder.degOrKm.selectedVariant == 0) {
         f"${correctAngle(DVec(0, 1).deg360(fall_point - f) - planet_ang)}%.3f град."
       } else {
         val planet_length = 2*math.Pi*planet_radius
@@ -1339,7 +1340,7 @@ package object orbitalkiller {
           (fall_time, fall_pos)
         }
 
-        val allowed_acc = if (InterfaceHolder.gSwitcher.maxGSet) InterfaceHolder.gSwitcher.maxG * planet_g else 1000000 / Main.player_ship.mass
+        val allowed_acc = if (interfaceHolder.gSwitcher.maxGSet) interfaceHolder.gSwitcher.maxG * planet_g else 1000000 / Main.player_ship.mass
         val time_to_stop_at_full_power = math.abs(v0y / (allowed_acc - planet_g))
         val fall_time_str = if (fall_time_msec < 500) "" else if (fall_time_msec < 30000) s"[r Поверхность через ${timeStrSec(fall_time_msec)}, $fall_position (${timeStrMsec((time_to_stop_at_full_power * 1000l).toLong)})]" else s"Поверхность через ${timeStrMsec(fall_time_msec)}, $fall_position"
 
@@ -1665,7 +1666,7 @@ package object orbitalkiller {
           (travelTimeOnOrbitMsecCW(ship_coord, fall_point), fall_pos)
         }
 
-        val allowed_acc = if (InterfaceHolder.gSwitcher.maxGSet) InterfaceHolder.gSwitcher.maxG * planet_g else 1000000 / Main.player_ship.mass
+        val allowed_acc = if (interfaceHolder.gSwitcher.maxGSet) interfaceHolder.gSwitcher.maxG * planet_g else 1000000 / Main.player_ship.mass
         val time_to_stop_at_full_power = math.abs(v0y / (allowed_acc - planet_g))
         val fall_time_str = if (fall_time_msec < 500) "" else if (fall_time_msec < 30000) s"[r Поверхность через ${timeStrSec(fall_time_msec)}, $fall_position (${timeStrMsec((time_to_stop_at_full_power * 1000l).toLong)})]" else s"Поверхность через ${timeStrMsec(fall_time_msec)}, $fall_position"
         f"$prefix, незамкнутая, суборбитальная $dir, $r_p_approach_str, e = $e%.2f, r_p = ${mOrKmOrMKm(r_p - planet_radius)}, $fall_time_str"

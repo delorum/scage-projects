@@ -4,9 +4,10 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.ScageColor
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller._
+import com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers.DockingOnOff
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 
-class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
+class OtherShipInfo(val monitoring_ship: PolygonShip, dockingSwitcher: DockingOnOff) extends InterfaceElement {
   private val strings = Array("")
 
   def forceUpdate(): Unit = {
@@ -33,7 +34,7 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
             our_orbit_period_sec = our_orbit_ellipse.t
             os_orbit_period_sec = os_orbit_ellipse.t
           } yield {
-              if (InterfaceHolder.dockingSwitcher.dockingEnabled && player_ship.coord.dist(monitoring_ship.coord) <= 2000) {
+              if (dockingSwitcher.dockingEnabled && player_ship.coord.dist(monitoring_ship.coord) <= 2000) {
                 val dp = player_ship.docking_points.sortBy(_.curP1.dist2(monitoring_ship.coord)).head
                 val ship_docking_point = dp.curP1 + 0.5 * (dp.curP2 - dp.curP1)
                 monitoring_ship.docking_points.sortBy(osdp => osdp.curP1.dist(ship_docking_point)).headOption match {
@@ -88,7 +89,7 @@ class OtherShipInfo(val monitoring_ship: PolygonShip) extends InterfaceElement {
               }
             }).getOrElse(/*"N/A", */ "N/A")
           val dist = mOrKmOrMKm(player_ship.coord.dist(monitoring_ship.coord))
-          val vel = msecOrKmsec((player_ship.linearVelocity - monitoring_ship.linearVelocity) * (player_ship.coord - monitoring_ship.coord).n)
+          val vel = msecOrKmsecOrKmhour((player_ship.linearVelocity - monitoring_ship.linearVelocity) * (player_ship.coord - monitoring_ship.coord).n)
           val activeStr = if(monitoring_ship.currentState.active) "" else "!"
           strings(0) = s"$activeStr${monitoring_ship.name}: dist=$dist, vel=$vel, $need_orbit_period_str"
         }

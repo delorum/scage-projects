@@ -4,11 +4,13 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller._
 
-class SpaceStation2(index: Int,
-                    init_coord: DVec,
-                    init_velocity: DVec = DVec.dzero,
-                    init_rotation: Double = 0.0,
-                    ship_designer:Boolean = false) extends PolygonShip(index, "Станция Огонек", init_coord, init_velocity, init_rotation, ship_designer, true) {
+abstract class SpaceStation2(
+    index: Int,
+    init_coord: DVec,
+    init_velocity: DVec = DVec.dzero,
+    init_rotation: Double = 0.0,
+    ship_designer: Boolean = false)
+  extends PolygonShip(index, "Станция Огонек", init_coord, init_velocity, init_rotation, ship_designer, true) {
   private val _payload: Double = 50 * 1000
   private var _fuel_mass: Double = 50 * 1000
 
@@ -25,7 +27,7 @@ class SpaceStation2(index: Int,
 
   lazy val engine_size: Double = 10
 
-  lazy val points:List[DVec] = List(
+  lazy val points: List[DVec] = List(
     DVec(-50.0, -30.0),
     DVec(50.0, -30.0),
     DVec(90.0, -10.0),
@@ -86,8 +88,20 @@ class SpaceStation2(index: Int,
   )
 
   val docking_points = List(
-    new DockingPoints(DVec(-130.0, 1.5), DVec(-130.0, -1.5), this, Some(DisabledEngine(four.index)), createOrderedHull(List(11 -> 12, 1 -> 10))),
-    new DockingPoints(DVec(130.0, -1.5), DVec(130.0, 1.5), this, Some(DisabledEngine(six.index)), createOrderedHull(List(5 -> 12, 1 -> 4)))
+    new DockingPoints(
+      DVec(-130.0, 1.5),
+      DVec(-130.0, -1.5),
+      this,
+      Some(DisabledEngine(four.index)),
+      createOrderedHull(List(11 -> 12, 1 -> 10))
+    ),
+    new DockingPoints(
+      DVec(130.0, -1.5),
+      DVec(130.0, 1.5),
+      this,
+      Some(DisabledEngine(six.index)),
+      createOrderedHull(List(5 -> 12, 1 -> 4))
+    )
   )
 
   def preserveVelocity(vel: DVec) {}

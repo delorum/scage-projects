@@ -5,8 +5,10 @@ import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements.OtherShipInfo
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.ProxyShip
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.{InterfaceHolderAware, ProtectedInterfaceHolderAware}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.{ProtectedShipsHolderAware, ShipsHolderAware}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.{TimeConstants, Main}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Main, TimeConstants}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -129,7 +131,9 @@ abstract class PolygonShip(
     protected val init_velocity: DVec = DVec.dzero,
     protected val init_rotation: Double = 0,
     ship_designer: Boolean,
-    create_interface: Boolean) {
+    create_interface: Boolean)
+  extends ProtectedShipsHolderAware
+  with ProtectedInterfaceHolderAware {
   println(s"$name -> $index")
   protected var selected_engine: Option[Engine] = None
 
@@ -251,6 +255,7 @@ abstract class PolygonShip(
       val correction = osdp.curP1 - dp.curP1
       ship.currentState.coord += correction
       val proxy_ship = new ProxyShip(ship, ship.coord, ship.rotation, dp, os, os.coord, os.rotation, osdp)
+        with ProtectedShipsHolderAwareImpl with ProtectedInterfaceHolderAwareImpl
       ship.currentState.active = false
       os.currentState.active = false
       ship.setDocked(Some(DockData(os, dp, osdp, proxy_ship)))
@@ -261,12 +266,12 @@ abstract class PolygonShip(
   }
 
   def undock(): Unit = {
-    dock_data.foreach { case DockData(os, our_dp, other_ship_dp, proxy_ship) =>
+    dock_data.foreach { case DockData(os, _, _, proxy_ship) =>
       proxy_ship.updateShipState(index)
       proxy_ship.updateShipState(os.index)
       currentState.active = true
       os.currentState.active = true
-      ShipsHolder.removeShipByIndex(proxy_ship.index)
+      shipsHolder.removeShipByIndex(proxy_ship.index)
       os.setDocked(None)
     }
     dock_data = None
@@ -396,15 +401,15 @@ abstract class PolygonShip(
                 .terminalVelocity(mass, coord, air_planet.coord, 28, 0.5)
                 .map(tvel => vel2 / tvel * 100)
                 .getOrElse(100.0)
-              f"${msecOrKmsec(vel1)} $atmo_efficiency%.2f%% (${or.planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
+              f"${msecOrKmsecOrKmhour(vel1)} $atmo_efficiency%.2f%% (${or.planet.name}), [b${msecOrKmsecOrKmhour(linearVelocity.norma)} (абсолютная)]"
             } else {
-              s"${msecOrKmsec((linearVelocity - or.planet_state.vel).norma)} (${or.planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
+              s"${msecOrKmsecOrKmhour((linearVelocity - or.planet_state.vel).norma)} (${or.planet.name}), [b${msecOrKmsecOrKmhour(linearVelocity.norma)} (абсолютная)]"
             }
           case _ =>
-            s"${msecOrKmsec((linearVelocity - or.planet_state.vel).norma)} (${or.planet.name}), [b${msecOrKmsec(linearVelocity.norma)} (абсолютная)]"
+            s"${msecOrKmsecOrKmhour((linearVelocity - or.planet_state.vel).norma)} (${or.planet.name}), [b${msecOrKmsecOrKmhour(linearVelocity.norma)} (абсолютная)]"
         }
       case None =>
-        s"${msecOrKmsec(linearVelocity.norma)} (абсолютная)"
+        s"${msecOrKmsecOrKmhour(linearVelocity.norma)} (абсолютная)"
     }
   }
 
@@ -561,7 +566,7 @@ abstract class PolygonShip(
           println(s"${e.ship.name} ${e.name} ${e.force_dir} $rotation_diff $force_dir")
           throw new Exception("engine force dir other than vertical or horizontal is not supported")
       }
-      if (globalScale >= 20 && InterfaceHolder.namesSwitcher.showNames) {
+      if (globalScale >= 20 && interfaceHolder.namesSwitcher.showNames) {
         print(e.name, e.position.actualPos.toVec, (max_font_size / globalScale).toFloat, WHITE)
         drawArrow(center, center + force_dir * radius / 6, WHITE)
       }
@@ -617,7 +622,7 @@ abstract class PolygonShip(
         drawFilledCircle(d.our_dp.p1.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
         drawFilledCircle(d.our_dp.p2.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
       })
-      if (InterfaceHolder.dockingSwitcher.dockingEnabled && ship_interface.exists(!_.isMinimized)) {
+      if (interfaceHolder.dockingSwitcher.dockingEnabled && ship_interface.exists(!_.isMinimized)) {
         shipCloser2Km.foreach(s =>
           nearestFreeDockingPoints(s.coord).foreach(dp => {
             val (p1_on_the_right_way, p2_on_the_right_way) = {
@@ -778,18 +783,18 @@ abstract class PolygonShip(
     if (flight_mode == Maneuvering) {
       val ten_min_or_max_time_at_full_power =
         math.min((fuelMass / engines.map(_.maxFuelConsumptionPerTact).max).toLong, 37800)
-      if (InterfaceHolder.dockingSwitcher.dockingEnabled) {
+      if (interfaceHolder.dockingSwitcher.dockingEnabled) {
         engines.foreach(e => e.power = 10000)
       } else {
         engines.foreach(e =>
           e.power = {
-            if (InterfaceHolder.gSwitcher.maxGSet) {
+            if (interfaceHolder.gSwitcher.maxGSet) {
               math.min(
-                thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * earth.g + {
+                thisOrActualProxyShipMass * interfaceHolder.gSwitcher.maxG * earth.g + {
                   earth
                     .airResistance(
                       currentState,
-                      earth.currentState, /*ShipsHolder.currentShipStatesExceptShip(index), */ 28,
+                      earth.currentState, /*shipsHolder.currentShipStatesExceptShip(index), */ 28,
                       0.5
                     )
                     .norma
@@ -844,7 +849,7 @@ abstract class PolygonShip(
 
   def flightModeStr: String = flightMode match {
     case NearestPlanetVelocity =>
-      s"уравнять скорость с ближайшей планетой: ${msecOrKmsec(vertical_speed_msec)}, ${msecOrKmsec(horizontal_speed_msec)}"
+      s"уравнять скорость с ближайшей планетой: ${msecOrKmsecOrKmhour(vertical_speed_msec)}, ${msecOrKmsecOrKmhour(horizontal_speed_msec)}"
     case x => x.rusStr
   }
 
@@ -852,7 +857,7 @@ abstract class PolygonShip(
    * Все другие корабли, отсортированные по расстоянию по убыванию (первый - ближайший).
    * @return
    */
-  protected def shipsNear: Seq[PolygonShip] = ShipsHolder.ships
+  protected def shipsNear: Seq[PolygonShip] = shipsHolder.ships
     .filter(s => {
       s.currentState.active &&
       s.thisOrActualProxyShipIndex != thisOrActualProxyShipIndex &&
@@ -865,7 +870,7 @@ abstract class PolygonShip(
    * @param x - расстояние в километрах
    * @return
    */
-  protected def shipsCloserXKm(x: Long): Seq[PolygonShip] = ShipsHolder.ships
+  protected def shipsCloserXKm(x: Long): Seq[PolygonShip] = shipsHolder.ships
     .filter(s => {
       s.currentState.active &&
       s.thisOrActualProxyShipIndex != thisOrActualProxyShipIndex &&
@@ -987,7 +992,7 @@ abstract class PolygonShip(
     }
     ship_interface.foreach(_.forceUpdate())
     if (crash) {
-      ShipsHolder.removeShip(this)
+      shipsHolder.removeShip(this)
       delOperation(render_id)
       /*println(s"wreck_parts.map(_.area).sum == shape.area = ${wreck_parts.map(_.area).sum == shape.area}")
       println(s"wreck_parts.map(_.area).sum = ${wreck_parts.map(_.area).sum}")
@@ -1016,7 +1021,7 @@ abstract class PolygonShip(
   private def wreckRandomVelocity(maybe_obstacle: Option[MutableBodyState]): () => DVec = {
     maybe_obstacle match {
       case Some(obstacle) =>
-        ShipsHolder.shipByIndex(obstacle.index) match {
+        shipsHolder.shipByIndex(obstacle.index) match {
           case Some(ship_obstacle) =>
             val dir_deg = 140.0 + math.random * 80.0
             // val new_vel = ((mass - ship_obstacle.mass)*linearVelocity + 2*ship_obstacle.mass*ship_obstacle.linearVelocity)/(mass + ship_obstacle.mass)
@@ -1157,9 +1162,9 @@ abstract class PolygonShip(
   def shipInterface: Option[OtherShipInfo] = ship_interface
 
   if (!ship_designer) {
-    ShipsHolder.addShip(this)
+    shipsHolder.addShip(this)
     if (create_interface) {
-      ship_interface = Some(InterfaceHolder.addShipInterface(this))
+      ship_interface = Some(interfaceHolder.addShipInterface(this))
     }
   }
 
@@ -1406,11 +1411,11 @@ abstract class PolygonShip(
 
   def checkEnginesPower(reactive_force: DVec): Unit = {
     // автоматическая регулировка мощности двигателей в соответствие с настройкой gSwitcher
-    if (InterfaceHolder.gSwitcher.maxGSet && pilot_average_g > InterfaceHolder.gSwitcher.maxG) {
+    if (interfaceHolder.gSwitcher.maxGSet && pilot_average_g > interfaceHolder.gSwitcher.maxG) {
       val active_engines = engines.filter(e => e.active && 0 < e.stopMomentTacts)
       if (active_engines.nonEmpty) {
         val cur_force = reactive_force.norma
-        val allowed_force = thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * earth.g
+        val allowed_force = thisOrActualProxyShipMass * interfaceHolder.gSwitcher.maxG * earth.g
         if (cur_force > allowed_force) {
           val force_diff = cur_force - allowed_force
           val force_diff_for_engine = force_diff / active_engines.length
@@ -1460,7 +1465,7 @@ abstract class PolygonShip(
     // сила от реактивных двигателей и сила сопротивления воздуха
     val air_resistance = earth.airResistance(
       currentState,
-      earth.currentState, /*ShipsHolder.currentShipStatesExceptShip(index), */ 28,
+      earth.currentState, /*shipsHolder.currentShipStatesExceptShip(index), */ 28,
       0.5
     )
     val reactive_force = currentReactiveForce(0, currentState) + air_resistance
@@ -1484,18 +1489,18 @@ abstract class PolygonShip(
 
   def syncOtherEnginesPower(except_engine_index: Int): Unit = {
     println(s"syncOtherEnginesPower(except_engine=$except_engine_index)")
-    if (InterfaceHolder.gSwitcher.maxGSet) {
+    if (interfaceHolder.gSwitcher.maxGSet) {
       val active_engines_except =
         engines.filter(e => e.active && 0 < e.stopMomentTacts && e.index != except_engine_index)
       if (active_engines_except.nonEmpty) {
         val air_resistance = earth.airResistance(
           currentState,
-          earth.currentState, /*ShipsHolder.currentShipStatesExceptShip(index), */ 28,
+          earth.currentState, /*shipsHolder.currentShipStatesExceptShip(index), */ 28,
           0.5
         )
         val reactive_force = currentReactiveForce(0, currentState) + air_resistance
         val cur_force = reactive_force.norma
-        val allowed_force = thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * earth.g
+        val allowed_force = thisOrActualProxyShipMass * interfaceHolder.gSwitcher.maxG * earth.g
         if (cur_force > allowed_force) {
           val force_diff = cur_force - allowed_force
           val force_diff_for_engine = force_diff / active_engines_except.length

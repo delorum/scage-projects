@@ -5,4 +5,5 @@ import com.github.dunnololda.scageprojects.orbitalkiller.MutableBodyState
 
 case class MutableSystemPart(body: MutableBodyState,
                              force: (Long, EvolutionHelper) => DVec,
-                             torque: (Long, EvolutionHelper) => Double)
+                             torque: (Long, EvolutionHelper) => Double,
+                             onCollision: () => Unit)

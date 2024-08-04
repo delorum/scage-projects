@@ -14,15 +14,15 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
           case Some(bs) =>
             insideSphereOfInfluenceOfCelestialBody(bs.coord, bs.mass, future_planet_states) match {
               case Some((planet, planet_state)) =>
-                s"${msecOrKmsec((bs.vel - planet_state.vel).norma)} (${planet.name}), ${msecOrKmsec(bs.vel.norma)} (абсолютная)"
+                s"${msecOrKmsecOrKmhour((bs.vel - planet_state.vel).norma)} (${planet.name}), ${msecOrKmsecOrKmhour(bs.vel.norma)} (абсолютная)"
               case None =>
-                s"${msecOrKmsec(bs.vel.norma)} (абсолютная)"
+                s"${msecOrKmsecOrKmhour(bs.vel.norma)} (абсолютная)"
             }
           case None => "N/A"
         }
       } else {
         //f"${msecOrKmsec(ship.linearVelocity.norma)} (velx = ${msecOrKmsec(ship.linearVelocity.x)}, vely = ${msecOrKmsec(ship.linearVelocity.y)})"
-        msecOrKmsec(player_ship.linearVelocity.norma)
+        msecOrKmsecOrKmhour(player_ship.linearVelocity.norma)
       }
     }
   }

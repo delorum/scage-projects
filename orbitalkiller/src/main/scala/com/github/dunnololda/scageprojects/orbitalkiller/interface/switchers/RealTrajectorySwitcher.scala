@@ -1,11 +1,13 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers
 
 import com.github.dunnololda.scage.support.messages.ScageMessage
-import com.github.dunnololda.scageprojects.orbitalkiller.{InterfaceHolder, InterfaceSwitcher, RealTrajectory}
+import com.github.dunnololda.scageprojects.orbitalkiller.{InterfaceSwitcher, RealTrajectory}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main.interfaceHolder
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.InterfaceHolder
 
 class RealTrajectorySwitcher extends InterfaceSwitcher {
-  private def enabledRealTrajectorySwitcher = if(InterfaceHolder.realTrajectorySwitcher.numPoints > RealTrajectory.curPoints) {
+  private def enabledRealTrajectorySwitcher = if(interfaceHolder.realTrajectorySwitcher.numPoints > RealTrajectory.curPoints) {
     s"RT\\[${com.github.dunnololda.scageprojects.orbitalkiller.timeStrSec(RealTrajectory.curPoints*1000)}/${com.github.dunnololda.scageprojects.orbitalkiller.timeStrSec(numPoints*1000)}\\]"
   } else {
     s"RT\\[${com.github.dunnololda.scageprojects.orbitalkiller.timeStrSec(numPoints*1000)}\\]"

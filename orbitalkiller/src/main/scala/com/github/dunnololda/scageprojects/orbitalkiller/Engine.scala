@@ -74,10 +74,10 @@ class Engine(
   def powerPercent_=(new_power_percent: Long) {
     if (new_power_percent >= 0 && new_power_percent <= 100) {
       val new_power = {
-        if (InterfaceHolder.gSwitcher.maxGSet) {
+        if (interfaceHolder.gSwitcher.maxGSet) {
           math.min(
             max_power * new_power_percent / 100.0,
-            ship.thisOrActualProxyShipMass * InterfaceHolder.gSwitcher.maxG * earth.g + {
+            ship.thisOrActualProxyShipMass * interfaceHolder.gSwitcher.maxG * earth.g + {
               earth
                 .airResistance(
                   ship.currentState,
@@ -97,7 +97,7 @@ class Engine(
         _power = prev
       } else {
         if (
-          (ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) && InterfaceHolder.gSwitcher.maxGSet
+          (ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) && interfaceHolder.gSwitcher.maxGSet
         ) {
           ship.syncOtherEnginesPower(index)
         }
@@ -124,7 +124,7 @@ class Engine(
           // timeMultiplier = realtime
           if (workTimeTacts == 0) workTimeTacts = 10
           if (
-            (ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) && InterfaceHolder.gSwitcher.maxGSet
+            (ship.flightMode == FreeFlightMode || ship.flightMode == Maneuvering) && interfaceHolder.gSwitcher.maxGSet
           ) {
             ship.syncOtherEnginesPower(index)
           }

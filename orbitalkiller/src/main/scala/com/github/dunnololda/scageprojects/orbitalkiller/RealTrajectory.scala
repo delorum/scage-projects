@@ -1,9 +1,9 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.{TimeConstants, Main}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Main, TimeConstants}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
-
+import Main._
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -101,7 +101,7 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
 
   def continue(): Unit = {
     if (
-      InterfaceHolder.realTrajectorySwitcher.showRealTrajectory && InterfaceHolder.realTrajectorySwitcher.numPoints > curPoints
+      interfaceHolder.realTrajectorySwitcher.showRealTrajectory && interfaceHolder.realTrajectorySwitcher.numPoints > curPoints
     ) {
       if (real_trajectory.length >= 3) {
         val prev_line = real_trajectory(real_trajectory.length - 2) - real_trajectory(real_trajectory.length - 3)
@@ -114,7 +114,7 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
       // 6300 итераций - 100 секунд симуляции при базовом dt = 1/63 секунды
       var i = 1
       var seconds: Double = 0
-      while (i < 6301 && curPoints + seconds < InterfaceHolder.realTrajectorySwitcher.numPoints) {
+      while (i < 6301 && curPoints + seconds < interfaceHolder.realTrajectorySwitcher.numPoints) {
         system_evolution_copy.base_dt = chooseDt
         system_evolution_copy
           .bodyState(Main.player_ship.index)
@@ -125,7 +125,7 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
             bs.mass = Main.player_ship.thisOrActualProxyShipCurrentMass(system_evolution_copy.tacts)
           })
         system_evolution_copy.step()
-        (InterfaceHolder.orbitSwitcher.calculateOrbitAround match {
+        (interfaceHolder.orbitSwitcher.calculateOrbitAround match {
           case Some(idx) =>
             for {
               player_coord <- system_evolution_copy.bodyState(Main.player_ship.thisOrActualProxyShipIndex).map(_.coord)
@@ -164,8 +164,8 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
         i += 1
       }
       curPoints += seconds.toLong
-      if (curPoints > InterfaceHolder.realTrajectorySwitcher.numPoints) {
-        InterfaceHolder.realTrajectorySwitcher.numPoints = curPoints
+      if (curPoints > interfaceHolder.realTrajectorySwitcher.numPoints) {
+        interfaceHolder.realTrajectorySwitcher.numPoints = curPoints
       }
       val e = energy
       val x = e.map(_._2).sum - prev_energy.map(_._2).sum
@@ -173,13 +173,13 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
         println(
           f"real trajectory dt ${system_evolution_copy.base_dt / TimeConstants.base_dt}%.2f*base_dt, dE=${x / prev_energy
               .map(_._2)
-              .sum}%.10f, curPoints/numPoints $curPoints/${InterfaceHolder.realTrajectorySwitcher.numPoints} dropped/length $dropped/${real_trajectory.length}"
+              .sum}%.10f, curPoints/numPoints $curPoints/${interfaceHolder.realTrajectorySwitcher.numPoints} dropped/length $dropped/${real_trajectory.length}"
         )
       } else {
         println(
           f"real trajectory dt ${system_evolution_copy.base_dt / TimeConstants.base_dt}%.2f*base_dt, dE=${x / prev_energy
               .map(_._2)
-              .sum}%.10f, min_m = $min_m, max_m = $max_m, curPoints/numPoints $curPoints/${InterfaceHolder.realTrajectorySwitcher.numPoints} dropped/length $dropped/${real_trajectory.length}"
+              .sum}%.10f, min_m = $min_m, max_m = $max_m, curPoints/numPoints $curPoints/${interfaceHolder.realTrajectorySwitcher.numPoints} dropped/length $dropped/${real_trajectory.length}"
         )
       }
       prev_energy = energy

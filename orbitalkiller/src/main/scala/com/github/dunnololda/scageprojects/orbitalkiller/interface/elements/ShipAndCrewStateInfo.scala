@@ -3,19 +3,9 @@ package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 class ShipAndCrewStateInfo extends InterfaceElement {
-  private val stringsWithAirPressure = Array(
-  player_ship.pilotStateStr,
-  player_ship.massStr,
-  player_ship.shadowSideStr, {
-    val air_res = earth.airResistance(player_ship.currentState, earth.currentState, /*ShipsHolder.currentShipStatesExceptShip(player_ship.index), */28, 0.5).norma
-    f"Атмосферное давление: ${earth.airPressureMmHg(player_ship.coord, earth.coord)}%.2f мм рт. ст. Сопротивление воздуха: ${newtonOrKilonewton(air_res)}"
-  }
-  )
-  private val stringsWithoutAirPressure = Array(
-    player_ship.pilotStateStr,
-    player_ship.massStr,
-    player_ship.shadowSideStr
-  )
+  private val stringsWithAirPressure = Array("N/A", "N/A", "N/A", "N/A")
+
+  private val stringsWithoutAirPressure = Array("N/A", "N/A", "N/A")
 
   private var selectedStrings = stringsWithAirPressure
 
