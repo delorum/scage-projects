@@ -6,7 +6,8 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main.interfaceHold
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Collider.maybeCollisions
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Space.splitSpace
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.{Contact, MutableContact, Shape, Space}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.contacts.{Contact, MutableContact}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.{Shape, Space}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.Phys2dUtils.DVec2DoublePhys2dVector
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.{AdditionalSymbols, Main}
 

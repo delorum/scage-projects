@@ -4,6 +4,7 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.{BoxBoxCollider, BoxCircleCollider, CircleBoxCollider, CircleCircleCollider, LineBoxCollider, LineCircleCollider, LineLineCollider, LinePolygonCollider, PolygonBoxCollider, PolygonCircleCollider, PolygonPolygonCollider, Body => Phys2dBody, Collider => Phys2dCollider}
 import com.github.dunnololda.scageprojects.orbitalkiller.{MutableBodyState, colliders}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.{BoxShape, CircleShape, LineShape, PolygonShape}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.contacts.{GeometricContactData, MutableContact}
 
 object Collider {
   private val contacts = Array.fill(10)(new colliders.phys2d.Contact)

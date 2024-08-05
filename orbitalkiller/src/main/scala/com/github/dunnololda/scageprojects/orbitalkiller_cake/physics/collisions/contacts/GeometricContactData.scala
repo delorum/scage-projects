@@ -1,4 +1,4 @@
-package com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions
+package com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.contacts
 
 import com.github.dunnololda.scage.ScageLibD.DVec
 
