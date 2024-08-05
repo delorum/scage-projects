@@ -1,66 +1,18 @@
 package com.github.dunnololda.scageprojects
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.{Body => Phys2dBody, BodyList => Phys2dBodyList, StaticBody => Phys2dStaticBody}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main.interfaceHolder
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Collider.findCollisions
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Space
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Space.splitSpace
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.contacts.{Contact, MutableContact}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.{Shape, Space}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.Phys2dUtils.DVec2DoublePhys2dVector
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.factors.Factors.factors5
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.{AdditionalSymbols, Main}
 
 import scala.annotation.tailrec
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 import scala.language.reflectiveCalls
 
 package object orbitalkiller {
-
-
-
-
-
-  implicit class Phys2dBody2BodyState(pb: Phys2dBody) {
-    def toBodyState: Option[BodyState] = {
-      pb.getUserData match {
-        case (index: Int, shape: Shape) =>
-          Some(BodyState(
-            index = index,
-            mass = pb.getMass,
-            acc = DVec.dzero,
-            vel = DVec(pb.getVelocity.getX, pb.getVelocity.getY),
-            coord = DVec(pb.getPosition.getX, pb.getPosition.getY),
-            ang_acc = 0.0,
-            ang_vel = pb.getAngularVelocity.toDeg,
-            ang = pb.getRotation.toDeg,
-            shape = shape,
-            is_static = pb.isStatic
-          ))
-        case _ => None
-      }
-    }
-  }
-
-  implicit class Phys2dBodyList2List(pbl: Phys2dBodyList) {
-    def toList: List[(Phys2dBody, BodyState)] = {
-      (for {
-        i <- 0 until pbl.size()
-        pb = pbl.get(i)
-        bs <- pb.toBodyState
-      } yield (pb, bs)).toList
-    }
-
-    def toBodyStateList: List[BodyState] = {
-      (for {
-        i <- 0 until pbl.size()
-        pb = pbl.get(i)
-        bs <- pb.toBodyState
-      } yield bs).toList
-    }
-  }
 
   @tailrec
   def correctAngle(angle: Double): Double = {
@@ -68,92 +20,6 @@ package object orbitalkiller {
     else if (angle < 0) correctAngle(angle + 360)
     else angle
   }
-
-  // структура хранит и по необходимости довычисляет набор простых чисел. Вычисление производится методом решета Эратосфена
-  object erat2 {
-    private var eratl = (2L, Seq[Long](2))
-
-    def apply(n: Long): Seq[Long] = {
-      def _erat(_n: Long, l: Seq[Long], p: Long): Seq[Long] = {
-        println(p)
-        if (p * p > _n) l
-        else {
-          val m = l.filterNot(x => x > p && x % p == 0)
-          _erat(_n, m, m.find(_ > p).get)
-        }
-      }
-
-      if (n > eratl._1) {
-        println("generating primes...")
-        val new_eratl_2 = _erat(n * 2, eratl._2 ++ (eratl._1 + 1 to n * 2), 2)
-        eratl = (n * 2, new_eratl_2)
-      }
-      eratl._2.view.takeWhile(_ <= n)
-    }
-
-    def clear() {
-      eratl = (2L, Seq[Long](2))
-      println("erased primes")
-    }
-  }
-
-  // быстрая функция проверки, является ли число простым. Идея в том, чтобы проверить, делиться ли число n на простые от 2 до 
-  // корня из числа n. Список простых формируется по мере надобности.
-  def isPrime(n: Long, sqrt_n: Long = -1l, cur_p: Long = 1l): Boolean = {
-    if (sqrt_n == -1l) isPrime(n, math.sqrt(n).toLong, cur_p)
-    else {
-      if (cur_p >= sqrt_n) true
-      else {
-        val new_primes_portion = erat2(math.min(cur_p * 2, sqrt_n)).dropWhile(_ <= cur_p)
-        if (new_primes_portion.isEmpty) true
-        else {
-          val res = new_primes_portion.forall(n % _ != 0)
-          if (res) isPrime(n, sqrt_n, new_primes_portion.last)
-          else false
-        }
-      }
-    }
-  }
-
-  val pfacts = mutable.HashMap[Long, List[Long]]()
-
-  // возвращает список простых чисел, произведение которых равно данному числу n
-  def primeFactors3(n: Long): List[Long] = {
-    def _primeFactors3(_n: Long, facs: List[Long] = Nil): List[Long] = {
-      pfacts.get(_n).map(x => x ::: facs).getOrElse(
-        erat2(math.sqrt(_n).toLong).find(_n % _ == 0) match {
-          case Some(m) => _primeFactors3(_n / m, m :: facs)
-          case None => _n :: facs
-        }
-      )
-    }
-    _primeFactors3(n)
-  }
-
-  // возвращает список простых чисел, произведение которых равно данному числу n, кеширует результат для ускорения последующих запросов
-  def primeFactors4(n: Long) = {
-    pfacts.getOrElseUpdate(n, primeFactors3(n))
-  }
-
-  // возвращает список делителей данного числа n (простых и непростых)
-  def factors4(n: Long) = {
-    val res23 = primeFactors4(n)
-    (1L :: (1 to res23.length).flatMap(i => res23.combinations(i).map(_.product)).toList).filterNot(_ == n) ::: n :: Nil
-  }
-
-  private val facts = mutable.HashMap[Long, List[Long]]()
-
-  // возвращает список делителей, кеширует результат
-  def factors5(n: Long) = {
-    facts.getOrElseUpdate(n, factors4(n))
-  }
-
-  case class CollisionData(
-                            collided_body: BodyState,
-                            contact_point: DVec,
-                            normal: DVec,
-                            separation: Double,
-                            contacts: List[net.phys2d.raw.Contact], new_velocity: DVec, new_angular_velocity: Double)
 
   def mutableSystemEvolution(mutable_system: Seq[(MutableBodyState, Seq[MutableBodyState])],
                              base_dt: Double, // в секундах

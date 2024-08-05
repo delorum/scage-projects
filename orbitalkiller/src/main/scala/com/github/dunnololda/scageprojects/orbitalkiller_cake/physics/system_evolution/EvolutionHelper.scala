@@ -3,7 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_ev
 import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller.gravityForce
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.MutableBodyState
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
 
 import scala.collection.mutable
 

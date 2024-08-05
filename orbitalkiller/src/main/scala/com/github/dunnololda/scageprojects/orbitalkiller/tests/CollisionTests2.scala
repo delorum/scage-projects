@@ -3,8 +3,8 @@ package com.github.dunnololda.scageprojects.orbitalkiller.tests
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.handlers.RendererD
 import com.github.dunnololda.scageprojects.orbitalkiller._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.BodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.{BoxShape, CircleShape, PolygonShape}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.BodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 
 import scala.collection.mutable

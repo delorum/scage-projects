@@ -2,7 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_ev
 
 import com.github.dunnololda.scage.ScageLibD.Double2Vecrich
 import com.github.dunnololda.scage.support.DVec
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.MutableBodyState
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.SixDimVector
 
 // http://myselph.de/gamePhysics/equalityConstraints.html

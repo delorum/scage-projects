@@ -8,7 +8,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.ProtectedInterfaceHolderAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ProtectedShipsHolderAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.{BodyState, MutableBodyState}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Main, TimeConstants}
 

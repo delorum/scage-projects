@@ -1,10 +1,10 @@
-package com.github.dunnololda.scageprojects.orbitalkiller_cake.physics
+package com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state
 
 import com.github.dunnololda.scage.ScageLibD.{DVec, _}
 import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.{Body => Phys2dBody, StaticBody => Phys2dStaticBody}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.{AABB, Shape}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.contacts.MutableContact
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.{AABB, Shape}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.Phys2dUtils.DVec2DoublePhys2dVector
 
 import scala.collection.mutable.ArrayBuffer

@@ -4,8 +4,8 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.BodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.BodyState
 
 abstract class Rocket1(
     index: Int,

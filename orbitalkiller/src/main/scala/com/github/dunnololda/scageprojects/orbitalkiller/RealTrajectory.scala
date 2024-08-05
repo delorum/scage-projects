@@ -8,7 +8,7 @@ import Main._
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.MutableBodyState
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
 
 object RealTrajectory extends RealTrajectoryC(None)
 object RealTrajectory2 extends RealTrajectoryC(Some(1))

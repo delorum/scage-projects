@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.contacts
 
-import com.github.dunnololda.scage.ScageLibD.{DVec, _}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.MutableBodyState
+import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
 
 case class MutableContact(a: MutableBodyState, b: MutableBodyState, contact_point: DVec, normal: DVec, separation: Double) {
   def solveCollision(_dt: Double): Unit = {

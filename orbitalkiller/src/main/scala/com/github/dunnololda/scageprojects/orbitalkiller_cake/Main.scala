@@ -8,8 +8,8 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.OrbitalKillerComponents
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ShipsHolder
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.BoxShape
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode._
