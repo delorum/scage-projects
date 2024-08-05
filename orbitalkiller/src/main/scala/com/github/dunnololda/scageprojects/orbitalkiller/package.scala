@@ -10,8 +10,6 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.reflectiveCalls
 
 package object orbitalkiller {
-  val G: Double = 6.6742867E-11
-
   // axis-aligned bounding box
   case class AABB(center: DVec, width: Double, height: Double) {
     val half_width = width / 2

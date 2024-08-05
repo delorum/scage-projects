@@ -1,8 +1,9 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials
 
 import com.github.dunnololda.scage.ScageLibD.DVec
-import com.github.dunnololda.scageprojects.orbitalkiller.{CelestialBody, G, Planet, PlanetWithAir, Star, speedToHaveOrbitWithParams}
+import com.github.dunnololda.scageprojects.orbitalkiller.{CelestialBody, Planet, PlanetWithAir, Star, speedToHaveOrbitWithParams}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.system_evolution.SystemEvolutionAware
 
 trait CelestialsSupport extends CelestialsAware with SystemEvolutionAware {

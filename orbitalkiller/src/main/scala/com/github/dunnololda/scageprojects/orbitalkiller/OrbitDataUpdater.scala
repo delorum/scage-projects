@@ -4,7 +4,7 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
-
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
 import scala.collection.{Set, mutable}
 
 object OrbitDataUpdater {
