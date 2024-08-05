@@ -11,7 +11,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Main, TimeConstants}
-
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 

@@ -8,7 +8,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Main, TimeConstants}
-
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 import scala.collection.mutable.ArrayBuffer
 
 abstract class Ship4(

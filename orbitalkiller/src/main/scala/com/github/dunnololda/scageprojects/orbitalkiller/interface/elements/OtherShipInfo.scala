@@ -7,6 +7,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers.DockingOnOff
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 
 class OtherShipInfo(val monitoring_ship: PolygonShip, dockingSwitcher: DockingOnOff) extends InterfaceElement {
   private val strings = Array("")

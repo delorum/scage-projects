@@ -2,6 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller.{InterfaceElement, _}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 
 class ShipParamsWhenEnginesOff extends InterfaceElement {
   def linearSpeedStrWhenEnginesOff: String = {

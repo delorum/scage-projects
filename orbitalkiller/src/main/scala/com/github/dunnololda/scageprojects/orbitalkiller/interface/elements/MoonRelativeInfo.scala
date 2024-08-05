@@ -5,6 +5,7 @@ import com.github.dunnololda.scage.support.ScageColor
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers.DegOrKm
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 class MoonRelativeInfo(degOrKm: DegOrKm) extends InterfaceElement {
   private val strings = Array("")
 

@@ -6,6 +6,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 
 import scala.collection.{Set, mutable}
 

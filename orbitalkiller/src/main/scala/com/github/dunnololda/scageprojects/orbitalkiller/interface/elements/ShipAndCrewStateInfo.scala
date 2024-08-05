@@ -2,6 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils.newtonOrKilonewton
 class ShipAndCrewStateInfo extends InterfaceElement {
   private val stringsWithAirPressure = Array("N/A", "N/A", "N/A", "N/A")
 

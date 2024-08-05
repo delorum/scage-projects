@@ -1,7 +1,8 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 
-import com.github.dunnololda.scageprojects.orbitalkiller.{InterfaceElement, timeStrSec}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.{TimeConstants, Main}
+import com.github.dunnololda.scageprojects.orbitalkiller.InterfaceElement
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Main, TimeConstants}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 
 class TimeInfo extends InterfaceElement {
   private val strings_without_stop_moment = Array("")
