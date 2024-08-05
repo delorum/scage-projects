@@ -1,4 +1,4 @@
-package com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution
+package com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math
 
 class SixDimVector(val a1: Double, val a2: Double, val a3: Double, val a4: Double, val a5: Double, val a6: Double) {
   private val l = List(a1, a2, a3, a4, a5, a6)

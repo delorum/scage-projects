@@ -5,9 +5,10 @@ import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements.OtherShipInfo
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.ProxyShip
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.{InterfaceHolderAware, ProtectedInterfaceHolderAware}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.{ProtectedShipsHolderAware, ShipsHolderAware}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.ProtectedInterfaceHolderAware
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ProtectedShipsHolderAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Main, TimeConstants}
 

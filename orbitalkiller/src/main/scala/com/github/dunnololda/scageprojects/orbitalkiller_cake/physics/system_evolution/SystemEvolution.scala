@@ -2,8 +2,9 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_ev
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
-import com.github.dunnololda.scageprojects.orbitalkiller.{MutableBodyState, correctAngle}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Collider.maybeCollisions
+import com.github.dunnololda.scageprojects.orbitalkiller.correctAngle
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.MutableBodyState
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Collider.findCollisions
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -149,7 +150,7 @@ class SystemEvolution(
           if b2.active
           if !b1.is_static || !b2.is_static
           if !excludeCollisionCheck(b1.index, b2.index)
-          c <- maybeCollisions(b1, b2)
+          c <- findCollisions(b1, b2)
         } yield c
       } else Nil
       // println("===============")

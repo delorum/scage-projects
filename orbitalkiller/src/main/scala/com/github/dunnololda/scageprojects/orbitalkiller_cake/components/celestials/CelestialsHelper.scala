@@ -1,6 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials
 
-import com.github.dunnololda.scageprojects.orbitalkiller.{CelestialBody, MutableBodyState, equalGravityRadius}
+import com.github.dunnololda.scageprojects.orbitalkiller.CelestialBody
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 
 import scala.collection.{Map, immutable}

@@ -2,12 +2,13 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.ships._
-import com.github.dunnololda.scageprojects.orbitalkiller.{BodyState, CelestialBody, CirclularOrbit, EllipseOrbit, FreeFlightMode, HelpScreen, HyperbolaOrbit, KeplerOrbit, Killrot, Maneuvering, MutableBodyState, NearestPlanetVelocity, NearestShipAligned, NearestShipAutoDocking, NearestShipVelocity, OppositeRelativeVelocityAligned, OrbitDataUpdater, RealTrajectory, RelativeVelocityAligned, calculateOrbit, equalGravityRadius, mOrKmOrMKm}
+import com.github.dunnololda.scageprojects.orbitalkiller.{CelestialBody, CirclularOrbit, EllipseOrbit, FreeFlightMode, HelpScreen, HyperbolaOrbit, KeplerOrbit, Killrot, Maneuvering, NearestPlanetVelocity, NearestShipAligned, NearestShipAutoDocking, NearestShipVelocity, OppositeRelativeVelocityAligned, OrbitDataUpdater, RealTrajectory, RelativeVelocityAligned, calculateOrbit, equalGravityRadius, mOrKmOrMKm}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.OrbitalKillerComponents
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ShipsHolder
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.BoxShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode

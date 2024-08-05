@@ -1,8 +1,9 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution
 
 import com.github.dunnololda.scage.support.DVec
-import com.github.dunnololda.scageprojects.orbitalkiller.{MutableBodyState, gravityForce}
+import com.github.dunnololda.scageprojects.orbitalkiller.gravityForce
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.MutableBodyState
 
 import scala.collection.mutable
 

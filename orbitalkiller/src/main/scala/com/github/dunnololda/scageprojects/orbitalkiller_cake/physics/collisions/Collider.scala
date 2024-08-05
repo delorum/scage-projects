@@ -1,8 +1,9 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions
 
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scageprojects.orbitalkiller.colliders
 import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.{BoxBoxCollider, BoxCircleCollider, CircleBoxCollider, CircleCircleCollider, LineBoxCollider, LineCircleCollider, LineLineCollider, LinePolygonCollider, PolygonBoxCollider, PolygonCircleCollider, PolygonPolygonCollider, Body => Phys2dBody, Collider => Phys2dCollider}
-import com.github.dunnololda.scageprojects.orbitalkiller.{MutableBodyState, colliders}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.{BoxShape, CircleShape, LineShape, PolygonShape}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.contacts.{GeometricContactData, MutableContact}
 
@@ -20,7 +21,7 @@ object Collider {
   private val polygon_polygon_collider = new PolygonPolygonCollider
   private val line_line_collider = new LineLineCollider
 
-  def maybeCollisions(body1: MutableBodyState, body2: MutableBodyState): List[MutableContact] = {
+  def findCollisions(body1: MutableBodyState, body2: MutableBodyState): List[MutableContact] = {
     def _collide(pb1: Phys2dBody, pb2: Phys2dBody, collider: Phys2dCollider): List[GeometricContactData] = {
       //println(s"${body1.index} <-> ${body2.index}")
       val num_contacts = collider.collide(contacts, pb1, pb2)

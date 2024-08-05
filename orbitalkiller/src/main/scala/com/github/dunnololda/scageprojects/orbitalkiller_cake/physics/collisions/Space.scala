@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions
 
 import com.github.dunnololda.scage.ScageLibD.DVec
-import com.github.dunnololda.scageprojects.orbitalkiller.MutableBodyState
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.MutableBodyState
 
 class Space(val bodies: Seq[MutableBodyState], val center: DVec, val width: Double, val height: Double) {
   def this(bodies: Seq[MutableBodyState], center: DVec) = {

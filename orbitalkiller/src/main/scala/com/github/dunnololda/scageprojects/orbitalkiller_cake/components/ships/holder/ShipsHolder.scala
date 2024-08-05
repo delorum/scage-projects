@@ -1,6 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder
 
-import com.github.dunnololda.scageprojects.orbitalkiller.{MutableBodyState, Planet, PlanetWithAir, PolygonShip, Star}
+import com.github.dunnololda.scageprojects.orbitalkiller.{Planet, PlanetWithAir, PolygonShip, Star}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 
 import scala.collection.mutable

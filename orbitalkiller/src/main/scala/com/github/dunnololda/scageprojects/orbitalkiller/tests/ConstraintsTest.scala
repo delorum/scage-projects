@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.tests
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.tests.BodyStatesHolder._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.MutableBodyState
 
 object ConstraintsTest extends ScageScreenAppD("Constraints Test", 640, 480) {
   val base_dt = 1.0 / 63.0

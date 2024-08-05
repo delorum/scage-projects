@@ -2,6 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.BodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.{BoxShape, LineShape}
 
 object RestingStateTests extends ScageScreenAppD("Resting State Tests", 800, 600) {
