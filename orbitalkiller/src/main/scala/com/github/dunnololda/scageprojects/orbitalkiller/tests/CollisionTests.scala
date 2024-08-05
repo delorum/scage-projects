@@ -2,7 +2,8 @@ package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLib._
 import com.github.dunnololda.scage.support.ScageId
-import com.github.dunnololda.scageprojects.orbitalkiller.{BodyState, BoxShape, CircleShape, LineShape, PolygonShape, _}
+import com.github.dunnololda.scageprojects.orbitalkiller.{BodyState, _}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.{BoxShape, CircleShape, LineShape, PolygonShape}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer

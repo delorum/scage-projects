@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.ships
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 
 abstract class SpaceStation2(
     index: Int,

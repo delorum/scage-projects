@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLib._
-import com.github.dunnololda.scageprojects.orbitalkiller.AABB
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.AABB
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
