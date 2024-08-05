@@ -1,10 +1,8 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions
 
-import com.github.dunnololda.scage.ScageLibD.DVec
-import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.{Box, Circle, Line, Polygon, Vector2f}
-import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.{Body => Phys2dBody, BodyList => Phys2dBodyList, Collider => Phys2dCollider, DynamicShape => Phys2dShape, StaticBody => Phys2dStaticBody, _}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.phys2d.Phys2dUtils.DVec2DoublePhys2dVector
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.{Box, Circle, Line, Polygon, DynamicShape => Phys2dShape}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.Phys2dUtils.DVec2DoublePhys2dVector
 
 sealed trait Shape {
   def aabb(center: DVec, rotation: Double): AABB
@@ -66,7 +64,7 @@ object Shape {
   }
 
   case class BoxShape(width: Double, height: Double) extends Shape {
-    val radius = math.sqrt(width * width + height * height)
+    val radius: Double = math.sqrt(width * width + height * height)
 
     def aabb(center: DVec, rotation: Double): AABB = {
       /*val one = center + DVec(-width/2, height/2).rotateDeg(rotation)
@@ -90,9 +88,9 @@ object Shape {
   }
 
   case class PolygonShape(points: List[DVec], convex_parts: List[PolygonShape]) extends Shape {
-    val radius = math.sqrt(points.map(p => p.norma2).max) * 2
-    val points_center = points.sum / points.length
-    val points_radius = math.sqrt(points.map(p => (p - points_center).norma2).max) * 2
+    val radius: Double = math.sqrt(points.map(p => p.norma2).max) * 2
+    val points_center: DVec = points.sum / points.length
+    val points_radius: Double = math.sqrt(points.map(p => (p - points_center).norma2).max) * 2
 
     def aabb(center: DVec, rotation: Double): AABB = {
       AABB(center, radius, radius)
@@ -114,7 +112,7 @@ object Shape {
       numerator / denominator / 6.0
     }
 
-    lazy val area = math.abs(0.5*(points ::: List(points.head)).sliding(2).map {
+    lazy val area: Double = math.abs(0.5*(points ::: List(points.head)).sliding(2).map {
       case List(p, p1) => (p.x + p1.x)*(p.y - p1.y)
     }.sum)
   }

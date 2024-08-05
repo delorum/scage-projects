@@ -1,4 +1,4 @@
-package com.github.dunnololda.scageprojects.orbitalkiller_cake.util.phys2d
+package com.github.dunnololda.scageprojects.orbitalkiller_cake.util
 
 import com.github.dunnololda.scage.ScageLibD.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.Vector2f

@@ -1110,7 +1110,7 @@ abstract class PolygonShip(
    */
   def points: List[DVec]
 
-  lazy val shape = PolygonShape(points, convex_parts)
+  lazy val shape: PolygonShape = PolygonShape(points, convex_parts)
 
   lazy val draw_points = points :+ points.head
 

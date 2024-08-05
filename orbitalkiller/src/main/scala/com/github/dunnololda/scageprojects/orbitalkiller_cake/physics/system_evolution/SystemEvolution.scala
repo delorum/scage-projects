@@ -2,7 +2,8 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_ev
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
-import com.github.dunnololda.scageprojects.orbitalkiller.{MutableBodyState, correctAngle, maybeCollisions}
+import com.github.dunnololda.scageprojects.orbitalkiller.{MutableBodyState, correctAngle}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Collider.maybeCollisions
 
 import scala.annotation.tailrec
 import scala.collection.mutable

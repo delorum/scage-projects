@@ -89,9 +89,7 @@ object Space {
     if (space.bodies.length <= target) space :: spaces
     else if (level > max_level) space :: spaces
     else {
-      space.quadSpaces.flatMap {
-        case s => splitSpace(s, max_level, target, level + 1, spaces)
-      }
+      space.quadSpaces.flatMap(s => splitSpace(s, max_level, target, level + 1, spaces))
     }
   }
 }
