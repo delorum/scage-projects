@@ -4,6 +4,8 @@ import com.github.dunnololda.scage.ScageLib._
 import com.github.dunnololda.scage.support.ScageId
 import com.github.dunnololda.scageprojects.orbitalkiller.{BodyState, _}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.{BoxShape, CircleShape, LineShape, PolygonShape}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Space
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Space.splitSpace
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
