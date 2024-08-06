@@ -1,10 +1,11 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials
 
 import com.github.dunnololda.scage.ScageLibD.DVec
-import com.github.dunnololda.scageprojects.orbitalkiller.{CelestialBody, Planet, PlanetWithAir, Star, speedToHaveOrbitWithParams}
+import com.github.dunnololda.scageprojects.orbitalkiller.{CelestialBody, Planet, PlanetWithAir, Star}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.system_evolution.SystemEvolutionAware
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.OrbitUtils.speedToHaveOrbitWithParams
 
 trait CelestialsSupport extends CelestialsAware with SystemEvolutionAware {
   val sun: Star = new Star(

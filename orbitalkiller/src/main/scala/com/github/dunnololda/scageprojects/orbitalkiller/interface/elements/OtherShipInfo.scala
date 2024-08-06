@@ -8,6 +8,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers.Doc
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.MyVec
 
 class OtherShipInfo(val monitoring_ship: PolygonShip, dockingSwitcher: DockingOnOff) extends InterfaceElement {
   private val strings = Array("")
@@ -37,7 +38,7 @@ class OtherShipInfo(val monitoring_ship: PolygonShip, dockingSwitcher: DockingOn
             os_orbit_period_sec = os_orbit_ellipse.t
           } yield {
               if (dockingSwitcher.dockingEnabled && player_ship.coord.dist(monitoring_ship.coord) <= 2000) {
-                val dp = player_ship.docking_points.sortBy(_.curP1.dist2(monitoring_ship.coord)).head
+                val dp = player_ship.docking_points.minBy(_.curP1.dist2(monitoring_ship.coord))
                 val ship_docking_point = dp.curP1 + 0.5 * (dp.curP2 - dp.curP1)
                 monitoring_ship.docking_points.sortBy(osdp => osdp.curP1.dist(ship_docking_point)).headOption match {
                   case Some(osdp) =>
@@ -102,7 +103,7 @@ class OtherShipInfo(val monitoring_ship: PolygonShip, dockingSwitcher: DockingOn
 
   override def data: Seq[String] = strings
 
-  override val color = ScageColor.MAGENTA
+  override val color: ScageColor = ScageColor.MAGENTA
   //override def color = if(monitoring_ship.currentState.active) ScageColor.MAGENTA else ScageColor.DARK_MAGENTA
 
   override val shortDescr: String = "OS"

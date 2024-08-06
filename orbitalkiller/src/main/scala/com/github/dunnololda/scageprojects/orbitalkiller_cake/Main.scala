@@ -2,22 +2,26 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.ships._
-import com.github.dunnololda.scageprojects.orbitalkiller.{CelestialBody, CirclularOrbit, EllipseOrbit, FreeFlightMode, HelpScreen, HyperbolaOrbit, KeplerOrbit, Killrot, Maneuvering, NearestPlanetVelocity, NearestShipAligned, NearestShipAutoDocking, NearestShipVelocity, OppositeRelativeVelocityAligned, OrbitDataUpdater, RealTrajectory, RelativeVelocityAligned, calculateOrbit, equalGravityRadius}
+import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.OrbitalKillerComponents
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ShipsHolder
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.BoxShape
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.orbits.{EllipseOrbit, HyperbolaOrbit, KeplerOrbit}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.orbits.KeplerOrbit.calculateOrbit
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.equalGravityRadius
 
 import java.io.FileOutputStream
-import scala.collection.{Map, Set, immutable, mutable, _}
+import scala.annotation.tailrec
+import scala.collection.{immutable, mutable, Map, Set, _}
 
 object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1600), property("screen.height", 900)) {
   private val components = new OrbitalKillerComponents(this)
@@ -163,6 +167,9 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
 
   nextStep()
 
+  private var _center = player_ship.coord
+  private var _ship_offset = DVec.zero
+
   private var view_mode: ViewMode = FreeViewMode
 
   def viewMode = view_mode
@@ -239,7 +246,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     }
   }*/
 
-  def curvatureRadiusInPoint(body_state: BodyState): Double = {
+  private def curvatureRadiusInPoint(body_state: BodyState): Double = {
     math.abs(body_state.vel.norma2 / (body_state.acc * body_state.vel.p))
   }
 
@@ -286,12 +293,12 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     }
   }*/
 
-  def orbitAroundCelestialInPointWithVelocity(
+  private def orbitAroundCelestialInPointWithVelocity(
       coord: DVec,
       velocity: DVec,
       mass: Double): Option[((CelestialBody, MutableBodyState), KeplerOrbit)] = {
     insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
-      case Some((planet, planet_state)) =>
+      case Some((_, planet_state)) =>
         planetByIndex(planet_state.index).flatMap(planet => {
           Some(
             (
@@ -317,11 +324,11 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
 
   def drawMapMode = _draw_map_mode
 
-  def drawMapMode_=(new_mode: Boolean) {
+  def drawMapMode_=(new_mode: Boolean): Unit = {
     if (new_mode) {
       _draw_map_mode = true
       orbitAroundCelestialInPointWithVelocity(player_ship.coord, player_ship.linearVelocity, player_ship.mass) match {
-        case Some((planet, kepler_orbit)) =>
+        case Some((_, kepler_orbit)) =>
           kepler_orbit match {
             case ellipse: EllipseOrbit =>
               val b = BoxShape(2 * ellipse.a, 2 * ellipse.b)
@@ -376,7 +383,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     }
   }
 
-  def drawArrow(from1: DVec, to1: DVec, color: ScageColor, scale: Double = globalScale) {
+  def drawArrow(from1: DVec, to1: DVec, color: ScageColor, scale: Double = globalScale): Unit = {
     val arrow11 = to1 + ((from1 - to1).n * 10 / scale).rotateDeg(15)
     val arrow12 = to1 + ((from1 - to1).n * 10 / scale).rotateDeg(-15)
     drawLine(from1, to1, color)
@@ -387,9 +394,9 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   def drawDashedLine(from: DVec, to: DVec, dash_len: Double, color: ScageColor): Unit = {
     val line_len = (to - from).norma
     val normal = (to - from).n
-    (0.0 to line_len - dash_len by dash_len * 2).foreach { case dash_from =>
+    (0.0 to line_len - dash_len by dash_len * 2).foreach(dash_from =>
       drawLine(from + normal * dash_from, from + normal * (dash_from + dash_len), color)
-    }
+    )
   }
 
   def drawDashedArrow(
@@ -400,9 +407,9 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
       scale: Double = globalScale): Unit = {
     val line_len = (to1 - from1).norma
     val normal = (to1 - from1).n
-    (0.0 to line_len - dash_len by dash_len * 2).foreach { case dash_from =>
+    (0.0 to line_len - dash_len by dash_len * 2).foreach(dash_from =>
       drawLine(from1 + normal * dash_from, from1 + normal * (dash_from + dash_len), color)
-    }
+    )
     val arrow11 = to1 + ((from1 - to1).n * 10 / scale).rotateDeg(15)
     val arrow12 = to1 + ((from1 - to1).n * 10 / scale).rotateDeg(-15)
     drawLine(to1, arrow11, color)
@@ -411,9 +418,9 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
 
   private var _show_game_saved_message = false
 
-  def showGameSavedMessage = _show_game_saved_message
+  def showGameSavedMessage: Boolean = _show_game_saved_message
 
-  def saveGame() {
+  private def saveGame(): Unit = {
     val fos = new FileOutputStream("save.orbitalkiller")
     fos.write(s"time ${system_evolution.tacts}\n".getBytes)
     currentBodyState(player_ship.index).foreach(x => fos.write(s"${x.saveData}\n".getBytes))
@@ -440,14 +447,14 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
 
   def showGameFailedToLoadMessage = _show_game_failed_to_load_message
 
-  def loadGame() {
+  def loadGame(): Unit = {
     def _parseDVec(str: String): Option[DVec] = {
       val s = str.split(":")
       if (s.length == 2) {
         try {
           Some(DVec(s(0).toDouble, s(1).toDouble))
         } catch {
-          case e: Exception => None
+          case _: Exception => None
         }
       } else None
     }
@@ -456,7 +463,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
       try {
         Some(str.toLong)
       } catch {
-        case e: Exception => None
+        case _: Exception => None
       }
     }
 
@@ -464,11 +471,18 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
       try {
         Some(str.toDouble)
       } catch {
-        case e: Exception => None
+        case _: Exception => None
       }
     }
 
-    val savefile_lines = io.Source.fromFile("save.orbitalkiller").getLines().toList
+    val savefile_lines = {
+      val source = io.Source.fromFile("save.orbitalkiller")
+      try {
+        source.getLines().toList
+      } finally {
+        source.close()
+      }
+    }
     val new_tacts_option = savefile_lines.headOption.flatMap(l => {
       val s = l.split(" ")
       if (s.length == 2) _parseLong(s(1)) else None
@@ -629,7 +643,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
 
   private def repeatTime(code: Int): Long = {
     keyPress(code)
-      .map { case kp =>
+      .map { kp =>
         if (kp.was_pressed && System.currentTimeMillis() - kp.pressed_start_time < 100) 100L
         else 10L
       }
@@ -931,7 +945,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     }
   )
 
-  mouseWheelDownIgnorePause(onWheelDown = m => {
+  mouseWheelDownIgnorePause(onWheelDown = _ => {
     if (globalScale > 0.01) {
       if (globalScale.toInt >= 200000) globalScale -= 100000
       else if (globalScale.toInt >= 20000) globalScale -= 10000
@@ -946,7 +960,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     println(globalScale)
   })
 
-  mouseWheelUpIgnorePause(onWheelUp = m => {
+  mouseWheelUpIgnorePause(onWheelUp = _ => {
     val _maxGlobalScale = if (!drawMapMode) 30 else 1000000
     if (globalScale < _maxGlobalScale) {
       if (globalScale < 0.1) globalScale += 0.01
@@ -1026,9 +1040,6 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     nextStep()
   }
 
-  private var _center = player_ship.coord
-  private var _ship_offset = DVec.zero
-
   def shipOffset = _ship_offset
 
   center = _center
@@ -1041,7 +1052,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   private var _update_orbits = false
   private var update_count: Long = 0L
 
-  private def updateOrbits() {
+  private def updateOrbits(): Unit = {
     // println("updateOrbits")
     if (player_ship.flightMode == Maneuvering || !onPause || !player_ship.engines.exists(_.active)) {
       // если в режиме маневрирования, или не в режиме маневрирования, но не на паузе, или на паузе, но двигатели не работают - рисуем текущее состояние
@@ -1165,6 +1176,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     circlesIntersection(c, r, p + (c - p) * 0.5, c.dist(p) / 2)
   }
 
+  @tailrec
   def tangentsFromCircleToCircle(p0: DVec, r0: Double, p1: DVec, r1: Double): Option[(DVec, DVec, DVec, DVec)] = {
     if (r0 > r1) tangentsFromCircleToCircle(p1, r1, p0, r0)
     else {
@@ -1187,7 +1199,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
 
   def inShadowOfPlanet(coord: DVec): Option[(CelestialBody, MutableBodyState)] = {
     val ship_sun_dist = coord.dist(sun.coord)
-    currentPlanetStates.filterNot(_._1.index == sun.index).find { case (planet, planet_state) =>
+    currentPlanetStates.filterNot(_._1.index == sun.index).find { case (planet, _) =>
       ship_sun_dist > planet.coord
         .dist(sun.coord) && (tangentsFromCircleToCircle(planet.coord, planet.radius, sun.coord, sun.radius) match {
         case Some((c1, c2, b1, b2)) =>
@@ -1204,7 +1216,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
       planet_radius: Double,
       sun_coord: DVec,
       sun_radius: Double,
-      dist: Double) {
+      dist: Double): Unit = {
     tangentsFromCircleToCircle(planet_coord, planet_radius, sun_coord, sun_radius) match {
       case Some((c1, c2, b1, b2)) =>
         val a = (c1 - b1).n * dist
@@ -1283,22 +1295,21 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
         render()
       }
 
-      player_ship.thisOrActualProxyShipOrbitData.foreach {
-        case or @ OrbitRenderData(_, bs, _, planet_state, _, _, _, render) =>
-          drawFilledCircle(bs.coord * scale, earth.radius * scale / 2f / globalScale, WHITE)
-          if (interfaceHolder.namesSwitcher.showNames) {
-            openglLocalTransform {
-              openglMove(bs.coord.toVec * scale)
-              print(player_ship.name, Vec.zero, color = WHITE, size = (max_font_size / globalScale).toFloat)
-            }
+      player_ship.thisOrActualProxyShipOrbitData.foreach { case or @ OrbitRenderData(_, bs, _, _, _, _, _, render) =>
+        drawFilledCircle(bs.coord * scale, earth.radius * scale / 2f / globalScale, WHITE)
+        if (interfaceHolder.namesSwitcher.showNames) {
+          openglLocalTransform {
+            openglMove(bs.coord.toVec * scale)
+            print(player_ship.name, Vec.zero, color = WHITE, size = (max_font_size / globalScale).toFloat)
           }
-          if (!or.is_landed) render()
+        }
+        if (!or.is_landed) render()
       }
 
       interfaceHolder.shipInterfaces.foreach(si => {
         if (!si.isMinimized) {
           si.monitoring_ship.thisOrActualProxyShipOrbitData.foreach {
-            case or @ OrbitRenderData(_, bs, _, planet_state, _, _, _, render) =>
+            case or @ OrbitRenderData(_, bs, _, _, _, _, _, render) =>
               val color = if (player_ship.isDead || si.monitoring_ship.isDead) RED else MAGENTA
               drawFilledCircle(bs.coord * scale, earth.radius * scale / 2f / globalScale, color)
               if (interfaceHolder.namesSwitcher.showNames) {

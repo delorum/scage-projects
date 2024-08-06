@@ -2,12 +2,12 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships
 
 import com.github.dunnololda.scage.ScageLibD.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller.ships._
-import com.github.dunnololda.scageprojects.orbitalkiller.{satelliteSpeed, speedToHaveOrbitWithParams}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.CelestialsAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.InterfaceHolderAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ShipsHolderAware
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.OrbitUtils.{satelliteSpeed, speedToHaveOrbitWithParams}
 
 trait ShipsSupport extends ShipsAware with CelestialsAware with InterfaceHolderAware with ShipsHolderAware {
   // стоим на поверхности Земли

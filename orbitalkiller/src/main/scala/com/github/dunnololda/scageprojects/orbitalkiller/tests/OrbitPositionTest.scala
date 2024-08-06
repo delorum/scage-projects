@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.MyVec
 
 case class Orbit2(
                    a: Double, // большая полуось
@@ -9,37 +9,37 @@ case class Orbit2(
                    t: Double, // орбитальный период, в секундах
                    center: DVec) {
   // координаты центра орбиты-эллипса
-  val e = math.sqrt(math.abs(1 - (b * b) / (a * a)))
+  val e: Double = math.sqrt(math.abs(1 - (b * b) / (a * a)))
   // эксцентриситет, характеристика, показывающая степень отклонения от окружности (0 - окружность, <1 - эллипс, 1 - парабола, >1 - гипербола)
-  val c = a * e
+  val c: Double = a * e
   // фокальное расстояние (полурасстояние между фокусами)
-  val p = a * (1 - e * e)
+  val p: Double = a * (1 - e * e)
   // фокальный параметр (половина длины хорды, проходящей через фокус и перпендикулярной к фокальной оси)
-  val r_p = a * (1 - e)
+  val r_p: Double = a * (1 - e)
   // перигей
-  val r_a = a * (1 + e)
+  val r_a: Double = a * (1 + e)
   // апогей
-  val f1 = center + DVec(1, 0) * c
+  val f1: DVec = center + DVec(1, 0) * c
   // координаты первого фокуса
-  val f2 = center - DVec(1, 0) * c // координаты второго фокуса
+  val f2: DVec = center - DVec(1, 0) * c // координаты второго фокуса
 
   private val f1_minus_f2 = f1 - f2
 
-  def tetaDeg360ByDir(dir: DVec) = f1_minus_f2.deg360(dir)
+  def tetaDeg360ByDir(dir: DVec): Double = f1_minus_f2.deg360(dir)
 
-  def tetaSignedDegByDir(dir: DVec) = f1_minus_f2.signedDeg(dir)
+  def tetaSignedDegByDir(dir: DVec): Double = f1_minus_f2.signedDeg(dir)
 
-  def tetaRad2PiByDir(dir: DVec) = f1_minus_f2.rad2Pi(dir)
+  def tetaRad2PiByDir(dir: DVec): Double = f1_minus_f2.rad2Pi(dir)
 
-  def tetaSignedRadByDir(dir: DVec) = f1_minus_f2.signedRad(dir)
+  def tetaSignedRadByDir(dir: DVec): Double = f1_minus_f2.signedRad(dir)
 
-  def tetaDeg360InPoint(p: DVec) = tetaDeg360ByDir(p - f1)
+  def tetaDeg360InPoint(p: DVec): Double = tetaDeg360ByDir(p - f1)
 
-  def tetaSignedDegInPoint(p: DVec) = tetaSignedDegByDir(p - f1)
+  def tetaSignedDegInPoint(p: DVec): Double = tetaSignedDegByDir(p - f1)
 
-  def tetaRad2PiInPoint(p: DVec) = tetaRad2PiByDir(p - f1)
+  def tetaRad2PiInPoint(p: DVec): Double = tetaRad2PiByDir(p - f1)
 
-  def tetaSignedRadInPoint(p: DVec) = tetaSignedRadByDir(p - f1)
+  def tetaSignedRadInPoint(p: DVec): Double = tetaSignedRadByDir(p - f1)
 
   def tetaRadByDistance(r: Double): Double = {
     math.acos((p / r - 1) / e)
@@ -49,11 +49,11 @@ case class Orbit2(
     tetaRadByDistance(r) / math.Pi * 180.0
   }
 
-  def distanceByTrueAnomalyRad(teta_rad: Double) = {
+  def distanceByTrueAnomalyRad(teta_rad: Double): Double = {
     p / (1 + e * math.cos(teta_rad))
   }
 
-  def distanceByTrueAnomalyDeg(teta_deg: Double) = {
+  def distanceByTrueAnomalyDeg(teta_deg: Double): Double = {
     p / (1 + e * math.cos(teta_deg / 180.0 * math.Pi))
   }
 
@@ -64,27 +64,27 @@ case class Orbit2(
    * @param dir - вектор направления
    * @return
    */
-  def distanceByDir(dir: DVec) = {
+  def distanceByDir(dir: DVec): Double = {
     p / (1 + e * math.cos(tetaSignedRadByDir(dir)))
   }
 
-  def distanceInPoint(point: DVec) = {
+  def distanceInPoint(point: DVec): Double = {
     p / (1 + e * math.cos(tetaSignedRadInPoint(point)))
   }
 
-  def orbitalPointByTrueAnomalyRad(teta_rad: Double) = {
+  def orbitalPointByTrueAnomalyRad(teta_rad: Double): DVec = {
     f1 + f1_minus_f2.rotateRad(teta_rad).n * distanceByTrueAnomalyRad(teta_rad)
   }
 
-  def orbitalPointByTrueAnomalyDeg(teta_deg: Double) = {
+  def orbitalPointByTrueAnomalyDeg(teta_deg: Double): DVec = {
     f1 + f1_minus_f2.rotateDeg(teta_deg).n * distanceByTrueAnomalyDeg(teta_deg)
   }
 
-  def orbitalPointByDir(dir: DVec) = {
+  def orbitalPointByDir(dir: DVec): DVec = {
     f1 + dir.n * distanceByDir(dir)
   }
 
-  def orbitalPointInPoint(point: DVec) = {
+  def orbitalPointInPoint(point: DVec): DVec = {
     val dir = point - f1
     f1 + dir.n * distanceByDir(dir)
   }
@@ -144,17 +144,17 @@ case class Orbit2(
    *                 https://en.wikipedia.org/wiki/Kepler_orbit
    * @return
    */
-  def orbitalVelocityByTrueAnomalyRad(teta_rad: Double, mu: Double) = {
+  def orbitalVelocityByTrueAnomalyRad(teta_rad: Double, mu: Double): (Double, Double) = {
     val vr = math.sqrt(mu / p) * e * math.sin(teta_rad)
     val vt = math.sqrt(mu / p) * (1 + e * math.cos(teta_rad))
     (vt, vr)
   }
 
-  def orbitalVelocityByDir(dir: DVec, mu: Double) = {
+  def orbitalVelocityByDir(dir: DVec, mu: Double): (Double, Double) = {
     orbitalVelocityByTrueAnomalyRad(tetaRad2PiByDir(dir), mu)
   }
 
-  def orbitalVelocityInPoint(point: DVec, mu: Double) = {
+  def orbitalVelocityInPoint(point: DVec, mu: Double): (Double, Double) = {
     orbitalVelocityByTrueAnomalyRad(tetaRad2PiInPoint(point), mu)
   }
 }
@@ -167,30 +167,30 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640
     center = DVec(6.595622340768156E-4, 3522509.227094339)
   )
 
-  private var _m: DVec = DVec.zero
+  private val _m: DVec = DVec.zero
 
   val G: Double = 6.6742867E-11
-  val earth_mass = 5.9746E24
+  private val earth_mass = 5.9746E24
   val mu = G * earth_mass
 
   //private var mr1:Option[DVec] = Some(o.f1 + (o.f1 - o.f2).n.rotateDeg(45)*ro(o.f1 + (o.f1 - o.f2).n.rotateDeg(45)))
   //private var mr1:Option[DVec] = Some(o.f1 + (o.f1 - o.f2).n*o.r_p)
   private var mr1: Option[DVec] = Some(o.f1 + (o.f1 - o.f2).n * o.r_p)
-  private var mr2: Option[DVec] = Some(o.f1 + (o.f1 - o.f2).p * o.r_p)
+  private val mr2: Option[DVec] = Some(o.f1 + (o.f1 - o.f2).p * o.r_p)
   //private var flight_time:Option[List[String]] = None
   val (time, variant) = o.travelTimeOnOrbitMsecCCW(mr1.get, mr2.get, mu)
-  private var flight_time: Option[String] = Some(s"${timeStr(time)}, $variant")
+  private val flight_time: Option[String] = Some(s"${timeStr(time)}, $variant")
 
   def msecOrKmsec(msec: Number): String = {
     if (math.abs(msec.doubleValue()) < 1000) f"${msec.doubleValue()}%.2f м/сек" else f"${msec.doubleValue() / 1000}%.2f км/сек"
   }
 
-  def timeStr(time_msec: Long): String = {
+  private def timeStr(time_msec: Long): String = {
     val is_below_zero = time_msec < 0
     val abs_time_msec = math.abs(time_msec)
     val result = if (abs_time_msec < 1000) s"$abs_time_msec мсек."
     else {
-      val sec = 1000l
+      val sec = 1000L
       val min = sec * 60
       val hour = min * 60
       val day = hour * 24
@@ -208,7 +208,7 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640
 
   val n_1 = o.a * math.sqrt(o.a / mu)
 
-  def ro(m: DVec) = {
+  def ro(m: DVec): Double = {
     o.p / (1 - o.e * math.cos((m - o.f1).signedRad(o.f2 - o.f1)))
   }
 
@@ -216,7 +216,7 @@ object OrbitPositionTest extends ScageScreenAppD("Orbit Position Test", 640, 640
     if (keyPressed(KEY_LCONTROL)) stopApp()
   })
 
-  val polygon_step = 1
+  private val polygon_step = 1
 
   leftMouseIgnorePause(onBtnDown = m => {
     val mm = absCoord(m) / scale

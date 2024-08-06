@@ -6,8 +6,10 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.CircleShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.correctAngle
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.{MyVec, correctAngle}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.halfHillRadius
 
+import scala.annotation.tailrec
 import scala.collection.Seq
 
 trait CelestialBody {
@@ -33,11 +35,11 @@ trait CelestialBody {
 
   println(s"$name -> $index")
   val currentState: MutableBodyState = initState.toMutableBodyState
-  val ground_length_km = (2 * math.Pi * radius / 1000).toInt
-  val groundSpeedMsec = currentState.ang_vel.toRad * radius
-  val length = 2 * math.Pi * radius
+  val ground_length_km: Int = (2 * math.Pi * radius / 1000).toInt
+  val groundSpeedMsec: Double = currentState.ang_vel.toRad * radius
+  val length: Double = 2 * math.Pi * radius
 
-  val g = G * mass / (radius * radius) // ускорение свободного падения, м/с^2
+  val g: Double = G * mass / (radius * radius) // ускорение свободного падения, м/с^2
 
   var orbitRender: Option[OrbitRenderData] = None
 }
@@ -52,9 +54,9 @@ class Planet(val index: Int,
              val orbiting_body: CelestialBody,
              val air_free_altitude: Double) extends CelestialBody {
 
-  def coord = currentState.coord
+  def coord: DVec = currentState.coord
 
-  def linearVelocity = currentState.vel
+  def linearVelocity: DVec = currentState.vel
 
   def initState: BodyState = BodyState(
     index,
@@ -68,12 +70,13 @@ class Planet(val index: Int,
     shape = CircleShape(radius),
     is_static = false)
 
-  val half_hill_radius = halfHillRadius(mass, coord.dist(orbiting_body.coord), orbiting_body.mass)
+  val half_hill_radius: Double = halfHillRadius(mass, coord.dist(orbiting_body.coord), orbiting_body.mass)
 
   // рельеф планеты: треугольные горы. два параметра: высота в метрах, ширина основания в метрах
   private val ground_features = Array.ofDim[(Int, Int)](ground_length_km)
   (0 until ground_length_km).foreach(x => ground_features(x) = (100 + (math.random * 900).toInt, 50 + (math.random * 300).toInt))
 
+  @tailrec
   private def groundFeatureNear(point_km: Double): (Int, Int) = {
     if (point_km < 0) groundFeatureNear(point_km + ground_length_km)
     else if (point_km >= ground_length_km) groundFeatureNear(point_km - ground_length_km)
@@ -90,7 +93,7 @@ class Planet(val index: Int,
   private var ground_position_km: Double = _
   private var ground_features_near: Seq[(DVec, Int, Int)] = _
 
-  private def updateRenderData() {
+  private def updateRenderData(): Unit = {
     viewpoint_dist = math.abs((player_ship.coord + shipOffset).dist(coord) - radius)
     if (viewpoint_dist < 50000) {
       //val before_to_viewpoint = (ship.coord + shipOffset - coord).n*(radius - 1000)
@@ -177,11 +180,11 @@ class PlanetWithAir(index: Int,
     (ship_velocity - planet_velocity) - (ship_coord - planet_coord).p * (planet_ang_vel.toRad * ship_coord.dist(planet_coord))
   }
 
-  def temperature(h: Double) = {
+  private def temperature(h: Double): Double = {
     T0 - L * h
   }
 
-  def airPressurePascale(h: Double): Double = {
+  private def airPressurePascale(h: Double): Double = {
     val T = temperature(h)
     if (T <= 0) 0
     else {

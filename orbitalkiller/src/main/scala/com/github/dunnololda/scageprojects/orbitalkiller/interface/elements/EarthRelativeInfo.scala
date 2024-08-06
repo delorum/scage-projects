@@ -6,11 +6,11 @@ import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers.DegOrKm
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.correctAngle
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.{MyVec, correctAngle}
 class EarthRelativeInfo(degOrKm: DegOrKm) extends InterfaceElement {
   private val strings = Array("")
 
-  override protected def _update() {
+  override protected def _update(): Unit = {
     //val ship_earth_angular_speed = f"${(ship.linearVelocity - earth.linearVelocity)*(ship.coord - earth.coord).p/ship.coord.dist(earth.coord) - earth.currentState.ang_vel}%.3f град/сек"
     val ship_earth_position = if (degOrKm.selectedVariant == 0) {
       f"${correctAngle(DVec(0, 1).deg360(player_ship.coord - earth.coord) - earth.currentState.ang)}%.3f град."
@@ -29,7 +29,7 @@ class EarthRelativeInfo(degOrKm: DegOrKm) extends InterfaceElement {
 
   override def data: Seq[String] = strings
 
-  override val color = ScageColor.ORANGE
+  override val color: ScageColor = ScageColor.ORANGE
 
   override val shortDescr: String = "E"
 }

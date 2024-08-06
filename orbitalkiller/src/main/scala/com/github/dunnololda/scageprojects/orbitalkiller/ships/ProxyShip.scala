@@ -5,6 +5,7 @@ import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.MyDouble
 
 abstract class ProxyShip(
     ship1: PolygonShip,
@@ -31,11 +32,11 @@ abstract class ProxyShip(
   println(s"ship2_rotation_diff=$ship2_rotation_diff")
   println(s"init_coord=$init_coord")
 
-  lazy val ship1_coord_diff =
+  private lazy val ship1_coord_diff: DVec =
     (ship1_init_coord - init_coord).rotateDeg(-init_rotation).map(v => DVec(v.x.round2Digits, v.y.round2Digits))
-  lazy val ship2_rotation_diff = (ship2_init_rotation - ship1_init_rotation).round
+  private lazy val ship2_rotation_diff: Long = (ship2_init_rotation - ship1_init_rotation).round
 
-  lazy val ship2_coord_diff =
+  private lazy val ship2_coord_diff: DVec =
     (ship2_init_coord - init_coord).rotateDeg(-init_rotation).map(v => DVec(v.x.round2Digits, v.y.round2Digits))
 
   def coordAndRotationDiff(ship_index: Int): (DVec, Double) = {
@@ -64,7 +65,7 @@ abstract class ProxyShip(
     }
   }
 
-  def mass = ship1.mass + ship2.mass
+  def mass: Double = ship1.mass + ship2.mass
 
   override val engines: List[Engine] = ship1.engines ::: ship2.engines
 
@@ -115,12 +116,12 @@ abstract class ProxyShip(
 
   override val engines_by_keycodes: Map[Int, Engine] = Map()
 
-  override def consumeFuel() {
+  override def consumeFuel(): Unit = {
     ship1.consumeFuel()
     ship2.consumeFuel()
   }
 
-  def nonProxyShips: List[PolygonShip] = {
+  private def nonProxyShips: List[PolygonShip] = {
     val x1 = ship1 match {
       case ps: ProxyShip => ps.nonProxyShips
       case s => List(s)

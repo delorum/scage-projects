@@ -7,8 +7,11 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.AdditionalSymbols.
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Main, TimeConstants}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.MyVec
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.OrbitUtils.satelliteSpeed
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Main, TimeConstants}
+
 import scala.collection.mutable.ArrayBuffer
 
 abstract class Ship4(
@@ -52,7 +55,7 @@ abstract class Ship4(
     DVec(3.5, -4.5)
   )
 
-  lazy val convex_parts = List(
+  lazy val convex_parts: List[PolygonShape] = List(
     PolygonShape(List(DVec(-4.5, -4.5), DVec(-3.5, -4.5), DVec(-3.5, -1.5), DVec(-4.5, -2.5)), List()),
     PolygonShape(
       List(
@@ -71,7 +74,7 @@ abstract class Ship4(
     PolygonShape(List(DVec(-1.5, 5.5), DVec(1.5, 5.5), DVec(1.5, 9.5), DVec(-1.5, 9.5)), List())
   )
 
-  val wreck_parts = List(
+  val wreck_parts: List[PolygonShape] = List(
     PolygonShape(List(DVec(-4.5, -4.5), DVec(-1.5, -4.5), DVec(-4.5, -2.5)), List()),
     PolygonShape(List(DVec(-4.5, -2.5), DVec(-1.5, -4.5), DVec(0.5, -3.5), DVec(0.5, -0.5)), List()),
     PolygonShape(List(DVec(-4.5, -2.5), DVec(0.5, -0.5), DVec(-0.5, 2.5), DVec(-3.5, -1.5)), List()),
@@ -100,9 +103,9 @@ abstract class Ship4(
   val three = new Engine(3, DVec(4.0, -4.5), DVec(0.0, 1.0), 500000, 1, 4, this)
   val two = new Engine(2, DVec(0.0, -5.5), DVec(0.0, 1.0), 1000000, 1, 4, this)
 
-  val engines = List(four, six, seven, nine, eight, two, one, three)
+  val engines: List[Engine] = List(four, six, seven, nine, eight, two, one, three)
 
-  val engines_by_keycodes = Map(
+  val engines_by_keycodes: Map[Int, Engine] = Map(
     KEY_NUMPAD4 -> four,
     KEY_NUMPAD6 -> six,
     KEY_NUMPAD7 -> seven,
@@ -113,7 +116,7 @@ abstract class Ship4(
     KEY_NUMPAD3 -> three
   )
 
-  val docking_points = List(
+  val docking_points: List[DockingPoints] = List(
     new DockingPoints(
       DVec(-1.5, 9.5),
       DVec(1.5, 9.5),
@@ -179,13 +182,13 @@ abstract class Ship4(
     }
 
     percent_seq
-      .map { case percent =>
+      .map { percent =>
         val power = max_power * 0.01 * percent
         val force = force_dir * power
         val acc = force / mass
         (howManyTacts(to, from, acc, TimeConstants.base_dt), power, percent)
       }
-      .find { case ((tacts, result_to), power, percent) =>
+      .find { case ((_, result_to), _, _) =>
         // println(s"maxPossiblePowerForLinearMovement find: $power, $percent: ${math.abs(to - result_to)}")
         val check = math.abs(to - result_to) < max_diff
         /*if(check) {
@@ -193,7 +196,7 @@ abstract class Ship4(
         }*/
         check
       }
-      .map { case ((tacts, result_to), power, percent) =>
+      .map { case ((tacts, _), power, _) =>
         (tacts, power)
       }
       .getOrElse {
@@ -217,7 +220,7 @@ abstract class Ship4(
         val ang_acc = (torque / I).toDeg
         (howManyTacts(to, from, ang_acc, TimeConstants.base_dt), power, percent)
       }
-      .find { case ((tacts, result_to), power, percent) =>
+      .find { case ((_, result_to), _, _) =>
         // println(s"maxPossiblePowerAndTactsForRotation find: $power, $percent: ${math.abs(to - result_to)}")
         val check = math.abs(to - result_to) < max_diff
         /*if(check) {
@@ -225,7 +228,7 @@ abstract class Ship4(
         }*/
         check
       }
-      .map { case ((tacts, result_to), power, percent) =>
+      .map { case ((tacts, _), power, _) =>
         (tacts, power)
       }
       .getOrElse {
@@ -234,7 +237,7 @@ abstract class Ship4(
       }
   }
 
-  override def preserveAngularVelocity(ang_vel_deg: Double) {
+  override def preserveAngularVelocity(ang_vel_deg: Double): Unit = {
     val difference = angularVelocity - ang_vel_deg
     if (difference > TimeConstants.angular_velocity_error) {
       val (tacts, power) = maxPossiblePowerAndTactsForRotation(
@@ -268,7 +271,7 @@ abstract class Ship4(
     last_correction_or_check_moment = Main.system_evolution.tacts
   }
 
-  override def preserveVelocity(need_vel: DVec) {
+  override def preserveVelocity(need_vel: DVec): Unit = {
     val n = DVec(0, 1).rotateDeg(rotation).n
     val p = n.p * -1
 
@@ -582,7 +585,7 @@ abstract class Ship4(
               shipCloser2KmNonMinimized match {
                 case Some(os) =>
                   interfaceHolder.dockingSwitcher.setDockingAuto()
-                  val dp = docking_points.sortBy(_.curP1.dist2(os.coord)).head
+                  val dp = docking_points.minBy(_.curP1.dist2(os.coord))
                   val ship_docking_point = dp.curP1 + 0.5 * (dp.curP2 - dp.curP1)
                   os.docking_points.sortBy(osdp => osdp.curP1.dist2(ship_docking_point)).headOption match {
                     case Some(osdp) =>
@@ -969,8 +972,7 @@ abstract class Ship4(
       }
     }
 
-    engines.foreach { case e =>
-      drawEngine(e)
-    }
+    engines.foreach(e =>
+      drawEngine(e))
   }
 }

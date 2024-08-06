@@ -6,11 +6,11 @@ import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers.DegOrKm
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.correctAngle
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.{MyVec, correctAngle}
 class SunRelativeInfo(degOrKm: DegOrKm) extends InterfaceElement {
   private val strings = Array("")
 
-  override protected def _update() {
+  override protected def _update(): Unit = {
     val ship_sun_vertical_speed = msecOrKmsecOrKmhour((player_ship.linearVelocity - sun.linearVelocity) * (player_ship.coord - sun.coord).n)
     val ship_sun_tangent_speed = msecOrKmsecOrKmhour(((player_ship.linearVelocity - sun.linearVelocity) * (player_ship.coord - sun.coord).p) / player_ship.coord.dist(sun.coord) * sun.radius - sun.groundSpeedMsec)
     //val ship_earth_angular_speed = f"${(ship.linearVelocity - sun.linearVelocity)*(ship.coord - sun.coord).p/ship.coord.dist(sun.coord) - sun.currentState.ang_vel}%.3f град/сек"
@@ -25,7 +25,7 @@ class SunRelativeInfo(degOrKm: DegOrKm) extends InterfaceElement {
 
   override def data: Seq[String] = strings
 
-  override val color = ScageColor.YELLOW
+  override val color: ScageColor = ScageColor.YELLOW
 
   override val shortDescr: String = "Su"
 }

@@ -6,7 +6,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers.DegOrKm
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.correctAngle
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.{MyVec, correctAngle}
 class MoonRelativeInfo(degOrKm: DegOrKm) extends InterfaceElement {
   private val strings = Array("")
 
@@ -29,7 +29,7 @@ class MoonRelativeInfo(degOrKm: DegOrKm) extends InterfaceElement {
 
   override def data: Seq[String] = strings
 
-  override val color = ScageColor.GREEN
+  override val color: ScageColor = ScageColor.GREEN
 
   override val shortDescr: String = "M"
 }
