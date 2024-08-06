@@ -6,9 +6,11 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
+case class Point(coord: Vec, selectedPlanetCoord: Vec, planet: PlanetPart)
+
 class PlanetPart(val m: Double, var coord: Vec, var vel: Vec) {
   val id = GenesisTest.getId
-  val r: Float = 1 /*+m*0.001*/
+  val r: Float = (1 + m * 0.001).toFloat
 
   def aabb: AABB = AABB(coord, r * 2, r * 2)
 
@@ -105,18 +107,18 @@ class MySpace(val bodies: Seq[PlanetPart], val c: Vec, val w: Double, val h: Dou
   )
 }
 
-object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
+object GenesisTest extends ScageScreenApp("Genesis Test", 800, 600) {
   val G: Double = 1
   val dt = 0.1
 
-  val interacted = mutable.HashSet[(Int, Int)]()
+  private val interacted = mutable.HashSet[(Int, Int)]()
 
-  def setInteracted(id1: Int, id2: Int) {
+  def setInteracted(id1: Int, id2: Int): Unit = {
     if (id1 <= id2) interacted += ((id1, id2))
     else interacted += ((id2, id1))
   }
 
-  def checkInteracted(id1: Int, id2: Int): Boolean = {
+  private def checkInteracted(id1: Int, id2: Int): Boolean = {
     if (id1 <= id2) interacted.contains((id1, id2))
     else interacted.contains((id2, id1))
   }
@@ -135,7 +137,7 @@ object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
   private val planets = ArrayBuffer[PlanetPart]()
 
   private var _record_points = false
-  private val points = ArrayBuffer[(Vec, PlanetPart)]()
+  private val points = ArrayBuffer[Point]()
 
   private def randomCoord: Vec = {
     windowCenter + Vec((math.random * 300 / math.sqrt(2)).toFloat, (math.random * 300 / math.sqrt(2)).toFloat).rotateDeg(math.random * 360)
@@ -144,7 +146,7 @@ object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
   /*planets += new Planet(5, windowCenter +Vec(-10,0), Vec.zero)
   planets += new Planet(5, windowCenter +Vec(10,0), Vec.zero)*/
 
-  private var _center = center
+  private var _offset = center
   private var _selected_planet = 0
 
   private var id = 1
@@ -157,8 +159,10 @@ object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
 
   (1 to 3000).foreach(i => {
     val c = randomCoord
-    planets += new PlanetPart(1, c,
-      (c - windowCenter).n /*(c - windowCenter).rotateDeg(90).n*/
+    planets += new PlanetPart(
+      m = 1,
+      coord = c,
+      vel = (c - windowCenter)/*.rotateDeg(90)*/.n
     )
   })
 
@@ -184,16 +188,16 @@ object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
   }
 
   keyIgnorePause(KEY_W, 10, onKeyDown = {
-    _center = center; _center += Vec(0, 5 / globalScale); center = _center
+    _offset += Vec(0, 5 / globalScale)
   })
   keyIgnorePause(KEY_A, 10, onKeyDown = {
-    _center = center; _center += Vec(-5 / globalScale, 0); center = _center
+    _offset += Vec(-5 / globalScale, 0)
   })
   keyIgnorePause(KEY_S, 10, onKeyDown = {
-    _center = center; _center += Vec(0, -5 / globalScale); center = _center
+    _offset += Vec(0, -5 / globalScale)
   })
   keyIgnorePause(KEY_D, 10, onKeyDown = {
-    _center = center; _center += Vec(5 / globalScale, 0); center = _center
+    _offset += Vec(5 / globalScale, 0)
   })
   keyIgnorePause(KEY_SPACE, onKeyDown = {
     val sorted_planets = planets.sortBy(-_.m)
@@ -201,7 +205,8 @@ object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
     planets ++= sorted_planets
     _selected_planet = 0
     val p = planets(_selected_planet)
-    center = p.coord
+    _offset = Vec.zero
+    center = p.coord + _offset
   })
   keyIgnorePause(KEY_LEFT, onKeyDown = {
     _selected_planet -= 1
@@ -220,7 +225,7 @@ object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
   keyIgnorePause(KEY_1, onKeyDown = _record_points = !_record_points)
   keyIgnorePause(KEY_2, onKeyDown = points.clear())
   keyIgnorePause(KEY_3, onKeyDown = points --= {
-    points.groupBy(_._2).flatMap(kv => kv._2.zipWithIndex.filter(x => x._2 % 2 == 0).map(_._1))
+    points.groupBy(_.planet).flatMap(kv => kv._2.zipWithIndex.filter(x => x._2 % 2 == 0).map(_._1))
   })
 
   mouseWheelDownIgnorePause(onWheelDown = m => {
@@ -391,7 +396,7 @@ object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
           println("gotach!")
         }
         p.new_force = Vec.zero
-        if (_record_points) points += ((p.coord - center, p))
+        if (_record_points) points += Point(p.coord, planets(_selected_planet).coord, p)
     }
 
     /*for {
@@ -413,18 +418,17 @@ object GenesisTest extends ScageScreenAppMT("Genesis Test", 800, 600) {
     }*/
   }
 
-  center = _center
+  center = _offset
 
   render {
-    planets.foreach {
-      case p =>
-        drawCircle(p.coord, p.r.toFloat, WHITE)
+    planets.foreach { p =>
+        drawCircle(p.coord, p.r, WHITE)
         if (globalScale >= 8) {
           print(p.m, p.coord, max_font_size / globalScale, WHITE, "center")
         }
     }
 
-    points.foreach(p => drawFilledCircle(center + p._1, 1, WHITE))
+    points.foreach(p => drawFilledCircle(p.coord - p.selectedPlanetCoord + planets(_selected_planet).coord, 1, LIGHT_BLUE))
   }
 
   interface {
