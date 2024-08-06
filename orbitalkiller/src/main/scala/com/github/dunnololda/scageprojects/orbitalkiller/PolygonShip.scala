@@ -5,6 +5,7 @@ import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements.OtherShipInfo
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.ProxyShip
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.PlanetWithAir
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.ProtectedInterfaceHolderAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ProtectedShipsHolderAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape

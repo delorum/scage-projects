@@ -1,6 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder
 
-import com.github.dunnololda.scageprojects.orbitalkiller.{Planet, PlanetWithAir, PolygonShip, Star}
+import com.github.dunnololda.scageprojects.orbitalkiller.PolygonShip
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.{Planet, PlanetWithAir, Star}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 
@@ -31,7 +32,7 @@ class ShipsHolder(system_evolution: SystemEvolution, sun: Star, earth: PlanetWit
           )
       },
       (tacts, helper) => {
-        helper.funcOrDoubleZero(ship.index, bs => ship.currentTorque(tacts))
+        helper.funcOrDoubleZero(ship.index, _ => ship.currentTorque(tacts))
       },
       () => ship.checkCriticalCollision()
     )
@@ -68,7 +69,7 @@ class ShipsHolder(system_evolution: SystemEvolution, sun: Star, earth: PlanetWit
   // ships.map(s => (s.index, s)).toMap
   def shipByIndex(index: Int): Option[PolygonShip] = _shipsMap.get(index)
 
-  private var _shipIndicies: mutable.HashSet[Int] = mutable.HashSet[Int]()
+  private val _shipIndicies: mutable.HashSet[Int] = mutable.HashSet[Int]()
 
   def shipIndicies: mutable.Set[Int] = _shipIndicies
 

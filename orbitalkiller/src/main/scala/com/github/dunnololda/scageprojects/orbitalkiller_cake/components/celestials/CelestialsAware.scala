@@ -1,6 +1,6 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials
 
-import com.github.dunnololda.scageprojects.orbitalkiller.{Planet, PlanetWithAir, Star}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.{Planet, PlanetWithAir, Star}
 
 trait CelestialsAware {
   def sun: Star

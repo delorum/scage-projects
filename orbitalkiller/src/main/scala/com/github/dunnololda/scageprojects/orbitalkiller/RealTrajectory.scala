@@ -1,21 +1,22 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Main, TimeConstants}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.CelestialBody
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
-import Main._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Main, TimeConstants}
 
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
 
 object RealTrajectory extends RealTrajectoryC(None)
 object RealTrajectory2 extends RealTrajectoryC(Some(1))
 object RealTrajectory3 extends RealTrajectoryC(Some(100))
 
 class RealTrajectoryC(max_multiplier: Option[Double]) {
-  private var real_trajectory: ArrayBuffer[DVec] = ArrayBuffer[DVec]()
+  private val real_trajectory: ArrayBuffer[DVec] = ArrayBuffer[DVec]()
   var curPoints: Long = 0
   private var dropped = 0
   private var system_evolution_copy: SystemEvolution = _
@@ -24,7 +25,7 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
   private var prev_energy: /*Double*/ Seq[(String, Double)] = /*0.0*/ Seq.empty
 
   def energy: /*Double*/ Seq[(String, Double)] = {
-    val all_bodies = system_evolution_copy.allBodyStates.map(_._2).toSeq
+    val all_bodies = system_evolution_copy.allBodyStates.values.toSeq
     val kinetic =
       all_bodies.map(b => (b.index.toString, 0.5 * b.mass * b.vel.norma2 + b.I * b.ang_vel.toRad * b.ang_vel.toRad))
     val potential = all_bodies
@@ -93,7 +94,7 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
       }
   }
 
-  protected def chooseDt: Double = {
+  private def chooseDt: Double = {
     if (Main.player_ship.engines.exists(_.stopMomentTacts >= system_evolution_copy.tacts)) {
       TimeConstants.base_dt // пока работают двигатели, dt должен быть равен base_dt, иначе неверно работают формулы.
     } else {
@@ -172,7 +173,7 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
       }
       val e = energy
       val x = e.map(_._2).sum - prev_energy.map(_._2).sum
-      if (max_multiplier.exists(_ == 1)) {
+      if (max_multiplier.contains(1)) {
         println(
           f"real trajectory dt ${system_evolution_copy.base_dt / TimeConstants.base_dt}%.2f*base_dt, dE=${x / prev_energy
               .map(_._2)

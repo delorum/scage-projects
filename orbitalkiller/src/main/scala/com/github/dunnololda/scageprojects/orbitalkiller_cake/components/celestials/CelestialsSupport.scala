@@ -1,9 +1,9 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials
 
 import com.github.dunnololda.scage.ScageLibD.DVec
-import com.github.dunnololda.scageprojects.orbitalkiller.{CelestialBody, Planet, PlanetWithAir, Star}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.{CelestialBody, Planet, PlanetWithAir, Star}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.system_evolution.SystemEvolutionAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.OrbitUtils.speedToHaveOrbitWithParams
 
@@ -57,10 +57,6 @@ trait CelestialsSupport extends CelestialsAware with SystemEvolutionAware {
     2000
   )
 
-  private val allCelestials: Seq[CelestialBody] = Seq(sun, earth, moon)
-
-  val celestialsHelper: CelestialsHelper = new CelestialsHelper(allCelestials, systemEvolution)
-
   systemEvolution.addBody(
     moon.currentState,
     (_, helper) => {
@@ -97,4 +93,8 @@ trait CelestialsSupport extends CelestialsAware with SystemEvolutionAware {
   systemEvolution.addCollisionExclusion(earth.index, moon.index)
   systemEvolution.addCollisionExclusion(earth.index, sun.index)
   systemEvolution.addCollisionExclusion(moon.index, sun.index)
+
+  private val allCelestials: Seq[CelestialBody] = Seq(sun, earth, moon)
+
+  val celestialsHelper: CelestialsHelper = new CelestialsHelper(allCelestials, systemEvolution)
 }

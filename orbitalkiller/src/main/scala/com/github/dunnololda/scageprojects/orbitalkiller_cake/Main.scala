@@ -5,6 +5,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller.ships._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.OrbitalKillerComponents
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ShipsHolder
@@ -21,7 +22,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.Gravi
 
 import java.io.FileOutputStream
 import scala.annotation.tailrec
-import scala.collection.{immutable, mutable, Map, Set, _}
+import scala.collection.{Map, Set, immutable, mutable, _}
 
 object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1600), property("screen.height", 900)) {
   private val components = new OrbitalKillerComponents(this)

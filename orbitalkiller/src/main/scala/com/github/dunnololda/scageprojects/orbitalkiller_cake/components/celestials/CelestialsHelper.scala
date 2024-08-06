@@ -1,6 +1,6 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials
 
-import com.github.dunnololda.scageprojects.orbitalkiller.CelestialBody
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 
