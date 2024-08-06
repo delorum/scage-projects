@@ -6,6 +6,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.{BoxShape, CircleShape, PolygonShape}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.BodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.stream.SystemEvolutionStream
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -24,7 +25,7 @@ object BodyStatesHolder {
 import com.github.dunnololda.scageprojects.orbitalkiller.tests.BodyStatesHolder._
 
 object CollisionTests2 extends ScageScreenAppD("Collision Tests 2", 640, 480) {
-  def futureSystemEvolutionFrom(time: Long, body_states: List[BodyState]) = systemEvolutionFrom(
+  def futureSystemEvolutionFrom(time: Long, body_states: List[BodyState]) = SystemEvolutionStream.from(
     dt = 1.0 / 63.0, base_dt = 1.0 / 63.0,
     force = (time, bs, other_bodies) => {
       /*DVec.zero*/ DVec(0, -9.81 * bs.mass)

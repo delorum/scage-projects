@@ -2,9 +2,9 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_ev
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
-import com.github.dunnololda.scageprojects.orbitalkiller.correctAngle
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Collider.findCollisions
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.correctAngle
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -160,12 +160,13 @@ class SystemEvolution(
         if (mb.active && !mb.is_static) {
           val next_force = force(tacts, mutable_system_helper)
           val next_acc = next_force * mb.invMass
+          mb.acc = next_acc
+          mb.vel += mb.acc * dt * 0.5
+
           val next_torque = torque(tacts, mutable_system_helper)
           val next_ang_acc = (next_torque * mb.invI).toDeg // in degrees
-          mb.acc = next_acc
-          mb.vel += next_acc * dt * 0.5
           mb.ang_acc = next_ang_acc
-          mb.ang_vel += next_ang_acc * dt * 0.5
+          mb.ang_vel += mb.ang_acc * dt * 0.5
         }
       }
 
@@ -183,14 +184,16 @@ class SystemEvolution(
           mb.coord += mb.vel * dt
           mb.ang = correctAngle((mb.ang + mb.ang_vel * dt) % 360)
           mb.aabb = mb.shape.aabb(mb.coord, mb.ang)
+
           val next_force2 = force(tacts, mutable_system_helper)
           val next_acc2 = next_force2 * mb.invMass
+          mb.acc = next_acc2
+          mb.vel += mb.acc * dt * 0.5
+
           val next_torque2 = torque(tacts, mutable_system_helper)
           val next_ang_acc2 = (next_torque2 * mb.invI).toDeg // in degrees
-          mb.acc += next_acc2
-          mb.vel += next_acc2 * dt * 0.5
-          mb.ang_acc += next_ang_acc2
-          mb.ang_vel += next_ang_acc2 * dt * 0.5
+          mb.ang_acc = next_ang_acc2
+          mb.ang_vel += mb.ang_acc * dt * 0.5
         }
       }
 

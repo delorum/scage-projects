@@ -52,19 +52,19 @@ class Space(val bodies: Seq[MutableBodyState], val center: DVec, val width: Doub
 
     val c1 = c + DVec(-w / 4, -h / 4)
     val aabb1 = AABB(c1, w / 2, h / 2)
-    val bodies1 = bodies.filter(b => b.aabb.aabbCollision(aabb1))
+    val bodies1 = bodies.filter(b => b.aabb.collision(aabb1))
 
     val c2 = c + DVec(-w / 4, h / 4)
     val aabb2 = AABB(c2, w / 2, h / 2)
-    val bodies2 = bodies.filter(b => b.aabb.aabbCollision(aabb2))
+    val bodies2 = bodies.filter(b => b.aabb.collision(aabb2))
 
     val c3 = c + DVec(w / 4, h / 4)
     val aabb3 = AABB(c3, w / 2, h / 2)
-    val bodies3 = bodies.filter(b => b.aabb.aabbCollision(aabb3))
+    val bodies3 = bodies.filter(b => b.aabb.collision(aabb3))
 
     val c4 = c + DVec(w / 4, -h / 4)
     val aabb4 = AABB(c4, w / 2, h / 2)
-    val bodies4 = bodies.filter(b => b.aabb.aabbCollision(aabb4))
+    val bodies4 = bodies.filter(b => b.aabb.collision(aabb4))
 
     List(
       new Space(bodies1, c1, w / 2, h / 2),

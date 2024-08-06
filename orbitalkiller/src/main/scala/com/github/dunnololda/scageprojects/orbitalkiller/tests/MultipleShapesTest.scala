@@ -1,36 +1,40 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.tests
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.func.MutableSystemEvolution
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object MultipleShapesTest extends ScageScreenAppD("Multiple Shapes Test", 640, 480) {
-  val b1 = new MutableBodyState(BodyState(
-    index = nextId,
-    mass = 1,
-    coord = DVec(100, 320),
-    vel = DVec(20, 0),
-    shape = PolygonShape(List(DVec(-10, 10), DVec(-10, 20), DVec(0, 20), DVec(10, 10)), Nil),
-    restitution = 0.9
-  ))
 
-  val b2 = new MutableBodyState(BodyState(
-    index = nextId,
-    mass = 1,
-    coord = DVec(540, 323),
-    vel = DVec(-20, 0),
-    shape = PolygonShape(List(DVec(-10, 10), DVec(0, 20), DVec(10, 10)), Nil),
-    restitution = 0.9
-  ))
+  val b1 = new MutableBodyState(
+    BodyState(
+      index = nextId,
+      mass = 1,
+      coord = DVec(100, 320),
+      vel = DVec(20, 0),
+      shape = PolygonShape(List(DVec(-10, 10), DVec(-10, 20), DVec(0, 20), DVec(10, 10)), Nil),
+      restitution = 0.9
+    )
+  )
 
-  def makeThisAndOthers[A](s: mutable.Buffer[A]): mutable.Buffer[(A, mutable.Buffer[A])] = {
-    s.zipWithIndex.map {
-      case (b, idx) =>
-        (b, s.take(idx) ++ s.drop(idx + 1))
+  val b2 = new MutableBodyState(
+    BodyState(
+      index = nextId,
+      mass = 1,
+      coord = DVec(540, 323),
+      vel = DVec(-20, 0),
+      shape = PolygonShape(List(DVec(-10, 10), DVec(0, 20), DVec(10, 10)), Nil),
+      restitution = 0.9
+    )
+  )
+
+  private def makeThisAndOthers[A](s: mutable.Buffer[A]): mutable.Buffer[(A, mutable.Buffer[A])] = {
+    s.zipWithIndex.map { case (b, idx) =>
+      (b, s.take(idx) ++ s.drop(idx + 1))
     }
   }
 
@@ -39,7 +43,7 @@ object MultipleShapesTest extends ScageScreenAppD("Multiple Shapes Test", 640, 4
   key(KEY_Q, onKeyDown = if (keyPressed(KEY_RCONTROL) || keyPressed(KEY_LCONTROL)) stopApp())
 
   action {
-    mutableSystemEvolution(mutable_system, /*1, */ 1.0 / 63)
+    MutableSystemEvolution.step(mutable_system, /*1, */ 1.0 / 63)
   }
 
   render {

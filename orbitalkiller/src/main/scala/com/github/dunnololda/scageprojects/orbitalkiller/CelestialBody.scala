@@ -6,6 +6,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.CircleShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.correctAngle
 
 import scala.collection.Seq
 

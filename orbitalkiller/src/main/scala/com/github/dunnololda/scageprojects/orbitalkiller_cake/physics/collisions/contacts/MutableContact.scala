@@ -25,7 +25,7 @@ case class MutableContact(a: MutableBodyState, b: MutableBodyState, contact_poin
       val rbCrossN = rb */ normal
 
       val invMassSum = a.invMass + b.invMass + (raCrossN * raCrossN) * a.invI + (rbCrossN * rbCrossN) * b.invI
-      val j = (-(1.0f + e) * contactVel) / invMassSum ///contact_points.length
+      val j = (-(1.0 + e) * contactVel) / invMassSum ///contact_points.length
       val impulse = normal * j
       a.applyCollisionImpulse(-impulse, ra, _dt)
       b.applyCollisionImpulse(impulse, rb, _dt)

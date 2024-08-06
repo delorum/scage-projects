@@ -6,6 +6,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers.DegOrKm
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.correctAngle
 class EarthRelativeInfo(degOrKm: DegOrKm) extends InterfaceElement {
   private val strings = Array("")
 

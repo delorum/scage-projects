@@ -57,7 +57,7 @@ object Collider {
         }
       }
     }
-    if (!body1.aabb.aabbCollision(body2.aabb)) {
+    if (!body1.aabb.collision(body2.aabb)) {
       Nil
     } else {
       body1.shape match {
