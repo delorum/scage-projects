@@ -3,14 +3,13 @@ package com.github.dunnololda.scageprojects.orbitalkiller.tests
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.func.MutableSystemEvolution
-
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 
 object MultipleShapesTest extends ScageScreenAppD("Multiple Shapes Test", 640, 480) {
 
-  val b1 = new MutableBodyState(
+  private val systemEvolution = new SystemEvolution
+
+  private val b1 = new MutableBodyState(
     BodyState(
       index = nextId,
       mass = 1,
@@ -21,7 +20,9 @@ object MultipleShapesTest extends ScageScreenAppD("Multiple Shapes Test", 640, 4
     )
   )
 
-  val b2 = new MutableBodyState(
+  systemEvolution.addBody(b1)
+
+  private val b2 = new MutableBodyState(
     BodyState(
       index = nextId,
       mass = 1,
@@ -32,18 +33,12 @@ object MultipleShapesTest extends ScageScreenAppD("Multiple Shapes Test", 640, 4
     )
   )
 
-  private def makeThisAndOthers[A](s: mutable.Buffer[A]): mutable.Buffer[(A, mutable.Buffer[A])] = {
-    s.zipWithIndex.map { case (b, idx) =>
-      (b, s.take(idx) ++ s.drop(idx + 1))
-    }
-  }
-
-  val mutable_system = makeThisAndOthers(ArrayBuffer(b1, b2))
+  systemEvolution.addBody(b2)
 
   key(KEY_Q, onKeyDown = if (keyPressed(KEY_RCONTROL) || keyPressed(KEY_LCONTROL)) stopApp())
 
   action {
-    MutableSystemEvolution.step(mutable_system, /*1, */ 1.0 / 63)
+    systemEvolution.step()
   }
 
   render {
