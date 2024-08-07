@@ -1197,6 +1197,14 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     /*}*/
   }
 
+  private var renderActionPercents: String = ""
+  private var renderActionTimes: String = ""
+
+  actionStaticPeriodIgnorePause(1000) {
+    renderActionPercents = f"Render/Action ${1.0 * currentRenderTimeMsec  / (currentRenderTimeMsec  + currentActionTimeMsec) * 100}%.2f%%/${1.0 * currentActionTimeMsec  / (currentRenderTimeMsec + currentActionTimeMsec) * 100}%.2f%%"
+    renderActionTimes = s"Render/Action $currentRenderTimeMsec msec/$currentActionTimeMsec msec"
+  }
+
   interface {
     if (onPause) print("Пауза", windowCenter.toVec, align = "center", color = WHITE)
     print("F1 - Справка", 20, windowHeight - 40, align = "bottom-left", color = DARK_GRAY)
@@ -1211,27 +1219,8 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
 
     print(s"сборка $appVersion", windowWidth - 20, windowHeight - 20, align = "top-right", color = DARK_GRAY)
     print(s"FPS/Ticks $fps/$tps", windowWidth - 20, windowHeight - 40, align = "top-right", color = DARK_GRAY)
-    print(
-      f"Render/Action ${averageRenderTimeMsec * fps / (averageRenderTimeMsec * fps + averageActionTimeMsec * tps) * 100}%.2f%%/${1 * averageActionTimeMsec * tps / (averageRenderTimeMsec * fps + averageActionTimeMsec * tps) * 100}%.2f%%",
-      windowWidth - 20,
-      windowHeight - 60,
-      align = "top-right",
-      color = DARK_GRAY
-    )
-    print(
-      f"Render/Action $averageRenderTimeMsec%.2f msec/$averageActionTimeMsec%.2f msec",
-      windowWidth - 20,
-      windowHeight - 80,
-      align = "top-right",
-      color = DARK_GRAY
-    )
-    print(
-      s"Render/Action $currentRenderTimeMsec msec/$currentActionTimeMsec msec",
-      windowWidth - 20,
-      windowHeight - 100,
-      align = "top-right",
-      color = DARK_GRAY
-    )
+    print(renderActionPercents, windowWidth - 20, windowHeight - 60, align = "top-right", color = DARK_GRAY)
+    print(renderActionTimes, windowWidth - 20, windowHeight - 100, align = "top-right", color = DARK_GRAY)
 
     val a = DVec(windowWidth - 250, 20)
     val b = DVec(windowWidth - 250 + 100, 20)
@@ -1245,4 +1234,6 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   }
 
   pause()
+
+  needToUpdateRealTrajectory("game started")
 }
