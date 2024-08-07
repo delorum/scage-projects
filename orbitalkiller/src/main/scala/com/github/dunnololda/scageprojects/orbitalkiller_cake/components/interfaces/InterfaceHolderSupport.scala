@@ -1,5 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces
 
-trait InterfaceHolderSupport extends InterfaceHolderAware {
-  val interfaceHolder = new InterfaceHolder
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.CelestialsAware
+
+trait InterfaceHolderSupport extends InterfaceHolderAware with CelestialsAware {
+  val interfaceHolder = new InterfaceHolder(celestialsHelper)
 }

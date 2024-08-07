@@ -5,12 +5,13 @@ import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers._
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.Ship4
 import com.github.dunnololda.scageprojects.orbitalkiller.{FreeFlightMode, InterfaceElement, InterfaceSwitcher, NearestPlanetVelocity, NearestShipAutoDocking, PolygonShip}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.CelestialsHelper
 //import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class InterfaceHolder {
+class InterfaceHolder(celestialsHelper: CelestialsHelper) {
   private val additional_messages = mutable.HashMap[String, String]()
 
   def addMessage(keyword: String, message: String): Unit = {
@@ -65,7 +66,7 @@ class InterfaceHolder {
 
   val enginesInfo = new EnginesInfo
 
-  val shipParamsWhenEginesOff = new ShipParamsWhenEnginesOff
+  val shipParamsWhenEginesOff = new ShipParamsWhenEnginesOff(celestialsHelper)
 
   private val interfaces = List(
     List(timeInfo),

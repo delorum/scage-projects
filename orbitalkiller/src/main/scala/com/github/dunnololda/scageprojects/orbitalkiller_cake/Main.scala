@@ -116,10 +116,6 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   val planets: Predef.Map[Int, CelestialBody] = components.celestialsHelper.planets
   val planet_indices: immutable.Set[Int] = components.celestialsHelper.planet_indices
 
-  def planetStates(system_state: Map[Int, MutableBodyState]): Seq[(CelestialBody, MutableBodyState)] = {
-    components.celestialsHelper.planetStates(system_state)
-  }
-
   val currentPlanetStates: Seq[(CelestialBody, MutableBodyState)] = components.celestialsHelper.currentPlanetStates
 
   def planetByIndex(index: Int): Option[CelestialBody] = components.celestialsHelper.planetByIndex(index)
@@ -133,13 +129,6 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   val sat2: Satellite2 = components.sat2
 
   val cargo1: Cargo1 = components.cargo1
-
-  def nameByIndex(index: Int): Option[String] = {
-    planets.get(index) match {
-      case s @ Some(_) => s.map(_.name)
-      case None => shipsHolder.shipByIndex(index).map(_.name)
-    }
-  }
 
   var _set_stop_time: Boolean = false
   var _stop_after_number_of_tacts: Long = 0

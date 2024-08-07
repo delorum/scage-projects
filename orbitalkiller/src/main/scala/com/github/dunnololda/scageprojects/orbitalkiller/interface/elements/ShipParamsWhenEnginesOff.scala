@@ -2,15 +2,16 @@ package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller.{InterfaceElement, _}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.CelestialsHelper
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 
-class ShipParamsWhenEnginesOff extends InterfaceElement {
-  def linearSpeedStrWhenEnginesOff: String = {
+class ShipParamsWhenEnginesOff(celestialsHelper: CelestialsHelper) extends InterfaceElement {
+  private def linearSpeedStrWhenEnginesOff: String = {
     if (player_ship.flightMode != FreeFlightMode || anyEngineKeyPressed) "N/A" // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
       if (player_ship.engines.exists(_.active)) {
         val future_state = getFutureState(player_ship.engines.map(_.stopMomentTacts).max)
-        val future_planet_states = planetStates(future_state)
+        val future_planet_states = celestialsHelper.planetStates(future_state)
         future_state.get(player_ship.thisOrActualProxyShipIndex) match {
           case Some(bs) =>
             insideSphereOfInfluenceOfCelestialBody(bs.coord, bs.mass, future_planet_states) match {
@@ -28,7 +29,7 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
     }
   }
 
-  def angularSpeedStrWhenEnginesOff: String = {
+  private def angularSpeedStrWhenEnginesOff: String = {
     if (player_ship.flightMode != FreeFlightMode || anyEngineKeyPressed) "N/A" // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
       if (player_ship.engines.exists(_.active)) {
@@ -44,7 +45,7 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
     }
   }
 
-  def orbitParametersStrWhenEnginesOff: String = {
+  private def orbitParametersStrWhenEnginesOff: String = {
     if (player_ship.flightMode != FreeFlightMode || anyEngineKeyPressed) "N/A" // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
       if (player_ship.engines.exists(_.active)) {
@@ -63,7 +64,7 @@ class ShipParamsWhenEnginesOff extends InterfaceElement {
     }
   }
 
-  def fuelMassWhenEnginesOff: String = {
+  private def fuelMassWhenEnginesOff: String = {
     if (player_ship.flightMode != FreeFlightMode || anyEngineKeyPressed) "N/A" // только в свободном режиме и если не нажаты клавиши управления двигателями отображать инфу
     else {
       if (player_ship.engines.exists(_.active)) {
