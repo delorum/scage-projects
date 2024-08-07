@@ -18,13 +18,13 @@ class Engine(
   private var worktime_tacts = 0L
   private var stop_moment_tacts = 0L
 
-  def workTimeMsec = (worktime_tacts * TimeConstants.base_dt * 1000).toLong
+  def workTimeMsec: Long = (worktime_tacts * TimeConstants.base_dt * 1000).toLong
 
-  def workTimeStr = timeStrMsec((worktime_tacts * TimeConstants.base_dt * 1000).toLong)
+  def workTimeStr: String = timeStrMsec((worktime_tacts * TimeConstants.base_dt * 1000).toLong)
 
-  def workTimeTacts = worktime_tacts
+  def workTimeTacts: Long = worktime_tacts
 
-  def workTimeTacts_=(new_worktime_tacts: Long) {
+  def workTimeTacts_=(new_worktime_tacts: Long): Unit = {
     if (new_worktime_tacts >= 0) {
       val prev = worktime_tacts
       worktime_tacts = new_worktime_tacts
@@ -54,13 +54,13 @@ class Engine(
     fuel_consumption_per_sec_at_full_power * (_power / max_power)
   }
 
-  def stopMomentTacts = stop_moment_tacts
+  def stopMomentTacts: Long = stop_moment_tacts
 
   private var _power: Double = 0.0
 
-  def power = _power
+  def power: Double = _power
 
-  def power_=(new_power: Double) {
+  def power_=(new_power: Double): Unit = {
     if (new_power >= 0 && new_power <= max_power && new_power != _power) {
       val prev = _power
       _power = new_power
@@ -72,7 +72,7 @@ class Engine(
 
   def powerPercent: Long = math.round(_power / max_power * 100)
 
-  def powerPercent_=(new_power_percent: Long) {
+  def powerPercent_=(new_power_percent: Long): Unit = {
     if (new_power_percent >= 0 && new_power_percent <= 100) {
       val new_power = {
         if (interfaceHolder.gSwitcher.maxGSet) {
@@ -106,15 +106,15 @@ class Engine(
     }
   }
 
-  def force = force_dir * power
+  def force: DVec = force_dir * power
 
-  def torque = -force */ position
+  def torque: Double = -force */ position
 
   private var is_active: Boolean = false
 
-  def active = is_active
+  def active: Boolean = is_active
 
-  def active_=(bool: Boolean) {
+  def active_=(bool: Boolean): Unit = {
     if (is_active != bool) {
       if (bool) {
         if (!ship.engineDisabled(index) && ship.fuelMass > fuelConsumptionPerTact) {
@@ -139,7 +139,7 @@ class Engine(
     }
   }
 
-  def switchActive() {
+  def switchActive(): Unit = {
     active = !active
   }
 }

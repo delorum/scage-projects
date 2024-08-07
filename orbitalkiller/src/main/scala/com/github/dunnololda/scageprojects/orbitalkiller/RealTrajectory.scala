@@ -1,6 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ErrorConstants.angular_velocity_error
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.planetIndices
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.CelestialBody
@@ -124,7 +125,7 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
         system_evolution_copy
           .bodyState(Main.player_ship.index)
           .foreach(bs => {
-            if (bs.ang_vel != 0 && math.abs(bs.ang_vel) < TimeConstants.angular_velocity_error) {
+            if (bs.ang_vel != 0 && math.abs(bs.ang_vel) < angular_velocity_error) {
               bs.ang_vel = 0
             }
             bs.mass = Main.player_ship.thisOrActualProxyShipCurrentMass(system_evolution_copy.tacts)

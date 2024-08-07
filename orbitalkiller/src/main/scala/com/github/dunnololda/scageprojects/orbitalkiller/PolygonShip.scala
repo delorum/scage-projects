@@ -4,6 +4,7 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements.OtherShipInfo
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.ProxyShip
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ErrorConstants.angular_velocity_error
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.planetIndices
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.PlanetWithAir
@@ -1301,7 +1302,7 @@ abstract class PolygonShip(
           }
         }
       })
-      if (currentState.ang_vel != 0 && math.abs(currentState.ang_vel) < TimeConstants.angular_velocity_error) {
+      if (currentState.ang_vel != 0 && math.abs(currentState.ang_vel) < angular_velocity_error) {
         currentState.ang_vel = 0
       }
       currentState.mass = mass /*currentMass(_tacts)*/

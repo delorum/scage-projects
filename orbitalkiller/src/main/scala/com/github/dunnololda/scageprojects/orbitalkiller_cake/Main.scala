@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.ships._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ErrorConstants.angular_velocity_error
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.OrbitalKillerComponents
@@ -17,13 +18,10 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.{
-  equalGravityRadius,
-  insideSphereOfInfluenceOfCelestialBody
-}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.{equalGravityRadius, insideSphereOfInfluenceOfCelestialBody}
 
 import scala.annotation.tailrec
-import scala.collection.{mutable, Set, _}
+import scala.collection.{Set, mutable, _}
 
 object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1600), property("screen.height", 900)) {
   private val components = new OrbitalKillerComponents(this)
@@ -63,15 +61,13 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
 
   def system_evolution: SystemEvolution = components.publicSystemEvolution
 
-  def currentBodyState(index: Int): Option[MutableBodyState] = system_evolution.bodyState(index)
-
   private val system_cache = mutable.HashMap[Long, mutable.Map[Int, MutableBodyState]]()
 
   def getFutureState(tacts: Long): mutable.Map[Int, MutableBodyState] = {
     if (player_ship.flightMode != Maneuvering) {
       system_cache.getOrElseUpdate(
         tacts, {
-          println("adding to system_cache")
+          println(s"adding to system_cache for tacts=$tacts")
           val system_evolution_copy = system_evolution.copy(base_dt)
           val steps = tacts - system_evolution_copy.tacts
           (1L to steps).foreach(_ => {

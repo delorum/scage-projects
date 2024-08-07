@@ -13,7 +13,15 @@ abstract class Rocket1(
     init_velocity: DVec = DVec.dzero,
     init_rotation: Double = 0.0,
     ship_designer: Boolean)
-  extends PolygonShip(index, "Доброта", init_coord, init_velocity, init_rotation, ship_designer, false) {
+  extends PolygonShip(
+    index,
+    "Доброта",
+    init_coord,
+    init_velocity,
+    init_rotation,
+    ship_designer,
+    create_interface = false
+  ) {
   private val _payload: Double = 196
   private var _fuel_mass: Double = 4
 
@@ -30,8 +38,8 @@ abstract class Rocket1(
 
   lazy val engine_size: Double = 0.5 * 0.1
 
-  val start_tact = if (!ship_designer) system_evolution.tacts else 0
-  val work_tacts = 1200 // количество тактов, за которое ракета пролетит 10 км
+  private val start_tact: Long = if (!ship_designer) system_evolution.tacts else 0
+  private val work_tacts: Int = 1200 // количество тактов, за которое ракета пролетит 10 км
 
   lazy val points: List[DVec] = List(
     DVec(1.0, -20.0),
@@ -47,7 +55,7 @@ abstract class Rocket1(
     DVec(-1.0, -20.0)
   ).map(_ * 0.1)
 
-  lazy val convex_parts = List(
+  lazy val convex_parts: List[PolygonShape] = List(
     PolygonShape(List(DVec(-0.2, -2.0), DVec(-0.2, -2.1000001), DVec(-0.1, -2.0)), Nil),
     PolygonShape(List(DVec(-0.2, -2.0), DVec(0.1, -2.0), DVec(0.1, -1.8000001), DVec(-0.2, -1.8000001)), Nil),
     PolygonShape(List(DVec(0.1, -2.0), DVec(0.2, -2.1000001), DVec(0.2, -2.0)), Nil),
@@ -58,7 +66,7 @@ abstract class Rocket1(
     PolygonShape(List(DVec(-0.1, 1.8000001), DVec(0.1, 1.8000001), DVec(0.0, 2.1000001)), Nil)
   )
 
-  val wreck_parts = List(
+  val wreck_parts: List[PolygonShape] = List(
     PolygonShape(
       List(DVec(-0.2, -2.1000001), DVec(-0.1, -2.0), DVec(0.1, -1.9), DVec(-0.2, -1.8000001)),
       List( // 1 NOT CONVEX
@@ -116,7 +124,7 @@ abstract class Rocket1(
     PolygonShape(List(DVec(0.0, 1.7), DVec(0.1, 1.7), DVec(0.1, 1.8000001), DVec(0.0, 2.1000001)), List()) // 26
   )
 
-  val docking_points = Nil
+  val docking_points: List[DockingPoints] = Nil
 
   val two = new Engine(
     2,
@@ -128,21 +136,20 @@ abstract class Rocket1(
     this
   )
 
-  val engines = List(two)
+  val engines: List[Engine] = List(two)
 
-  val engines_by_keycodes = Map(
+  val engines_by_keycodes: Map[Int, Engine] = Map(
     KEY_NUMPAD2 -> two
   )
 
-  def preserveVelocity(vel: DVec) {}
+  def preserveVelocity(vel: DVec): Unit = {}
 
-  def preserveAngularVelocity(ang_vel_deg: Double) {}
+  def preserveAngularVelocity(ang_vel_deg: Double): Unit = {}
 
   override def drawIfAliveAfterRotation(): Unit = {
     drawSlidingLines(actualDrawPoints, colorIfPlayerAliveOrRed(WHITE))
-    engines.foreach { case e =>
-      drawEngine(e)
-    }
+    engines.foreach(e =>
+      drawEngine(e))
   }
 
   override def afterStep(time_msec: Long): Unit = {
