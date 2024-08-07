@@ -22,8 +22,8 @@ abstract class ProxyShip(
     (ship1.mass * ship1.coord + ship2.mass * ship2.coord) / (ship1.mass + ship2.mass),
     (ship1.mass * ship1.linearVelocity + ship2.mass * ship2.linearVelocity) / (ship1.mass + ship2.mass),
     ship1.rotation,
-    false,
-    false
+    ship_designer = false,
+    create_interface = false
   ) {
 
   println(s"init_rotation=$init_rotation")

@@ -13,6 +13,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants.base_dt
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.DrawUtils.{drawArrow, drawDashedArrow}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.MyVec
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.OrbitUtils.satelliteSpeed
@@ -831,12 +832,12 @@ abstract class Ship4(
       if (!interfaceHolder.rocketsInfo.isMinimized) {
         left_rocket.foreach(r => {
           if (r.isAlive) {
-            drawArrow(DVec.zero.actualPos, DVec.zero.actualPos + (r.coord - coord).n * radius, RED)
+            drawArrow(DVec.zero.actualPos, DVec.zero.actualPos + (r.coord - coord).n * radius, RED, globalScale)
           }
         })
         right_rocket.foreach(r => {
           if (r.isAlive) {
-            drawArrow(DVec.zero.actualPos, DVec.zero.actualPos + (r.coord - coord).n * radius, RED)
+            drawArrow(DVec.zero.actualPos, DVec.zero.actualPos + (r.coord - coord).n * radius, RED, globalScale)
           }
         })
       }
@@ -846,12 +847,14 @@ abstract class Ship4(
         drawArrow(
           DVec.zero.actualPosBeforeRotation,
           DVec.zero.actualPosBeforeRotation + linearVelocity.n * radius,
-          colorIfPlayerAliveOrRed(BLUE)
+          colorIfPlayerAliveOrRed(BLUE),
+          globalScale
         )
         drawArrow(
           DVec.zero.actualPosBeforeRotation,
           DVec.zero.actualPosBeforeRotation + relativeLinearVelocity.n * radius,
-          colorIfPlayerAliveOrRed(interfaceHolder.linearVelocityInfo.color)
+          colorIfPlayerAliveOrRed(interfaceHolder.linearVelocityInfo.color),
+          globalScale
         )
         // velocity direction at stop moment
         if (_stop_after_number_of_tacts > 0 && interfaceHolder.orbParams.calculationOn) {
@@ -866,7 +869,8 @@ abstract class Ship4(
                 DVec.zero.actualPosBeforeRotation - v * radius,
                 DVec.zero.actualPosBeforeRotation + v * radius,
                 1,
-                colorIfPlayerAliveOrRed(CYAN)
+                colorIfPlayerAliveOrRed(CYAN),
+                globalScale
               )
             })
         }
@@ -876,7 +880,8 @@ abstract class Ship4(
         drawArrow(
           DVec.zero.actualPosBeforeRotation,
           DVec.zero.actualPosBeforeRotation + (sun.coord - coord).n * radius,
-          colorIfPlayerAliveOrRed(interfaceHolder.sunRelativeInfo.color)
+          colorIfPlayerAliveOrRed(interfaceHolder.sunRelativeInfo.color),
+          globalScale
         )
       }
       if (!interfaceHolder.earthRelativeInfo.isMinimized) {
@@ -884,7 +889,8 @@ abstract class Ship4(
         drawArrow(
           DVec.zero.actualPosBeforeRotation,
           DVec.zero.actualPosBeforeRotation + (earth.coord - coord).n * radius,
-          colorIfPlayerAliveOrRed(interfaceHolder.earthRelativeInfo.color)
+          colorIfPlayerAliveOrRed(interfaceHolder.earthRelativeInfo.color),
+          globalScale
         )
       }
       if (!interfaceHolder.moonRelativeInfo.isMinimized) {
@@ -892,7 +898,8 @@ abstract class Ship4(
         drawArrow(
           DVec.zero.actualPosBeforeRotation,
           DVec.zero.actualPosBeforeRotation + (moon.coord - coord).n * radius,
-          colorIfPlayerAliveOrRed(interfaceHolder.moonRelativeInfo.color)
+          colorIfPlayerAliveOrRed(interfaceHolder.moonRelativeInfo.color),
+          globalScale
         )
       }
       interfaceHolder.shipInterfaces.foreach(si => {
@@ -900,7 +907,8 @@ abstract class Ship4(
           drawArrow(
             DVec.zero.actualPosBeforeRotation,
             DVec.zero.actualPosBeforeRotation + (si.monitoring_ship.coord - coord).n * radius,
-            colorIfPlayerAliveOrRed(si.color)
+            colorIfPlayerAliveOrRed(si.color),
+            globalScale
           )
         }
       })

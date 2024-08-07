@@ -15,6 +15,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.h
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.DrawUtils.{drawArrow, drawDashedLine}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.MyDouble
 
@@ -578,7 +579,7 @@ abstract class PolygonShip(
       }
       if (globalScale >= 20 && interfaceHolder.namesSwitcher.showNames) {
         print(e.name, e.position.actualPos.toVec, (max_font_size / globalScale).toFloat, WHITE)
-        drawArrow(center, center + force_dir * radius / 6, WHITE)
+        drawArrow(center, center + force_dir * radius / 6, WHITE, globalScale)
       }
 
       val in_shadow = {

@@ -17,6 +17,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evo
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.DrawUtils.drawArrow
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.{equalGravityRadius, insideSphereOfInfluenceOfCelestialBody}
 
@@ -305,39 +306,6 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
       globalScale = 10
       viewMode = FixedOnShip
     }
-  }
-
-  def drawArrow(from1: DVec, to1: DVec, color: ScageColor, scale: Double = globalScale): Unit = {
-    val arrow11 = to1 + ((from1 - to1).n * 10 / scale).rotateDeg(15)
-    val arrow12 = to1 + ((from1 - to1).n * 10 / scale).rotateDeg(-15)
-    drawLine(from1, to1, color)
-    drawLine(to1, arrow11, color)
-    drawLine(to1, arrow12, color)
-  }
-
-  def drawDashedLine(from: DVec, to: DVec, dash_len: Double, color: ScageColor): Unit = {
-    val line_len = (to - from).norma
-    val normal = (to - from).n
-    (0.0 to line_len - dash_len by dash_len * 2).foreach(dash_from =>
-      drawLine(from + normal * dash_from, from + normal * (dash_from + dash_len), color)
-    )
-  }
-
-  def drawDashedArrow(
-      from1: DVec,
-      to1: DVec,
-      dash_len: Double,
-      color: ScageColor,
-      scale: Double = globalScale): Unit = {
-    val line_len = (to1 - from1).norma
-    val normal = (to1 - from1).n
-    (0.0 to line_len - dash_len by dash_len * 2).foreach(dash_from =>
-      drawLine(from1 + normal * dash_from, from1 + normal * (dash_from + dash_len), color)
-    )
-    val arrow11 = to1 + ((from1 - to1).n * 10 / scale).rotateDeg(15)
-    val arrow12 = to1 + ((from1 - to1).n * 10 / scale).rotateDeg(-15)
-    drawLine(to1, arrow11, color)
-    drawLine(to1, arrow12, color)
   }
 
   keyIgnorePause(
@@ -1129,12 +1097,14 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
         drawArrow(
           c + DVec(0, -h / 2) + DVec(0, -5 / globalScale),
           c + DVec(-w / 2, -h / 2) + DVec(0, -5 / globalScale),
-          DARK_GRAY
+          DARK_GRAY,
+          globalScale
         )
         drawArrow(
           c + DVec(0, -h / 2) + DVec(0, -5 / globalScale),
           c + DVec(w / 2, -h / 2) + DVec(0, -5 / globalScale),
-          DARK_GRAY
+          DARK_GRAY,
+          globalScale
         )
 
         openglLocalTransform {
@@ -1154,12 +1124,14 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
         drawArrow(
           c + DVec(w / 2, 0) + DVec(5 / globalScale, 0),
           c + DVec(w / 2, h / 2) + DVec(5 / globalScale, 0),
-          DARK_GRAY
+          DARK_GRAY,
+          globalScale
         )
         drawArrow(
           c + DVec(w / 2, 0) + DVec(5 / globalScale, 0),
           c + DVec(w / 2, -h / 2) + DVec(5 / globalScale, 0),
-          DARK_GRAY
+          DARK_GRAY,
+          globalScale
         )
 
         openglLocalTransform {
@@ -1177,7 +1149,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
       if (left_up_corner.isEmpty) {
         val m = absCoord(mouseCoord)
         val d = (player_ship.coord * scale).dist(m) / scale
-        drawArrow(player_ship.coord * scale, m, DARK_GRAY)
+        drawArrow(player_ship.coord * scale, m, DARK_GRAY, globalScale)
         openglLocalTransform {
           openglMove(m)
           print(s"  ${mOrKmOrMKm(d.toLong)}", Vec.zero, size = (max_font_size / globalScale).toFloat, DARK_GRAY)
@@ -1188,7 +1160,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
       val d = player_ship.coord.dist(m)
       openglLocalTransform {
         openglMove(player_ship.coord - base)
-        drawArrow(DVec.zero, m - player_ship.coord, DARK_GRAY)
+        drawArrow(DVec.zero, m - player_ship.coord, DARK_GRAY, globalScale)
         openglMove(m - player_ship.coord)
         openglRotateDeg(-rotationAngleDeg)
         print(s"  ${mOrKmOrMKm(d.toLong)}", Vec.zero, size = (max_font_size / globalScale).toFloat, DARK_GRAY)
