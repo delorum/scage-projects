@@ -2,8 +2,8 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.ScageId
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants.base_dt
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils.timeStrMsec
 
 class Engine(
@@ -18,9 +18,9 @@ class Engine(
   private var worktime_tacts = 0L
   private var stop_moment_tacts = 0L
 
-  def workTimeMsec: Long = (worktime_tacts * TimeConstants.base_dt * 1000).toLong
+  def workTimeMsec: Long = (worktime_tacts * base_dt * 1000).toLong
 
-  def workTimeStr: String = timeStrMsec((worktime_tacts * TimeConstants.base_dt * 1000).toLong)
+  def workTimeStr: String = timeStrMsec((worktime_tacts * base_dt * 1000).toLong)
 
   def workTimeTacts: Long = worktime_tacts
 
@@ -43,11 +43,11 @@ class Engine(
   }
 
   def maxFuelConsumptionPerTact: Double = {
-    fuel_consumption_per_sec_at_full_power * TimeConstants.base_dt
+    fuel_consumption_per_sec_at_full_power * base_dt
   }
 
   def fuelConsumptionPerTact: Double = {
-    fuel_consumption_per_sec_at_full_power * (_power / max_power) * TimeConstants.base_dt
+    fuel_consumption_per_sec_at_full_power * (_power / max_power) * base_dt
   }
 
   def fuelConsumptionPerSec: Double = {

@@ -2,7 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants.base_dt
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.orbits.KeplerOrbit.calculateOrbit
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.orbits.{EllipseOrbit, HyperbolaOrbit, KeplerOrbit}
@@ -12,7 +12,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatU
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.MyDouble
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.insideSphereOfInfluenceOfCelestialBody
 
-import scala.collection.{mutable, Set}
+import scala.collection.{Set, mutable}
 
 object OrbitDataUpdater {
   private val w = earth.radius * scale / 2f
@@ -58,7 +58,7 @@ object OrbitDataUpdater {
           drawCircle(position_after_time * scale, w / globalScale, YELLOW)
         })
         if (_stop_after_number_of_tacts > 0) {
-          val time_to_stop_msec = (_stop_after_number_of_tacts * TimeConstants.base_dt * 1000).toLong
+          val time_to_stop_msec = (_stop_after_number_of_tacts * base_dt * 1000).toLong
           val position_when_stop_moment = ship_orbit.orbitalPointAfterTime(x.body_state.coord, time_to_stop_msec, x.ccw)
           drawCircle(position_when_stop_moment * scale, w / globalScale, GREEN)
         }
@@ -72,7 +72,7 @@ object OrbitDataUpdater {
           drawCircle(position_after_time * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
         })
         if (_stop_after_number_of_tacts > 0) {
-          val time_to_stop_msec = (_stop_after_number_of_tacts * TimeConstants.base_dt * 1000).toLong
+          val time_to_stop_msec = (_stop_after_number_of_tacts * base_dt * 1000).toLong
           val position_when_stop_moment = moon_orbit.orbitalPointAfterTimeCCW(x.body_state.coord, time_to_stop_msec)
           drawCircle(position_when_stop_moment * scale, moon.radius * scale, GREEN)
           drawCircle(position_when_stop_moment * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
@@ -87,7 +87,7 @@ object OrbitDataUpdater {
           drawCircle(position_after_time * scale, earth.half_hill_radius * scale, color = DARK_GRAY)
         })
         if (_stop_after_number_of_tacts > 0) {
-          val time_to_stop_msec = (_stop_after_number_of_tacts * TimeConstants.base_dt * 1000).toLong
+          val time_to_stop_msec = (_stop_after_number_of_tacts * base_dt * 1000).toLong
           val position_when_stop_moment = earth_orbit.orbitalPointAfterTimeCCW(x.body_state.coord, time_to_stop_msec)
           drawCircle(position_when_stop_moment * scale, earth.radius * scale, GREEN)
           drawCircle(position_when_stop_moment * scale, earth.half_hill_radius * scale, color = DARK_GRAY)
@@ -205,7 +205,7 @@ object OrbitDataUpdater {
             drawFilledCircle(
               new_o.orbitalPointAfterTime(
                 bs.coord,
-                (_stop_after_number_of_tacts * TimeConstants.base_dt * 1000).toLong,
+                (_stop_after_number_of_tacts * base_dt * 1000).toLong,
                 ccw
               ) * scale,
               3 / globalScale,
@@ -235,7 +235,7 @@ object OrbitDataUpdater {
               lazy val flight_time_msec = new_o.travelTimeOnOrbitMsec(bs.coord, orbital_point, ccw)
 
               if (set_stop_moment) {
-                _stop_after_number_of_tacts = (flight_time_msec / 1000 / TimeConstants.base_dt).toLong
+                _stop_after_number_of_tacts = (flight_time_msec / 1000 / base_dt).toLong
                 _stop_in_orbit_true_anomaly = mouse_teta_rad2Pi
                 set_stop_moment = false
               }
@@ -367,7 +367,7 @@ object OrbitDataUpdater {
             drawFilledCircle(
               new_o.orbitalPointAfterTime(
                 bs.coord,
-                (_stop_after_number_of_tacts * TimeConstants.base_dt * 1000).toLong,
+                (_stop_after_number_of_tacts * base_dt * 1000).toLong,
                 ccw
               ) * scale,
               3 / globalScale,
@@ -379,7 +379,7 @@ object OrbitDataUpdater {
           lazy val flight_time_msec = new_o.travelTimeOnOrbitMsec(bs.coord, orbital_point, ccw)
 
           if (set_stop_moment) {
-            _stop_after_number_of_tacts = (flight_time_msec / 1000 / TimeConstants.base_dt).toLong
+            _stop_after_number_of_tacts = (flight_time_msec / 1000 / base_dt).toLong
             _stop_in_orbit_true_anomaly = mouse_teta_rad2Pi
             set_stop_moment = false
           }

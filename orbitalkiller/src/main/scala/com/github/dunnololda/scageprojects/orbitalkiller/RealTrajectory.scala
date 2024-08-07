@@ -2,13 +2,14 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ErrorConstants.angular_velocity_error
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.planetIndices
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants.base_dt
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.G
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Main, TimeConstants}
 
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
@@ -49,7 +50,7 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
     curPoints = 0
     dropped = 0
     system_evolution_copy = Main.system_evolution.copy(
-      TimeConstants.base_dt,
+      base_dt,
       exclude = immutable.Set(Main.station.index, Main.sat1.index, Main.sat2.index, Main.cargo1.index),
       collisions_enabled = false
     )
@@ -78,7 +79,7 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
       // корень из трех - Земля, Луна, корабль). Коэффициент подобран так, чтобы минимальный шаг был base_dt.
       val a = ps.acc.norma
       if (a != 0) {
-        val m = 1.0 / 543200 * math.sqrt(2.2e8 / a) / TimeConstants.base_dt
+        val m = 1.0 / 543200 * math.sqrt(2.2e8 / a) / base_dt
         if (m < min_m) min_m = m
         if (m > max_m) max_m = m
         m
@@ -98,10 +99,10 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
 
   private def chooseDt: Double = {
     if (Main.player_ship.engines.exists(_.stopMomentTacts >= system_evolution_copy.tacts)) {
-      TimeConstants.base_dt // пока работают двигатели, dt должен быть равен base_dt, иначе неверно работают формулы.
+      base_dt // пока работают двигатели, dt должен быть равен base_dt, иначе неверно работают формулы.
     } else {
       if (prev_energy /* == 0 */ .isEmpty) prev_energy = energy
-      calc_multiplier() * TimeConstants.base_dt
+      calc_multiplier() * base_dt
     }
   }
 
@@ -177,13 +178,13 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
       val x = e.map(_._2).sum - prev_energy.map(_._2).sum
       if (max_multiplier.contains(1)) {
         println(
-          f"real trajectory dt ${system_evolution_copy.base_dt / TimeConstants.base_dt}%.2f*base_dt, dE=${x / prev_energy
+          f"real trajectory dt ${system_evolution_copy.base_dt / base_dt}%.2f*base_dt, dE=${x / prev_energy
               .map(_._2)
               .sum}%.10f, curPoints/numPoints $curPoints/${interfaceHolder.realTrajectorySwitcher.numPoints} dropped/length $dropped/${real_trajectory.length}"
         )
       } else {
         println(
-          f"real trajectory dt ${system_evolution_copy.base_dt / TimeConstants.base_dt}%.2f*base_dt, dE=${x / prev_energy
+          f"real trajectory dt ${system_evolution_copy.base_dt / base_dt}%.2f*base_dt, dE=${x / prev_energy
               .map(_._2)
               .sum}%.10f, min_m = $min_m, max_m = $max_m, curPoints/numPoints $curPoints/${interfaceHolder.realTrajectorySwitcher.numPoints} dropped/length $dropped/${real_trajectory.length}"
         )

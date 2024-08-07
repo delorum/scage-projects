@@ -4,14 +4,18 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.AdditionalSymbols.rocket_symbol
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.ErrorConstants.{angle_error, angular_velocity_error, linear_velocity_error}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ErrorConstants.{
+  angle_error,
+  angular_velocity_error,
+  linear_velocity_error
+}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants.base_dt
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.MyVec
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.OrbitUtils.satelliteSpeed
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Main, TimeConstants}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -21,7 +25,15 @@ abstract class Ship4(
     init_velocity: DVec = DVec.dzero,
     init_rotation: Double = 0.0,
     ship_designer: Boolean = false)
-  extends PolygonShip(index, "Снежинка", init_coord, init_velocity, init_rotation, ship_designer, false) {
+  extends PolygonShip(
+    index,
+    "Снежинка",
+    init_coord,
+    init_velocity,
+    init_rotation,
+    ship_designer,
+    create_interface = false
+  ) {
   private var _payload: Double = 5 * 1000
   private var _fuel_mass: Double = 1000
 
@@ -187,7 +199,7 @@ abstract class Ship4(
         val power = max_power * 0.01 * percent
         val force = force_dir * power
         val acc = force / mass
-        (howManyTacts(to, from, acc, TimeConstants.base_dt), power, percent)
+        (howManyTacts(to, from, acc, base_dt), power, percent)
       }
       .find { case ((_, result_to), _, _) =>
         // println(s"maxPossiblePowerForLinearMovement find: $power, $percent: ${math.abs(to - result_to)}")
@@ -219,7 +231,7 @@ abstract class Ship4(
         val power = max_power * 0.01 * percent
         val torque = (-force_dir * power) */ position
         val ang_acc = (torque / I).toDeg
-        (howManyTacts(to, from, ang_acc, TimeConstants.base_dt), power, percent)
+        (howManyTacts(to, from, ang_acc, base_dt), power, percent)
       }
       .find { case ((_, result_to), _, _) =>
         // println(s"maxPossiblePowerAndTactsForRotation find: $power, $percent: ${math.abs(to - result_to)}")
