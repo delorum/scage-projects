@@ -1,14 +1,14 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials
 
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.planetIndices
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 
-import scala.collection.{Map, immutable}
+import scala.collection.{immutable, Map}
 
 class CelestialsHelper(allCelestials: Seq[CelestialBody], systemEvolution: SystemEvolution) {
   val planets: immutable.Map[Int, CelestialBody] = allCelestials.map(c => c.index -> c).toMap
-  val planet_indices: immutable.Set[Int] = allCelestials.map(_.index).toSet
 
   def planetByIndex(index: Int): Option[CelestialBody] = planets.get(index)
 
@@ -23,6 +23,6 @@ class CelestialsHelper(allCelestials: Seq[CelestialBody], systemEvolution: Syste
   }
 
   val currentPlanetStates: Seq[(CelestialBody, MutableBodyState)] = planetStates(
-    systemEvolution.bodyStates(planet_indices)
+    systemEvolution.bodyStates(planetIndices)
   )
 }

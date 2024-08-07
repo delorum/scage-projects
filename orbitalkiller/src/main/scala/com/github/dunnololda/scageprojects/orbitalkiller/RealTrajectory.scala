@@ -2,10 +2,11 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.planetIndices
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.G
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Main, TimeConstants}
 
 import scala.collection.immutable
@@ -52,7 +53,7 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
       collisions_enabled = false
     )
     celestials = system_evolution_copy.allBodyStates
-      .filter(kv => Main.planet_indices.contains(kv._1))
+      .filter(kv => planetIndices.contains(kv._1))
       .flatMap(kv => {
         Main.planets.get(kv._1).map(planet => (kv._1, (planet, kv._2)))
       })

@@ -11,4 +11,6 @@ object ObjectIndices {
   val sat1Index: Int = ScageId.nextId
   val sat2Index: Int = ScageId.nextId
   val cargoIndex: Int = ScageId.nextId
+
+  val planetIndices: Set[Int] = Set(sunIndex, earthIndex, moonIndex)
 }

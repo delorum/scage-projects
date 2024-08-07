@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.orbits
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main.interfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.{correctAngle, MyDouble, MyVec}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.G
 
 trait KeplerOrbit {
   def a: Double
@@ -69,8 +70,7 @@ object KeplerOrbit {
       planet_coord: DVec,
       body_mass: Double,
       body_relative_coord: DVec,
-      body_relative_velocity: DVec,
-      G: Double): KeplerOrbit = {
+      body_relative_velocity: DVec): KeplerOrbit = {
     // https://ru.wikipedia.org/wiki/Гравитационный_параметр
     // val mu = (planet_mass + body_mass) * G // гравитационный параметр
     val mu = planet_mass * G // гравитационный параметр

@@ -1,9 +1,9 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials
 
 import com.github.dunnololda.scage.ScageLibD.{DVec, Double2Vecrich}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.G
 
 trait CelestialBody {
   def index: Int
@@ -17,12 +17,12 @@ trait CelestialBody {
   def mass: Double
 
   def radius: Double
-  lazy val radius2:Double = radius*radius
+  lazy val radius2: Double = radius * radius
 
   def initState: BodyState
 
   def half_hill_radius: Double
-  lazy val half_hill_radius2: Double = half_hill_radius*half_hill_radius
+  lazy val half_hill_radius2: Double = half_hill_radius * half_hill_radius
 
   def air_free_altitude: Double
 

@@ -5,17 +5,17 @@ import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements.OtherShipInfo
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.ProxyShip
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.planetIndices
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.PlanetWithAir
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.ProtectedInterfaceHolderAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ProtectedShipsHolderAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Main, TimeConstants}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.MyDouble
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.{Main, TimeConstants}
 
-import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -1198,7 +1198,7 @@ abstract class PolygonShip(
               radius,
               orbit_color,
               some_system_state,
-              planet_indices,
+              planetIndices,
               calculate_orbit_around
             )
           } else {
@@ -1209,7 +1209,7 @@ abstract class PolygonShip(
               radius,
               orbit_color,
               some_system_state,
-              planet_indices,
+              planetIndices,
               calculate_orbit_around
             )
           }
@@ -1271,7 +1271,7 @@ abstract class PolygonShip(
         radius,
         orbit_color,
         system_evolution.allBodyStates,
-        planet_indices,
+        planetIndices,
         calculate_orbit_around
       )
     } else {
@@ -1282,7 +1282,7 @@ abstract class PolygonShip(
         radius,
         orbit_color,
         system_evolution.allBodyStates,
-        planet_indices,
+        planetIndices,
         calculate_orbit_around
       )
     }

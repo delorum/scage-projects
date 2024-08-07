@@ -1,28 +1,30 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller.ships._
 import com.github.dunnololda.scageprojects.orbitalkiller._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
+import com.github.dunnololda.scageprojects.orbitalkiller.ships._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.OrbitalKillerComponents
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ShipsHolder
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.BoxShape
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.orbits.{EllipseOrbit, HyperbolaOrbit, KeplerOrbit}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.orbits.KeplerOrbit.calculateOrbit
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.orbits.{EllipseOrbit, HyperbolaOrbit, KeplerOrbit}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.equalGravityRadius
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.{
+  equalGravityRadius,
+  insideSphereOfInfluenceOfCelestialBody
+}
 
 import java.io.FileOutputStream
 import scala.annotation.tailrec
-import scala.collection.{Map, Set, immutable, mutable, _}
+import scala.collection.{mutable, Set, _}
 
 object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1600), property("screen.height", 900)) {
   private val components = new OrbitalKillerComponents(this)
@@ -114,7 +116,6 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   val moon = components.moon
 
   val planets: Predef.Map[Int, CelestialBody] = components.celestialsHelper.planets
-  val planet_indices: immutable.Set[Int] = components.celestialsHelper.planet_indices
 
   val currentPlanetStates: Seq[(CelestialBody, MutableBodyState)] = components.celestialsHelper.currentPlanetStates
 
@@ -236,14 +237,6 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     }
   }*/
 
-  private def curvatureRadiusInPoint(body_state: BodyState): Double = {
-    math.abs(body_state.vel.norma2 / (body_state.acc * body_state.vel.p))
-  }
-
-  def curvatureRadiusStrInPoint(body_state: BodyState): String = {
-    s"${mOrKmOrMKm(curvatureRadiusInPoint(body_state))}"
-  }
-
   def orbitStrInPointWithVelocity(
       coord: DVec,
       velocity: DVec,
@@ -257,8 +250,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
           planet_state.coord,
           mass,
           coord - planet_state.coord,
-          velocity - planet_state.vel,
-          G
+          velocity - planet_state.vel
         )
         orbit.strDefinition(
           planet.name,
@@ -298,8 +290,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
                 planet_state.coord,
                 mass,
                 coord - planet_state.coord,
-                velocity - planet_state.vel,
-                G
+                velocity - planet_state.vel
               )
             )
           )
@@ -345,31 +336,6 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
       _draw_map_mode = false
       globalScale = 10
       viewMode = FixedOnShip
-    }
-  }
-
-  /**
-   * Возвращает информацию о небесном теле, в сфере влияния которого находится наш объект (заведомо гораздо меньшей массы).
-   * Мы вычисляем это, определяя в сфере Хилла какого небесного тела мы находимся. Потенциальные кандидаты передаются в аргументе
-   * planet_state, и они там отсортированы по возрастанию массы. Мы проверяем нахождение в сфере Хилла начиная с самого малого.
-   *
-   * @param ship_coord - позиция нашего объекта
-   * @param ship_mass - масса нашего объекта
-   * @param planet_states - информация о небесных телах, в сфере влияния которых потенциально мы можем быть. Это список, и он должен быть
-   *                      отсортирован по возрастанию массы. В конце списка должно быть Солнце!
-   * @return
-   */
-  def insideSphereOfInfluenceOfCelestialBody(
-      ship_coord: DVec,
-      ship_mass: Double,
-      planet_states: Seq[(CelestialBody, MutableBodyState)]): Option[(CelestialBody, MutableBodyState)] = {
-    if (planet_states.isEmpty) None
-    else if (planet_states.length == 1) Some(planet_states.head)
-    else {
-      val x = planet_states.find { case (smaller_planet, smaller_planet_state) =>
-        ship_coord.dist2(smaller_planet_state.coord) <= smaller_planet.half_hill_radius2
-      }
-      if (x.nonEmpty) x else Some(planet_states.last)
     }
   }
 

@@ -3,14 +3,14 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.orbits.KeplerOrbit.calculateOrbit
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.orbits.{EllipseOrbit, HyperbolaOrbit, KeplerOrbit}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.MyDouble
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.insideSphereOfInfluenceOfCelestialBody
 
 import scala.collection.{mutable, Set}
 
@@ -456,8 +456,7 @@ object OrbitDataUpdater {
           planet_state_coord,
           bs_mass,
           bs_coord - planet_state_coord,
-          bs_vel - planet_state_vel,
-          G
+          bs_vel - planet_state_vel
         )
         val ccw = (bs_coord - orbit.f).perpendicular * (bs_vel - planet_state_vel) >= 0 // летим против часовой?
         orbit match {

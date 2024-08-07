@@ -2,12 +2,12 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celest
 
 import com.github.dunnololda.scage.ScageLibD.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.{CelestialBody, Planet, PlanetWithAir, Star}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.system_evolution.SystemEvolutionAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.OrbitUtils.speedToHaveOrbitWithParams
 
 trait CelestialsSupport extends CelestialsAware with SystemEvolutionAware {
+
   val sun: Star = new Star(
     sunIndex,
     "Солнце",
@@ -19,7 +19,7 @@ trait CelestialsSupport extends CelestialsAware with SystemEvolutionAware {
   private val earth_start_position = DVec.dzero
 
   private val earth_init_velocity =
-    speedToHaveOrbitWithParams(earth_start_position, 0, sun.coord, sun.linearVelocity, sun.mass, G, ccw = true)
+    speedToHaveOrbitWithParams(earth_start_position, 0, sun.coord, sun.linearVelocity, sun.mass, ccw = true)
 
   val earth: PlanetWithAir = new PlanetWithAir(
     index = earthIndex,
@@ -42,7 +42,7 @@ trait CelestialsSupport extends CelestialsAware with SystemEvolutionAware {
   private val moon_start_position = earth.coord + DVec(0, 1).rotateDeg(280) * 380000000L
 
   private val moon_init_velocity =
-    speedToHaveOrbitWithParams(moon_start_position, 0, earth.coord, earth.linearVelocity, earth.mass, G, ccw = true)
+    speedToHaveOrbitWithParams(moon_start_position, 0, earth.coord, earth.linearVelocity, earth.mass, ccw = true)
 
   val moon: Planet = new Planet(
     moonIndex,

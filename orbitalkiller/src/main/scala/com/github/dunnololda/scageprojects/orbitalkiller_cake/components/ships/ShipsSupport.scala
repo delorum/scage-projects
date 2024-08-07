@@ -3,11 +3,13 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships
 import com.github.dunnololda.scage.ScageLibD.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller.ships._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.CelestialsAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.InterfaceHolderAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ShipsHolderAware
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.OrbitUtils.{satelliteSpeed, speedToHaveOrbitWithParams}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.OrbitUtils.{
+  satelliteSpeed,
+  speedToHaveOrbitWithParams
+}
 
 trait ShipsSupport extends ShipsAware with CelestialsAware with InterfaceHolderAware with ShipsHolderAware {
   // стоим на поверхности Земли
@@ -50,7 +52,8 @@ trait ShipsSupport extends ShipsAware with CelestialsAware with InterfaceHolderA
 
   val player_ship: Ship4 =
     new Ship4(playerShipIndex, init_coord = ship_start_position, init_velocity = ship_init_velocity, init_rotation = 0)
-      with ProtectedInterfaceHolderAwareImpl with ProtectedShipsHolderAwareImpl
+      with ProtectedInterfaceHolderAwareImpl
+      with ProtectedShipsHolderAwareImpl
 
   // на круговой орбите в 200 км от поверхности Земли
   private val station_start_position = earth.coord + DVec(-110, earth.radius + 199160)
@@ -61,7 +64,6 @@ trait ShipsSupport extends ShipsAware with CelestialsAware with InterfaceHolderA
       earth.coord,
       earth.linearVelocity,
       earth.mass,
-      G,
       counterclockwise = true
     )
 
@@ -85,8 +87,7 @@ trait ShipsSupport extends ShipsAware with CelestialsAware with InterfaceHolderA
     math.random * 3000000,
     earth.coord,
     earth.linearVelocity,
-    earth.mass,
-    G
+    earth.mass
   )
   // val sat1_start_position=DVec(1365327.0285981554, 6507689.41090233)
   // val sat1_init_velocity=DVec(21868.653743674382, 1661.8351848003101)
@@ -112,8 +113,7 @@ trait ShipsSupport extends ShipsAware with CelestialsAware with InterfaceHolderA
     math.random * 3000000,
     earth.coord,
     earth.linearVelocity,
-    earth.mass,
-    G
+    earth.mass
   )
 
   // на круговой орбите в 200 км от поверхности Земли

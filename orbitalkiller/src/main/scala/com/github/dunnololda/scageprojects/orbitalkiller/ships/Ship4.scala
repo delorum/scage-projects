@@ -5,7 +5,6 @@ import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.AdditionalSymbols.rocket_symbol
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.PhysicalConstants.G
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.MyVec
@@ -509,7 +508,7 @@ abstract class Ship4(
               thisOrActualProxyShipOrbitData match {
                 case Some(or) =>
                   val ss =
-                    satelliteSpeed(coord, linearVelocity, or.planet.coord, or.planet.linearVelocity, or.planet.mass, G)
+                    satelliteSpeed(coord, linearVelocity, or.planet.coord, or.planet.linearVelocity, or.planet.mass)
                   if (linearVelocity.dist(ss) > TimeConstants.linear_velocity_error) {
                     preserveVelocity(ss)
                   } else flightMode = FreeFlightMode
@@ -784,7 +783,7 @@ abstract class Ship4(
         init_velocity = linearVelocity,
         init_rotation = rotation,
         ship_designer = false
-      )  with ProtectedInterfaceHolderAwareImpl with ProtectedShipsHolderAwareImpl
+      ) with ProtectedInterfaceHolderAwareImpl with ProtectedShipsHolderAwareImpl
 
       rocket.two.power = rocket.two.max_power
       rocket.two.workTimeTacts = 63
@@ -972,7 +971,6 @@ abstract class Ship4(
       }
     }
 
-    engines.foreach(e =>
-      drawEngine(e))
+    engines.foreach(e => drawEngine(e))
   }
 }
