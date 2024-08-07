@@ -4,5 +4,5 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celesti
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.system_evolution.SystemEvolutionAware
 
 trait ShipsHolderSupport extends ShipsHolderAware with SystemEvolutionAware with CelestialsAware {
-  val shipsHolder = new ShipsHolder(systemEvolution, sun, earth, moon)
+  protected val shipsHolder = new ShipsHolder(systemEvolution, sun, earth, moon)
 }

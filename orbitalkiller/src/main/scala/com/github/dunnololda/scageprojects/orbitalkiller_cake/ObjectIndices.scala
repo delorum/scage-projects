@@ -10,7 +10,12 @@ object ObjectIndices {
   val stationIndex: Int = ScageId.nextId
   val sat1Index: Int = ScageId.nextId
   val sat2Index: Int = ScageId.nextId
-  val cargoIndex: Int = ScageId.nextId
+  val cargo1Index: Int = ScageId.nextId
 
   val planetIndices: Set[Int] = Set(sunIndex, earthIndex, moonIndex)
+
+  val shipIndices: Set[Int] = Set(sunIndex, earthIndex, moonIndex)
+
+  val allIndices: Set[Int] =
+    Set(sunIndex, earthIndex, moonIndex, playerShipIndex, stationIndex, sat1Index, sat2Index, cargo1Index)
 }

@@ -783,7 +783,7 @@ abstract class Ship4(
         init_velocity = linearVelocity,
         init_rotation = rotation,
         ship_designer = false
-      ) with ProtectedInterfaceHolderAwareImpl with ProtectedShipsHolderAwareImpl
+      ) with InterfaceHolderAwareImpl with ShipsHolderAwareImpl
 
       rocket.two.power = rocket.two.max_power
       rocket.two.workTimeTacts = 63

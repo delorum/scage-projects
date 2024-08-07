@@ -8,7 +8,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.Orbit
 
 trait CelestialsSupport extends CelestialsAware with SystemEvolutionAware {
 
-  val sun: Star = new Star(
+  protected val sun: Star = new Star(
     sunIndex,
     "Солнце",
     mass = 1.9891e30,
@@ -21,7 +21,7 @@ trait CelestialsSupport extends CelestialsAware with SystemEvolutionAware {
   private val earth_init_velocity =
     speedToHaveOrbitWithParams(earth_start_position, 0, sun.coord, sun.linearVelocity, sun.mass, ccw = true)
 
-  val earth: PlanetWithAir = new PlanetWithAir(
+  protected val earth: PlanetWithAir = new PlanetWithAir(
     index = earthIndex,
     name = "Земля",
     mass = 5.9746e24,
@@ -44,7 +44,7 @@ trait CelestialsSupport extends CelestialsAware with SystemEvolutionAware {
   private val moon_init_velocity =
     speedToHaveOrbitWithParams(moon_start_position, 0, earth.coord, earth.linearVelocity, earth.mass, ccw = true)
 
-  val moon: Planet = new Planet(
+  protected val moon: Planet = new Planet(
     moonIndex,
     "Луна",
     mass = 7.3477e22,
@@ -96,5 +96,5 @@ trait CelestialsSupport extends CelestialsAware with SystemEvolutionAware {
 
   private val allCelestials: Seq[CelestialBody] = Seq(sun, earth, moon)
 
-  val celestialsHelper: CelestialsHelper = new CelestialsHelper(allCelestials, systemEvolution)
+  protected val celestialsHelper: CelestialsHelper = new CelestialsHelper(allCelestials, systemEvolution)
 }

@@ -22,15 +22,14 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.Gravi
   insideSphereOfInfluenceOfCelestialBody
 }
 
-import java.io.FileOutputStream
 import scala.annotation.tailrec
 import scala.collection.{mutable, Set, _}
 
 object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1600), property("screen.height", 900)) {
   private val components = new OrbitalKillerComponents(this)
 
-  val interfaceHolder: InterfaceHolder = components.interfaceHolder
-  val shipsHolder: ShipsHolder = components.shipsHolder
+  val interfaceHolder: InterfaceHolder = components.publicInterfaceHolder
+  val shipsHolder: ShipsHolder = components.publicShipsHolder
 
   private var _time_multiplier = realtime
 
@@ -62,7 +61,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     1
   }*/
 
-  def system_evolution: SystemEvolution = components.systemEvolution
+  def system_evolution: SystemEvolution = components.publicSystemEvolution
 
   def currentBodyState(index: Int): Option[MutableBodyState] = system_evolution.bodyState(index)
 
@@ -111,25 +110,26 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     // RealTrajectory3.continue()
   }
 
-  val sun = components.sun
-  val earth = components.earth
-  val moon = components.moon
+  val sun = components.publicSun
+  val earth = components.publicEarth
+  val moon = components.publicMoon
 
-  val planets: Predef.Map[Int, CelestialBody] = components.celestialsHelper.planets
+  val planets: Predef.Map[Int, CelestialBody] = components.publicCelestialsHelper.planets
 
-  val currentPlanetStates: Seq[(CelestialBody, MutableBodyState)] = components.celestialsHelper.currentPlanetStates
+  val currentPlanetStates: Seq[(CelestialBody, MutableBodyState)] =
+    components.publicCelestialsHelper.currentPlanetStates
 
-  def planetByIndex(index: Int): Option[CelestialBody] = components.celestialsHelper.planetByIndex(index)
+  def planetByIndex(index: Int): Option[CelestialBody] = components.publicCelestialsHelper.planetByIndex(index)
 
-  val player_ship: Ship4 = components.player_ship
+  val player_ship: Ship4 = components.publicPlayerShip
 
-  val station: SpaceStation2 = components.station
+  val station: SpaceStation2 = components.publicStation
 
-  val sat1: Satellite1 = components.sat1
+  val sat1: Satellite1 = components.publicSat1
 
-  val sat2: Satellite2 = components.sat2
+  val sat2: Satellite2 = components.publicSat2
 
-  val cargo1: Cargo1 = components.cargo1
+  val cargo1: Cargo1 = components.publicCargo1
 
   var _set_stop_time: Boolean = false
   var _stop_after_number_of_tacts: Long = 0
@@ -217,26 +217,6 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     }
   }
 
-  /*def satelliteSpeedStrInPoint(coord: DVec, velocity: DVec, mass: Double): String = {
-    insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
-      case Some((planet, planet_state)) =>
-        val ss = satelliteSpeed(coord, velocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
-        f"${msecOrKmsec(ss.norma)} (velx = ${msecOrKmsec(ss.x)}, vely = ${msecOrKmsec(ss.y)})"
-      case None =>
-        "N/A"
-    }
-  }*/
-
-  /*def escapeVelocityStrInPoint(coord: DVec, velocity: DVec, mass: Double): String = {
-    insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
-      case Some((planet, planet_state)) =>
-        val ss = escapeVelocity(coord, velocity, planet_state.coord, planet_state.vel, planet_state.mass, G)
-        f"${msecOrKmsec(ss.norma)} (velx = ${msecOrKmsec(ss.x)}, vely = ${msecOrKmsec(ss.y)})"
-      case None =>
-        "N/A"
-    }
-  }*/
-
   def orbitStrInPointWithVelocity(
       coord: DVec,
       velocity: DVec,
@@ -266,14 +246,6 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
       case None => "N/A"
     }
   }
-
-  /*def orbitInPointWithVelocity(coord: DVec, velocity: DVec, mass: Double): Option[KeplerOrbit] = {
-    insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
-      case Some((planet, planet_state)) =>
-        Some(calculateOrbit(planet_state.mass, planet_state.coord, mass, coord - planet_state.coord, velocity - planet_state.vel, G))
-      case None => None
-    }
-  }*/
 
   private def orbitAroundCelestialInPointWithVelocity(
       coord: DVec,
@@ -370,140 +342,6 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     val arrow12 = to1 + ((from1 - to1).n * 10 / scale).rotateDeg(-15)
     drawLine(to1, arrow11, color)
     drawLine(to1, arrow12, color)
-  }
-
-  private var _show_game_saved_message = false
-
-  def showGameSavedMessage: Boolean = _show_game_saved_message
-
-  private def saveGame(): Unit = {
-    val fos = new FileOutputStream("save.orbitalkiller")
-    fos.write(s"time ${system_evolution.tacts}\n".getBytes)
-    currentBodyState(player_ship.index).foreach(x => fos.write(s"${x.saveData}\n".getBytes))
-    currentBodyState(station.index).foreach(x => fos.write(s"${x.saveData}\n".getBytes))
-    currentBodyState(moon.index).foreach(x => fos.write(s"${x.saveData}\n".getBytes))
-    currentBodyState(earth.index).foreach(x => fos.write(s"${x.saveData}\n".getBytes))
-    currentBodyState(sun.index).foreach(x => fos.write(s"${x.saveData}\n".getBytes))
-    fos.close()
-    _show_game_saved_message = true
-    val start = System.currentTimeMillis()
-    actionStaticPeriodIgnorePause(1000) {
-      if (System.currentTimeMillis() - start > 2000) {
-        _show_game_saved_message = false
-        deleteSelf()
-      }
-    }
-  }
-
-  private var _show_game_loaded_message = false
-
-  def showGameLoadedMessage = _show_game_loaded_message
-
-  private var _show_game_failed_to_load_message = false
-
-  def showGameFailedToLoadMessage = _show_game_failed_to_load_message
-
-  def loadGame(): Unit = {
-    def _parseDVec(str: String): Option[DVec] = {
-      val s = str.split(":")
-      if (s.length == 2) {
-        try {
-          Some(DVec(s(0).toDouble, s(1).toDouble))
-        } catch {
-          case _: Exception => None
-        }
-      } else None
-    }
-
-    def _parseLong(str: String): Option[Long] = {
-      try {
-        Some(str.toLong)
-      } catch {
-        case _: Exception => None
-      }
-    }
-
-    def _parseDouble(str: String): Option[Double] = {
-      try {
-        Some(str.toDouble)
-      } catch {
-        case _: Exception => None
-      }
-    }
-
-    val savefile_lines = {
-      val source = io.Source.fromFile("save.orbitalkiller")
-      try {
-        source.getLines().toList
-      } finally {
-        source.close()
-      }
-    }
-    val new_tacts_option = savefile_lines.headOption.flatMap(l => {
-      val s = l.split(" ")
-      if (s.length == 2) _parseLong(s(1)) else None
-    })
-
-    val new_states = (for {
-      line <- savefile_lines.drop(1)
-      s = line.split(" ")
-      if s.length == 7
-      index = s(0)
-      acc <- _parseDVec(s(1))
-      vel <- _parseDVec(s(2))
-      coord <- _parseDVec(s(3))
-      ang_acc <- _parseDouble(s(4))
-      ang_vel <- _parseDouble(s(5))
-      ang <- _parseDouble(s(6))
-    } yield {
-      (index, (acc, vel, coord, ang_acc, ang_vel, ang))
-    }).toMap
-
-    for {
-      new_tacts <- new_tacts_option
-      ship_state <- new_states.get("ship")
-      station_state <- new_states.get("station")
-      moon_state <- new_states.get("Moon")
-      earth_state <- new_states.get("Earth")
-      sun_state <- new_states.get("Sun")
-    } {
-      system_evolution.setTacts(new_tacts)
-
-      def _loadState(currentState: MutableBodyState, new_state: (DVec, DVec, DVec, Double, Double, Double)): Unit = {
-        val (acc, vel, coord, ang_acc, ang_vel, ang) = new_state
-        currentState.acc = acc
-        currentState.vel = vel
-        currentState.coord = coord
-        currentState.ang_acc = ang_acc
-        currentState.ang_vel = ang_vel
-        currentState.ang = ang
-      }
-
-      _loadState(player_ship.currentState, ship_state)
-      _loadState(station.currentState, station_state)
-      _loadState(moon.currentState, moon_state)
-      _loadState(earth.currentState, earth_state)
-      _loadState(sun.currentState, sun_state)
-      _show_game_loaded_message = true
-    }
-    if (_show_game_loaded_message) {
-      val start = System.currentTimeMillis()
-      actionStaticPeriodIgnorePause(1000) {
-        if (System.currentTimeMillis() - start > 2000) {
-          _show_game_loaded_message = false
-          deleteSelf()
-        }
-      }
-    } else {
-      _show_game_failed_to_load_message = true
-      val start = System.currentTimeMillis()
-      actionStaticPeriodIgnorePause(1000) {
-        if (System.currentTimeMillis() - start > 2000) {
-          _show_game_failed_to_load_message = false
-          deleteSelf()
-        }
-      }
-    }
   }
 
   keyIgnorePause(
@@ -843,9 +681,10 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   ) // фиксация на корабле, абсолютная ориентация, в режиме карты: фиксация на орбите
   keyIgnorePause(KEY_F4, onKeyDown = if (!drawMapMode) viewMode = Landing) // посадка на планету, если не в режиме карты
 
-  // функционал толком не работает
-  keyIgnorePause(KEY_F5, onKeyDown = saveGame()) // сохранить текущее состояние системы
-  // keyIgnorePause(KEY_F6, onKeyDown = loadGame())                          // загрузить из файла состояние системы
+  // сохранить текущее состояние системы
+  keyIgnorePause(KEY_F5, onKeyDown = components.publicSaveLoadComponent.saveGame())
+  // загрузить из файла состояние системы
+  keyIgnorePause(KEY_F6, onKeyDown = components.publicSaveLoadComponent.loadGame())
 
   keyIgnorePause(
     KEY_I,
@@ -1365,6 +1204,15 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   interface {
     if (onPause) print("Пауза", windowCenter.toVec, align = "center", color = WHITE)
     print("F1 - Справка", 20, windowHeight - 40, align = "bottom-left", color = DARK_GRAY)
+
+    if (components.publicSaveLoadComponent.showGameSavedMessage) {
+      print("Игра сохранена", 20, windowHeight - 60, align = "bottom-left", color = RED)
+    } else if (components.publicSaveLoadComponent.showGameLoadedMessage) {
+      print("Игра загружена", 20, windowHeight - 60, align = "bottom-left", color = RED)
+    } else if (components.publicSaveLoadComponent.showGameFailedToLoadMessage) {
+      print("Не удалось загрузить сохранение", 20, windowHeight - 60, align = "bottom-left", color = RED)
+    }
+
     print(s"сборка $appVersion", windowWidth - 20, windowHeight - 20, align = "top-right", color = DARK_GRAY)
     print(s"FPS/Ticks $fps/$tps", windowWidth - 20, windowHeight - 40, align = "top-right", color = DARK_GRAY)
     print(

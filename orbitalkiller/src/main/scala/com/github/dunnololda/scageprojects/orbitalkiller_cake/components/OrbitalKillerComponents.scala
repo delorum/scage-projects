@@ -4,11 +4,13 @@ import com.github.dunnololda.scage.handlers.RendererD
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.CelestialsSupport
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.InterfaceHolderSupport
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.main_screen.MainScreenAware
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.public_bridge.PublicBridgeSupport
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.saveload.SaveLoadSupport
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.ShipsSupport
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ShipsHolderSupport
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.system_evolution.SystemEvolutionSupport
 
-class OrbitalKillerComponents(val mainScreen: RendererD)
+class OrbitalKillerComponents(protected val mainScreen: RendererD)
   extends MainScreenAware
   with SystemEvolutionSupport
   with AdditionalSymbolsInitializer
@@ -16,3 +18,5 @@ class OrbitalKillerComponents(val mainScreen: RendererD)
   with ShipsHolderSupport
   with InterfaceHolderSupport
   with ShipsSupport
+  with SaveLoadSupport
+  with PublicBridgeSupport

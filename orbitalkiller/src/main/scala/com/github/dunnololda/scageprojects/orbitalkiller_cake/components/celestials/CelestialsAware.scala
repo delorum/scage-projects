@@ -3,10 +3,21 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celest
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.{Planet, PlanetWithAir, Star}
 
 trait CelestialsAware {
-  def sun: Star
+  protected def sun: Star
 
-  def earth: PlanetWithAir
+  protected def earth: PlanetWithAir
 
-  def moon: Planet
-  def celestialsHelper: CelestialsHelper
+  protected def moon: Planet
+
+  protected def celestialsHelper: CelestialsHelper
+
+  trait CelestialsAwareImpl extends CelestialsAware {
+    override protected def sun: Star = CelestialsAware.this.sun
+
+    override protected def earth: PlanetWithAir = CelestialsAware.this.earth
+
+    override protected def moon: Planet = CelestialsAware.this.moon
+
+    override protected def celestialsHelper: CelestialsHelper = CelestialsAware.this.celestialsHelper
+  }
 }

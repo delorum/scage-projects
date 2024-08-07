@@ -3,5 +3,11 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.main_s
 import com.github.dunnololda.scage.handlers.RendererD
 
 trait MainScreenAware {
-  def mainScreen: RendererD
+
+  protected def mainScreen: RendererD
+
+  trait MainScreenAwareImpl extends MainScreenAware {
+
+    override protected def mainScreen: RendererD = MainScreenAware.this.mainScreen
+  }
 }

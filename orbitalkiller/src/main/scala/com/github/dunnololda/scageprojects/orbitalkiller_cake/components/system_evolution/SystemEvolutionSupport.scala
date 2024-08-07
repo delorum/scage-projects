@@ -4,5 +4,5 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants.base
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 
 trait SystemEvolutionSupport extends SystemEvolutionAware {
-  val systemEvolution: SystemEvolution = new SystemEvolution(base_dt)
+  protected val systemEvolution: SystemEvolution = new SystemEvolution(base_dt)
 }

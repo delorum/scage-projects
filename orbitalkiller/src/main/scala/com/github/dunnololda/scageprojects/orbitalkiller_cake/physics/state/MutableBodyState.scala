@@ -1,7 +1,10 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state
 
 import com.github.dunnololda.scage.ScageLibD.{DVec, _}
-import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.{Body => Phys2dBody, StaticBody => Phys2dStaticBody}
+import com.github.dunnololda.scageprojects.orbitalkiller.colliders.phys2d.{
+  Body => Phys2dBody,
+  StaticBody => Phys2dStaticBody
+}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.contacts.MutableContact
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.{AABB, Shape}
@@ -165,7 +168,8 @@ class MutableBodyState(body: BodyState) {
 
   override def toString = s"MutableBodyState($index)"
 
-  def saveData: String = s"$index ${acc.x}:${acc.y} ${vel.x}:${vel.y} ${coord.x}:${coord.y} $ang_acc $ang_vel $ang"
+  def saveData: String =
+    s"$index acc=${acc.x}:${acc.y} vel=${vel.x}:${vel.y} coord=${coord.x}:${coord.y} ang_acc=$ang_acc ang_vel=$ang_vel ang=$ang"
 
   lazy val polygonShape: Option[PolygonShape] = shape match {
     case p: PolygonShape => Some(p)

@@ -7,8 +7,8 @@ import com.github.dunnololda.scageprojects.orbitalkiller.ships.ProxyShip
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.planetIndices
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.PlanetWithAir
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.ProtectedInterfaceHolderAware
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ProtectedShipsHolderAware
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.InterfaceHolderAware
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ShipsHolderAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
@@ -138,8 +138,8 @@ abstract class PolygonShip(
     protected val init_rotation: Double = 0,
     ship_designer: Boolean,
     create_interface: Boolean)
-  extends ProtectedShipsHolderAware
-  with ProtectedInterfaceHolderAware {
+  extends ShipsHolderAware
+  with InterfaceHolderAware {
   println(s"$name -> $index")
   protected var selected_engine: Option[Engine] = None
 
@@ -261,8 +261,8 @@ abstract class PolygonShip(
       val correction = osdp.curP1 - dp.curP1
       ship.currentState.coord += correction
       val proxy_ship = new ProxyShip(ship, ship.coord, ship.rotation, dp, os, os.coord, os.rotation, osdp)
-        with ProtectedShipsHolderAwareImpl
-        with ProtectedInterfaceHolderAwareImpl
+        with ShipsHolderAwareImpl
+        with InterfaceHolderAwareImpl
       ship.currentState.active = false
       os.currentState.active = false
       ship.setDocked(Some(DockData(os, dp, osdp, proxy_ship)))
