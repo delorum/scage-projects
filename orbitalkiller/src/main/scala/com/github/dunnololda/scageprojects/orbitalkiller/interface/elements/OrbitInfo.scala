@@ -1,16 +1,19 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller._
+import com.github.dunnololda.scageprojects.orbitalkiller.ships.Ship4
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.CelestialsHelper
 
-class OrbitInfo extends InterfaceElement {
+class OrbitInfo(playerShip: Ship4, celestialsHelper: CelestialsHelper) extends InterfaceElement {
   private val strings = Array("")
 
   override protected def _update(): Unit = {
-    val ship = player_ship.thisOrActualProxyShip
-    if(ship.engines.exists(_.active)) {
-      strings(0) = s"Орбита: ${orbitStrInPointWithVelocity(ship.coord, ship.linearVelocity, ship.radius, ship.mass, currentPlanetStates)}"
-    } else if(_update_needed) {
+    val ship = playerShip.thisOrActualProxyShip
+    if (ship.engines.exists(_.active)) {
+      strings(0) =
+        s"Орбита: ${orbitStrInPointWithVelocity(ship.coord, ship.linearVelocity, ship.radius, ship.mass, celestialsHelper.currentPlanetStates)}"
+    } else if (_update_needed) {
       strings(0) = s"Орбита: ${ship.thisOrActualProxyShipOrbitData.map(_.orbitStrDefinition).getOrElse("N/A")}"
     }
     _update_needed = false

@@ -13,5 +13,5 @@ trait InterfaceSupport
   with SaveLoadAware {
 
   override protected val interfaceRenderer: InterfaceRenderer =
-    new InterfaceRenderer(mainScreen, playerShip, interfaceHolder, saveLoadComponent)
+    new InterfaceRenderer(mainScreen, interfaceHolder, saveLoadComponent)
 }

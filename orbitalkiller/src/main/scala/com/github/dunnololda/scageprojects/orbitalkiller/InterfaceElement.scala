@@ -11,13 +11,13 @@ abstract class InterfaceElement {
 
   private var _minimized_by_user = false
 
-  final def isMinimizedByUser = _minimized_by_user
+  final def isMinimizedByUser: Boolean = _minimized_by_user
 
   private var _minimized_by_constraint = false
 
-  final def isMinimizedByConstraint = _minimized_by_constraint
+  final def isMinimizedByConstraint: Boolean = _minimized_by_constraint
 
-  final def isMinimized = _minimized_by_user || _minimized_by_constraint
+  final def isMinimized: Boolean = _minimized_by_user || _minimized_by_constraint
 
   final def showByUser(): Unit = {
     _minimized_by_user = false
@@ -41,7 +41,7 @@ abstract class InterfaceElement {
     _update_needed = true
   }
 
-  protected def _update()
+  protected def _update(): Unit
 
   final def updateIfNotMinimized(): Unit = {
     if (!isMinimized) {
@@ -53,5 +53,5 @@ abstract class InterfaceElement {
 
   def color: ScageColor = ScageColor.YELLOW
 
-  override def toString = shortDescr
+  override def toString: String = shortDescr
 }

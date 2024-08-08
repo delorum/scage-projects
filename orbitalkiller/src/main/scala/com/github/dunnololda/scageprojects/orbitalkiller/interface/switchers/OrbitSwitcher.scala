@@ -2,12 +2,12 @@ package com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers
 
 import com.github.dunnololda.scageprojects.orbitalkiller.InterfaceSwitcher
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main.{earth, moon, sun}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.CelestialBody
-class OrbitSwitcher extends InterfaceSwitcher {
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.{CelestialBody, Planet, PlanetWithAir, Star}
+
+class OrbitSwitcher(sun: Star, earth: PlanetWithAir, moon: Planet) extends InterfaceSwitcher {
   override val strVariants: Array[String] = Array("Auto", "Earth", "Moon", "Sun")
 
-  def calculateOrbitAround:Option[Int] = selected_variant match {
+  def calculateOrbitAround: Option[Int] = selected_variant match {
     case 0 => None
     case 1 => Some(earth.index)
     case 2 => Some(moon.index)
@@ -15,7 +15,7 @@ class OrbitSwitcher extends InterfaceSwitcher {
     case _ => None
   }
 
-  def calculateOrbitAroundPlanet:Option[CelestialBody] = selected_variant match {
+  def calculateOrbitAroundPlanet: Option[CelestialBody] = selected_variant match {
     case 0 => None
     case 1 => Some(earth)
     case 2 => Some(moon)

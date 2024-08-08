@@ -158,7 +158,7 @@ abstract class Ship4(
    * @param to - скорость, которой хотим достичь
    * @param from - текущая скорость
    * @param a - ускорение
-   * @param dt - сколько секунд в одном такте
+   * @param dt - сколько (долей) секунд в одном такте
    * @return два значения: сколько тактов потребуется, какой значения скорости фактически достигнем
    */
   private def howManyTacts(to: Double, from: Double, a: Double, dt: Double): (Int, Double) = {
@@ -385,7 +385,7 @@ abstract class Ship4(
    * @return
    */
   def canDockWithNearestShip: Boolean = {
-    shipCloser2KmNonMinimized.exists(os => {
+    shipCloserXKmNonMinimized(2).exists(os => {
       docking_points.exists(dp => {
         os.docking_points.exists(osdp => dp.pointsMatch(osdp))
       })
@@ -430,33 +430,19 @@ abstract class Ship4(
   }
 
   /**
-   * Корабль ближе 500 км от нас, интерфейс которого не свернут. Если таких несколько, то ближайший.
-   * Метод используется в алогритмах автоматического уравнивания скорости, поддержания направления, стыковки
+   * * Корабль ближе distKm км от нас, интерфейс которого не свернут. Если таких несколько, то ближайший.
+   * * Метод используется в алогритмах автоматического уравнивания скорости, поддержания направления, стыковки
+   * * @return
+   *
+   * @param distKm - расстояние в километрах
    * @return
    */
-  private def shipCloser500KmNonMinimized: Option[PolygonShip] = {
-    def _check(s: PolygonShip): Boolean = {
-      /*println(s"${s.name} s.currentState.active = ${s.currentState.active}")
-      println(s"${s.name} s.index != index = ${s.index != index}")
-      println(s"${s.name} !dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index) = ${!dock_data.exists(dd => s.index != dd.dock_to_ship.index && s.index != dd.proxy_ship.index)}")
-      println(s"${s.name} s.isAlive = ${s.isAlive}")
-      println(s"${s.name} s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l = ${s.coord.dist2(coord) < 500 * 1000l * 500 * 1000l}")
-      println(s"${s.name} s.shipInterface.exists(!_.isMinimized) = ${s.shipInterface.exists(!_.isMinimized)}")*/
-      s.currentState.active &&
-      s.thisOrActualProxyShipIndex != thisOrActualProxyShipIndex &&
-      s.isAlive &&
-      s.coord.dist2(coord) < 500 * 1000L * 500 * 1000L &&
-      s.shipInterface.exists(!_.isMinimized)
-    }
-    shipsHolder.ships.filter(s => _check(s)).sortBy(s => coord.dist2(s.coord)).headOption
-  }
-
-  private def shipCloser2KmNonMinimized: Option[PolygonShip] = {
+  private def shipCloserXKmNonMinimized(distKm: Long): Option[PolygonShip] = {
     def _check(s: PolygonShip): Boolean = {
       s.currentState.active &&
       s.thisOrActualProxyShipIndex != thisOrActualProxyShipIndex &&
       s.isAlive &&
-      s.coord.dist2(coord) < 2 * 1000L * 2 * 1000L &&
+      s.coord.dist2(coord) < distKm * 1000L * distKm * 1000L &&
       s.shipInterface.exists(!_.isMinimized)
     }
     shipsHolder.ships.filter(s => _check(s)).sortBy(s => coord.dist2(s.coord)).headOption
@@ -543,7 +529,7 @@ abstract class Ship4(
               correction_check_period
             )
           ) {
-            shipCloser500KmNonMinimized match {
+            shipCloserXKmNonMinimized(500) match {
               case Some(s) =>
                 if (math.abs(angularVelocity) < angular_velocity_error) {
                   val ss = s.linearVelocity
@@ -566,7 +552,7 @@ abstract class Ship4(
               correction_check_period
             )
           ) {
-            shipCloser500KmNonMinimized match {
+            shipCloserXKmNonMinimized(500) match {
               case Some(os) =>
                 val angle = DVec(0, 1).deg360(os.coord - coord)
                 if (angleMinDiff(rotation, angle) < angle_error) {
@@ -600,7 +586,7 @@ abstract class Ship4(
             if (isDocked) {
               flightMode = FreeFlightMode
             } else {
-              shipCloser2KmNonMinimized match {
+              shipCloserXKmNonMinimized(2) match {
                 case Some(os) =>
                   interfaceHolder.dockingSwitcher.setDockingAuto()
                   val dp = docking_points.minBy(_.curP1.dist2(os.coord))
@@ -802,7 +788,7 @@ abstract class Ship4(
         init_velocity = linearVelocity,
         init_rotation = rotation,
         ship_designer = false
-      ) with InterfaceHolderAwareImpl with ShipsHolderAwareImpl
+      ) with ShipsHolderAwareImpl
 
       rocket.two.power = rocket.two.max_power
       rocket.two.workTimeTacts = 63
@@ -988,7 +974,7 @@ abstract class Ship4(
         drawFilledCircle(d.our_dp.p2.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
       })
       if (interfaceHolder.dockingSwitcher.dockingEnabled) {
-        shipCloser2KmNonMinimized.foreach(s =>
+        shipCloserXKmNonMinimized(2).foreach(s =>
           nearestFreeDockingPoints(s.coord).foreach(dp => {
             drawFilledCircle(dp.p1.actualPos, 0.3, colorIfPlayerAliveOrRed(RED))
             drawFilledCircle(dp.p2.actualPos, 0.3, colorIfPlayerAliveOrRed(RED))

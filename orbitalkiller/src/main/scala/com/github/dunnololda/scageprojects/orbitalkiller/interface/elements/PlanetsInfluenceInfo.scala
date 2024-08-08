@@ -1,16 +1,17 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 
 import com.github.dunnololda.scageprojects.orbitalkiller._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
+import com.github.dunnololda.scageprojects.orbitalkiller.ships.Ship4
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.{Planet, PlanetWithAir, Star}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.gravityForce
 
-class PlanetsInfluenceInfo extends InterfaceElement {
+class PlanetsInfluenceInfo(playerShip: Ship4, sun: Star, earth: PlanetWithAir, moon: Planet) extends InterfaceElement {
   private val strings = Array("")
 
   override protected def _update(): Unit = {
-    val sun_force = gravityForce(sun.coord, sun.mass, player_ship.coord, player_ship.mass).norma
-    val earth_force = gravityForce(earth.coord, earth.mass, player_ship.coord, player_ship.mass).norma
-    val moon_force = gravityForce(moon.coord, moon.mass, player_ship.coord, player_ship.mass).norma
+    val sun_force = gravityForce(sun.coord, sun.mass, playerShip.coord, playerShip.mass).norma
+    val earth_force = gravityForce(earth.coord, earth.mass, playerShip.coord, playerShip.mass).norma
+    val moon_force = gravityForce(moon.coord, moon.mass, playerShip.coord, playerShip.mass).norma
     val sum_force = sun_force + earth_force + moon_force
     val sun_influence_str = f"${sun.name} ${sun_force / sum_force * 100}%.2f%%"
     val earth_influence_str = f"${earth.name} ${earth_force / sum_force * 100}%.2f%%"

@@ -10,7 +10,6 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.planetIndices
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants.base_dt
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.PlanetWithAir
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interface.holder.InterfaceHolderAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ShipsHolderAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
@@ -33,9 +32,8 @@ abstract class PolygonShip(
     protected val init_velocity: DVec = DVec.dzero,
     protected val init_rotation: Double = 0,
     ship_designer: Boolean,
-    create_interface: Boolean)
-  extends ShipsHolderAware
-  with InterfaceHolderAware {
+    val create_interface: Boolean)
+  extends ShipsHolderAware {
   println(s"$name -> $index")
   protected var selected_engine: Option[Engine] = None
 
@@ -158,13 +156,12 @@ abstract class PolygonShip(
       ship.currentState.coord += correction
       val proxy_ship = new ProxyShip(ship, ship.coord, ship.rotation, dp, os, os.coord, os.rotation, osdp)
         with ShipsHolderAwareImpl
-        with InterfaceHolderAwareImpl
       ship.currentState.active = false
       os.currentState.active = false
       ship.setDocked(Some(DockData(os, dp, osdp, proxy_ship)))
       os.setDocked(Some(DockData(ship, osdp, dp, proxy_ship)))
-      ship.ship_interface.foreach(_.forceUpdate())
-      os.ship_interface.foreach(_.forceUpdate())
+      ship.shipInterface.foreach(_.forceUpdate())
+      os.shipInterface.foreach(_.forceUpdate())
     }
   }
 
@@ -519,6 +516,8 @@ abstract class PolygonShip(
     })*/
   }
 
+  def shipInterface: Option[OtherShipInfo] = interfaceHolder.shipInterfacesMap.get(index)
+
   def drawIfAliveAfterRotation(): Unit = {
     drawSlidingLines(actualDrawPoints, WHITE)
     if (Main.globalScale >= 0.8) {
@@ -526,7 +525,7 @@ abstract class PolygonShip(
         drawFilledCircle(d.our_dp.p1.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
         drawFilledCircle(d.our_dp.p2.actualPos, 0.3, colorIfPlayerAliveOrRed(GREEN))
       })
-      if (interfaceHolder.dockingSwitcher.dockingEnabled && ship_interface.exists(!_.isMinimized)) {
+      if (interfaceHolder.dockingSwitcher.dockingEnabled && shipInterface.exists(!_.isMinimized)) {
         shipCloser2Km.foreach(s =>
           nearestFreeDockingPoints(s.coord).foreach(dp => {
             val (p1_on_the_right_way, p2_on_the_right_way) = {
@@ -892,7 +891,7 @@ abstract class PolygonShip(
     if (isDocked) {
       undock()
     }
-    ship_interface.foreach(_.forceUpdate())
+    shipInterface.foreach(_.forceUpdate())
     if (crash) {
       shipsHolder.removeShip(this)
       delOperation(render_id)
@@ -1060,14 +1059,8 @@ abstract class PolygonShip(
   def thisOrActualProxyShipCurrentState: MutableBodyState =
     dock_data.map(_.proxy_ship.thisOrActualProxyShipCurrentState).getOrElse(currentState)
 
-  private var ship_interface: Option[OtherShipInfo] = None
-  def shipInterface: Option[OtherShipInfo] = ship_interface
-
   if (!ship_designer) {
     shipsHolder.addShip(this)
-    if (create_interface) {
-      ship_interface = Some(interfaceHolder.addShipInterface(this))
-    }
   }
 
   private var _orbit_data: Option[OrbitRenderData] = None
@@ -1311,8 +1304,8 @@ abstract class PolygonShip(
     }
   }
 
+  // автоматическая регулировка мощности двигателей в соответствие с настройкой gSwitcher
   def checkEnginesPower(reactive_force: DVec): Unit = {
-    // автоматическая регулировка мощности двигателей в соответствие с настройкой gSwitcher
     if (interfaceHolder.gSwitcher.maxGSet && pilot_average_g > interfaceHolder.gSwitcher.maxG) {
       val active_engines = engines.filter(e => e.active && 0 < e.stopMomentTacts)
       if (active_engines.nonEmpty) {
@@ -1416,16 +1409,6 @@ abstract class PolygonShip(
     }
   }
 
-  private val conditions: List[() => Boolean] = List(
-    () => thisOrActualProxyShipIndex != player_ship.thisOrActualProxyShipIndex,
-    () => coord.dist2(Main.player_ship.coord) > 500L * 1000L * 500L * 1000L,
-    () =>
-      _orbit_data.exists(or => {
-        or.is_landed || or.orbit.r_p > or.planet.radius + or.planet.air_free_altitude
-      }),
-    () => engines.forall(!_.active)
-  )
-
   def afterStep(time_msec: Long): Unit = {
     if (dock_data.isEmpty) {
       // условие сделать корабль неактивным и не обрабатывать его:
@@ -1448,7 +1431,7 @@ abstract class PolygonShip(
           println(s"deactivated $name")
         }
       } else {
-        if (!deactivate_condition || (drawMapMode && ship_interface.exists(!_.isMinimized))) {
+        if (!deactivate_condition || (drawMapMode && shipInterface.exists(!_.isMinimized))) {
           updateStateSinceDeactivation(time_msec, system_evolution.allBodyStates)
         }
         if (!deactivate_condition) {

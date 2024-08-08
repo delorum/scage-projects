@@ -5,14 +5,23 @@ import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers._
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.Ship4
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.{Planet, PlanetWithAir, Star}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.CelestialsHelper
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ShipsHolder
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.FlightMode.{FreeFlightMode, NearestPlanetVelocity, NearestShipAutoDocking}
-//import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 
 import scala.collection.mutable
+//import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
+
 import scala.collection.mutable.ArrayBuffer
 
-class InterfaceHolder(celestialsHelper: CelestialsHelper) {
+class InterfaceHolder(
+    celestialsHelper: CelestialsHelper,
+    shipsHolder: ShipsHolder,
+    playerShip: Ship4,
+    sun: Star,
+    earth: PlanetWithAir,
+    moon: Planet) {
   private val additional_messages = mutable.HashMap[String, String]()
 
   def addMessage(keyword: String, message: String): Unit = {
@@ -32,48 +41,53 @@ class InterfaceHolder(celestialsHelper: CelestialsHelper) {
   val degOrKm = new DegOrKm
   val timeStepSwitcher = new TimeStepSwitcher
   // val proxyHullSwitcher = new ProxyHullSwitcher
-  val orbitSwitcher = new OrbitSwitcher
+  val orbitSwitcher = new OrbitSwitcher(sun, earth, moon)
   val realTrajectorySwitcher = new RealTrajectorySwitcher
 
-  val timeInfo = new TimeInfo
+  private val timeInfo = new TimeInfo
 
-  val viewModeInfo = new ViewModeInfo
-  val flightModeInfo = new FlightModeInfo
+  private val viewModeInfo = new ViewModeInfo
+  private val flightModeInfo = new FlightModeInfo(playerShip)
 
-  val sunRelativeInfo = new SunRelativeInfo(degOrKm)
-  val earthRelativeInfo = new EarthRelativeInfo(degOrKm)
-  val moonRelativeInfo = new MoonRelativeInfo(degOrKm)
+  val sunRelativeInfo = new SunRelativeInfo(degOrKm, playerShip, sun)
+  val earthRelativeInfo = new EarthRelativeInfo(degOrKm, playerShip, earth)
+  val moonRelativeInfo = new MoonRelativeInfo(degOrKm, playerShip, moon)
 
-  private val ship_interfaces = ArrayBuffer[OtherShipInfo]()
-  def shipInterfaces: Seq[OtherShipInfo] = ship_interfaces
+  private var ship_interfaces_map = Map[Int, OtherShipInfo]()
+  private var ship_interfaces_seq: Iterable[OtherShipInfo] = Nil
+  def shipInterfacesMap: Map[Int, OtherShipInfo] = ship_interfaces_map
+  def shipInterfaces: Iterable[OtherShipInfo] = ship_interfaces_seq
 
-  def addShipInterface(ship: PolygonShip): OtherShipInfo = {
-    val i = new OtherShipInfo(ship, dockingSwitcher)
-    ship_interfaces += i
-    i
+  private def addShipInterface(ship: PolygonShip): Unit = {
+    ship_interfaces_map = ship_interfaces_map.updated(ship.index, new OtherShipInfo(ship, dockingSwitcher, playerShip))
+    ship_interfaces_seq = ship_interfaces_map.values
   }
 
-  private def shipsMinimized = ship_interfaces.filter(_.isMinimized)
+  shipsHolder.ships.foreach { ship =>
+    if (ship.create_interface) addShipInterface(ship)
+  }
 
-  val rocketsInfo = new RocketsInfo
+  private def shipsMinimized = ship_interfaces_map.values.filter(_.isMinimized)
 
-  val linearVelocityInfo = new LinearVelocityInfo
-  val angularVelocityInfo = new AngularVelocityInfo
-  val pilotStateInfo = new ShipAndCrewStateInfo
+  val rocketsInfo = new RocketsInfo(playerShip)
 
-  val planetsInfluenceInfo = new PlanetsInfluenceInfo
+  val linearVelocityInfo = new LinearVelocityInfo(playerShip)
+  private val angularVelocityInfo = new AngularVelocityInfo(playerShip)
+  private val pilotStateInfo = new ShipAndCrewStateInfo(playerShip, earth)
+
+  private val planetsInfluenceInfo = new PlanetsInfluenceInfo(playerShip, sun, earth, moon)
   // val satelliteEscapeVelocityInfo = new SatelliteEscapeVelocityInfo
-  val orbitInfo = new OrbitInfo
+  val orbitInfo = new OrbitInfo(playerShip, celestialsHelper)
 
-  val enginesInfo = new EnginesInfo
+  private val enginesInfo = new EnginesInfo(playerShip)
 
-  val shipParamsWhenEginesOff = new ShipParamsWhenEnginesOff(celestialsHelper)
+  private val shipParamsWhenEginesOff = new ShipParamsWhenEnginesOff(celestialsHelper, playerShip)
 
   private val interfaces = List(
     List(timeInfo),
     List(viewModeInfo, flightModeInfo),
     List(sunRelativeInfo, earthRelativeInfo, moonRelativeInfo),
-    ship_interfaces,
+    ship_interfaces_map.values.toList,
     List(rocketsInfo),
     List(linearVelocityInfo, angularVelocityInfo, pilotStateInfo),
     List(planetsInfluenceInfo, /*satelliteEscapeVelocityInfo, */ orbitInfo),
@@ -164,21 +178,21 @@ class InterfaceHolder(celestialsHelper: CelestialsHelper) {
     } else false
   }
 
-  private def constraints(player_ship: Ship4): Unit = {
+  private def constraints(): Unit = {
     /*if(ship.otherShipsNear.isEmpty) {
       nearestShipInfo.hideByConstraint()
     } else nearestShipInfo.showByConstraint()*/
-    if (player_ship.flightMode != FreeFlightMode || !player_ship.engines.exists(_.active)) {
+    if (playerShip.flightMode != FreeFlightMode || !playerShip.engines.exists(_.active)) {
       shipParamsWhenEginesOff.hideByConstraint()
     } else {
       shipParamsWhenEginesOff.showByConstraint()
     }
-    if (player_ship.flightMode == NearestPlanetVelocity || player_ship.flightMode == NearestShipAutoDocking) {
+    if (playerShip.flightMode == NearestPlanetVelocity || playerShip.flightMode == NearestShipAutoDocking) {
       enginesInfo.hideByConstraint()
     } else {
       enginesInfo.showByConstraint()
     }
-    if (player_ship.isLanded) {
+    if (playerShip.isLanded) {
       angularVelocityInfo.hideByConstraint()
     } else {
       angularVelocityInfo.showByConstraint()
@@ -193,8 +207,8 @@ class InterfaceHolder(celestialsHelper: CelestialsHelper) {
 
   private val _interface_elems_positions = ArrayBuffer[(InterfaceElement, Int)]()
 
-  def update(player_ship: Ship4): Unit = {
-    constraints(player_ship)
+  def update(): Unit = {
+    constraints()
     interfaces.flatten.foreach(_.updateIfNotMinimized())
     _strings.clear()
     _minimized_strings.clear()
@@ -221,7 +235,7 @@ class InterfaceHolder(celestialsHelper: CelestialsHelper) {
             minimized_x_offset += i.shortDescrLen + between_minimized_elems
           } else {
             if (!minimized_ship_exists) {
-              val j = new OtherShipInfoMinimized(shipsMinimized.length)
+              val j = new OtherShipInfoMinimized(shipsMinimized.size)
               val x = minimized_x_offset + j.shortDescrLen / 2 // центр надписи по x
               _minimized_strings += ((j, j.color, x))
               minimized_ship_exists = true
@@ -240,19 +254,19 @@ class InterfaceHolder(celestialsHelper: CelestialsHelper) {
   private val between_minimized_elems = 20
   private val between_switchers = 20
 
-  def draw(player_ship: Ship4): Unit = {
+  def draw(): Unit = {
     _strings.zipWithIndex.foreach { case ((str, color), idx) =>
-      print(str, 20, (_strings.length + 2 - idx) * 20, player_ship.colorIfPlayerAliveOrRed(color))
+      print(str, 20, (_strings.length + 2 - idx) * 20, playerShip.colorIfPlayerAliveOrRed(color))
     }
     var switchers_x_offset = 20
-    activeSwitchers.zipWithIndex.foreach { case (switcher, idx) =>
+    activeSwitchers.zipWithIndex.foreach { case (switcher, _) =>
       val x_position = switchers_x_offset + switcher.selectedStrVariantLen / 2
-      print(switcher.selectedStrVariant, x_position, 40, player_ship.colorIfPlayerAliveOrRed(YELLOW), align = "center")
+      print(switcher.selectedStrVariant, x_position, 40, playerShip.colorIfPlayerAliveOrRed(YELLOW), align = "center")
       switchers_x_offset += switcher.selectedStrVariantLen + between_switchers
     }
     // print(minimizedStrings.map(_._1).mkString(" "), 20, 20, DARK_GRAY)
     _minimized_strings.foreach { case (interface_elem, color, x_position) =>
-      print(interface_elem.shortDescr, x_position, 20, player_ship.colorIfPlayerAliveOrRed(color), align = "center")
+      print(interface_elem.shortDescr, x_position, 20, playerShip.colorIfPlayerAliveOrRed(color), align = "center")
     }
   }
 }

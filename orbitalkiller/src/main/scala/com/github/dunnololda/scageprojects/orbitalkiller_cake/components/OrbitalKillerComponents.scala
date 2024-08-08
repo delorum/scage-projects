@@ -17,8 +17,8 @@ class OrbitalKillerComponents(protected val mainScreen: RendererD)
   with AdditionalSymbolsInitializer
   with CelestialsSupport
   with ShipsHolderSupport
-  with InterfaceHolderSupport
   with ShipsSupport
+  with InterfaceHolderSupport
   with SaveLoadSupport
   with InterfaceSupport
   with PublicBridgeSupport

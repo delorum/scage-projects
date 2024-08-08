@@ -2,7 +2,6 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interf
 
 import com.github.dunnololda.scage.ScageLibD.{DARK_GRAY, DVec, RED, WHITE, appVersion, drawLine, print, windowHeight, windowWidth}
 import com.github.dunnololda.scage.handlers.RendererD
-import com.github.dunnololda.scageprojects.orbitalkiller.ships.Ship4
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.DrawConstants.scale
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main.drawMapMode
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interface.holder.InterfaceHolder
@@ -11,7 +10,6 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatU
 
 class InterfaceRenderer(
     mainScreen: RendererD,
-    playerShip: Ship4,
     interfaceHolder: InterfaceHolder,
     saveLoadComponent: SaveLoadComponent) {
   import mainScreen._
@@ -48,7 +46,7 @@ class InterfaceRenderer(
     drawLine(b, b + (a - b).rotateDeg(90).n * 5, DARK_GRAY)
     print(s"${mOrKmOrMKm((100 / globalScale / (if (drawMapMode) scale else 1.0)).toInt)}", b.toVec, DARK_GRAY)
 
-    interfaceHolder.update(playerShip)
-    interfaceHolder.draw(playerShip)
+    interfaceHolder.update()
+    interfaceHolder.draw()
   }
 }

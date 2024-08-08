@@ -7,34 +7,46 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
 
-class Wreck(mass: Double, init_coord: DVec, init_velocity: DVec, init_rotation: Double, points: List[DVec], val is_main: Boolean) {
+class Wreck(
+    mass: Double,
+    init_coord: DVec,
+    init_velocity: DVec,
+    init_rotation: Double,
+    points: List[DVec],
+    val is_main: Boolean) {
   val index = ScageId.nextId
   private val draw_points = points :+ points.head
 
   def colorIfPlayerAliveOrRed(color: => ScageColor) = if (Main.player_ship.isDead) RED else color
 
-  val currentState:MutableBodyState = new MutableBodyState(BodyState(
-    index = index,
-    mass = mass,
-    vel = init_velocity,
-    coord = init_coord,
-    ang = init_rotation,
-    shape = PolygonShape(points, Nil),
-    is_static = false,
-    restitution = 0.8
-  ))
+  val currentState: MutableBodyState = new MutableBodyState(
+    BodyState(
+      index = index,
+      mass = mass,
+      vel = init_velocity,
+      coord = init_coord,
+      ang = init_rotation,
+      shape = PolygonShape(points, Nil),
+      is_static = false,
+      restitution = 0.8
+    )
+  )
 
-  system_evolution.addBody(currentState,
+  system_evolution.addBody(
+    currentState,
     (tacts, helper) => {
       helper.gravityForceFromTo(sun.index, index) +
         helper.gravityForceFromTo(earth.index, index) +
         helper.gravityForceFromTo(moon.index, index) +
-        helper.funcOfArrayOrDVecZero(Array(index, earth.index), l => {
-          val bs = l(0)
-          val e = l(1)
-          //val other_ship_states = helper.bodyStates(ShipsHolder.shipIndicies.filterNot(_ == player_ship.index))
-          earth.airResistance(bs, e, /*other_ship_states, */28, 0.5)
-        })
+        helper.funcOfArrayOrDVecZero(
+          Array(index, earth.index),
+          l => {
+            val bs = l(0)
+            val e = l(1)
+            // val other_ship_states = helper.bodyStates(ShipsHolder.shipIndicies.filterNot(_ == player_ship.index))
+            earth.airResistance(bs, e, /*other_ship_states, */ 28, 0.5)
+          }
+        )
     },
     (tacts, helper) => 0.0
   )
@@ -50,7 +62,10 @@ class Wreck(mass: Double, init_coord: DVec, init_velocity: DVec, init_rotation: 
   def rotation = currentState.ang
 
   val render_id = render {
-    if (!drawMapMode && coord.dist2(player_ship.coord) < 100000 * 100000 && !planets.exists(p => p._2.coord.dist2(coord) < p._2.radius2)) {
+    if (
+      !drawMapMode && coord.dist2(player_ship.coord) < 100000 * 100000 && !planets
+        .exists(p => p._2.coord.dist2(coord) < p._2.radius2)
+    ) {
       openglLocalTransform {
         openglMove(currentState.coord - base)
         /*mbs.contacts.foreach(x => {
@@ -66,11 +81,14 @@ class Wreck(mass: Double, init_coord: DVec, init_velocity: DVec, init_rotation: 
     }
   }
 
-  //val burn_dist = 30000.0 + math.random*10000 + earth.radius
+  // val burn_dist = 30000.0 + math.random*10000 + earth.radius
 
   if (!is_main) {
     actionStaticPeriod(1000) {
-      if (timeMultiplier > 10 || coord.dist2(player_ship.coord) > 100000l * 100000l || planets.exists(p => p._2.coord.dist2(coord) < p._2.radius2)) {
+      if (
+        timeMultiplier > 10 || coord.dist2(player_ship.coord) > 100000L * 100000L || planets
+          .exists(p => p._2.coord.dist2(coord) < p._2.radius2)
+      ) {
         system_evolution.removeBodyByIndex(index)
         delOperation(render_id)
         deleteSelf()

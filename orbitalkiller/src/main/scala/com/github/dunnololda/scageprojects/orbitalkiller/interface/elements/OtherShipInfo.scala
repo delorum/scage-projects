@@ -4,13 +4,14 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.ScageColor
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers.DockingOnOff
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
+import com.github.dunnololda.scageprojects.orbitalkiller.ships.Ship4
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.MyVec
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.G
 
-class OtherShipInfo(val monitoring_ship: PolygonShip, dockingSwitcher: DockingOnOff) extends InterfaceElement {
+class OtherShipInfo(val monitoring_ship: PolygonShip, dockingSwitcher: DockingOnOff, playerShip: Ship4)
+  extends InterfaceElement {
   private val strings = Array("")
 
   def forceUpdate(): Unit = {
@@ -19,28 +20,28 @@ class OtherShipInfo(val monitoring_ship: PolygonShip, dockingSwitcher: DockingOn
   }
 
   override protected def _update(): Unit = {
-    val near_player = player_ship.coord.dist2(monitoring_ship.coord) < 20L * 1000L * 20L * 1000L
+    val near_player = playerShip.coord.dist2(monitoring_ship.coord) < 20L * 1000L * 20L * 1000L
     if (_update_needed || near_player) {
       if (monitoring_ship.isDead) {
         strings(0) = s"${monitoring_ship.name}: ${monitoring_ship.deathReason}"
       } else {
-        if (player_ship.isDockedToShip(monitoring_ship)) {
+        if (playerShip.isDockedToShip(monitoring_ship)) {
           strings(0) = s"${monitoring_ship.name}: docked"
         } else {
           val /*(_, */ need_orbit_period_str /*)*/ = (for {
-            OrbitRenderData(_, _, _, _, our_orbit_planet, our_orbit_kepler, our_ccw, _) <-
-              player_ship.thisOrActualProxyShipCurrentOrbitData
-            os_or @ OrbitRenderData(_, _, _, _, os_orbit_planet, os_orbit_kepler, os_ccw, _) <-
+            OrbitRenderData(_, _, _, _, our_orbit_planet, _, our_ccw, _) <-
+              playerShip.thisOrActualProxyShipCurrentOrbitData
+            os_or @ OrbitRenderData(_, _, _, _, os_orbit_planet, _, os_ccw, _) <-
               monitoring_ship.thisOrActualProxyShipCurrentOrbitData
             if our_orbit_planet.index == os_orbit_planet.index
             if our_ccw == os_ccw
-            our_orbit_ellipse <- player_ship.thisOrActualProxyShipCurrentOrbitData.flatMap(_.ellipseOrbit)
+            our_orbit_ellipse <- playerShip.thisOrActualProxyShipCurrentOrbitData.flatMap(_.ellipseOrbit)
             os_orbit_ellipse <- monitoring_ship.thisOrActualProxyShipCurrentOrbitData.flatMap(_.ellipseOrbit)
-            our_orbit_period_sec = our_orbit_ellipse.t
+            _ = our_orbit_ellipse.t
             os_orbit_period_sec = os_orbit_ellipse.t
           } yield {
-            if (dockingSwitcher.dockingEnabled && player_ship.coord.dist(monitoring_ship.coord) <= 2000) {
-              val dp = player_ship.docking_points.minBy(_.curP1.dist2(monitoring_ship.coord))
+            if (dockingSwitcher.dockingEnabled && playerShip.coord.dist(monitoring_ship.coord) <= 2000) {
+              val dp = playerShip.docking_points.minBy(_.curP1.dist2(monitoring_ship.coord))
               val ship_docking_point = dp.curP1 + 0.5 * (dp.curP2 - dp.curP1)
               monitoring_ship.docking_points.sortBy(osdp => osdp.curP1.dist(ship_docking_point)).headOption match {
                 case Some(osdp) =>
@@ -56,7 +57,7 @@ class OtherShipInfo(val monitoring_ship: PolygonShip, dockingSwitcher: DockingOn
                   val b1 = docking_dir.x
                   val b2 = docking_dir.y
                   // координаты точки стыковки корабля в системе координат с началом в docking_point и базисными векторами (vv1, docking_dir)
-                  val angle = dp.dock_dir.deg360(docking_dir) - player_ship.rotation
+                  val angle = dp.dock_dir.deg360(docking_dir) - playerShip.rotation
                   val x = -(b2 * (A - C) - b1 * (B - D)) / (a1 * b2 - a2 * b1)
                   val y = (a2 * (A - C) - a1 * (B - D)) / (a2 * b1 - a1 * b2)
                   /*("N/A", */
@@ -70,7 +71,7 @@ class OtherShipInfo(val monitoring_ship: PolygonShip, dockingSwitcher: DockingOn
             } else {
               val os_travel_time_to_our_point1_msec = os_orbit_ellipse.travelTimeOnOrbitMsec(
                 monitoring_ship.coord,
-                os_orbit_ellipse.orbitalPointInPoint(player_ship.coord),
+                os_orbit_ellipse.orbitalPointInPoint(playerShip.coord),
                 os_ccw
               )
               val os_travel_time_to_our_point2_msec =
@@ -81,7 +82,7 @@ class OtherShipInfo(val monitoring_ship: PolygonShip, dockingSwitcher: DockingOn
                   def _calculateRp(t_sec: Double): Double = {
                     val a =
                       math.pow(math.pow(t_sec / (2 * math.Pi), 2) * mu, 1.0 / 3) // большая полуось для данного периода
-                    val x = player_ship.coord.dist(our_orbit_planet.coord)
+                    val x = playerShip.coord.dist(our_orbit_planet.coord)
                     math.min(2 * a - x, x)
                   }
                   val r_p1 = _calculateRp(os_travel_time_to_our_point1_msec / 1000) - our_orbit_planet.radius
@@ -93,7 +94,7 @@ class OtherShipInfo(val monitoring_ship: PolygonShip, dockingSwitcher: DockingOn
                 if (near_player) {
                   s"${timeStrSec(need_orbit_period_msec)}"
                 } else {
-                  val cur_sep = os_orbit_ellipse.orbitalPointInPoint(player_ship.coord).dist(player_ship.coord)
+                  val cur_sep = os_orbit_ellipse.orbitalPointInPoint(playerShip.coord).dist(playerShip.coord)
                   val sep_str = s"cur sep = ${mOrKmOrMKm(cur_sep)}"
                   s"${timeStrSec(need_orbit_period_msec)} ($sep_str)"
                 }
@@ -101,9 +102,9 @@ class OtherShipInfo(val monitoring_ship: PolygonShip, dockingSwitcher: DockingOn
               s"rendezvous data: $need_orbit_period_str"
             }
           }).getOrElse( /*"N/A", */ "N/A")
-          val dist = mOrKmOrMKm(player_ship.coord.dist(monitoring_ship.coord))
+          val dist = mOrKmOrMKm(playerShip.coord.dist(monitoring_ship.coord))
           val vel = msecOrKmsecOrKmhour(
-            (player_ship.linearVelocity - monitoring_ship.linearVelocity) * (player_ship.coord - monitoring_ship.coord).n
+            (playerShip.linearVelocity - monitoring_ship.linearVelocity) * (playerShip.coord - monitoring_ship.coord).n
           )
           val activeStr = if (monitoring_ship.currentState.active) "" else "!"
           strings(0) = s"$activeStr${monitoring_ship.name}: dist=$dist, vel=$vel, $need_orbit_period_str"
