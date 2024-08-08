@@ -3,11 +3,12 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.ships._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.DrawConstants.scale
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ErrorConstants.angular_velocity_error
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.OrbitalKillerComponents
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.InterfaceHolder
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interface.holder.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ShipsHolder
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.BoxShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.orbits.KeplerOrbit.calculateOrbit
@@ -17,11 +18,11 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evo
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.DrawUtils.drawArrow
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.DrawUtils.{drawArrow, drawSunTangents}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.tangentsFromCircleToCircle
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.{equalGravityRadius, insideSphereOfInfluenceOfCelestialBody}
 
-import scala.annotation.tailrec
 import scala.collection.{Set, mutable, _}
 
 object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1600), property("screen.height", 900)) {
@@ -799,14 +800,12 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     nextStep()
   }
 
-  def shipOffset = _ship_offset
+  def shipOffset: DVec = _ship_offset
 
   center = _center
   windowCenter = DVec((windowWidth - 1024) + 1024 / 2, windowHeight / 2)
   viewMode = FixedOnShip
   globalScale = 10
-
-  val scale = 1e-6
 
   private var _update_orbits = false
   private var update_count: Long = 0L
@@ -915,47 +914,6 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     }
   }
 
-  private def circlesIntersection(p0: DVec, r0: Double, p1: DVec, r1: Double): List[DVec] = {
-    val d = p1.dist(p0)
-    if (d > r0 + r1 || d < math.abs(r0 - r1)) Nil
-    else if (d == r0 + r1) {
-      List(p0 + (p1 - p0).n * r0)
-    } else {
-      val a = (r0 * r0 - r1 * r1 + d * d) / (2 * d)
-      val h = math.sqrt(r0 * r0 - a * a)
-      val DVec(x2, y2) = p0 + a * (p1 - p0) / d
-      List(
-        DVec(x2 + h * (p1.y - p0.y) / d, y2 - h * (p1.x - p0.x) / d),
-        DVec(x2 - h * (p1.y - p0.y) / d, y2 + h * (p1.x - p0.x) / d)
-      )
-    }
-  }
-
-  private def tangentsFromPointToCircle(p: DVec, c: DVec, r: Double): List[DVec] = {
-    circlesIntersection(c, r, p + (c - p) * 0.5, c.dist(p) / 2)
-  }
-
-  @tailrec
-  def tangentsFromCircleToCircle(p0: DVec, r0: Double, p1: DVec, r1: Double): Option[(DVec, DVec, DVec, DVec)] = {
-    if (r0 > r1) tangentsFromCircleToCircle(p1, r1, p0, r0)
-    else {
-      val l = tangentsFromPointToCircle(p0, p1, r1 - r0)
-      if (l.length != 2) None
-      else {
-        val List(x1, x2) = l
-        val x1p2_n = (x1 - p1).n
-        val x2p2_n = (x2 - p1).n
-
-        val b1 = p1 + x1p2_n * r1
-        val b2 = p1 + x2p2_n * r1
-
-        val c1 = p0 + x1p2_n * r0
-        val c2 = p0 + x2p2_n * r0
-        Some((c1, c2, b1, b2))
-      }
-    }
-  }
-
   def inShadowOfPlanet(coord: DVec): Option[(CelestialBody, MutableBodyState)] = {
     val ship_sun_dist = coord.dist(sun.coord)
     currentPlanetStates.filterNot(_._1.index == sun.index).find { case (planet, _) =>
@@ -967,22 +925,6 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
           a1 && a2
         case None => false
       })
-    }
-  }
-
-  private def drawSunTangents(
-      planet_coord: DVec,
-      planet_radius: Double,
-      sun_coord: DVec,
-      sun_radius: Double,
-      dist: Double): Unit = {
-    tangentsFromCircleToCircle(planet_coord, planet_radius, sun_coord, sun_radius) match {
-      case Some((c1, c2, b1, b2)) =>
-        val a = (c1 - b1).n * dist
-        val b = (c2 - b2).n * dist
-        drawLine(c1 * scale, (c1 + a) * scale, DARK_GRAY)
-        drawLine(c2 * scale, (c2 + b) * scale, DARK_GRAY)
-      case None =>
     }
   }
 
@@ -1167,42 +1109,6 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
       }
     }
     /*}*/
-  }
-
-  private var renderActionPercents: String = ""
-  private var renderActionTimes: String = ""
-
-  actionStaticPeriodIgnorePause(1000) {
-    renderActionPercents = f"Render/Action ${1.0 * currentRenderTimeMsec  / (currentRenderTimeMsec  + currentActionTimeMsec) * 100}%.2f%%/${1.0 * currentActionTimeMsec  / (currentRenderTimeMsec + currentActionTimeMsec) * 100}%.2f%%"
-    renderActionTimes = s"Render/Action $currentRenderTimeMsec msec/$currentActionTimeMsec msec"
-  }
-
-  interface {
-    if (onPause) print("Пауза", windowCenter.toVec, align = "center", color = WHITE)
-    print("F1 - Справка", 20, windowHeight - 40, align = "bottom-left", color = DARK_GRAY)
-
-    if (components.publicSaveLoadComponent.showGameSavedMessage) {
-      print("Игра сохранена", 20, windowHeight - 60, align = "bottom-left", color = RED)
-    } else if (components.publicSaveLoadComponent.showGameLoadedMessage) {
-      print("Игра загружена", 20, windowHeight - 60, align = "bottom-left", color = RED)
-    } else if (components.publicSaveLoadComponent.showGameFailedToLoadMessage) {
-      print("Не удалось загрузить сохранение", 20, windowHeight - 60, align = "bottom-left", color = RED)
-    }
-
-    print(s"сборка $appVersion", windowWidth - 20, windowHeight - 20, align = "top-right", color = DARK_GRAY)
-    print(s"FPS/Ticks $fps/$tps", windowWidth - 20, windowHeight - 40, align = "top-right", color = DARK_GRAY)
-    print(renderActionPercents, windowWidth - 20, windowHeight - 60, align = "top-right", color = DARK_GRAY)
-    print(renderActionTimes, windowWidth - 20, windowHeight - 100, align = "top-right", color = DARK_GRAY)
-
-    val a = DVec(windowWidth - 250, 20)
-    val b = DVec(windowWidth - 250 + 100, 20)
-    drawLine(a, b, DARK_GRAY)
-    drawLine(a, a + (a - b).rotateDeg(90).n * 5, DARK_GRAY)
-    drawLine(b, b + (a - b).rotateDeg(90).n * 5, DARK_GRAY)
-    print(s"${mOrKmOrMKm((100 / globalScale / (if (drawMapMode) scale else 1.0)).toInt)}", b.toVec, DARK_GRAY)
-
-    interfaceHolder.update(player_ship)
-    interfaceHolder.draw(player_ship)
   }
 
   pause()

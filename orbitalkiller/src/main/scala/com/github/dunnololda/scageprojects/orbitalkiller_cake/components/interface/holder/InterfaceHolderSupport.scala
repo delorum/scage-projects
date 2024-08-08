@@ -1,4 +1,4 @@
-package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces
+package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interface.holder
 
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.CelestialsAware
 

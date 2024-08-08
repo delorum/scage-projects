@@ -2,7 +2,8 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake.components
 
 import com.github.dunnololda.scage.handlers.RendererD
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.CelestialsSupport
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.InterfaceHolderSupport
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interface.holder.InterfaceHolderSupport
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interface.renderer.InterfaceSupport
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.main_screen.MainScreenAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.public_bridge.PublicBridgeSupport
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.saveload.SaveLoadSupport
@@ -19,4 +20,5 @@ class OrbitalKillerComponents(protected val mainScreen: RendererD)
   with InterfaceHolderSupport
   with ShipsSupport
   with SaveLoadSupport
+  with InterfaceSupport
   with PublicBridgeSupport

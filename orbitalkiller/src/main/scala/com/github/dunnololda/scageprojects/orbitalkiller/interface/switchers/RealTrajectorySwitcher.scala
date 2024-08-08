@@ -4,7 +4,7 @@ import com.github.dunnololda.scage.support.messages.ScageMessage
 import com.github.dunnololda.scageprojects.orbitalkiller.{InterfaceSwitcher, RealTrajectory}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main.interfaceHolder
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.InterfaceHolder
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interface.holder.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 
 class RealTrajectorySwitcher extends InterfaceSwitcher {

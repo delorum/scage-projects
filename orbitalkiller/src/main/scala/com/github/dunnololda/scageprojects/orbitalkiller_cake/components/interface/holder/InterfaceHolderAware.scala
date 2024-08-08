@@ -1,4 +1,4 @@
-package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces
+package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interface.holder
 
 trait InterfaceHolderAware {
   protected def interfaceHolder: InterfaceHolder

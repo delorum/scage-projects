@@ -3,7 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.public
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.{Cargo1, Satellite1, Satellite2, Ship4, SpaceStation2}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.{Planet, PlanetWithAir, Star}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.{CelestialsAware, CelestialsHelper}
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces.{InterfaceHolder, InterfaceHolderAware}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interface.holder.{InterfaceHolder, InterfaceHolderAware}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.saveload.{SaveLoadAware, SaveLoadComponent}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.ShipsAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.{ShipsHolder, ShipsHolderAware}

@@ -1,10 +1,10 @@
-package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interfaces
+package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interface.holder
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers._
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.Ship4
-import com.github.dunnololda.scageprojects.orbitalkiller.{FreeFlightMode, InterfaceElement, InterfaceSwitcher, NearestPlanetVelocity, NearestShipAutoDocking, PolygonShip}
+import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.CelestialsHelper
 //import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 

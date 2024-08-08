@@ -1,6 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.DrawConstants.scale
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ErrorConstants.angular_velocity_error
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
@@ -137,7 +138,7 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
             for {
               player_coord <- system_evolution_copy.bodyState(Main.player_ship.thisOrActualProxyShipIndex).map(_.coord)
               planet_coord <- system_evolution_copy.bodyState(idx).map(_.coord)
-            } yield (player_coord - planet_coord) * Main.scale
+            } yield (player_coord - planet_coord) * scale
           case None =>
             system_evolution_copy
               .bodyState(Main.player_ship.thisOrActualProxyShipIndex)
@@ -146,10 +147,10 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
                   case Some(or) =>
                     system_evolution_copy
                       .bodyState(or.planet_state.index)
-                      .map(p => (bs.coord - p.coord) * Main.scale)
-                      .getOrElse(bs.coord * Main.scale)
+                      .map(p => (bs.coord - p.coord) * scale)
+                      .getOrElse(bs.coord * scale)
                   case None =>
-                    bs.coord * Main.scale
+                    bs.coord * scale
                 }
               })
         }) match {
