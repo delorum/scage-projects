@@ -1,8 +1,9 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.ships
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller.{DockingPoints, PolygonShip}
+import com.github.dunnololda.scageprojects.orbitalkiller.PolygonShip
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.docking.DockingPoints
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.engines.Engine
 
 abstract class Cargo1(
@@ -30,14 +31,14 @@ abstract class Cargo1(
     DVec(2.5, 2.5)
   )
 
-  lazy val convex_parts = List(
+  lazy val convex_parts: List[PolygonShape] = List(
     PolygonShape(
       List(DVec(-2.5, -1.5), DVec(-1.5, -2.5), DVec(1.5, -2.5), DVec(2.5, -1.5), DVec(2.5, 2.5), DVec(-2.5, 2.5)),
       List()
     )
   )
 
-  val wreck_parts = List(
+  val wreck_parts: List[PolygonShape] = List(
     PolygonShape(List(DVec(-2.5, -1.5), DVec(-1.5, -2.5), DVec(-0.5, -0.5)), List()),
     PolygonShape(List(DVec(-1.5, -2.5), DVec(0.5, -2.5), DVec(0.5, 0.5), DVec(-0.5, -0.5)), List()),
     PolygonShape(List(DVec(0.5, -2.5), DVec(1.5, -2.5), DVec(2.5, -1.5), DVec(0.5, 0.5)), List()),
@@ -48,7 +49,7 @@ abstract class Cargo1(
     PolygonShape(List(DVec(-2.5, 0.5), DVec(-0.5, 2.5), DVec(-2.5, 2.5)), List())
   )
 
-  val docking_points = List(
+  val docking_points: List[DockingPoints] = List(
     new DockingPoints(DVec(1.5, 2.5), DVec(-1.5, 2.5), this, None, createOrderedHull(List(1 -> 6)))
   )
 
@@ -56,16 +57,16 @@ abstract class Cargo1(
   val four = new Engine(4, DVec(-2.5, 0.0), DVec(1.0, 0.0), 1000000, 1, 4, this)
   val six = new Engine(6, DVec(2.5, 0.0), DVec(-1.0, 0.0), 1000000, 1, 4, this)
 
-  val engines = List(two, four, six)
+  val engines: List[Engine] = List(two, four, six)
 
-  val engines_by_keycodes = Map(
+  val engines_by_keycodes: Map[Int, Engine] = Map(
     KEY_NUMPAD2 -> two,
     KEY_NUMPAD4 -> four,
     KEY_NUMPAD6 -> six
   )
 
-  def preserveVelocity(vel: DVec) {}
-  def preserveAngularVelocity(ang_vel_deg: Double) {}
+  def preserveVelocity(vel: DVec): Unit = {}
+  def preserveAngularVelocity(ang_vel_deg: Double): Unit = {}
 
   override val is_manned: Boolean = false
 }

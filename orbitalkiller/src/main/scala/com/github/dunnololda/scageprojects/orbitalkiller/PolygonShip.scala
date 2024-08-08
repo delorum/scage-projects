@@ -1,7 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scage.support.{DVec, ScageId}
+import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements.OtherShipInfo
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.ProxyShip
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ErrorConstants.angular_velocity_error
@@ -17,65 +17,14 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{Bod
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.FlightMode
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.FlightMode._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.engines.{DisabledEngine, Engine}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.docking.{DockData, DockingPoints}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.engines.Engine
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.DrawUtils.{drawArrow, drawDashedLine}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.MyDouble
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-
-class DockingPoints(
-    val p1: DVec,
-    val p2: DVec,
-    ship: PolygonShip,
-    val disabled_engine: Option[DisabledEngine],
-    val ordered_hull: List[DVec]) {
-  val index: Int = ScageId.nextId
-  private val joint_point: DVec = p1 + (p2 - p1) * 0.5
-  val dock_dir: DVec = joint_point.n
-  val dock_dist = 0.5
-
-  // в метрах, при каком расстоянии между точками стыковки двух кораблей происходит захватю Для простоты это значение - одинаковая для всех константа. Вынесли сюда, чтобы было одно место, где поменять.
-  def curP1: DVec = ship.currentState.coord + p1.rotateDeg(ship.currentState.ang)
-
-  def curP1vel: DVec = ship.currentState.vel + (ship.currentState.ang_vel * p1.rotateDeg(90))
-
-  def curP2: DVec = ship.currentState.coord + p2.rotateDeg(ship.currentState.ang)
-
-  def curP2vel: DVec = ship.currentState.vel + (ship.currentState.ang_vel * p2.rotateDeg(90))
-
-  /**
-   * Стыковочные точки находятся на достаточном расстоянии друг от друга, чтобы состыковаться
-   * @param other_ship_docking_points - стыковочные точки другого корабля
-   * @return
-   */
-  def pointsMatch(other_ship_docking_points: DockingPoints): Boolean = {
-    curP1.dist(other_ship_docking_points.curP1) < dock_dist && curP2.dist(other_ship_docking_points.curP2) < dock_dist
-  }
-
-  /**
-   * Наши стыковочные точки лежат на линиях стыковки. Если дальше двигаться в сторону точек стыковки другого корабля, то состыкуемся
-   * @param dp - стыковочные точки другого корабля
-   * @return
-   */
-  def pointsOnTheRightWay(dp: DockingPoints): (Boolean, Boolean) = {
-    val vv1 = (dp.curP1 - dp.curP2).n * dock_dist
-    val vv2 = vv1.perpendicular
-
-    val p1_on_the_right_way =
-      (curP1 - (dp.curP1 + vv1)).perpendicular * vv2 < 0 && (curP1 - (dp.curP1 - vv1)).perpendicular * vv2 > 0 // p1 inside line
-    val p2_on_the_right_way =
-      (curP2 - (dp.curP2 + vv1)).perpendicular * vv2 < 0 && (curP2 - (dp.curP2 - vv1)).perpendicular * vv2 > 0 // p2_inside_line
-    (p1_on_the_right_way, p2_on_the_right_way)
-  }
-}
-
-case class DockData(
-    dock_to_ship: PolygonShip,
-    our_dp: DockingPoints,
-    other_ship_dp: DockingPoints,
-    proxy_ship: ProxyShip)
 
 abstract class PolygonShip(
     val index: Int,

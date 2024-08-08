@@ -4,6 +4,7 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.docking.DockingPoints
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.engines.{DisabledEngine, Engine}
 
 abstract class SpaceStation2(
@@ -25,7 +26,7 @@ abstract class SpaceStation2(
   }
 
   val is_manned = true
-  override val pilot_position = DVec(-120, 0)
+  override val pilot_position: DVec = DVec(-120, 0)
 
   lazy val engine_size: Double = 10
 
@@ -44,7 +45,7 @@ abstract class SpaceStation2(
     DVec(-90.0, -10.0)
   )
 
-  lazy val convex_parts = List(
+  lazy val convex_parts: List[PolygonShape] = List(
     PolygonShape(List(DVec(-130.0, -10.0), DVec(-90.0, -10.0), DVec(-90.0, 10.0), DVec(-130.0, 10.0)), Nil),
     PolygonShape(List(DVec(-90.0, -10.0), DVec(-50.0, -30.0), DVec(-50.0, 30.0), DVec(-90.0, 10.0)), Nil),
     PolygonShape(List(DVec(-50.0, -30.0), DVec(50.0, -30.0), DVec(50.0, 30.0), DVec(-50.0, 30.0)), Nil),
@@ -52,7 +53,7 @@ abstract class SpaceStation2(
     PolygonShape(List(DVec(90.0, -10.0), DVec(130.0, -10.0), DVec(130.0, 10.0), DVec(90.0, 10.0)), Nil)
   )
 
-  val wreck_parts = List(
+  val wreck_parts: List[PolygonShape] = List(
     PolygonShape(List(DVec(-130.0, -10.0), DVec(-110.0, -10.0), DVec(-120.0, 10.0), DVec(-130.0, 10.0)), Nil),
     PolygonShape(List(DVec(-110.0, -10.0), DVec(-90.0, -10.0), DVec(-90.0, 10.0), DVec(-110.0, 10.0)), Nil),
     PolygonShape(List(DVec(-120.0, 10.0), DVec(-110.0, -10.0), DVec(-110.0, 10.0)), Nil),
@@ -78,9 +79,9 @@ abstract class SpaceStation2(
   val one = new Engine(1, Vec(-120.0, -10.0), Vec(0.0, 1.0), 10, 1, 4, this)
   val three = new Engine(3, Vec(120.0, -10.0), Vec(0.0, 1.0), 10, 1, 4, this)
 
-  val engines = List(four, six, eight, two, one, three)
+  val engines: List[Engine] = List(four, six, eight, two, one, three)
 
-  val engines_by_keycodes = Map(
+  val engines_by_keycodes: Map[Int, Engine] = Map(
     KEY_NUMPAD4 -> four,
     KEY_NUMPAD6 -> six,
     KEY_NUMPAD8 -> eight,
@@ -89,7 +90,7 @@ abstract class SpaceStation2(
     KEY_NUMPAD3 -> three
   )
 
-  val docking_points = List(
+  val docking_points: List[DockingPoints] = List(
     new DockingPoints(
       DVec(-130.0, 1.5),
       DVec(-130.0, -1.5),
@@ -106,7 +107,7 @@ abstract class SpaceStation2(
     )
   )
 
-  def preserveVelocity(vel: DVec) {}
+  def preserveVelocity(vel: DVec): Unit = {}
 
-  def preserveAngularVelocity(ang_vel_deg: Double) {}
+  def preserveAngularVelocity(ang_vel_deg: Double): Unit = {}
 }

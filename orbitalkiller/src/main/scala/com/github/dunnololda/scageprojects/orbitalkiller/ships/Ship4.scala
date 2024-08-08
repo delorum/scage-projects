@@ -5,12 +5,17 @@ import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.AdditionalSymbols.rocket_symbol
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.DrawConstants.scale
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.ErrorConstants.{angle_error, angular_velocity_error, linear_velocity_error}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ErrorConstants.{
+  angle_error,
+  angular_velocity_error,
+  linear_velocity_error
+}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants.base_dt
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.FlightMode._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.docking.DockingPoints
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.engines.{DisabledEngine, Engine}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.DrawUtils.{drawArrow, drawDashedArrow}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._

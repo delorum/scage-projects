@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.ships
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.docking.DockingPoints
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.engines.{DisabledEngine, Engine}
 
 abstract class Satellite2(
@@ -53,7 +54,7 @@ abstract class Satellite2(
     DVec(-7.5, -12.5)
   )
 
-  lazy val convex_parts = List(
+  lazy val convex_parts: List[PolygonShape] = List(
     PolygonShape(List(DVec(-62.5, 7.5), DVec(-62.5, -7.5), DVec(-17.5, -7.5), DVec(-17.5, 7.5)), Nil),
     PolygonShape(List(DVec(-17.5, -2.5), DVec(-12.5, -2.5), DVec(-12.5, 2.5), DVec(-17.5, 2.5)), Nil),
     PolygonShape(List(DVec(-12.5, -7.5), DVec(-7.5, -12.5), DVec(7.5, -12.5), DVec(12.5, -7.5)), Nil),
@@ -66,7 +67,7 @@ abstract class Satellite2(
     PolygonShape(List(DVec(17.5, -7.5), DVec(62.5, -7.5), DVec(62.5, 7.5), DVec(17.5, 7.5)), Nil)
   )
 
-  val wreck_parts = List(
+  val wreck_parts: List[PolygonShape] = List(
     PolygonShape(List(DVec(-62.5, 7.5), DVec(-62.5, -7.5), DVec(-52.5, -7.5), DVec(-57.5, 2.5)), Nil), // 1
     PolygonShape(List(DVec(-62.5, 7.5), DVec(-57.5, 2.5), DVec(-42.5, 2.5), DVec(-37.5, 7.5)), Nil), // 2
     PolygonShape(List(DVec(-57.5, 2.5), DVec(-52.5, -7.5), DVec(-37.5, -7.5), DVec(-52.5, 2.5)), Nil), // 3
@@ -180,9 +181,9 @@ abstract class Satellite2(
     this
   )
 
-  val engines = List(eight, two, four, six, seven, nine)
+  val engines: List[Engine] = List(eight, two, four, six, seven, nine)
 
-  val engines_by_keycodes = Map(
+  val engines_by_keycodes: Map[Int, Engine] = Map(
     KEY_NUMPAD8 -> eight,
     KEY_NUMPAD2 -> two,
     KEY_NUMPAD4 -> four,
@@ -191,7 +192,7 @@ abstract class Satellite2(
     KEY_NUMPAD9 -> nine
   )
 
-  val docking_points = List(
+  val docking_points: List[DockingPoints] = List(
     new DockingPoints(
       DVec(1.5, 52.5),
       DVec(-1.5, 52.5),
@@ -201,8 +202,8 @@ abstract class Satellite2(
     )
   )
 
-  def preserveVelocity(vel: DVec) {}
-  def preserveAngularVelocity(ang_vel_deg: Double) {}
+  def preserveVelocity(vel: DVec): Unit = {}
+  def preserveAngularVelocity(ang_vel_deg: Double): Unit = {}
 
   override val is_manned: Boolean = false
 }

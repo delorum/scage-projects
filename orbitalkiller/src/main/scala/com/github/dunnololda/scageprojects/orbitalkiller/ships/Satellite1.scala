@@ -4,6 +4,7 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.docking.DockingPoints
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.engines.{DisabledEngine, Engine}
 
 abstract class Satellite1(
@@ -51,7 +52,7 @@ abstract class Satellite1(
     DVec(-12.0, -8.0)
   )
 
-  lazy val convex_parts = List(
+  lazy val convex_parts: List[PolygonShape] = List(
     PolygonShape(List(DVec(-44.0, -4.0), DVec(-16.0, -4.0), DVec(-16.0, 8.0), DVec(-44.0, 8.0)), Nil),
     PolygonShape(List(DVec(-16.0, 0.0), DVec(16.0, 0.0), DVec(16.0, 4.0), DVec(-16.0, 4.0)), Nil),
     PolygonShape(List(DVec(16.0, 8.0), DVec(16.0, -4.0), DVec(44.0, -4.0), DVec(44.0, 8.0)), Nil),
@@ -61,7 +62,7 @@ abstract class Satellite1(
     PolygonShape(List(DVec(4.0, -16.0), DVec(12.0, -8.0), DVec(4.0, -8.0)), Nil)
   )
 
-  val wreck_parts = List(
+  val wreck_parts: List[PolygonShape] = List(
     PolygonShape(List(DVec(-44.0, 8.0), DVec(-44.0, -4.0), DVec(-36.0, -4.0)), Nil),
     PolygonShape(List(DVec(-44.0, 8.0), DVec(-36.0, -4.0), DVec(-32.0, -4.0), DVec(-32.0, 8.0)), Nil),
     PolygonShape(List(DVec(-32.0, -4.0), DVec(-24.0, -4.0), DVec(-28.0, 8.0), DVec(-32.0, 8.0)), Nil),
@@ -143,9 +144,9 @@ abstract class Satellite1(
     this
   )
 
-  val engines = List(two, eight, one, three, four, six)
+  val engines: List[Engine] = List(two, eight, one, three, four, six)
 
-  val engines_by_keycodes = Map(
+  val engines_by_keycodes: Map[Int, Engine] = Map(
     KEY_NUMPAD2 -> two,
     KEY_NUMPAD8 -> eight,
     KEY_NUMPAD1 -> one,
@@ -164,7 +165,7 @@ abstract class Satellite1(
     )
   )
 
-  def preserveVelocity(vel: DVec) {}
+  def preserveVelocity(vel: DVec): Unit = {}
 
-  def preserveAngularVelocity(ang_vel_deg: Double) {}
+  def preserveAngularVelocity(ang_vel_deg: Double): Unit = {}
 }
