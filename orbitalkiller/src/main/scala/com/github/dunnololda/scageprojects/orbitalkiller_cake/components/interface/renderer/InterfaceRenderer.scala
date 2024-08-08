@@ -19,8 +19,9 @@ class InterfaceRenderer(
   private var renderActionTimes: String = ""
 
   actionStaticPeriodIgnorePause(1000) {
-    renderActionPercents = f"Render/Action ${1.0 * currentRenderTimeMsec  / (currentRenderTimeMsec  + currentActionTimeMsec) * 100}%.2f%%/${1.0 * currentActionTimeMsec  / (currentRenderTimeMsec + currentActionTimeMsec) * 100}%.2f%%"
-    renderActionTimes = s"Render/Action ${currentRenderTimeMsec} msec/${currentActionTimeMsec} msec"
+    renderActionPercents =
+      f"Render/Action ${1.0 * currentRenderTimeMsec / (currentRenderTimeMsec + currentActionTimeMsec) * 100}%.2f%%/${1.0 * currentActionTimeMsec / (currentRenderTimeMsec + currentActionTimeMsec) * 100}%.2f%%"
+    renderActionTimes = s"Render/Action $currentRenderTimeMsec msec/$currentActionTimeMsec msec"
   }
 
   interface {
@@ -38,7 +39,7 @@ class InterfaceRenderer(
     print(s"сборка $appVersion", windowWidth - 20, windowHeight - 20, align = "top-right", color = DARK_GRAY)
     print(s"FPS/Ticks $fps/$tps", windowWidth - 20, windowHeight - 40, align = "top-right", color = DARK_GRAY)
     print(renderActionPercents, windowWidth - 20, windowHeight - 60, align = "top-right", color = DARK_GRAY)
-    print(renderActionTimes, windowWidth - 20, windowHeight - 100, align = "top-right", color = DARK_GRAY)
+    print(renderActionTimes, windowWidth - 20, windowHeight - 80, align = "top-right", color = DARK_GRAY)
 
     val a = DVec(windowWidth - 250, 20)
     val b = DVec(windowWidth - 250 + 100, 20)

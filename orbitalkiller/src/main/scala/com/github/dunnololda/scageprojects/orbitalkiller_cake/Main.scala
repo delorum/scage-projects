@@ -18,6 +18,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evo
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.FlightMode._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.DrawUtils.{drawArrow, drawSunTangents}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.tangentsFromCircleToCircle

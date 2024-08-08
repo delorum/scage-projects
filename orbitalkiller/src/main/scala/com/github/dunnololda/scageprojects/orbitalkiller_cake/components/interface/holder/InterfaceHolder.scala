@@ -1,11 +1,12 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interface.holder
 
 import com.github.dunnololda.scage.ScageLibD._
+import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements._
 import com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers._
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.Ship4
-import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.CelestialsHelper
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.FlightMode.{FreeFlightMode, NearestPlanetVelocity, NearestShipAutoDocking}
 //import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 
 import scala.collection.mutable

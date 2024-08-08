@@ -4,6 +4,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.planetIndices
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.CelestialsHelper
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.FlightMode.{FreeFlightMode, Maneuvering}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.insideSphereOfInfluenceOfCelestialBody
 
