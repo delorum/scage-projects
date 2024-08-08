@@ -17,14 +17,13 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{Bod
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.FlightMode
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.FlightMode._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.engines.{DisabledEngine, Engine}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.DrawUtils.{drawArrow, drawDashedLine}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.MyDouble
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-
-case class DisabledEngine(e: Int, instead_engines: List[Int] = Nil)
 
 class DockingPoints(
     val p1: DVec,

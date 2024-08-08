@@ -11,6 +11,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants.base_dt
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.FlightMode._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.engines.{DisabledEngine, Engine}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.DrawUtils.{drawArrow, drawDashedArrow}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.MyVec

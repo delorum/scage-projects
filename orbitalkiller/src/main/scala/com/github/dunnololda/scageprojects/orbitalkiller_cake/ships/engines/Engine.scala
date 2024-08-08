@@ -1,7 +1,8 @@
-package com.github.dunnololda.scageprojects.orbitalkiller
+package com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.engines
 
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.ScageId
+import com.github.dunnololda.scageprojects.orbitalkiller.PolygonShip
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants.base_dt
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.FlightMode.{FreeFlightMode, Maneuvering}

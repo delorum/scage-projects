@@ -5,6 +5,7 @@ import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.engines.Engine
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.MyDouble
 
 abstract class ProxyShip(

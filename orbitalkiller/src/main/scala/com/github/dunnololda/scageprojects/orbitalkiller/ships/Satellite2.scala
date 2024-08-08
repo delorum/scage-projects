@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.ships
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.engines.{DisabledEngine, Engine}
 
 abstract class Satellite2(
     index: Int,
