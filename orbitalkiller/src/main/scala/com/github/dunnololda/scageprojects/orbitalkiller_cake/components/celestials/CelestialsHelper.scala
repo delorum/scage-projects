@@ -1,18 +1,19 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials
 
 import com.github.dunnololda.scage.ScageLibD.DVec
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.planetIndices
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.CelestialBody
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.{planetIndices, sunIndex}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.{CelestialBody, Planet, PlanetWithAir, Star}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.orbits.KeplerOrbit
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.orbits.KeplerOrbit.calculateOrbit
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.tangentsFromCircleToCircle
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.insideSphereOfInfluenceOfCelestialBody
 
-import scala.collection.{immutable, Map}
+import scala.collection.{Map, immutable}
 
-class CelestialsHelper(allCelestials: Seq[CelestialBody], systemEvolution: SystemEvolution) {
-  val planets: immutable.Map[Int, CelestialBody] = allCelestials.map(c => c.index -> c).toMap
+class CelestialsHelper(sun: Star, earth: PlanetWithAir, moon: Planet, systemEvolution: SystemEvolution) {
+  val planets: immutable.Map[Int, CelestialBody] = Seq(sun, earth, moon).map(c => c.index -> c).toMap
 
   def planetByIndex(index: Int): Option[CelestialBody] = planets.get(index)
 
@@ -51,6 +52,20 @@ class CelestialsHelper(allCelestials: Seq[CelestialBody], systemEvolution: Syste
           )
         })
       case None => None
+    }
+  }
+
+  def inShadowOfPlanet(coord: DVec): Option[(CelestialBody, MutableBodyState)] = {
+    val ship_sun_dist = coord.dist(sun.coord)
+    currentPlanetStates.filterNot(_._1.index == sunIndex).find { case (planet, _) =>
+      ship_sun_dist > planet.coord
+        .dist(sun.coord) && (tangentsFromCircleToCircle(planet.coord, planet.radius, sun.coord, sun.radius) match {
+        case Some((c1, c2, b1, b2)) =>
+          val a1 = (c1 - b1).perpendicular * (coord - b1) > 0
+          val a2 = (c2 - b2).perpendicular * (coord - b2) < 0
+          a1 && a2
+        case None => false
+      })
     }
   }
 }

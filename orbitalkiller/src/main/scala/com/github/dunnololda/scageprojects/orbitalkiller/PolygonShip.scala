@@ -6,11 +6,13 @@ import com.github.dunnololda.scageprojects.orbitalkiller.interface.elements.Othe
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.ProxyShip
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ErrorConstants.angular_velocity_error
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.planetIndices
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main.{base, delOperation, drawMapMode, globalScale, interfaceHolder, player_ship, render}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.{planetIndices, playerShipIndex}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants.base_dt
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.PlanetWithAir
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.CelestialsAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ShipsHolderAware
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.system_evolution.SystemEvolutionAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.OrbitRenderData
@@ -33,7 +35,9 @@ abstract class PolygonShip(
     protected val init_rotation: Double = 0,
     ship_designer: Boolean,
     val create_interface: Boolean)
-  extends ShipsHolderAware {
+  extends ShipsHolderAware
+  with CelestialsAware
+  with SystemEvolutionAware {
   println(s"$name -> $index")
   protected var selected_engine: Option[Engine] = None
 
@@ -155,7 +159,9 @@ abstract class PolygonShip(
       val correction = osdp.curP1 - dp.curP1
       ship.currentState.coord += correction
       val proxy_ship = new ProxyShip(ship, ship.coord, ship.rotation, dp, os, os.coord, os.rotation, osdp)
+        with CelestialsAwareImpl
         with ShipsHolderAwareImpl
+        with SystemEvolutionAwareImpl
       ship.currentState.active = false
       os.currentState.active = false
       ship.setDocked(Some(DockData(os, dp, osdp, proxy_ship)))
@@ -574,7 +580,7 @@ abstract class PolygonShip(
     engines.foreach(e => drawEngine(e))
   }
 
-  lazy val is_player: Boolean = index == player_ship.index
+  lazy val is_player: Boolean = index == playerShipIndex
 
   private def drawShip(): Unit = {
     if (!drawMapMode && (is_player || coord.dist2(player_ship.coord) < 100L * 1000L * 100L * 1000L)) {
@@ -785,7 +791,7 @@ abstract class PolygonShip(
    * @param x - дистанция в километрах
    * @return
    */
-  private def shipCloserXKm(x: Long): Option[PolygonShip] = shipsCloserXKm(11).headOption
+  private def shipCloserXKm(x: Long): Option[PolygonShip] = shipsCloserXKm(x).headOption
 
   private def shipsCloser2Km: Seq[PolygonShip] = shipsCloserXKm(2)
 
@@ -930,7 +936,7 @@ abstract class PolygonShip(
               linearVelocity * mass / (mass + obstacle.mass) + obstacle.vel * obstacle.mass / (mass + obstacle.mass)
             () => new_vel + (linearVelocity - ship_obstacle.linearVelocity).n.rotateDeg(dir_deg) * 30.0
           case None =>
-            planetByIndex(obstacle.index) match {
+            celestialsHelper.planetByIndex(obstacle.index) match {
               case Some(planet_obstacle) =>
                 val dir_deg = 140.0 + math.random * 80.0
                 val obstacle_vel = obstacle.vel + (coord - obstacle.coord).p * planet_obstacle.groundSpeedMsec
@@ -990,7 +996,7 @@ abstract class PolygonShip(
   def fuelMassStr = s"Остаток топлива: ${gOrKg(fuelMass)}"
 
   def shadowSideStr: String = {
-    inShadowOfPlanet(coord) match {
+    celestialsHelper.inShadowOfPlanet(coord) match {
       case Some((planet, planet_state)) =>
         /*planet_name match {
           case moon.name => "Корабль находится в тени Луны"
@@ -1102,7 +1108,7 @@ abstract class PolygonShip(
               calculate_orbit_around
             )
           }
-          if (time_msec == system_evolution.timeMsec) {
+          if (time_msec == systemEvolution.timeMsec) {
             _current_orbit_data = _orbit_data
           } else {
             updateCurrentOrbitData(update_count, orbit_color, calculate_orbit_around)
@@ -1159,18 +1165,18 @@ abstract class PolygonShip(
         index,
         radius,
         orbit_color,
-        system_evolution.allBodyStates,
+        systemEvolution.allBodyStates,
         planetIndices,
         calculate_orbit_around
       )
     } else {
-      updateStateSinceDeactivation(system_evolution.timeMsec, system_evolution.allBodyStates)
+      updateStateSinceDeactivation(systemEvolution.timeMsec, systemEvolution.allBodyStates)
       _current_orbit_data = OrbitDataUpdater.updateOrbitData(
         update_count,
         currentState,
         radius,
         orbit_color,
-        system_evolution.allBodyStates,
+        systemEvolution.allBodyStates,
         planetIndices,
         calculate_orbit_around
       )
@@ -1236,7 +1242,7 @@ abstract class PolygonShip(
 
   private def checkPlanetCollision(): Unit = {
     // если провалились сквозь землю
-    currentPlanetStates.find { case (planet, planet_state) =>
+    celestialsHelper.currentPlanetStates.find { case (planet, planet_state) =>
       planet.coord.dist2(currentState.coord) < planet.radius2
     } match {
       case Some((planet, planet_state)) =>
@@ -1432,7 +1438,7 @@ abstract class PolygonShip(
         }
       } else {
         if (!deactivate_condition || (drawMapMode && shipInterface.exists(!_.isMinimized))) {
-          updateStateSinceDeactivation(time_msec, system_evolution.allBodyStates)
+          updateStateSinceDeactivation(time_msec, systemEvolution.allBodyStates)
         }
         if (!deactivate_condition) {
           currentState.active = true

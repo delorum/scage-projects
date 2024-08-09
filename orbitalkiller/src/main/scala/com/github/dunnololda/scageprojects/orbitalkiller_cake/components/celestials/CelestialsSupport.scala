@@ -2,7 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celest
 
 import com.github.dunnololda.scage.ScageLibD.DVec
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.{CelestialBody, Planet, PlanetWithAir, Star}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.{Planet, PlanetWithAir, Star}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.system_evolution.SystemEvolutionAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.OrbitUtils.speedToHaveOrbitWithParams
 
@@ -94,7 +94,5 @@ trait CelestialsSupport extends CelestialsAware with SystemEvolutionAware {
   systemEvolution.addCollisionExclusion(earth.index, sun.index)
   systemEvolution.addCollisionExclusion(moon.index, sun.index)
 
-  private val allCelestials: Seq[CelestialBody] = Seq(sun, earth, moon)
-
-  protected val celestialsHelper: CelestialsHelper = new CelestialsHelper(allCelestials, systemEvolution)
+  protected val celestialsHelper: CelestialsHelper = new CelestialsHelper(sun, earth, moon, systemEvolution)
 }

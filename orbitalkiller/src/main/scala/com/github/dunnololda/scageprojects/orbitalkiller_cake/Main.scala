@@ -20,7 +20,6 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.orbits.Orbi
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.FlightMode._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.DrawUtils.{drawArrow, drawSunTangents}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.tangentsFromCircleToCircle
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.equalGravityRadius
 
 import scala.collection.{mutable, Set, _}
@@ -872,20 +871,6 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     if (timeMultiplier != realtime && timeMultiplier > 1f * timeMultiplier / 63 * tps + 20) {
       println("updating timeMultiplier")
       timeMultiplier = (timeMultiplier * 1f / 63 * tps).toInt
-    }
-  }
-
-  def inShadowOfPlanet(coord: DVec): Option[(CelestialBody, MutableBodyState)] = {
-    val ship_sun_dist = coord.dist(sun.coord)
-    currentPlanetStates.filterNot(_._1.index == sun.index).find { case (planet, _) =>
-      ship_sun_dist > planet.coord
-        .dist(sun.coord) && (tangentsFromCircleToCircle(planet.coord, planet.radius, sun.coord, sun.radius) match {
-        case Some((c1, c2, b1, b2)) =>
-          val a1 = (c1 - b1).perpendicular * (coord - b1) > 0
-          val a2 = (c2 - b2).perpendicular * (coord - b2) < 0
-          a1 && a2
-        case None => false
-      })
     }
   }
 

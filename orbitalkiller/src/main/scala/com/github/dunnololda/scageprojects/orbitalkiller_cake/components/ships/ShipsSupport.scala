@@ -5,12 +5,13 @@ import com.github.dunnololda.scageprojects.orbitalkiller.ships._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.CelestialsAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ShipsHolderAware
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.system_evolution.SystemEvolutionAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.OrbitUtils.{
   satelliteSpeed,
   speedToHaveOrbitWithParams
 }
 
-trait ShipsSupport extends ShipsAware with CelestialsAware with ShipsHolderAware {
+trait ShipsSupport extends ShipsAware with CelestialsAware with ShipsHolderAware with SystemEvolutionAware {
   // стоим на поверхности Земли
   private val ship_start_position = earth.coord + DVec(495, earth.radius + 3.5)
 
@@ -52,6 +53,8 @@ trait ShipsSupport extends ShipsAware with CelestialsAware with ShipsHolderAware
   protected val playerShip: Ship4 =
     new Ship4(playerShipIndex, init_coord = ship_start_position, init_velocity = ship_init_velocity, init_rotation = 0)
       with ShipsHolderAwareImpl
+      with CelestialsAwareImpl
+      with SystemEvolutionAwareImpl
 
   // на круговой орбите в 200 км от поверхности Земли
   private val station_start_position = earth.coord + DVec(-110, earth.radius + 199160)
@@ -74,7 +77,7 @@ trait ShipsSupport extends ShipsAware with CelestialsAware with ShipsHolderAware
     init_coord = station_start_position,
     init_velocity = station_init_velocity,
     init_rotation = 90
-  ) with ShipsHolderAwareImpl
+  ) with ShipsHolderAwareImpl with CelestialsAwareImpl with SystemEvolutionAwareImpl
 
   // случайная орбита с перигеем от 200 до 1000 км, и апогеем от 0 до 3000 км выше перигея
   private val sat1_start_position =
@@ -100,7 +103,7 @@ trait ShipsSupport extends ShipsAware with CelestialsAware with ShipsHolderAware
     init_coord = sat1_start_position,
     init_velocity = sat1_init_velocity,
     init_rotation = 45
-  ) with ShipsHolderAwareImpl
+  ) with ShipsHolderAwareImpl with CelestialsAwareImpl with SystemEvolutionAwareImpl
 
   // случайная орбита с перигеем от 200 до 1000 км, и апогеем от 0 до 3000 км выше перигея
   private val sat2_start_position =
@@ -126,7 +129,7 @@ trait ShipsSupport extends ShipsAware with CelestialsAware with ShipsHolderAware
     init_coord = sat2_start_position,
     init_velocity = sat2_init_velocity,
     init_rotation = 0
-  ) with ShipsHolderAwareImpl
+  ) with ShipsHolderAwareImpl with CelestialsAwareImpl with SystemEvolutionAwareImpl
 
   // стоим на поверхности Земли
   private val cargo1_start_position = earth.coord + DVec(0, earth.radius + 2)
@@ -143,5 +146,5 @@ trait ShipsSupport extends ShipsAware with CelestialsAware with ShipsHolderAware
     init_coord = cargo1_start_position,
     init_velocity = cargo1_init_velocity,
     init_rotation = 0
-  ) with ShipsHolderAwareImpl
+  ) with ShipsHolderAwareImpl with CelestialsAwareImpl with SystemEvolutionAwareImpl
 }

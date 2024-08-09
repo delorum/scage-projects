@@ -5,11 +5,7 @@ import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.AdditionalSymbols.rocket_symbol
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.DrawConstants.scale
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.ErrorConstants.{
-  angle_error,
-  angular_velocity_error,
-  linear_velocity_error
-}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ErrorConstants.{angle_error, angular_velocity_error, linear_velocity_error}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants.base_dt
@@ -788,7 +784,7 @@ abstract class Ship4(
         init_velocity = linearVelocity,
         init_rotation = rotation,
         ship_designer = false
-      ) with ShipsHolderAwareImpl
+      ) with ShipsHolderAwareImpl with CelestialsAwareImpl with SystemEvolutionAwareImpl
 
       rocket.two.power = rocket.two.max_power
       rocket.two.workTimeTacts = 63
