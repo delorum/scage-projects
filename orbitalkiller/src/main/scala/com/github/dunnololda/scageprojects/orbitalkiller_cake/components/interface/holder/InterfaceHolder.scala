@@ -36,7 +36,7 @@ class InterfaceHolder(
   val orbParams = new OrbitParamsCalculation
   val namesSwitcher = new NamesOnOff
   val dockingSwitcher = new DockingOnOff
-  val dockUndock = new DockUndock(dockingSwitcher)
+  val dockUndock = new DockUndock(dockingSwitcher, playerShip)
   val gSwitcher = new GSwitcher
   val degOrKm = new DegOrKm
   val timeStepSwitcher = new TimeStepSwitcher

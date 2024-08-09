@@ -1,9 +1,9 @@
 package com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers
 
 import com.github.dunnololda.scageprojects.orbitalkiller.InterfaceSwitcher
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
+import com.github.dunnololda.scageprojects.orbitalkiller.ships.Ship4
 
-class DockUndock(dockingSwitcher: DockingOnOff) extends InterfaceSwitcher {
+class DockUndock(dockingSwitcher: DockingOnOff, playerShip: Ship4) extends InterfaceSwitcher {
   override val strVariants: Array[String] = Array("Dock", "Undock")
 
   def setDocked(): Unit = {
@@ -19,6 +19,6 @@ class DockUndock(dockingSwitcher: DockingOnOff) extends InterfaceSwitcher {
   }
 
   override def active: Boolean = {
-    (dockingSwitcher.dockingEnabled && Main.player_ship.canDockWithNearestShip) || Main.player_ship.isDocked
+    (dockingSwitcher.dockingEnabled && playerShip.canDockWithNearestShip) || playerShip.isDocked
   }
 }
