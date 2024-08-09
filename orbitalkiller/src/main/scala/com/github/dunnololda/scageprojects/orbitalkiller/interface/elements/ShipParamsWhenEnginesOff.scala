@@ -8,6 +8,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celesti
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.FlightMode.{FreeFlightMode, Maneuvering}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.insideSphereOfInfluenceOfCelestialBody
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.OrbitUtils.orbitStrInPointWithVelocity
 
 class ShipParamsWhenEnginesOff(celestialsHelper: CelestialsHelper, playerShip: Ship4) extends InterfaceElement {
 

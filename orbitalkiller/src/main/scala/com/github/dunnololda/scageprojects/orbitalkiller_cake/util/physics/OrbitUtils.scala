@@ -1,7 +1,13 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics
 
 import com.github.dunnololda.scage.ScageLibD._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.G
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.CelestialBody
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.orbits.KeplerOrbit.calculateOrbit
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.{
+  insideSphereOfInfluenceOfCelestialBody,
+  G
+}
 
 object OrbitUtils {
 
@@ -96,11 +102,40 @@ object OrbitUtils {
 
   def specificOrbitalEnergy(
       planet_mass: Double,
-      planet_coord: DVec,
       body_mass: Double,
       body_relative_coord: DVec,
       body_relative_velocity: DVec): Double = {
     val mu = (planet_mass + body_mass) * G // гравитационный параметр
     body_relative_velocity.norma2 / 2 - mu / body_relative_coord.norma
+  }
+
+  def orbitStrInPointWithVelocity(
+      coord: DVec,
+      velocity: DVec,
+      radius: Double,
+      mass: Double,
+      planet_states: Seq[(CelestialBody, MutableBodyState)]): String = {
+    insideSphereOfInfluenceOfCelestialBody(coord, mass, planet_states) match {
+      case Some((planet, planet_state)) =>
+        val orbit = calculateOrbit(
+          planet_state.mass,
+          planet_state.coord,
+          mass,
+          coord - planet_state.coord,
+          velocity - planet_state.vel
+        )
+        orbit.strDefinition(
+          planet.name,
+          planet.radius,
+          planet_state.vel,
+          planet_state.ang,
+          planet.groundSpeedMsec,
+          planet.g,
+          coord,
+          velocity,
+          radius
+        )
+      case None => "N/A"
+    }
   }
 }

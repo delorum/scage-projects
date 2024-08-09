@@ -2,8 +2,8 @@ package com.github.dunnololda.scageprojects.orbitalkiller.interface.elements
 
 import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.ships.Ship4
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.CelestialsHelper
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.OrbitUtils.orbitStrInPointWithVelocity
 
 class OrbitInfo(playerShip: Ship4, celestialsHelper: CelestialsHelper) extends InterfaceElement {
   private val strings = Array("")

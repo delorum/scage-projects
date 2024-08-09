@@ -11,8 +11,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.Orbital
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.interface.holder.InterfaceHolder
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder.ShipsHolder
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.BoxShape
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.orbits.KeplerOrbit.calculateOrbit
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.orbits.{EllipseOrbit, HyperbolaOrbit, KeplerOrbit}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.orbits.{EllipseOrbit, HyperbolaOrbit}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.render.ViewMode
@@ -22,9 +21,9 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.FlightMode._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.DrawUtils.{drawArrow, drawSunTangents}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.math.MathUtils.tangentsFromCircleToCircle
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.{equalGravityRadius, insideSphereOfInfluenceOfCelestialBody}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.equalGravityRadius
 
-import scala.collection.{Set, mutable, _}
+import scala.collection.{mutable, Set, _}
 
 object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1600), property("screen.height", 900)) {
   private val components = new OrbitalKillerComponents(this)
@@ -113,12 +112,14 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
   val earth = components.publicEarth
   val moon = components.publicMoon
 
-  val planets: Predef.Map[Int, CelestialBody] = components.publicCelestialsHelper.planets
+  private val celestialsHelper = components.publicCelestialsHelper
+
+  val planets: Predef.Map[Int, CelestialBody] = celestialsHelper.planets
 
   val currentPlanetStates: Seq[(CelestialBody, MutableBodyState)] =
-    components.publicCelestialsHelper.currentPlanetStates
+    celestialsHelper.currentPlanetStates
 
-  def planetByIndex(index: Int): Option[CelestialBody] = components.publicCelestialsHelper.planetByIndex(index)
+  def planetByIndex(index: Int): Option[CelestialBody] = celestialsHelper.planetByIndex(index)
 
   val player_ship: Ship4 = components.publicPlayerShip
 
@@ -198,16 +199,22 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
           view_mode = FixedOnShipAbsolute
         case FixedOnOrbit => // в режиме карты зафиксировать центр орбиты в центре экрана
           if (drawMapMode) {
-            _center = _center - orbitAroundCelestialInPointWithVelocity(
-              player_ship.coord,
-              player_ship.linearVelocity,
-              player_ship.mass
-            ).map(_._2.center * scale).getOrElse(player_ship.coord)
-            center = orbitAroundCelestialInPointWithVelocity(
-              player_ship.coord,
-              player_ship.linearVelocity,
-              player_ship.mass
-            ).map(_._2.center * scale).getOrElse(player_ship.coord) + _center
+            _center = _center - celestialsHelper
+              .orbitAroundCelestialInPointWithVelocity(
+                player_ship.coord,
+                player_ship.linearVelocity,
+                player_ship.mass
+              )
+              .map(_._2.center * scale)
+              .getOrElse(player_ship.coord)
+            center = celestialsHelper
+              .orbitAroundCelestialInPointWithVelocity(
+                player_ship.coord,
+                player_ship.linearVelocity,
+                player_ship.mass
+              )
+              .map(_._2.center * scale)
+              .getOrElse(player_ship.coord) + _center
             rotationAngle = 0
             view_mode = FixedOnOrbit
           }
@@ -216,70 +223,20 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
     }
   }
 
-  def orbitStrInPointWithVelocity(
-      coord: DVec,
-      velocity: DVec,
-      radius: Double,
-      mass: Double,
-      planet_states: Seq[(CelestialBody, MutableBodyState)]): String = {
-    insideSphereOfInfluenceOfCelestialBody(coord, mass, planet_states) match {
-      case Some((planet, planet_state)) =>
-        val orbit = calculateOrbit(
-          planet_state.mass,
-          planet_state.coord,
-          mass,
-          coord - planet_state.coord,
-          velocity - planet_state.vel
-        )
-        orbit.strDefinition(
-          planet.name,
-          planet.radius,
-          planet_state.vel,
-          planet_state.ang,
-          planet.groundSpeedMsec,
-          planet.g,
-          coord,
-          velocity,
-          radius
-        )
-      case None => "N/A"
-    }
-  }
-
-  private def orbitAroundCelestialInPointWithVelocity(
-      coord: DVec,
-      velocity: DVec,
-      mass: Double): Option[((CelestialBody, MutableBodyState), KeplerOrbit)] = {
-    insideSphereOfInfluenceOfCelestialBody(coord, mass, currentPlanetStates) match {
-      case Some((_, planet_state)) =>
-        planetByIndex(planet_state.index).flatMap(planet => {
-          Some(
-            (
-              (planet, planet_state),
-              calculateOrbit(
-                planet_state.mass,
-                planet_state.coord,
-                mass,
-                coord - planet_state.coord,
-                velocity - planet_state.vel
-              )
-            )
-          )
-        })
-      case None => None
-    }
-  }
-
   private var disable_interface_drawing = false
 
   private var _draw_map_mode = false
 
-  def drawMapMode = _draw_map_mode
+  def drawMapMode: Boolean = _draw_map_mode
 
   def drawMapMode_=(new_mode: Boolean): Unit = {
     if (new_mode) {
       _draw_map_mode = true
-      orbitAroundCelestialInPointWithVelocity(player_ship.coord, player_ship.linearVelocity, player_ship.mass) match {
+      celestialsHelper.orbitAroundCelestialInPointWithVelocity(
+        player_ship.coord,
+        player_ship.linearVelocity,
+        player_ship.mass
+      ) match {
         case Some((_, kepler_orbit)) =>
           kepler_orbit match {
             case ellipse: EllipseOrbit =>
@@ -761,11 +718,14 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
           } {
             globalScale = math.min(1000000, 750 / h)
             if (viewMode == FixedOnOrbit) {
-              _center = c - orbitAroundCelestialInPointWithVelocity(
-                player_ship.coord,
-                player_ship.linearVelocity,
-                player_ship.mass
-              ).map(_._2.center * scale).getOrElse(player_ship.coord)
+              _center = c - celestialsHelper
+                .orbitAroundCelestialInPointWithVelocity(
+                  player_ship.coord,
+                  player_ship.linearVelocity,
+                  player_ship.mass
+                )
+                .map(_._2.center * scale)
+                .getOrElse(player_ship.coord)
             } else {
               _center = c
             }
