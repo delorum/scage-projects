@@ -60,8 +60,8 @@ trait CelestialsSupport extends CelestialsAware with SystemEvolutionAware {
   systemEvolution.addBody(
     moon.currentState,
     (_, helper) => {
-      helper.gravityForceFromTo(sun.index, moon.index) +
-        helper.gravityForceFromTo(earth.index, moon.index)
+      helper.gravityForceFromTo(sunIndex, moonIndex) +
+        helper.gravityForceFromTo(earthIndex, moonIndex)
     },
     (_, _) => {
       0.0
@@ -71,8 +71,8 @@ trait CelestialsSupport extends CelestialsAware with SystemEvolutionAware {
   systemEvolution.addBody(
     earth.currentState,
     (_, helper) => {
-      helper.gravityForceFromTo(sun.index, earth.index) +
-        helper.gravityForceFromTo(moon.index, earth.index)
+      helper.gravityForceFromTo(sunIndex, earthIndex) +
+        helper.gravityForceFromTo(moonIndex, earthIndex)
     },
     (_, _) => {
       0.0
@@ -82,17 +82,17 @@ trait CelestialsSupport extends CelestialsAware with SystemEvolutionAware {
   systemEvolution.addBody(
     sun.currentState,
     (_, helper) => {
-      helper.gravityForceFromTo(earth.index, sun.index) +
-        helper.gravityForceFromTo(moon.index, sun.index)
+      helper.gravityForceFromTo(earthIndex, sunIndex) +
+        helper.gravityForceFromTo(moonIndex, sunIndex)
     },
     (_, _) => {
       0.0
     }
   )
 
-  systemEvolution.addCollisionExclusion(earth.index, moon.index)
-  systemEvolution.addCollisionExclusion(earth.index, sun.index)
-  systemEvolution.addCollisionExclusion(moon.index, sun.index)
+  systemEvolution.addCollisionExclusion(earthIndex, moonIndex)
+  systemEvolution.addCollisionExclusion(earthIndex, sunIndex)
+  systemEvolution.addCollisionExclusion(moonIndex, sunIndex)
 
   protected val celestialsHelper: CelestialsHelper = new CelestialsHelper(sun, earth, moon, systemEvolution)
 }

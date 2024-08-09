@@ -2,6 +2,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller.interface.switchers
 
 import com.github.dunnololda.scageprojects.orbitalkiller.InterfaceSwitcher
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.{earthIndex, moonIndex, sunIndex}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.{CelestialBody, Planet, PlanetWithAir, Star}
 
 class OrbitSwitcher(sun: Star, earth: PlanetWithAir, moon: Planet) extends InterfaceSwitcher {
@@ -9,9 +10,9 @@ class OrbitSwitcher(sun: Star, earth: PlanetWithAir, moon: Planet) extends Inter
 
   def calculateOrbitAround: Option[Int] = selected_variant match {
     case 0 => None
-    case 1 => Some(earth.index)
-    case 2 => Some(moon.index)
-    case 3 => Some(sun.index)
+    case 1 => Some(earthIndex)
+    case 2 => Some(moonIndex)
+    case 3 => Some(sunIndex)
     case _ => None
   }
 

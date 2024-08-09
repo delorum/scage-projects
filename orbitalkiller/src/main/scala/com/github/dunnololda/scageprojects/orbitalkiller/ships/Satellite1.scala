@@ -91,7 +91,7 @@ abstract class Satellite1(
     max_power = 10,
     default_power_percent = 1,
     fuel_consumption_per_sec_at_full_power = 4,
-    this
+    this, earth
   )
 
   val eight = new Engine(
@@ -101,7 +101,7 @@ abstract class Satellite1(
     max_power = 10,
     default_power_percent = 1,
     fuel_consumption_per_sec_at_full_power = 4,
-    this
+    this, earth
   )
 
   val one = new Engine(
@@ -111,7 +111,7 @@ abstract class Satellite1(
     max_power = 10,
     default_power_percent = 1,
     fuel_consumption_per_sec_at_full_power = 4,
-    this
+    this, earth
   )
 
   val three = new Engine(
@@ -121,7 +121,7 @@ abstract class Satellite1(
     max_power = 10,
     default_power_percent = 1,
     fuel_consumption_per_sec_at_full_power = 4,
-    this
+    this, earth
   )
 
   val four = new Engine(
@@ -131,7 +131,7 @@ abstract class Satellite1(
     max_power = 10,
     default_power_percent = 1,
     fuel_consumption_per_sec_at_full_power = 4,
-    this
+    this, earth
   )
 
   val six = new Engine(
@@ -141,7 +141,7 @@ abstract class Satellite1(
     max_power = 10,
     default_power_percent = 1,
     fuel_consumption_per_sec_at_full_power = 4,
-    this
+    this, earth
   )
 
   val engines: List[Engine] = List(two, eight, one, three, four, six)

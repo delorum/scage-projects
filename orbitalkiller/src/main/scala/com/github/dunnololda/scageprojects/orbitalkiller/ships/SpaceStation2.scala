@@ -72,12 +72,12 @@ abstract class SpaceStation2(
     PolygonShape(List(DVec(100.0, -10.0), DVec(130.0, -10.0), DVec(130.0, 10.0), DVec(120.0, 10.0)), Nil)
   )
 
-  val four = new Engine(4, Vec(-130.0, 0.0), Vec(1.0, 0.0), 10, 1, 4, this)
-  val six = new Engine(6, Vec(130.0, 0.0), Vec(-1.0, 0.0), 10, 1, 4, this)
-  val eight = new Engine(8, Vec(0.0, 30.0), Vec(0.0, -1.0), 10, 1, 4, this)
-  val two = new Engine(2, Vec(0.0, -30.0), Vec(0.0, 1.0), 10, 1, 4, this)
-  val one = new Engine(1, Vec(-120.0, -10.0), Vec(0.0, 1.0), 10, 1, 4, this)
-  val three = new Engine(3, Vec(120.0, -10.0), Vec(0.0, 1.0), 10, 1, 4, this)
+  val four = new Engine(4, Vec(-130.0, 0.0), Vec(1.0, 0.0), 10, 1, 4, this, earth)
+  val six = new Engine(6, Vec(130.0, 0.0), Vec(-1.0, 0.0), 10, 1, 4, this, earth)
+  val eight = new Engine(8, Vec(0.0, 30.0), Vec(0.0, -1.0), 10, 1, 4, this, earth)
+  val two = new Engine(2, Vec(0.0, -30.0), Vec(0.0, 1.0), 10, 1, 4, this, earth)
+  val one = new Engine(1, Vec(-120.0, -10.0), Vec(0.0, 1.0), 10, 1, 4, this, earth)
+  val three = new Engine(3, Vec(120.0, -10.0), Vec(0.0, 1.0), 10, 1, 4, this, earth)
 
   val engines: List[Engine] = List(four, six, eight, two, one, three)
 

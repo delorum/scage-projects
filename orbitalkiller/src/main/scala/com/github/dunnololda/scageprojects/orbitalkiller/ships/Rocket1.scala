@@ -135,7 +135,7 @@ abstract class Rocket1(
     max_power = 100000, // такая сила разгонит 200-килограммовую ракету до 500 м/сек за 1 секунду
     default_power_percent = 1,
     fuel_consumption_per_sec_at_full_power = 4,
-    this
+    this, earth
   )
 
   val engines: List[Engine] = List(two)

@@ -3,6 +3,7 @@ package com.github.dunnololda.scageprojects.orbitalkiller
 import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.DrawConstants.scale
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.{earthIndex, sunIndex}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants.base_dt
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.orbits.KeplerOrbit.calculateOrbit
@@ -64,7 +65,7 @@ object OrbitDataUpdater {
           drawCircle(position_when_stop_moment * scale, w / globalScale, GREEN)
         }
       })
-    if (player_ship.thisOrActualProxyShipCurrentOrbitData.exists(or => or.planet.index == earth.index)) {
+    if (player_ship.thisOrActualProxyShipCurrentOrbitData.exists(or => or.planet.index == earthIndex)) {
       moon.orbitRender.foreach(x => {
         val moon_orbit = x.orbit.withNewFocusPosition(x.planet_state.coord)
         maybe_flight_time_msec.foreach(flight_time_msec => {
@@ -79,7 +80,7 @@ object OrbitDataUpdater {
           drawCircle(position_when_stop_moment * scale, moon.half_hill_radius * scale, color = DARK_GRAY)
         }
       })
-    } else if (player_ship.thisOrActualProxyShipCurrentOrbitData.exists(or => or.planet.index == sun.index)) {
+    } else if (player_ship.thisOrActualProxyShipCurrentOrbitData.exists(or => or.planet.index == sunIndex)) {
       earth.orbitRender.foreach(x => {
         val earth_orbit = x.orbit.withNewFocusPosition(x.planet_state.coord)
         maybe_flight_time_msec.foreach(flight_time_msec => {

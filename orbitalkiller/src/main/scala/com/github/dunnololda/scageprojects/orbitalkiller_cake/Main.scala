@@ -5,6 +5,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller._
 import com.github.dunnololda.scageprojects.orbitalkiller.ships._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.DrawConstants.scale
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ErrorConstants.angular_velocity_error
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.{earthIndex, moonIndex, sunIndex}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.OrbitalKillerComponents
@@ -22,7 +23,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.DrawUtils.{dr
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.physics.GravityUtils.equalGravityRadius
 
-import scala.collection.{mutable, Set, _}
+import scala.collection.{Set, mutable}
 
 object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1600), property("screen.height", 900)) {
   private val components = new OrbitalKillerComponents(this)
@@ -115,20 +116,7 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
 
   val planets: Predef.Map[Int, CelestialBody] = celestialsHelper.planets
 
-  val currentPlanetStates: Seq[(CelestialBody, MutableBodyState)] =
-    celestialsHelper.currentPlanetStates
-
-  def planetByIndex(index: Int): Option[CelestialBody] = celestialsHelper.planetByIndex(index)
-
   val player_ship: Ship4 = components.publicPlayerShip
-
-  val station: SpaceStation2 = components.publicStation
-
-  val sat1: Satellite1 = components.publicSat1
-
-  val sat2: Satellite2 = components.publicSat2
-
-  val cargo1: Cargo1 = components.publicCargo1
 
   var _set_stop_time: Boolean = false
   var _stop_after_number_of_tacts: Long = 0
@@ -776,20 +764,20 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
       // если в режиме маневрирования, или не в режиме маневрирования, но не на паузе, или на паузе, но двигатели не работают - рисуем текущее состояние
       moon.orbitRender = OrbitDataUpdater.updateOrbitData(
         update_count,
-        moon.index,
+        moonIndex,
         moon.radius,
         player_ship.colorIfPlayerAliveOrRed(GREEN),
         system_evolution.allBodyStates,
-        Set(earth.index, sun.index),
+        Set(earthIndex, sunIndex),
         None
       )
       earth.orbitRender = OrbitDataUpdater.updateOrbitData(
         update_count,
-        earth.index,
+        earthIndex,
         earth.radius,
         player_ship.colorIfPlayerAliveOrRed(ORANGE),
         system_evolution.allBodyStates,
-        Set(sun.index),
+        Set(sunIndex),
         None
       )
       player_ship.updateOrbitData(
@@ -817,20 +805,20 @@ object Main extends ScageScreenAppD("Orbital Killer", property("screen.width", 1
       val system_state_when_engines_off = getFutureState(stop_moment_tacts)
       moon.orbitRender = OrbitDataUpdater.updateOrbitData(
         update_count,
-        moon.index,
+        moonIndex,
         moon.radius,
         player_ship.colorIfPlayerAliveOrRed(GREEN),
         system_state_when_engines_off,
-        Set(earth.index, sun.index),
+        Set(earthIndex, sunIndex),
         None
       )
       earth.orbitRender = OrbitDataUpdater.updateOrbitData(
         update_count,
-        earth.index,
+        earthIndex,
         earth.radius,
         player_ship.colorIfPlayerAliveOrRed(ORANGE),
         system_state_when_engines_off,
-        Set(sun.index),
+        Set(sunIndex),
         None
       )
       val stop_moment_msec = (stop_moment_tacts * base_dt * 1000).toLong

@@ -917,8 +917,8 @@ abstract class PolygonShip(
           random_wreck_vel_func(),
           rotation,
           part_points,
-          is_main = idx == 0 && index == player_ship.index
-        )
+          is_main = idx == 0 && index == playerShipIndex
+        ) with CelestialsAwareImpl
       }
       main_ship_wreck = wrecks.find(_.is_main)
       ship_is_crashed = true

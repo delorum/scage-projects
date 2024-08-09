@@ -4,20 +4,23 @@ import com.github.dunnololda.scage.ScageLibD._
 import com.github.dunnololda.scage.support.{DVec, ScageId}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.{earthIndex, moonIndex, sunIndex}
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.components.celestials.CelestialsAware
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.collisions.Shape.PolygonShape
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.{BodyState, MutableBodyState}
 
-class Wreck(
+abstract class Wreck(
     mass: Double,
     init_coord: DVec,
     init_velocity: DVec,
     init_rotation: Double,
     points: List[DVec],
-    val is_main: Boolean) {
-  val index = ScageId.nextId
+    val is_main: Boolean)
+  extends CelestialsAware {
+  val index: Int = ScageId.nextId
   private val draw_points = points :+ points.head
 
-  def colorIfPlayerAliveOrRed(color: => ScageColor) = if (Main.player_ship.isDead) RED else color
+  def colorIfPlayerAliveOrRed(color: => ScageColor): ScageColor = if (Main.player_ship.isDead) RED else color
 
   val currentState: MutableBodyState = new MutableBodyState(
     BodyState(
@@ -27,19 +30,18 @@ class Wreck(
       coord = init_coord,
       ang = init_rotation,
       shape = PolygonShape(points, Nil),
-      is_static = false,
       restitution = 0.8
     )
   )
 
   system_evolution.addBody(
     currentState,
-    (tacts, helper) => {
-      helper.gravityForceFromTo(sun.index, index) +
-        helper.gravityForceFromTo(earth.index, index) +
-        helper.gravityForceFromTo(moon.index, index) +
+    (_, helper) => {
+      helper.gravityForceFromTo(sunIndex, index) +
+        helper.gravityForceFromTo(earthIndex, index) +
+        helper.gravityForceFromTo(moonIndex, index) +
         helper.funcOfArrayOrDVecZero(
-          Array(index, earth.index),
+          Array(index, earthIndex),
           l => {
             val bs = l(0)
             val e = l(1)
@@ -48,22 +50,22 @@ class Wreck(
           }
         )
     },
-    (tacts, helper) => 0.0
+    (_, _) => 0.0
   )
 
-  val start_tact = system_evolution.tacts
+  val start_tact: Long = system_evolution.tacts
 
-  def coord = currentState.coord
+  def coord: DVec = currentState.coord
 
-  def linearVelocity = currentState.vel
+  def linearVelocity: DVec = currentState.vel
 
-  def angularVelocity = currentState.ang_vel
+  def angularVelocity: Double = currentState.ang_vel
 
-  def rotation = currentState.ang
+  def rotation: Double = currentState.ang
 
-  val render_id = render {
+  val render_id: Int = render {
     if (
-      !drawMapMode && coord.dist2(player_ship.coord) < 100000 * 100000 && !planets
+      !drawMapMode && coord.dist2(player_ship.coord) < 100000 * 100000 && !celestialsHelper.planets
         .exists(p => p._2.coord.dist2(coord) < p._2.radius2)
     ) {
       openglLocalTransform {
@@ -86,7 +88,7 @@ class Wreck(
   if (!is_main) {
     actionStaticPeriod(1000) {
       if (
-        timeMultiplier > 10 || coord.dist2(player_ship.coord) > 100000L * 100000L || planets
+        timeMultiplier > 10 || coord.dist2(player_ship.coord) > 100000L * 100000L || celestialsHelper.planets
           .exists(p => p._2.coord.dist2(coord) < p._2.radius2)
       ) {
         system_evolution.removeBodyByIndex(index)

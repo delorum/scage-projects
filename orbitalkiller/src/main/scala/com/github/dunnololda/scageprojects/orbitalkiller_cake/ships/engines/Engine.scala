@@ -5,6 +5,7 @@ import com.github.dunnololda.scage.support.ScageId
 import com.github.dunnololda.scageprojects.orbitalkiller.PolygonShip
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants.base_dt
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.PlanetWithAir
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ships.FlightMode.{FreeFlightMode, Maneuvering}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.util.StringFormatUtils.timeStrMsec
 
@@ -15,7 +16,8 @@ class Engine(
     val max_power: Double, // в ньютонах
     val default_power_percent: Int, // при выборе данного двигателя какая мощность выставляется по умолчанию
     val fuel_consumption_per_sec_at_full_power: Double, // Расход топлива в килограммах в секунду на полной мощности
-    val ship: PolygonShip) {
+    val ship: PolygonShip,
+    earth: PlanetWithAir) {
   val index: Int = ScageId.nextId
   private var worktime_tacts = 0L
   private var stop_moment_tacts = 0L

@@ -108,14 +108,14 @@ abstract class Ship4(
   )
   // миллион ньютонов тяги при расходе 4 килограмма в секунду - это соответствует скорости истечения газов 250 км/сек
   // что в 50 раз выше наивысшего полученного на практике значения для химического топлива: литий/водород/фтор - 5000 м/сек
-  val four = new Engine(4, DVec(-3.5, 0.0), DVec(1.0, 0.0), 1000000, 1, 4, this)
-  val six = new Engine(6, DVec(3.5, 0.0), DVec(-1.0, 0.0), 1000000, 1, 4, this)
-  val seven = new Engine(7, DVec(-1.5, 8.0), DVec(1.0, 0.0), 10000, 100, 0.04, this)
-  val nine = new Engine(9, DVec(1.5, 8.0), DVec(-1.0, 0.0), 10000, 100, 0.04, this)
-  val eight = new Engine(8, DVec(0.0, 9.5), DVec(0.0, -1.0), 1000000, 1, 4, this)
-  val one = new Engine(1, DVec(-4.0, -4.5), DVec(0.0, 1.0), 500000, 1, 4, this)
-  val three = new Engine(3, DVec(4.0, -4.5), DVec(0.0, 1.0), 500000, 1, 4, this)
-  val two = new Engine(2, DVec(0.0, -5.5), DVec(0.0, 1.0), 1000000, 1, 4, this)
+  val four = new Engine(4, DVec(-3.5, 0.0), DVec(1.0, 0.0), 1000000, 1, 4, this, earth)
+  val six = new Engine(6, DVec(3.5, 0.0), DVec(-1.0, 0.0), 1000000, 1, 4, this, earth)
+  val seven = new Engine(7, DVec(-1.5, 8.0), DVec(1.0, 0.0), 10000, 100, 0.04, this, earth)
+  val nine = new Engine(9, DVec(1.5, 8.0), DVec(-1.0, 0.0), 10000, 100, 0.04, this, earth)
+  val eight = new Engine(8, DVec(0.0, 9.5), DVec(0.0, -1.0), 1000000, 1, 4, this, earth)
+  val one = new Engine(1, DVec(-4.0, -4.5), DVec(0.0, 1.0), 500000, 1, 4, this, earth)
+  val three = new Engine(3, DVec(4.0, -4.5), DVec(0.0, 1.0), 500000, 1, 4, this, earth)
+  val two = new Engine(2, DVec(0.0, -5.5), DVec(0.0, 1.0), 1000000, 1, 4, this, earth)
 
   val engines: List[Engine] = List(four, six, seven, nine, eight, two, one, three)
 
@@ -658,7 +658,7 @@ abstract class Ship4(
           }
         case NearestPlanetVelocity => // уравнять скорость с ближайшей планетой
           (for {
-            (planet, planet_state) <- currentPlanetStates.sortBy(_._2.coord.dist(coord)).headOption
+            (planet, planet_state) <- celestialsHelper.currentPlanetStates.sortBy(_._2.coord.dist(coord)).headOption
           } yield (planet, planet_state)) match {
             case Some((planet, planet_state)) =>
               val vertical_orientation = DVec(0, 1).deg360(coord - planet_state.coord)

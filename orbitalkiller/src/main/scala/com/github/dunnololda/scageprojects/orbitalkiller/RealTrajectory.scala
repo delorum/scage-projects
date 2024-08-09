@@ -5,7 +5,7 @@ import com.github.dunnololda.scageprojects.orbitalkiller_cake.DrawConstants.scal
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.ErrorConstants.angular_velocity_error
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.Main._
-import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.planetIndices
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.{cargo1Index, planetIndices, playerShipIndex, sat1Index, sat2Index, stationIndex}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.TimeConstants.base_dt
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.CelestialBody
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
@@ -52,7 +52,7 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
     dropped = 0
     system_evolution_copy = Main.system_evolution.copy(
       base_dt,
-      exclude = immutable.Set(Main.station.index, Main.sat1.index, Main.sat2.index, Main.cargo1.index),
+      exclude = immutable.Set(stationIndex, sat1Index, sat2Index, cargo1Index),
       collisions_enabled = false
     )
     celestials = system_evolution_copy.allBodyStates
@@ -70,7 +70,7 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
 
   private val calc_multiplier: () => Double = {
     def m: Double = (for {
-      ps <- system_evolution_copy.bodyState(Main.player_ship.index)
+      ps <- system_evolution_copy.bodyState(playerShipIndex)
     } yield {
       // http://arxiv.org/pdf/1105.1082.pdf
       // N-body simulations of gravitational dynamics, Walter Dehnen and Justin I. Read,
@@ -125,7 +125,7 @@ class RealTrajectoryC(max_multiplier: Option[Double]) {
       while (i < 6301 && curPoints + seconds < interfaceHolder.realTrajectorySwitcher.numPoints) {
         system_evolution_copy.base_dt = chooseDt
         system_evolution_copy
-          .bodyState(Main.player_ship.index)
+          .bodyState(playerShipIndex)
           .foreach(bs => {
             if (bs.ang_vel != 0 && math.abs(bs.ang_vel) < angular_velocity_error) {
               bs.ang_vel = 0

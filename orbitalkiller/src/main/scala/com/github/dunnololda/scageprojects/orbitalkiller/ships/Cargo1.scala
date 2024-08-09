@@ -61,9 +61,9 @@ abstract class Cargo1(
     new DockingPoints(DVec(1.5, 2.5), DVec(-1.5, 2.5), this, None, createOrderedHull(List(1 -> 6)))
   )
 
-  val two = new Engine(2, DVec(0.0, -2.5), DVec(0.0, 1.0), 1000000, 1, 4, this)
-  val four = new Engine(4, DVec(-2.5, 0.0), DVec(1.0, 0.0), 1000000, 1, 4, this)
-  val six = new Engine(6, DVec(2.5, 0.0), DVec(-1.0, 0.0), 1000000, 1, 4, this)
+  val two = new Engine(2, DVec(0.0, -2.5), DVec(0.0, 1.0), 1000000, 1, 4, this, earth)
+  val four = new Engine(4, DVec(-2.5, 0.0), DVec(1.0, 0.0), 1000000, 1, 4, this, earth)
+  val six = new Engine(6, DVec(2.5, 0.0), DVec(-1.0, 0.0), 1000000, 1, 4, this, earth)
 
   val engines: List[Engine] = List(two, four, six)
 

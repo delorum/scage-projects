@@ -1,6 +1,7 @@
 package com.github.dunnololda.scageprojects.orbitalkiller_cake.components.ships.holder
 
 import com.github.dunnololda.scageprojects.orbitalkiller.PolygonShip
+import com.github.dunnololda.scageprojects.orbitalkiller_cake.ObjectIndices.{earthIndex, moonIndex, sunIndex}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.celestials.{Planet, PlanetWithAir, Star}
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.state.MutableBodyState
 import com.github.dunnololda.scageprojects.orbitalkiller_cake.physics.system_evolution.SystemEvolution
@@ -17,12 +18,12 @@ class ShipsHolder(system_evolution: SystemEvolution, sun: Star, earth: PlanetWit
     system_evolution.addBody(
       ship.currentState,
       (tacts, helper) => {
-        helper.gravityForceFromTo(sun.index, ship.index) +
-          helper.gravityForceFromTo(earth.index, ship.index) +
-          helper.gravityForceFromTo(moon.index, ship.index) +
+        helper.gravityForceFromTo(sunIndex, ship.index) +
+          helper.gravityForceFromTo(earthIndex, ship.index) +
+          helper.gravityForceFromTo(moonIndex, ship.index) +
           helper.funcOrDVecZero(ship.index, bs => ship.currentReactiveForce(tacts, bs)) +
           helper.funcOfArrayOrDVecZero(
-            Array(ship.index, earth.index),
+            Array(ship.index, earthIndex),
             l => {
               val bs = l(0)
               val e = l(1)
